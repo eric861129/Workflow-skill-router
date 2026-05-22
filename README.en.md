@@ -91,6 +91,11 @@ The prompt asks the agent to:
 - Generate `skill-tree.md` and `routing-rules.md`.
 - Validate that each route selects no more than 4 skills.
 
+If you have already configured `workflow-skill-router` and later add more skills, the same prompt file also includes two maintenance prompts:
+
+- Add specified new skills into the existing router.
+- Let the agent inspect the environment and add newly available skills that are missing from the router.
+
 ### Step 3: Let The Agent Fill Your Router
 
 The agent should update these starter files:

@@ -84,3 +84,121 @@ Important constraints:
 
 Reply in clear Markdown with tables where useful.
 ```
+
+## Maintenance Prompt: Add Specified New Skills To An Existing Router
+
+```text
+I have already configured workflow-skill-router once. I have now added the following skills. Please help me integrate them into the existing workflow-skill-router.
+
+New skills:
+- <paste the skill name, path, or description>
+- <paste the skill name, path, or description>
+
+First, read my currently installed workflow-skill-router:
+- SKILL.md
+- references/skill-tree.md
+- references/routing-rules.md
+- agents/openai.yaml or equivalent metadata file, if present
+
+Your goal is not to rebuild the whole router, and it is not to insert the new skills into every related category.
+Your goal is to decide what role these new skills should play in the existing routing system, then make the smallest necessary update.
+
+Follow these steps:
+
+1. Read the specified new skills
+   - Confirm each skill's name, source, purpose, and suitable tasks.
+   - Decide whether it is a connector/plugin, system skill, custom skill, or meta workflow.
+   - If you cannot read the skill content, clearly tell me what information is missing.
+
+2. Compare against the existing workflow-skill-router
+   - Check whether references/skill-tree.md already contains the same or highly overlapping skills.
+   - Check whether references/routing-rules.md already contains related conflict rules.
+   - Decide whether each new skill should add a route, replace an existing supporting skill, or only appear in conflict rules.
+
+3. Update the skill tree
+   - Each route must still contain at most 4 skills.
+   - Each route must still have 1 Primary skill; the others are Supporting skills.
+   - Do not add a new skill merely because it is related. Add it only when it is better suited than the existing skills for a specific task stage.
+   - If adding it would make a route exceed 4 skills, split the route into a more precise work stage.
+
+4. Update conflict rules
+   - If a new skill overlaps with existing skills, add a selection rule.
+   - If a new skill is a connector/plugin, state when it should be preferred.
+   - If a new skill is a meta workflow, state when it should not be enabled by default.
+
+5. Validate
+   - List which files were changed.
+   - List which routes now include the new skills.
+   - Test the new routing with 2-3 realistic task scenarios.
+   - Confirm that no route contains more than 4 skills.
+
+Important constraints:
+- Do not rebuild the whole workflow-skill-router.
+- Do not remove existing skills unless a new skill truly replaces one, and explain why.
+- Do not add new skills to every place that looks related.
+- If file edits are needed, explain which files will be changed before making changes.
+
+Reply with a table covering: new skill, recommended category, Primary/Supporting role, edit location, and reason.
+```
+
+## Maintenance Prompt: Detect Newly Added Skills Missing From The Router
+
+```text
+I have already configured workflow-skill-router once, but I may have added more skills afterward.
+Please inspect the current environment, find skills that are installed or agent-readable but missing from workflow-skill-router, and decide whether they should be added.
+
+First, read my currently installed workflow-skill-router:
+- SKILL.md
+- references/skill-tree.md
+- references/routing-rules.md
+- agents/openai.yaml or equivalent metadata file, if present
+
+Then inventory currently available skills:
+- Find every skill the current agent can use, has installed, has enabled, or can read.
+- Group them by source: custom / system / plugin / connector / meta workflow / unknown.
+- Compare them against references/skill-tree.md and references/routing-rules.md to find skills that are missing or only partially recorded.
+
+Follow these steps:
+
+1. Produce a diff list
+   - Skills fully recorded in the router.
+   - Skills not recorded but recommended for inclusion.
+   - Skills not recorded and not recommended for inclusion.
+   - Skills that only need routing-rules coverage, not skill-tree routes.
+
+2. Decide whether each missing skill should be added
+   Use these criteria:
+   - Does it cover a task type the current router does not handle?
+   - Is it better than an existing skill as the Primary skill for a route?
+   - Is it only useful as a Supporting skill?
+   - Is it a connector/plugin that must be preferred for external data or a specific runtime?
+   - Is it a broad meta workflow that should avoid default activation?
+
+3. Update workflow-skill-router
+   - Update references/skill-tree.md when necessary.
+   - Update references/routing-rules.md when necessary.
+   - Update the Skill Inventory Summary when necessary.
+   - Keep every route to at most 4 skills.
+   - Mark Primary and Supporting skills explicitly for every route.
+
+4. Validate
+   - Test the updated routing with at least 3 scenarios.
+   - Confirm simple tasks do not over-trigger the router.
+   - Confirm connector/plugin tasks still prefer the matching connector/plugin skill.
+   - Confirm meta workflows were not over-added to normal routes.
+
+Important constraints:
+- Do not add every missing skill to skill-tree.
+- Do not assume a skill belongs in the router merely because it exists.
+- Do not rebuild the whole router; prefer diff-based updates.
+- Do not let any single route exceed 4 skills.
+- If file edits are needed, explain which files will be changed before making changes.
+
+Reply with:
+
+1. Missing Skill Diff Summary
+2. Recommended Additions
+3. Skills Not Added And Why
+4. Updated Routes
+5. Validation Results
+```

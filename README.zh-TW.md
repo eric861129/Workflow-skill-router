@@ -91,6 +91,11 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 - 建立 `skill-tree.md` 與 `routing-rules.md`。
 - 驗證每條路由最多 4 個 SKILL。
 
+如果你已經設定過 `workflow-skill-router`，後來才新增其他 SKILL，同一份 Prompt 檔也提供兩段維護用 Prompt：
+
+- 指定新增 SKILL，要求 Agent 將它整合進既有 router。
+- 讓 Agent 自動盤點目前環境，找出已新增但尚未記錄在 router 的 SKILL。
+
 ### Step 3：讓 Agent 填入你的 Router
 
 Agent 應該更新這些範本檔案：

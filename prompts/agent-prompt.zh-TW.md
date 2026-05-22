@@ -84,3 +84,121 @@
 
 最後請用繁體中文回覆，並用清楚的表格與 Markdown 標題整理結果。
 ```
+
+## 維護 Prompt：指定新增 SKILL 寫入既有 Router
+
+```text
+我目前已經做過一次 workflow-skill-router 設定，現在新增了以下 SKILL，請協助我把它們整合進既有的 workflow-skill-router。
+
+新增 SKILL：
+- <請貼上 SKILL 名稱、路徑或描述>
+- <請貼上 SKILL 名稱、路徑或描述>
+
+請先閱讀我目前已安裝的 workflow-skill-router：
+- SKILL.md
+- references/skill-tree.md
+- references/routing-rules.md
+- agents/openai.yaml 或等價 metadata 檔案，如果存在
+
+你的目標不是重建整套 router，也不是把新增 SKILL 塞進所有相關分類。
+你的目標是判斷這些新增 SKILL 應該在既有路由系統中扮演什麼角色，並做最小必要更新。
+
+請依照以下步驟進行：
+
+1. 讀取指定新增 SKILL
+   - 確認每個 SKILL 的名稱、來源、用途、適合任務。
+   - 判斷它是否屬於 connector/plugin、system skill、custom skill，或 meta workflow。
+   - 如果無法讀取 SKILL 內容，請明確告訴我缺少哪些資訊。
+
+2. 比對既有 workflow-skill-router
+   - 檢查 references/skill-tree.md 是否已有相同或高度重疊的 SKILL。
+   - 檢查 references/routing-rules.md 是否已有相關衝突規則。
+   - 判斷新增 SKILL 應該新增路由、取代既有 supporting skill，或只加入衝突規則。
+
+3. 更新路由樹
+   - 每條路由仍然最多 4 個 SKILL。
+   - 每條路由仍然必須有 1 個 Primary SKILL，其他是 Supporting SKILL。
+   - 不要因為新增 SKILL 相關就加入；只有在它比既有 SKILL 更適合某個任務階段時才加入。
+   - 如果加入後某條路由超過 4 個 SKILL，請拆成更精準的工作階段。
+
+4. 更新衝突規則
+   - 如果新增 SKILL 與既有 SKILL 功能重疊，請新增選擇規則。
+   - 如果新增 SKILL 是 connector/plugin，請明確寫出何時優先使用它。
+   - 如果新增 SKILL 是 meta workflow，請明確寫出何時不要預設啟用它。
+
+5. 驗證
+   - 列出修改了哪些檔案。
+   - 列出新增 SKILL 被放入哪些路由。
+   - 用 2-3 個任務情境測試新增路由是否合理。
+   - 確認沒有任何單一路由超過 4 個 SKILL。
+
+重要限制：
+- 不要重建整個 workflow-skill-router。
+- 不要移除既有 SKILL，除非它確實被新 SKILL 取代，且你有說明原因。
+- 不要把新增 SKILL 加到所有看起來相關的地方。
+- 若需要修改檔案，請先說明會修改哪些檔案，再執行。
+
+最後請用繁體中文回覆，並用表格整理：新增 SKILL、建議分類、Primary/Supporting 角色、修改位置、原因。
+```
+
+## 維護 Prompt：自動盤點新增但尚未寫入 Router 的 SKILL
+
+```text
+我目前已經做過一次 workflow-skill-router 設定，但後來可能又新增了一些 SKILL。
+請你協助我重新盤點目前環境，找出「已安裝或目前 Agent 可讀取，但尚未被 workflow-skill-router 記錄」的 SKILL，並判斷是否需要補進 router。
+
+請先閱讀我目前已安裝的 workflow-skill-router：
+- SKILL.md
+- references/skill-tree.md
+- references/routing-rules.md
+- agents/openai.yaml 或等價 metadata 檔案，如果存在
+
+接著盤點目前可用 SKILL：
+- 找出所有目前 Agent 可使用、已安裝、已啟用或可讀取的 SKILL。
+- 依來源整理：custom / system / plugin / connector / meta workflow / unknown。
+- 與 references/skill-tree.md 和 references/routing-rules.md 比對，找出尚未記錄或只被部分記錄的 SKILL。
+
+請依照以下步驟進行：
+
+1. 產生差異清單
+   - 已在 router 中完整記錄的 SKILL。
+   - 尚未記錄，但應該補入 router 的 SKILL。
+   - 尚未記錄，但不建議補入 router 的 SKILL。
+   - 只需要補 routing-rules，不需要加入 skill-tree 的 SKILL。
+
+2. 判斷是否應該補入
+   請依以下標準判斷：
+   - 是否能覆蓋目前 router 沒有處理的任務類型？
+   - 是否比既有 SKILL 更適合作為某個路由的 Primary？
+   - 是否只適合作為 Supporting？
+   - 是否是 connector/plugin，必須在外部資料或特定 runtime 任務中優先使用？
+   - 是否是 broad meta workflow，應避免預設啟用？
+
+3. 更新 workflow-skill-router
+   - 必要時更新 references/skill-tree.md。
+   - 必要時更新 references/routing-rules.md。
+   - 必要時更新 Skill Inventory Summary。
+   - 每條路由最多 4 個 SKILL。
+   - 每條路由必須明確標示 Primary 與 Supporting。
+
+4. 驗證
+   - 用至少 3 個情境測試新增或調整後的路由。
+   - 確認簡單任務不會因此過度啟用 router。
+   - 確認 connector/plugin 任務仍優先使用對應 connector/plugin SKILL。
+   - 確認 meta workflow 沒有被過度加入一般路由。
+
+重要限制：
+- 不要把所有缺漏 SKILL 都補進 skill-tree。
+- 不要因為 SKILL 存在就假設它一定要出現在 router。
+- 不要重建整套 router；請以差異更新為主。
+- 不要讓單一路由超過 4 個 SKILL。
+- 若需要修改檔案，請先說明會修改哪些檔案，再執行。
+
+最後請用繁體中文回覆，並輸出：
+
+1. Missing Skill Diff Summary
+2. Recommended Additions
+3. Skills Not Added And Why
+4. Updated Routes
+5. Validation Results
+```
