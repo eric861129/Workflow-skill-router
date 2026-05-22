@@ -1,17 +1,17 @@
 # Agent Prompt English
 
 ```text
-You are helping me build a workflow-skill-router for a multi-skill AI agent environment.
+You are helping me build a workflow-skill-router for my current multi-skill AI agent environment.
 
 First, read this repository's method documents:
 - README.en.md
 - docs/system-theory.en.md
 - docs/validation-checklist.en.md
-- templates/SKILL.md
-- templates/skill-tree.md
-- templates/routing-rules.md
+- starter/workflow-skill-router/SKILL.md
+- starter/workflow-skill-router/references/skill-tree.md
+- starter/workflow-skill-router/references/routing-rules.md
 
-Your goal is not to add many new skills. Your goal is to classify my currently installed, enabled, or agent-readable skills into a vertical routing system.
+Your goal is not to add many new skills, and it is not to reuse the example skill list. Your goal is to inspect my currently installed, enabled, or agent-readable skills, then fill the blank starter template into a vertical routing system for my environment.
 
 Follow these steps:
 
@@ -42,7 +42,7 @@ Follow these steps:
    - broad meta workflow skill vs narrow task skill
    - docs/writing skill vs file-format connector skill
 
-4. Produce the workflow-skill-router design
+4. Produce the workflow-skill-router design and fill the starter template
    Output the following:
 
    A. Skill Inventory Summary
@@ -60,10 +60,10 @@ Follow these steps:
    - When connector/plugin skills must come first
 
    D. Recommended workflow-skill-router Files
-   - Recommended SKILL.md
-   - Recommended references/skill-tree.md
-   - Recommended references/routing-rules.md
-   - If the platform supports UI metadata, recommend agents/openai.yaml or the equivalent configuration
+   - Actual SKILL.md based on starter/workflow-skill-router/SKILL.md
+   - Filled references/skill-tree.md based on the inventory
+   - Filled references/routing-rules.md based on conflicts and priority rules
+   - If the platform supports UI metadata, filled agents/openai.yaml or the equivalent configuration
 
 5. Validate
    Test the classification with at least 6 realistic task scenarios:
@@ -79,6 +79,7 @@ Important constraints:
 - Do not suggest disabling every other skill and keeping only the router.
 - Do not select more than 4 skills for a single route.
 - Do not include a skill merely because it is related; include only what the task truly needs.
+- Do not treat this repository's example skill list as my actual skill list; use my current environment as the source of truth.
 - If file edits are needed, explain which files will be created or changed before making changes.
 
 Reply in clear Markdown with tables where useful.

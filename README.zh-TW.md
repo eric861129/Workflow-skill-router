@@ -1,12 +1,18 @@
 # Workflow Skill Router
 
-> 多 SKILL AI Agent 的輕量路由層。
-
-當 AI Agent 的 SKILL 越來越多，問題通常不是「缺少能力」，而是「不知道這次任務該用哪幾個能力」。Workflow Skill Router 提供一個可複製的方法論，把扁平化的 SKILL 清單整理成垂直決策樹。
+> 讓多 SKILL AI Agent 先選對工作流，再開始工作。
 
 Language: [English](README.en.md)
 
-## 核心模型
+當 AI Agent 裝了越來越多 SKILL，真正的問題通常不是「能力不夠」，而是：
+
+```text
+這次任務到底該用哪幾個 SKILL？
+哪些只是相關，但其實不該啟用？
+需求、設計、實作、驗證，應該用同一組 SKILL 嗎？
+```
+
+Workflow Skill Router 是一個方法論與空白範本，協助使用者把自己的 SKILL 系統整理成垂直路由：
 
 ```text
 任務性質
@@ -15,96 +21,127 @@ Language: [English](README.en.md)
       -> 實際應該使用的 1-4 個 SKILL
 ```
 
-這個專案提供：
+這個專案的重點不是提供一份固定的 SKILL 清單，而是提供一套方法，讓你的 AI Agent 讀完後，可以依照你目前真的安裝的 SKILL，替你生成自己的 `workflow-skill-router`。
 
-- 一套多 SKILL 路由方法論。
-- 可直接改造的 `SKILL.md` 模板。
-- `skill-tree.md` 與 `routing-rules.md` 模板。
-- 一份 Codex 用的 `workflow-skill-router` 範例。
-- 中英文兩套可直接貼給 AI Agent 的分類 Prompt。
-- 驗證清單，協助避免過度觸發與 SKILL 爆炸。
+## 為什麼要這樣設計
 
-## 為什麼需要
+### 1. 多 SKILL 不是越多越好
 
-多 SKILL 系統常見三個問題：
+SKILL 增加後，Agent 會面臨「選擇問題」：
 
-1. **選擇成本變高**：同一個任務可能看起來符合很多 SKILL。
-2. **觸發噪音增加**：寬泛的 meta skill 容易被不必要地啟用。
-3. **執行順序模糊**：需求、設計、實作、測試、收尾被混在同一層。
+- API 任務可能同時觸發 API、後端、資料庫、測試、文件 SKILL。
+- 前端任務可能同時觸發 UI、Vue、Browser、Playwright、QA SKILL。
+- GitHub 任務可能需要 connector，也可能需要 code review reasoning。
 
-Workflow Skill Router 的目標不是取代其他 SKILL，而是先做「最小必要 SKILL 組合」判斷。
+如果沒有路由層，Agent 容易把「相關」誤判成「需要」。
+
+### 2. 扁平清單無法表達工作階段
+
+同樣是後端任務，不同階段需要不同 SKILL：
+
+| 工作階段 | 應該思考的問題 |
+|---|---|
+| 需求釐清 | 要解決什麼？範圍到哪裡？ |
+| API 設計 | 資源、錯誤格式、版本策略是什麼？ |
+| 實作 | 用哪個框架與既有架構？ |
+| 資料庫 | Schema、索引、交易邊界如何設計？ |
+| 驗證 | 要測哪些成功/失敗情境？ |
+
+Workflow Skill Router 把「技術分類」再加上一層「工作階段」，讓 Agent 不會一次把所有技能都載入。
+
+### 3. Router 不取代 SKILL
+
+Router 不是 super skill。它只做三件事：
+
+1. 分類任務。
+2. 選出最小必要 SKILL 組合。
+3. 說明為什麼這次使用這些 SKILL。
+
+真正的 API 設計、UI 設計、除錯、文件撰寫，仍然由原本的 SKILL 負責。
+
+## 使用方式
+
+### Step 1：複製空白範本
+
+將這個資料夾複製到你的 Agent SKILL 目錄：
 
 ```text
-workflow-skill-router
-  -> 選出 1 個 primary skill
-  -> 選出最多 3 個 supporting skills
-  -> 說明選擇原因
-  -> 繼續執行真正任務
+starter/workflow-skill-router/
 ```
 
-## 專案結構
-
-```text
-workflow-skill-router/
-  README.md
-  README.zh-TW.md
-  README.en.md
-  docs/
-    system-theory.zh-TW.md
-    system-theory.en.md
-    validation-checklist.zh-TW.md
-    validation-checklist.en.md
-  prompts/
-    agent-prompt.zh-TW.md
-    agent-prompt.en.md
-  templates/
-    SKILL.md
-    skill-tree.md
-    routing-rules.md
-  examples/
-    codex-workflow-skill-router/
-      SKILL.md
-      references/
-        skill-tree.md
-        routing-rules.md
-      agents/
-        openai.yaml
-```
-
-## 快速開始
-
-1. 將 `examples/codex-workflow-skill-router/` 複製到你的 Codex skills 資料夾。
-2. 將 `references/skill-tree.md` 裡的範例 SKILL 名稱替換成你自己的 SKILL。
-3. 用 `references/routing-rules.md` 補上你的重疊規則與優先序。
-4. 確認每條葉節點路由最多只選 4 個 SKILL。
-5. 用真實 prompt 測試後再正式依賴它。
-
-Codex on Windows 的常見目標路徑：
+例如 Codex on Windows：
 
 ```text
 C:\Users\<you>\.codex\skills\workflow-skill-router
 ```
 
-## 可直接貼給 AI Agent 的 Prompt
+這是一個空白範本，包含完整規格與架構，但尚未填入你的實際 SKILL 清單。
 
-完整繁體中文版本請看：
+### Step 2：把 Prompt 貼給 AI Agent
+
+使用這份繁體中文 Prompt：
 
 [prompts/agent-prompt.zh-TW.md](prompts/agent-prompt.zh-TW.md)
 
-摘要版：
+這份 Prompt 會要求 Agent：
+
+- 先閱讀本專案方法論。
+- 盤點你目前可用的 SKILL。
+- 將 SKILL 依任務性質、工作階段、技術領域分類。
+- 建立 `skill-tree.md` 與 `routing-rules.md`。
+- 驗證每條路由最多 4 個 SKILL。
+
+### Step 3：讓 Agent 填入你的 Router
+
+Agent 應該更新這些範本檔案：
 
 ```text
-請先閱讀這個專案的方法論文件，盤點我目前可用的 SKILL，然後依照「任務性質 -> 工作階段 -> 技術領域 -> 1-4 個 SKILL」建立 workflow-skill-router。
-
-請輸出：
-1. Skill Inventory Summary
-2. Workflow Skill Tree
-3. Routing Rules
-4. Recommended workflow-skill-router files
-5. 至少 6 個情境驗證
-
-限制：不要把 router 設計成 super skill；不要建議關掉其他 SKILL；單一路由最多 4 個 SKILL。
+workflow-skill-router/
+  SKILL.md
+  references/
+    skill-tree.md
+    routing-rules.md
+  agents/
+    openai.yaml
 ```
+
+填完後，這個 SKILL 就會變成你個人環境的多 SKILL 路由器。
+
+## 空白範本內容
+
+範本在這裡：
+
+[starter/workflow-skill-router](starter/workflow-skill-router)
+
+它包含：
+
+- `SKILL.md`：路由器本體規格，保留待填欄位。
+- `references/skill-tree.md`：等待 Agent 依你的 SKILL 生成分類樹。
+- `references/routing-rules.md`：等待 Agent 依你的 SKILL 生成優先序與衝突規則。
+- `agents/openai.yaml`：Codex 顯示 metadata 範本。
+
+## 中文區域與英文區域
+
+這個 repo 依語言切分內容，讓使用者可以直接選擇閱讀區域。
+
+中文區域：
+
+- [README.zh-TW.md](README.zh-TW.md)：繁中介紹與使用流程。
+- [docs/system-theory.zh-TW.md](docs/system-theory.zh-TW.md)：方法論細節。
+- [docs/validation-checklist.zh-TW.md](docs/validation-checklist.zh-TW.md)：驗證清單。
+- [prompts/agent-prompt.zh-TW.md](prompts/agent-prompt.zh-TW.md)：繁中 Agent Prompt。
+
+英文區域：
+
+- [README.en.md](README.en.md)：英文介紹與使用流程。
+- [docs/system-theory.en.md](docs/system-theory.en.md)：方法論細節。
+- [docs/validation-checklist.en.md](docs/validation-checklist.en.md)：驗證清單。
+- [prompts/agent-prompt.en.md](prompts/agent-prompt.en.md)：英文 Agent Prompt。
+
+共用範本：
+
+- [starter/workflow-skill-router](starter/workflow-skill-router)：空白 SKILL 範本。
+- [templates](templates)：單檔模板。
 
 ## 路由輸出格式
 
@@ -124,33 +161,12 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 
 ## 設計原則
 
-- Router 不是 super skill。
-- `SKILL.md` 要短。
-- 完整分類樹放在 `references/skill-tree.md`。
-- 衝突規則放在 `references/routing-rules.md`。
+- 不要關掉其他 SKILL，只保留 router。
+- 不要把 router 寫成超大型 SKILL。
 - 每條路由最多選 4 個 SKILL。
-- 需要真實外部資料時，connector/plugin skill 優先。
-- 大型 meta skill 預設不要自動啟用。
-
-完整方法論請看 [docs/system-theory.zh-TW.md](docs/system-theory.zh-TW.md)。
-
-## 範例
-
-後端 API 任務：
-
-```text
-路由：架構/API/後端 > API 合約設計 > C#/.NET
-使用 SKILL：api-designer, csharp-developer, database-schema-designer, qa-test-planner
-原因：api-designer 定義 API 合約；csharp-developer 對應 .NET 實作；database-schema-designer 處理資料模型；qa-test-planner 補驗收案例。
-```
-
-前端 Debug 任務：
-
-```text
-路由：前端/Web/UI > Debug > Browser 驗證
-使用 SKILL：frontend-testing-debugging, browser, systematic-debugging
-原因：frontend-testing-debugging 對應渲染問題；browser 做本機視覺驗證；systematic-debugging 保持根因分析。
-```
+- Router 只負責選擇與說明，實際工作交給被選出的 SKILL。
+- 需要 GitHub、Teams、Notion、Word、Excel、Browser 這類外部資料時，connector/plugin SKILL 優先。
+- 如果某條路由看起來需要 5 個以上 SKILL，應該拆成多個工作階段。
 
 ## 授權
 

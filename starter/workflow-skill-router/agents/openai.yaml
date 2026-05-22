@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Skill Router"
+  short_description: "Routes complex agent tasks to the right skill set."
+  default_prompt: "Use $workflow-skill-router to choose the right skills for this task before starting."

@@ -9,7 +9,7 @@ Choose your language:
 
 ## What This Project Does
 
-Workflow Skill Router is a method for organizing many AI Agent skills into a small, explainable routing layer.
+Workflow Skill Router explains why multi-skill agents need a routing workflow, then provides a blank starter skill and prompts that let an AI agent generate a personalized router from the user's current skills.
 
 Core model:
 
@@ -32,10 +32,11 @@ It helps an AI Agent decide which skills to use before starting work, without tu
 - [系統論](docs/system-theory.zh-TW.md) / [System Theory](docs/system-theory.en.md)
 - [驗證清單](docs/validation-checklist.zh-TW.md) / [Validation Checklist](docs/validation-checklist.en.md)
 
-## Templates and Example
+## Blank Starter And Templates
 
-- [Templates](templates/)
-- [Codex example skill](examples/codex-workflow-skill-router/)
+- [Blank starter skill](starter/workflow-skill-router/)
+- [Single-file templates](templates/)
+- [Codex filled example](examples/codex-workflow-skill-router/)
 
 ## License
 

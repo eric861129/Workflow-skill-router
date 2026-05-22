@@ -1,17 +1,17 @@
 # Agent Prompt 繁體中文
 
 ```text
-你現在要協助我建立一套多 SKILL 應用時的 workflow-skill-router。
+你現在要協助我根據目前環境建立一套多 SKILL 應用時的 workflow-skill-router。
 
 請先閱讀這個專案的方法論文件：
 - README.zh-TW.md
 - docs/system-theory.zh-TW.md
 - docs/validation-checklist.zh-TW.md
-- templates/SKILL.md
-- templates/skill-tree.md
-- templates/routing-rules.md
+- starter/workflow-skill-router/SKILL.md
+- starter/workflow-skill-router/references/skill-tree.md
+- starter/workflow-skill-router/references/routing-rules.md
 
-你的目標不是新增很多新 SKILL，而是把我目前已安裝、已啟用、或目前 Agent 可讀取的 SKILL，整理成一個垂直路由系統。
+你的目標不是新增很多新 SKILL，也不是套用範例清單。你的目標是讀取我目前已安裝、已啟用、或目前 Agent 可讀取的 SKILL，然後把空白 starter 範本填成一個符合我環境的垂直路由系統。
 
 請依照以下步驟進行：
 
@@ -42,7 +42,7 @@
    - broad meta workflow skill vs narrow task skill
    - docs/writing skill vs file-format connector skill
 
-4. 產出 workflow-skill-router 設計
+4. 產出 workflow-skill-router 設計並填入 starter 範本
    請輸出以下內容：
 
    A. Skill Inventory Summary
@@ -60,10 +60,10 @@
    - 何時必須優先使用 connector/plugin
 
    D. Recommended workflow-skill-router Files
-   - 建議的 SKILL.md
-   - 建議的 references/skill-tree.md
-   - 建議的 references/routing-rules.md
-   - 如果目前平台支援 UI metadata，也請建議 agents/openai.yaml 或等價設定
+   - 根據 starter/workflow-skill-router/SKILL.md 產出實際 SKILL.md
+   - 根據盤點結果填入 references/skill-tree.md
+   - 根據衝突與優先序填入 references/routing-rules.md
+   - 如果目前平台支援 UI metadata，也請填入 agents/openai.yaml 或等價設定
 
 5. 驗證
    請用至少 6 個真實任務情境測試分類是否合理：
@@ -79,6 +79,7 @@
 - 不要建議關掉所有其他 SKILL，只保留 router。
 - 不要讓單一路由選超過 4 個 SKILL。
 - 不要因為某個 SKILL 相關就加入；只選本任務真正需要的。
+- 不要把本 repo 的範例 SKILL 清單當成我的實際 SKILL 清單；必須以我目前環境為準。
 - 若需要修改檔案，請先說明會新增或修改哪些檔案，再執行。
 
 最後請用繁體中文回覆，並用清楚的表格與 Markdown 標題整理結果。
