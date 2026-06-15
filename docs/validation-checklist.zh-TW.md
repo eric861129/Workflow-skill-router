@@ -90,7 +90,7 @@ List files in this folder.
 發布 repo、release 或 template package 前，請執行：
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 預期：

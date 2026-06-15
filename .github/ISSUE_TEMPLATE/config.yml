@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or share a route
+    url: https://github.com/eric861129/Workflow-skill-router/discussions
+    about: Use Discussions for questions, usage notes, and route examples.
+  - name: Read the documentation
+    url: https://huangchiyu.com/Workflow-skill-router/
+    about: Start with the quickstart, downloads, validator, and template catalog.

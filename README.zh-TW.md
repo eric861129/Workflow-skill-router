@@ -6,6 +6,10 @@
 
 > 一個實用的 AI Agent skill routing pattern，幫助 Agent 在複雜工作開始前，選出最小但足夠的 SKILL 組合。
 
+**Not another prompt collection. A routing layer for multi-skill AI agents.**
+
+這不是把 prompt 堆在一起的資料夾，而是讓 Agent 在工作前先選對技能組合的 routing layer。
+
 現代 AI coding agent 可能同時擁有數十個 skills、tools、connectors 與 workflows。真正困難的不再是「Agent 能不能做這件事」，而是：
 
 ```text
@@ -79,7 +83,7 @@ OK: workflow-skill-router passed validation
 如果你準備發布自己的 router package 或公開 examples，請再跑完整 repo audit：
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 預期結果：
@@ -164,7 +168,8 @@ Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-enginee
 - `sample-skills/`：可複製參考的 public `SKILL.md` 範例，搭配 template catalog 使用。
 - `downloads/`：產生好的空白與範本 SKILL zip 套件。
 - `recipes/`：API 合約同步、前端除錯、PR/CI、文件、connector-heavy workflow 等短指南。
-- `scripts/validate-router.py`：無外部依賴的 validator，除了檢查 router 結構，也提供 public-readiness audit，確認 community files、downloads、site assets、舊 examples 與 privacy leak。
+- `scripts/validate-router.py`：無外部依賴的 validator，除了檢查 router 結構，也提供 public-readiness audit，確認 community files、downloads、template catalog/manifest parity、site assets、舊 examples 與 privacy leak。
+- `scripts/audit-public-readiness.py`：公開前專用的 release gate，使用與 `validate-router.py --public-readiness` 相同的檢查邏輯。
 - `scripts/package-downloads.py`：無外部依賴的 SKILL zip packaging 工具。
 - `site/`：部署到 GitHub Pages 的 Astro Starlight 站台。
 - `prompts/`：建立或維護個人 router 時可直接複製的 prompts。
@@ -175,6 +180,20 @@ Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-enginee
 | Example | 適用情境 |
 | --- | --- |
 | `examples/template-skill-catalog` | 將可下載 template package 整理成實用且 public-safe 的 route categories |
+
+## 常見問題
+
+### 這和一般 system prompt 差在哪？
+
+System prompt 定義 Agent 的整體行為；Workflow Skill Router 先判斷這個任務該載入哪些 skill instructions。它站在執行前：分類任務、選 1 個 Primary SKILL、最多 3 個 Supporting SKILL，並用一句話說明原因。
+
+### 為什麼限制 1-4 個 skills？
+
+限制讓 context 保持集中。一個 Primary SKILL 負責主軸；Supporting SKILL 只補足領域、驗證或工具。若任務真的需要超過 4 個 skills，應拆成多個階段，各階段分別 routing。
+
+### 可以用在 Claude / Cursor / Gemini 嗎？
+
+可以。這個 pattern 是 agent-agnostic。starter 對 Codex 友善，但核心契約只是文字：skill inventory、routing rules、sample routes 與 validator。只要 Agent 能讀專案規則或自訂 instructions，就能改成自己的版本。
 
 ## 延伸閱讀
 

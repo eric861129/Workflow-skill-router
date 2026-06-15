@@ -85,6 +85,58 @@ Route: DevOps / Dependency / Release > Safe upgrade path
 Use SKILL: `dependency-updater`, `systematic-debugging`, `qa-test-planner`, `finishing-a-development-branch`
 Reason: `dependency-updater` plans the upgrade; `systematic-debugging` handles breakages; `qa-test-planner` maps regression risk; `finishing-a-development-branch` checks release readiness.
 
+## Bad Route vs Better Route
+
+These examples show what the router is trying to prevent: overloading context with every related skill instead of selecting the smallest useful working set.
+
+### Frontend bug
+
+User prompt:
+
+```text
+The customer dashboard is blank after login. Reproduce the issue and fix it.
+```
+
+Bad route:
+
+```text
+Route: Frontend / Everything related > Dashboard problem
+Use SKILL: `frontend-design`, `ui-styling`, `vue-expert`, `playwright`, `qa-test-planner`, `devops-engineer`
+Reason: These skills are all related to web work.
+```
+
+Better route:
+
+```text
+Route: Frontend / Vue / UI > Logged-in browser regression
+Use SKILL: `vue-expert`, `systematic-debugging`, `playwright`
+Reason: `vue-expert` handles component and state behavior; `systematic-debugging` finds whether the blank page comes from data, auth, or rendering; `playwright` captures a repeatable browser check.
+```
+
+### API and frontend type drift
+
+User prompt:
+
+```text
+The API renamed a response field and the frontend now has type errors. Sync the contract and update the client.
+```
+
+Bad route:
+
+```text
+Route: Backend / Frontend / Testing / Docs > Contract change
+Use SKILL: `csharp-developer`, `vue-expert`, `database-schema-designer`, `code-documenter`, `qa-test-planner`
+Reason: This touches many parts of the stack.
+```
+
+Better route:
+
+```text
+Route: API / Contract lifecycle > Schema diff and client generation
+Use SKILL: `openapi-contract-generation-skill`, `openapi-to-typescript`, `api-designer`, `qa-test-planner`
+Reason: `openapi-contract-generation-skill` owns the schema diff; `openapi-to-typescript` updates client types; `api-designer` checks compatibility; `qa-test-planner` defines regression coverage.
+```
+
 ## Requirements / Planning / Task Breakdown
 
 - Requirements / Clarification / Complex feature: Primary: `requirements-clarity`; Supporting: `writing-clearly-and-concisely`, `spec-miner`
@@ -146,6 +198,13 @@ Reason: `dependency-updater` plans the upgrade; `systematic-debugging` handles b
 - Product visuals / Web hero assets / Generated concept: Primary: `imagegen-frontend-web`; Supporting: `frontend-design`, `brand`
 - Mobile visuals / App concept / Generated screen direction: Primary: `imagegen-frontend-mobile`; Supporting: `flutter-expert`, `ui-ux-pro-max`
 - Visual direction / Taste and polish / Product surface: Primary: `design`; Supporting: `soft-skill`, `taste-skill`
+
+## Agent / Skill Management / OpenAI
+
+- Agent routing / Router maintenance / Skill inventory update: Primary: `workflow-skill-router`; Supporting: `skill-creator`, `writing-clearly-and-concisely`
+- Skill authoring / New Codex skill / Instruction package: Primary: `skill-creator`; Supporting: `openai-docs`, `code-documenter`
+- Plugin packaging / Capability bundle / Installable extension: Primary: `plugin-creator`; Supporting: `skill-installer`, `openai-docs`
+- Image generation / General raster asset / Prompted visual: Primary: `imagegen`; Supporting: `imagegen-frontend-web`, `frontend-design`, `brand`
 
 ## Source
 

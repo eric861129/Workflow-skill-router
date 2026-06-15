@@ -34,7 +34,7 @@ Router package validation:
 Use this before publishing a router repo, release, or public template package:
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 Expected:
@@ -48,9 +48,16 @@ The audit checks:
 - README, license, security policy, code of conduct, contributing guide, funding metadata, issue templates, and PR template.
 - starter router and template example validation.
 - blank/template downloads and manifest files.
+- template catalog routes cover every skill listed in the template manifest and do not reference skills outside it.
 - Starlight site entrypoints, robots file, and social preview asset.
 - stale multi-example pages or source folders that conflict with the single template catalog.
 - obvious private identifiers, school or internal names, mojibake, replacement characters, and hidden edit-link UI text.
+
+The legacy validator flag remains available for existing scripts:
+
+```bash
+python scripts/validate-router.py --public-readiness .
+```
 
 ## Self-test
 
@@ -66,6 +73,7 @@ OK: validator self-test passed
 
 ## Source
 
+- [View `scripts/audit-public-readiness.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
 - [View `scripts/validate-router.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
 - [View starter router used by the command](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 - [View example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)

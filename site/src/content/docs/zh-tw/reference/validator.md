@@ -34,7 +34,7 @@ Router package validation：
 準備發布 router repo、release 或公開 template package 前，請執行：
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 預期輸出：
@@ -48,9 +48,16 @@ Audit 會檢查：
 - README、license、security policy、code of conduct、contributing guide、funding metadata、issue templates 與 PR template。
 - starter router 與 template example validation。
 - blank/template downloads 與 manifest files。
+- template catalog routes 是否覆蓋 template manifest 列出的每個 skill，且沒有引用 manifest 以外的 skill。
 - Starlight site entrypoints、robots file 與 social preview asset。
 - 是否還殘留會和單一 Template Skill Catalog 敘事衝突的舊 examples。
 - 明顯 private identifiers、學校或內部名稱、亂碼、replacement characters，以及隱藏的 edit-link UI text。
+
+舊的 validator flag 仍保留給既有流程使用：
+
+```bash
+python scripts/validate-router.py --public-readiness .
+```
 
 ## Self-test
 
@@ -66,6 +73,7 @@ OK: validator self-test passed
 
 ## Source
 
+- [在 GitHub 開啟 `scripts/audit-public-readiness.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
 - [在 GitHub 開啟 `scripts/validate-router.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
 - [查看指令使用的 starter router](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 - [查看 example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)

@@ -1,0 +1,143 @@
+---
+const basePath = import.meta.env.BASE_URL ?? '/Workflow-skill-router/';
+const normalizedBase = basePath.endsWith('/') ? basePath : `${basePath}/`;
+const links = [
+  { href: normalizedBase, label: 'English home' },
+  { href: `${normalizedBase}zh-tw/`, label: '繁中首頁' },
+  { href: `${normalizedBase}guides/quickstart/`, label: 'Quickstart' },
+  { href: `${normalizedBase}guides/downloads/`, label: 'Downloads' },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Page Not Found | Workflow Skill Router</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f8fb;
+        --panel: #ffffff;
+        --text: #111827;
+        --muted: #556070;
+        --line: #dce4ee;
+        --accent: #0e7490;
+        --accent-strong: #164e63;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #08111f;
+          --panel: #101b2d;
+          --text: #eef6ff;
+          --muted: #b8c4d4;
+          --line: #24344c;
+          --accent: #67e8f9;
+          --accent-strong: #a3e635;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 20px;
+        background:
+          radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 32rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        width: min(720px, 100%);
+        padding: clamp(28px, 6vw, 56px);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--panel) 94%, transparent);
+        box-shadow: 0 24px 80px color-mix(in srgb, #000 16%, transparent);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--accent-strong);
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 12ch;
+        font-size: clamp(2.4rem, 8vw, 4.8rem);
+        line-height: 0.98;
+      }
+
+      p {
+        margin: 20px 0 0;
+        max-width: 58ch;
+        color: var(--muted);
+        font-size: 1.02rem;
+        line-height: 1.75;
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+      }
+
+      a {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--text);
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      a:first-child {
+        border-color: transparent;
+        background: var(--text);
+        color: var(--bg);
+      }
+
+      a:hover {
+        border-color: var(--accent);
+        color: var(--accent-strong);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">404 / Page not found</p>
+      <h1>Route Not Found</h1>
+      <p>
+        This page moved or never existed. Workflow Skill Router is still here: start from
+        the docs, download the template, or open the Traditional Chinese guide.
+      </p>
+      <p>
+        這個頁面不存在或已移動。你可以回到首頁、快速開始、下載範本，或開啟繁中站台。
+      </p>
+      <nav class="links" aria-label="Helpful links">
+        {links.map((link) => <a href={link.href}>{link.label}</a>)}
+        <a href="https://github.com/eric861129/Workflow-skill-router">GitHub</a>
+      </nav>
+    </main>
+  </body>
+</html>

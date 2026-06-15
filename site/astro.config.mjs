@@ -32,6 +32,7 @@ export default defineConfig({
       components: {
         PageSidebar: './src/components/DocsPageSidebar.astro',
       },
+      disable404Route: true,
       social: [
         {
           icon: 'github',

@@ -47,6 +47,7 @@ PUBLIC_REQUIRED_FILES = [
     "SECURITY.md",
     "CODE_OF_CONDUCT.md",
     ".github/FUNDING.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/routing-failure.yml",
     ".github/ISSUE_TEMPLATE/example-request.yml",
@@ -55,10 +56,12 @@ PUBLIC_REQUIRED_FILES = [
     "downloads/workflow-skill-router-blank.zip",
     "downloads/workflow-skill-router-template.zip",
     "downloads/workflow-skill-router-template-manifest.md",
+    "scripts/audit-public-readiness.py",
     "site/astro.config.mjs",
     "site/package.json",
     "site/public/robots.txt",
     "site/public/og/workflow-skill-router.png",
+    "site/src/pages/404.astro",
     "site/src/content/docs/index.mdx",
     "site/src/content/docs/zh-tw/index.mdx",
     "site/src/content/docs/reference/validator.md",
@@ -99,6 +102,9 @@ PUBLIC_SKIP_FILE_NAMES = {
     "site-preview.log",
     "validate-router.py",
 }
+
+ROUTE_SKILL_MARKERS = ("Primary:", "Supporting:", "Use SKILL:")
+ROUTE_SKILL_PATTERN = re.compile(r"`([A-Za-z0-9][A-Za-z0-9._:/-]{0,100})`")
 
 
 def read_text(path: Path) -> str:
@@ -282,6 +288,88 @@ def scan_public_text(root: Path, issues: list[str]) -> None:
                 issues.append(f"{display_path(path, root)}: public-readiness scan found '{value}'")
 
 
+def extract_route_skills_from_text(text: str) -> set[str]:
+    skills: set[str] = set()
+    for line in text.splitlines():
+        if not any(marker in line for marker in ROUTE_SKILL_MARKERS):
+            continue
+        skills.update(match.group(1) for match in ROUTE_SKILL_PATTERN.finditer(line))
+    return skills
+
+
+def extract_route_skills_from_file(path: Path) -> set[str]:
+    if not path.is_file():
+        return set()
+    return extract_route_skills_from_text(read_text(path))
+
+
+def parse_template_manifest_skills(manifest_path: Path, issues: list[str]) -> set[str]:
+    if not manifest_path.is_file():
+        issues.append(f"{display_path(manifest_path)}: template manifest is missing")
+        return set()
+
+    skills: set[str] = set()
+    for line_number, line in enumerate(read_text(manifest_path).splitlines(), start=1):
+        match = re.fullmatch(r"- `([^`]+)`", line.strip())
+        if not match:
+            continue
+
+        folder = match.group(1).strip().strip("/")
+        skill_name = folder.split("/")[-1]
+        if not skill_name:
+            issues.append(f"{manifest_path}:{line_number}: manifest skill folder is empty")
+            continue
+        skills.add(skill_name)
+
+    if not skills:
+        issues.append(f"{display_path(manifest_path)}: template manifest does not list any skill folders")
+
+    return skills
+
+
+def validate_template_catalog_manifest_parity(root: Path, issues: list[str]) -> None:
+    manifest_path = root / "downloads" / "workflow-skill-router-template-manifest.md"
+    skill_tree_path = root / "examples" / "template-skill-catalog" / "references" / "skill-tree.md"
+    sample_routes_path = root / "examples" / "template-skill-catalog" / "references" / "sample-routes.md"
+
+    manifest_skills = parse_template_manifest_skills(manifest_path, issues)
+    if not skill_tree_path.is_file():
+        issues.append(f"{display_path(skill_tree_path, root)}: template catalog skill tree is missing")
+        return
+
+    catalog_skills = extract_route_skills_from_file(skill_tree_path)
+    unknown = sorted(catalog_skills - manifest_skills)
+    missing = sorted(manifest_skills - catalog_skills)
+
+    if unknown:
+        issues.append(
+            f"{display_path(skill_tree_path, root)}: catalog routes use skills not listed in the template manifest: {', '.join(unknown)}"
+        )
+    if missing:
+        issues.append(
+            f"{display_path(skill_tree_path, root)}: catalog routes do not cover template manifest skills: {', '.join(missing)}"
+        )
+
+    sample_skills = extract_route_skills_from_file(sample_routes_path)
+    sample_unknown = sorted(sample_skills - manifest_skills)
+    if sample_unknown:
+        issues.append(
+            f"{display_path(sample_routes_path, root)}: sample routes use skills not listed in the template manifest: {', '.join(sample_unknown)}"
+        )
+
+    site_route_paths = [
+        root / "site" / "src" / "content" / "docs" / "examples" / "template-skill-catalog.md",
+        root / "site" / "src" / "content" / "docs" / "zh-tw" / "examples" / "template-skill-catalog.md",
+    ]
+    for path in site_route_paths:
+        site_skills = extract_route_skills_from_file(path)
+        site_unknown = sorted(site_skills - manifest_skills)
+        if site_unknown:
+            issues.append(
+                f"{display_path(path, root)}: site example routes use skills not listed in the template manifest: {', '.join(site_unknown)}"
+            )
+
+
 def validate_required_public_files(root: Path, issues: list[str]) -> None:
     for relative in PUBLIC_REQUIRED_FILES:
         path = root / relative
@@ -352,6 +440,7 @@ def validate_public_readiness(root: Path) -> list[str]:
     validate_readme_public_surface(root, issues)
     validate_single_example_surface(root, issues)
     validate_site_public_surface(root, issues)
+    validate_template_catalog_manifest_parity(root, issues)
 
     for router in [
         root / "starter" / "workflow-skill-router",
@@ -514,6 +603,18 @@ def run_self_test() -> int:
                         "",
                     ]
                 )
+            if relative == "downloads/workflow-skill-router-template-manifest.md":
+                content = "\n".join(
+                    [
+                        "# Workflow Skill Router Template Manifest",
+                        "",
+                        "Included public-safe skill folders:",
+                        "",
+                        "- `api-designer`",
+                        "- `qa-test-planner`",
+                        "",
+                    ]
+                )
             write_file(public_root / relative, content, files, dirs)
 
         starter = public_root / "starter" / "workflow-skill-router"
@@ -561,9 +662,43 @@ def run_self_test() -> int:
             files,
             dirs,
         )
+        write_file(
+            example / "references" / "sample-routes.md",
+            "Use SKILL: `api-designer`, `qa-test-planner`\n",
+            files,
+            dirs,
+        )
         for relative in PUBLIC_REQUIRED_DIRS:
             (public_root / relative).mkdir(parents=True, exist_ok=True)
         assert not validate_public_readiness(public_root), "public-readiness fixture should pass"
+
+        parity_mismatch = root / "parity-mismatch"
+        write_file(
+            parity_mismatch / "downloads" / "workflow-skill-router-template-manifest.md",
+            "\n".join(
+                [
+                    "# Workflow Skill Router Template Manifest",
+                    "",
+                    "Included public-safe skill folders:",
+                    "",
+                    "- `api-designer`",
+                    "- `qa-test-planner`",
+                    "- `missing-from-catalog`",
+                    "",
+                ]
+            ),
+            files,
+            dirs,
+        )
+        write_file(
+            parity_mismatch / "examples" / "template-skill-catalog" / "references" / "skill-tree.md",
+            "- API / Contract: Primary: `api-designer`; Supporting: `qa-test-planner`\n",
+            files,
+            dirs,
+        )
+        parity_issues: list[str] = []
+        validate_template_catalog_manifest_parity(parity_mismatch, parity_issues)
+        assert any("do not cover template manifest skills" in issue for issue in parity_issues), "manifest/catalog parity mismatch should fail"
 
         print("OK: validator self-test passed")
         return 0

@@ -34,6 +34,8 @@ User prompt -> Route -> Use SKILL -> Reason
 
 The case studies cover API contract sync, database migration risk, Vue browser regressions, PR and CI repair, architecture handoff, and dependency upgrade release readiness.
 
+The same file also includes a `Bad Route vs Better Route` section that shows how to avoid over-routing when a task touches several related domains.
+
 ## Source Files
 
 - `SKILL.md`

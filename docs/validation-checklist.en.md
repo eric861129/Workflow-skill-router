@@ -90,7 +90,7 @@ Expected: no extra routing.
 Before publishing a repo, release, or template package, run:
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 Expected:

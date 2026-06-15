@@ -63,3 +63,10 @@ This catalog uses only public-safe skills from the template download package.
 - Product visuals / Web hero assets / Generated concept: Primary: `imagegen-frontend-web`; Supporting: `frontend-design`, `brand`
 - Mobile visuals / App concept / Generated screen direction: Primary: `imagegen-frontend-mobile`; Supporting: `flutter-expert`, `ui-ux-pro-max`
 - Visual direction / Taste and polish / Product surface: Primary: `design`; Supporting: `soft-skill`, `taste-skill`
+
+## Agent / Skill Management / OpenAI
+
+- Agent routing / Router maintenance / Skill inventory update: Primary: `workflow-skill-router`; Supporting: `skill-creator`, `writing-clearly-and-concisely`
+- Skill authoring / New Codex skill / Instruction package: Primary: `skill-creator`; Supporting: `openai-docs`, `code-documenter`
+- Plugin packaging / Capability bundle / Installable extension: Primary: `plugin-creator`; Supporting: `skill-installer`, `openai-docs`
+- Image generation / General raster asset / Prompted visual: Primary: `imagegen`; Supporting: `imagegen-frontend-web`, `frontend-design`, `brand`

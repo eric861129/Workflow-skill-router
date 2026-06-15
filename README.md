@@ -6,6 +6,8 @@
 
 > A practical routing pattern that helps AI agents choose the smallest useful skill set before complex work starts.
 
+**Not another prompt collection. A routing layer for multi-skill AI agents.**
+
 Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. The hard part is no longer "can the agent do this?" The hard part is:
 
 ```text
@@ -79,7 +81,7 @@ OK: workflow-skill-router passed validation
 Before publishing your own router package or public examples, run the full repository audit:
 
 ```bash
-python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
 ```
 
 Expected result:
@@ -164,7 +166,8 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `sample-skills/`: copyable public `SKILL.md` examples that pair with the template catalog.
 - `downloads/`: generated blank and template SKILL zip packages.
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
-- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, site assets, stale examples, and privacy leaks.
+- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, stale examples, and privacy leaks.
+- `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.
@@ -175,6 +178,20 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 | Example | Best for |
 | --- | --- |
 | `examples/template-skill-catalog` | The downloadable template package, organized into practical public-safe route categories |
+
+## FAQ
+
+### Is this different from a system prompt?
+
+Yes. A system prompt defines how an agent should behave. Workflow Skill Router decides which skill instructions should be loaded for a specific task. It sits before execution: classify the task, choose 1 primary skill and up to 3 supporting skills, then explain the route.
+
+### Why limit each route to 1-4 skills?
+
+The limit keeps context focused. One primary skill owns the work; supporting skills add domain knowledge, verification, or tooling. If a task truly needs more than 4 skills, split it into stages and route each stage separately.
+
+### Can this work with Claude, Cursor, Gemini, or other agents?
+
+Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract is plain text: skill inventory, routing rules, sample routes, and validator. Any agent that can read project instructions or custom rules can adapt it.
 
 ## Learn More
 
