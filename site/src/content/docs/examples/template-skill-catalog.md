@@ -9,6 +9,82 @@ This example is the fastest way to understand the template download package. It 
 - [View the template source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [Open the template sample routes](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/sample-routes.md)
 
+## Complete Case Studies
+
+These examples show the full route from user prompt to the skill set an agent should load.
+
+### API contract sync
+
+User prompt:
+
+```text
+Add a customer settings endpoint, update OpenAPI, regenerate the TypeScript client, and define the contract tests.
+```
+
+Route: API / Contract lifecycle > Backend-to-frontend sync
+Use SKILL: `api-designer`, `openapi-contract-generation-skill`, `openapi-to-typescript`, `qa-test-planner`
+Reason: `api-designer` stabilizes endpoint semantics; `openapi-contract-generation-skill` manages schema diff and generation; `openapi-to-typescript` updates frontend types; `qa-test-planner` defines contract coverage.
+
+### Database migration with performance risk
+
+User prompt:
+
+```text
+Add audit tables for account changes and make sure the admin activity query stays fast after the migration.
+```
+
+Route: Database / Schema and performance > Migration plus query review
+Use SKILL: `database-schema-designer`, `sql-pro`, `database-optimizer`, `qa-test-planner`
+Reason: `database-schema-designer` models the audit tables; `sql-pro` keeps queries clear; `database-optimizer` checks runtime cost; `qa-test-planner` covers migration and regression scenarios.
+
+### Browser-only Vue regression
+
+User prompt:
+
+```text
+A Vue form loses selected values after refresh. Reproduce it in the browser and add a regression check.
+```
+
+Route: Frontend / Vue / UI > Browser regression > State persistence
+Use SKILL: `vue-expert`, `systematic-debugging`, `playwright`, `qa-test-planner`
+Reason: `vue-expert` handles component and reactivity behavior; `systematic-debugging` finds the real cause; `playwright` captures a repeatable browser check; `qa-test-planner` defines acceptance coverage.
+
+### PR review and CI repair
+
+User prompt:
+
+```text
+Review an auth-related PR, address review feedback, and fix the failing CI checks before merge.
+```
+
+Route: Review / CI readiness > Security-sensitive change
+Use SKILL: `receiving-code-review`, `systematic-debugging`, `qa-test-planner`, `commit-work`
+Reason: `receiving-code-review` turns feedback into action; `systematic-debugging` isolates CI failures; `qa-test-planner` protects the auth surface; `commit-work` prepares a clean final commit.
+
+### Architecture notes to handoff
+
+User prompt:
+
+```text
+Turn a system design discussion into a C4 diagram, implementation plan, and handoff notes.
+```
+
+Route: Architecture / Documentation > Decision record and handoff
+Use SKILL: `architecture-designer`, `c4-architecture`, `code-documenter`, `session-handoff`
+Reason: `architecture-designer` frames the decision; `c4-architecture` creates readable diagrams; `code-documenter` turns it into developer docs; `session-handoff` captures next-step context.
+
+### Dependency upgrade with release risk
+
+User prompt:
+
+```text
+Upgrade the frontend build dependencies, identify regression risk, and prepare the branch for release.
+```
+
+Route: DevOps / Dependency / Release > Safe upgrade path
+Use SKILL: `dependency-updater`, `systematic-debugging`, `qa-test-planner`, `finishing-a-development-branch`
+Reason: `dependency-updater` plans the upgrade; `systematic-debugging` handles breakages; `qa-test-planner` maps regression risk; `finishing-a-development-branch` checks release readiness.
+
 ## Requirements / Planning / Task Breakdown
 
 - Requirements / Clarification / Complex feature: Primary: `requirements-clarity`; Supporting: `writing-clearly-and-concisely`, `spec-miner`

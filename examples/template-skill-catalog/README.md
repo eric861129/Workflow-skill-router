@@ -24,6 +24,16 @@ Debug a Vue reactivity issue and add a Playwright regression check.
 Turn an architecture discussion into a C4 diagram and implementation handoff.
 ```
 
+## Complete Case Studies
+
+See [`references/sample-routes.md`](references/sample-routes.md) for copyable examples in this format:
+
+```text
+User prompt -> Route -> Use SKILL -> Reason
+```
+
+The case studies cover API contract sync, database migration risk, Vue browser regressions, PR and CI repair, architecture handoff, and dependency upgrade release readiness.
+
 ## Source Files
 
 - `SKILL.md`

@@ -25,6 +25,8 @@ Task nature
 
 It is not a super skill. It is a small front door that tells an agent what to load next.
 
+![Workflow Skill Router before and after demo](docs/assets/demo-routing-before-after.svg)
+
 ## Before And After
 
 Without routing, a frontend bug can trigger every related skill:
