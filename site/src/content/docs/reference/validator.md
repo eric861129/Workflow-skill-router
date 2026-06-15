@@ -17,6 +17,8 @@ OK: workflow-skill-router passed validation
 
 ## What it checks
 
+Router package validation:
+
 - `SKILL.md` exists.
 - YAML frontmatter has only `name` and `description`.
 - `references/skill-tree.md` exists.
@@ -24,7 +26,31 @@ OK: workflow-skill-router passed validation
 - route lines include `Primary:`.
 - each route chooses at most four skills.
 - examples include a `README.md`.
-- public examples do not contain obvious private identifiers.
+- placeholder starter skills are clearly marked.
+- router files do not contain obvious private identifiers.
+
+## Public-readiness audit
+
+Use this before publishing a router repo, release, or public template package:
+
+```bash
+python scripts/validate-router.py --public-readiness .
+```
+
+Expected:
+
+```text
+OK: public-readiness audit passed
+```
+
+The audit checks:
+
+- README, license, security policy, code of conduct, contributing guide, funding metadata, issue templates, and PR template.
+- starter router and template example validation.
+- blank/template downloads and manifest files.
+- Starlight site entrypoints, robots file, and social preview asset.
+- stale multi-example pages or source folders that conflict with the single template catalog.
+- obvious private identifiers, school or internal names, mojibake, replacement characters, and hidden edit-link UI text.
 
 ## Self-test
 

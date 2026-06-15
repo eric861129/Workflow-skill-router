@@ -11,6 +11,7 @@ Use this checklist before publishing or relying on a workflow skill router.
 - [ ] `references/skill-tree.md` exists.
 - [ ] `references/routing-rules.md` exists.
 - [ ] Reference files are one level away from `SKILL.md`.
+- [ ] Starter placeholder skills are marked as placeholder-only or replaced with real template skills.
 
 ## Routing Quality
 
@@ -83,3 +84,19 @@ Expected: no extra routing.
 - Move detailed mappings from `SKILL.md` to `skill-tree.md`.
 - Add a conflict rule for repeated mistakes.
 - Narrow the frontmatter description if the router triggers too often.
+
+## Public-Readiness Gate
+
+Before publishing a repo, release, or template package, run:
+
+```bash
+python scripts/validate-router.py --public-readiness .
+```
+
+Expected:
+
+```text
+OK: public-readiness audit passed
+```
+
+This checks community files, downloads, site entrypoints, stale examples, placeholder policy, obvious private identifiers, mojibake, and hidden edit-link UI text.

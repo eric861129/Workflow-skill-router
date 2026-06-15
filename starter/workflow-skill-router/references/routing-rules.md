@@ -1,5 +1,11 @@
 # Routing Rules
 
+## Placeholder Policy
+
+The route examples in this starter use placeholder skill names. Replace names such as `backend-developer`, `browser`, `test-planning`, and `github-connector` with the exact skill names your agent can actually load.
+
+For a public-safe catalog with concrete skill names, compare this starter with `examples/template-skill-catalog/references/routing-rules.md`.
+
 ## Priority
 
 1. Respect explicit user requests. If the user names a skill or plugin, include it unless unavailable.

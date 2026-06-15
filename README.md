@@ -76,6 +76,18 @@ Expected result:
 OK: workflow-skill-router passed validation
 ```
 
+Before publishing your own router package or public examples, run the full repository audit:
+
+```bash
+python scripts/validate-router.py --public-readiness .
+```
+
+Expected result:
+
+```text
+OK: public-readiness audit passed
+```
+
 ## Download Skill Packages
 
 - [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
@@ -152,7 +164,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `sample-skills/`: copyable public `SKILL.md` examples that pair with the template catalog.
 - `downloads/`: generated blank and template SKILL zip packages.
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
-- `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
+- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, site assets, stale examples, and privacy leaks.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.

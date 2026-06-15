@@ -2,6 +2,12 @@
 
 Use this tree to choose a small skill set.
 
+## Placeholder Policy
+
+**PLACEHOLDER ONLY:** skill names that start with `example-` or use generic names such as `backend-developer`, `browser`, `documentation-writer`, or `release-checklist` are intentionally fake starter placeholders. Replace them with the exact skill names displayed by your own agent.
+
+If you want a public-safe working catalog instead of a blank starter, use the template-aligned example in `examples/template-skill-catalog/references/skill-tree.md`.
+
 Format:
 
 ```text
@@ -16,9 +22,9 @@ Fill this section after inventorying the skills available to your agent.
 
 | Source | Skills | Role | Routing notes |
 | --- | --- | --- | --- |
-| Local custom | `example-backend-skill`, `example-frontend-skill` | Repo and implementation judgment | Prefer for local codebase work. |
-| Connector/plugin | `example-github`, `example-browser` | Live systems and rendered/runtime evidence | Prefer when external state is the source of truth. |
-| Meta workflow | `example-planning`, `example-debugging` | Process control | Use only when the task needs that workflow. |
+| Local custom | `example-backend-skill`, `example-frontend-skill` | Repo and implementation judgment | Placeholder names. Replace with your actual local skills. |
+| Connector/plugin | `example-github`, `example-browser` | Live systems and rendered/runtime evidence | Placeholder names. Replace with your actual connector/plugin skills. |
+| Meta workflow | `example-planning`, `example-debugging` | Process control | Placeholder names. Replace with your actual planning or debugging workflow skills. |
 
 ## Requirements / Planning
 

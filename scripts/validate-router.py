@@ -26,10 +26,92 @@ PRIVATE_PATTERNS = [
 ]
 
 TEXT_EXTENSIONS = {".md", ".yaml", ".yml", ".txt"}
+PUBLIC_TEXT_EXTENSIONS = TEXT_EXTENSIONS | {
+    ".css",
+    ".html",
+    ".js",
+    ".json",
+    ".mdx",
+    ".mjs",
+    ".py",
+    ".svg",
+    ".toml",
+}
+
+PUBLIC_REQUIRED_FILES = [
+    "README.md",
+    "README.en.md",
+    "README.zh-TW.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md",
+    ".github/FUNDING.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/routing-failure.yml",
+    ".github/ISSUE_TEMPLATE/example-request.yml",
+    "docs/assets/demo-routing-before-after.svg",
+    "downloads/README.md",
+    "downloads/workflow-skill-router-blank.zip",
+    "downloads/workflow-skill-router-template.zip",
+    "downloads/workflow-skill-router-template-manifest.md",
+    "site/astro.config.mjs",
+    "site/package.json",
+    "site/public/robots.txt",
+    "site/public/og/workflow-skill-router.png",
+    "site/src/content/docs/index.mdx",
+    "site/src/content/docs/zh-tw/index.mdx",
+    "site/src/content/docs/reference/validator.md",
+    "site/src/content/docs/zh-tw/reference/validator.md",
+]
+
+PUBLIC_REQUIRED_DIRS = [
+    "starter/workflow-skill-router",
+    "examples/template-skill-catalog",
+    "sample-skills",
+    "recipes",
+    "prompts",
+]
+
+PUBLIC_FORBIDDEN_PATTERNS = PRIVATE_PATTERNS[:-1] + [
+    re.compile(r"\bKCISLK\b|\bKcislk\b", re.IGNORECASE),
+    re.compile(r"林口康橋|康橋國際|康橋"),
+    re.compile(r"Edit page|編輯頁面", re.IGNORECASE),
+    re.compile(r"\uFFFD"),
+    re.compile(r"蝜|銝|雿|嚗|摮|頝|餈|瘝|瑼|憭|銴"),
+]
+
+PUBLIC_SKIP_DIR_NAMES = {
+    ".astro",
+    ".git",
+    ".github-cache",
+    ".pagefind",
+    ".vercel",
+    "dist",
+    "node_modules",
+    "pagefind",
+    "playwright-report",
+    "test-results",
+}
+
+PUBLIC_SKIP_FILE_NAMES = {
+    "site-preview.err.log",
+    "site-preview.log",
+    "validate-router.py",
+}
 
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def display_path(path: Path, base: Path | None = None) -> str:
+    if base is None:
+        return str(path)
+    try:
+        return str(path.relative_to(base))
+    except ValueError:
+        return str(path)
 
 
 def parse_frontmatter(skill_path: Path, issues: list[str]) -> dict[str, str]:
@@ -117,6 +199,33 @@ def validate_routes(skill_tree: Path, issues: list[str]) -> None:
             issues.append(f"{skill_tree}:{line_number}: route selects {len(all_skills)} skills; maximum is 4")
 
 
+def validate_placeholder_policy(router_dir: Path, issues: list[str]) -> None:
+    skill_tree = router_dir / "references" / "skill-tree.md"
+    routing_rules = router_dir / "references" / "routing-rules.md"
+    if not skill_tree.is_file():
+        return
+
+    tree_text = read_text(skill_tree)
+    rules_text = read_text(routing_rules) if routing_rules.is_file() else ""
+    combined = f"{tree_text}\n{rules_text}"
+    placeholder_tokens = [
+        "example-",
+        "backend-developer",
+        "frontend-builder",
+        "documentation-writer",
+        "github-connector",
+        "release-checklist",
+    ]
+    has_placeholders = any(token in combined for token in placeholder_tokens)
+    if not has_placeholders:
+        return
+
+    if "PLACEHOLDER ONLY" not in combined:
+        issues.append(f"{router_dir}: placeholder skill names must be clearly marked with 'PLACEHOLDER ONLY'")
+    if "examples/template-skill-catalog" not in combined:
+        issues.append(f"{router_dir}: placeholder starter must link to examples/template-skill-catalog as the concrete template reference")
+
+
 def validate_example_readme(router_dir: Path, issues: list[str]) -> None:
     parts = {part.lower() for part in router_dir.parts}
     if "examples" in parts and not (router_dir / "README.md").is_file():
@@ -134,6 +243,127 @@ def scan_privacy(router_dir: Path, issues: list[str]) -> None:
                 issues.append(f"{path}: possible private identifier '{match.group(0)}'")
 
 
+def should_skip_public_path(path: Path, root: Path) -> bool:
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return True
+
+    if path.name in PUBLIC_SKIP_FILE_NAMES:
+        return True
+
+    for part in relative.parts:
+        lowered = part.lower()
+        if lowered in PUBLIC_SKIP_DIR_NAMES:
+            return True
+        if lowered.startswith(".chrome"):
+            return True
+    return False
+
+
+def iter_public_text_files(root: Path):
+    for path in root.rglob("*"):
+        if should_skip_public_path(path, root):
+            continue
+        if not path.is_file() or path.suffix.lower() not in PUBLIC_TEXT_EXTENSIONS:
+            continue
+        yield path
+
+
+def scan_public_text(root: Path, issues: list[str]) -> None:
+    for path in iter_public_text_files(root):
+        text = read_text(path)
+        for pattern in PUBLIC_FORBIDDEN_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                value = match.group(0)
+                if value in {"C:\\Users\\<you>\\", "C:\\Users\\<username>\\"}:
+                    continue
+                issues.append(f"{display_path(path, root)}: public-readiness scan found '{value}'")
+
+
+def validate_required_public_files(root: Path, issues: list[str]) -> None:
+    for relative in PUBLIC_REQUIRED_FILES:
+        path = root / relative
+        if not path.is_file():
+            issues.append(f"{relative}: required public-readiness file is missing")
+        elif path.suffix == ".zip" and path.stat().st_size == 0:
+            issues.append(f"{relative}: download archive is empty")
+
+    for relative in PUBLIC_REQUIRED_DIRS:
+        path = root / relative
+        if not path.is_dir():
+            issues.append(f"{relative}: required public-readiness directory is missing")
+
+
+def validate_readme_public_surface(root: Path, issues: list[str]) -> None:
+    readme = root / "README.md"
+    if not readme.is_file():
+        return
+
+    text = read_text(readme)
+    required_snippets = [
+        "docs/assets/demo-routing-before-after.svg",
+        "downloads/workflow-skill-router-blank.zip",
+        "downloads/workflow-skill-router-template.zip",
+        "examples/template-skill-catalog",
+        "scripts/validate-router.py",
+    ]
+    for snippet in required_snippets:
+        if snippet not in text:
+            issues.append(f"README.md: missing public surface link '{snippet}'")
+
+
+def validate_single_example_surface(root: Path, issues: list[str]) -> None:
+    examples = root / "examples"
+    if not examples.is_dir():
+        return
+
+    for child in examples.iterdir():
+        if not child.is_dir() or child.name == "template-skill-catalog":
+            continue
+        has_files = any(item.is_file() for item in child.rglob("*"))
+        if has_files:
+            issues.append(f"examples/{child.name}: public repo should expose the single template-skill-catalog example")
+
+
+def validate_site_public_surface(root: Path, issues: list[str]) -> None:
+    site_root = root / "site" / "src" / "content" / "docs"
+    old_example_slugs = [
+        "common-engineering",
+        "company-platform",
+        "frontend-debugging",
+    ]
+    for slug in old_example_slugs:
+        if (site_root / "examples" / f"{slug}.md").exists():
+            issues.append(f"site examples: stale example page '{slug}' should not be published")
+        if (site_root / "zh-tw" / "examples" / f"{slug}.md").exists():
+            issues.append(f"site zh-tw examples: stale example page '{slug}' should not be published")
+
+
+def validate_public_readiness(root: Path) -> list[str]:
+    issues: list[str] = []
+    if not root.exists():
+        return [f"{root}: path does not exist"]
+    if not root.is_dir():
+        return [f"{root}: path must be a repository directory"]
+
+    validate_required_public_files(root, issues)
+    validate_readme_public_surface(root, issues)
+    validate_single_example_surface(root, issues)
+    validate_site_public_surface(root, issues)
+
+    for router in [
+        root / "starter" / "workflow-skill-router",
+        root / "examples" / "template-skill-catalog",
+    ]:
+        for issue in validate_router(router):
+            issues.append(issue)
+
+    scan_public_text(root, issues)
+    return issues
+
+
 def validate_router(router_dir: Path) -> list[str]:
     issues: list[str] = []
     if not router_dir.exists():
@@ -149,6 +379,7 @@ def validate_router(router_dir: Path) -> list[str]:
 
     skill_tree, _routing_rules = validate_references(router_dir, issues)
     validate_routes(skill_tree, issues)
+    validate_placeholder_policy(router_dir, issues)
     validate_example_readme(router_dir, issues)
     scan_privacy(router_dir, issues)
     return issues
@@ -183,7 +414,7 @@ def run_self_test() -> int:
         )
         write_file(
             valid / "references" / "skill-tree.md",
-            "- Backend / API / Contract: Primary: `api-designer`; Supporting: `backend-developer`, `test-planning`\n",
+            "- Backend / API / Contract: Primary: `api-designer`; Supporting: `qa-test-planner`\n",
             files,
             dirs,
         )
@@ -253,6 +484,87 @@ def run_self_test() -> int:
         write_file(private / "references" / "routing-rules.md", "# Routing Rules\n", files, dirs)
         assert any("private identifier" in issue for issue in validate_router(private)), "private path should fail"
 
+        placeholder = root / "placeholder"
+        write_file(
+            placeholder / "SKILL.md",
+            "---\nname: placeholder-router\ndescription: Invalid router.\n---\n",
+            files,
+            dirs,
+        )
+        write_file(
+            placeholder / "references" / "skill-tree.md",
+            "- Backend / API / Code: Primary: `backend-developer`; Supporting: `test-planning`\n",
+            files,
+            dirs,
+        )
+        write_file(placeholder / "references" / "routing-rules.md", "# Routing Rules\n", files, dirs)
+        assert any("PLACEHOLDER ONLY" in issue for issue in validate_router(placeholder)), "unmarked placeholders should fail"
+
+        public_root = root / "public-root"
+        for relative in PUBLIC_REQUIRED_FILES:
+            content = "placeholder\n"
+            if relative == "README.md":
+                content = "\n".join(
+                    [
+                        "docs/assets/demo-routing-before-after.svg",
+                        "downloads/workflow-skill-router-blank.zip",
+                        "downloads/workflow-skill-router-template.zip",
+                        "examples/template-skill-catalog",
+                        "scripts/validate-router.py",
+                        "",
+                    ]
+                )
+            write_file(public_root / relative, content, files, dirs)
+
+        starter = public_root / "starter" / "workflow-skill-router"
+        write_file(
+            starter / "SKILL.md",
+            "---\nname: workflow-skill-router\ndescription: Valid starter.\n---\n",
+            files,
+            dirs,
+        )
+        write_file(
+            starter / "references" / "skill-tree.md",
+            "PLACEHOLDER ONLY\nexamples/template-skill-catalog\n- Backend / API / Code: Primary: `backend-developer`; Supporting: `test-planning`\n",
+            files,
+            dirs,
+        )
+        write_file(
+            starter / "references" / "routing-rules.md",
+            "PLACEHOLDER ONLY\nexamples/template-skill-catalog\n",
+            files,
+            dirs,
+        )
+
+        example = public_root / "examples" / "template-skill-catalog"
+        write_file(
+            example / "SKILL.md",
+            "---\nname: template-skill-catalog-router\ndescription: Valid example.\n---\n",
+            files,
+            dirs,
+        )
+        write_file(
+            example / "README.md",
+            "# Template Skill Catalog\n",
+            files,
+            dirs,
+        )
+        write_file(
+            example / "references" / "skill-tree.md",
+            "- Backend / API / Contract: Primary: `api-designer`; Supporting: `qa-test-planner`\n",
+            files,
+            dirs,
+        )
+        write_file(
+            example / "references" / "routing-rules.md",
+            "# Routing Rules\n",
+            files,
+            dirs,
+        )
+        for relative in PUBLIC_REQUIRED_DIRS:
+            (public_root / relative).mkdir(parents=True, exist_ok=True)
+        assert not validate_public_readiness(public_root), "public-readiness fixture should pass"
+
         print("OK: validator self-test passed")
         return 0
     finally:
@@ -269,24 +581,36 @@ def run_self_test() -> int:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Validate a workflow-skill-router package.")
-    parser.add_argument("router_dir", nargs="?", help="Path to a router directory")
+    parser.add_argument("path", nargs="?", help="Path to a router directory, or repository root with --public-readiness")
+    parser.add_argument("--public-readiness", action="store_true", help="Audit the public repository surface before publishing")
     parser.add_argument("--self-test", action="store_true", help="Run validator self-tests")
     args = parser.parse_args(argv)
 
     if args.self_test:
         return run_self_test()
 
-    if not args.router_dir:
-        parser.error("router_dir is required unless --self-test is used")
+    target = Path(args.path or ".")
 
-    router_dir = Path(args.router_dir)
-    issues = validate_router(router_dir)
+    if args.public_readiness:
+        issues = validate_public_readiness(target)
+        if issues:
+            for issue in issues:
+                print(issue)
+            return 1
+
+        print("OK: public-readiness audit passed")
+        return 0
+
+    if not args.path:
+        parser.error("path is required unless --self-test or --public-readiness is used")
+
+    issues = validate_router(target)
     if issues:
         for issue in issues:
             print(issue)
         return 1
 
-    print(f"OK: {router_dir.name} passed validation")
+    print(f"OK: {target.name} passed validation")
     return 0
 
 
