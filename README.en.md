@@ -175,7 +175,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `sample-skills/`: copyable public `SKILL.md` examples that pair with the template catalog.
 - `downloads/`: generated blank and template SKILL zip packages.
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
-- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, stale examples, and privacy leaks.
+- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, and stale examples.
 - `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.

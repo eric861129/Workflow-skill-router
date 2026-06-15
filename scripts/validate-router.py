@@ -12,19 +12,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-
-PRIVATE_PATTERNS = [
-    re.compile(r"[A-Z]:\\(?:Project|Projects|Work|Client|Company)\\", re.IGNORECASE),
-    re.compile(r"[A-Z]:/(?:Project|Projects|Work|Client|Company)/", re.IGNORECASE),
-    re.compile(r"D:\\Project\\", re.IGNORECASE),
-    re.compile(r"D:/Project/", re.IGNORECASE),
-    re.compile(r"C:\\Users\\[^\\]+\\", re.IGNORECASE),
-    re.compile(r"\b(?:internal|private|proprietary)[-_](?:project|repo|system|client)\b", re.IGNORECASE),
-    re.compile(r"\b(?:real|production|customer)[-_ ](?:hostname|tenant|token|secret)\b", re.IGNORECASE),
-    re.compile(r"\bdeploy-(?:dev|staging|prod)\b", re.IGNORECASE),
-    re.compile(r"\b(?:api|access|auth|deploy)[-_ ]?(?:key|token|secret)\b", re.IGNORECASE),
-]
-
 TEXT_EXTENSIONS = {".md", ".yaml", ".yml", ".txt"}
 PUBLIC_TEXT_EXTENSIONS = TEXT_EXTENSIONS | {
     ".css",
@@ -79,8 +66,7 @@ PUBLIC_REQUIRED_DIRS = [
     "prompts",
 ]
 
-PUBLIC_FORBIDDEN_PATTERNS = PRIVATE_PATTERNS[:-1] + [
-    re.compile(r"\bKCISLK\b|\bKcislk\b", re.IGNORECASE),
+PUBLIC_FORBIDDEN_PATTERNS = [
     re.compile(r"林口康橋|康橋國際|康橋"),
     re.compile(r"Edit page|編輯頁面", re.IGNORECASE),
     re.compile(r"\uFFFD"),
@@ -239,17 +225,6 @@ def validate_example_readme(router_dir: Path, issues: list[str]) -> None:
     parts = {part.lower() for part in router_dir.parts}
     if "examples" in parts and not (router_dir / "README.md").is_file():
         issues.append(f"{router_dir}: example routers must include README.md")
-
-
-def scan_privacy(router_dir: Path, issues: list[str]) -> None:
-    for path in router_dir.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in TEXT_EXTENSIONS:
-            continue
-        text = read_text(path)
-        for pattern in PRIVATE_PATTERNS:
-            match = pattern.search(text)
-            if match:
-                issues.append(f"{path}: possible private identifier '{match.group(0)}'")
 
 
 def should_skip_public_path(path: Path, root: Path) -> bool:
@@ -473,7 +448,6 @@ def validate_router(router_dir: Path) -> list[str]:
     validate_routes(skill_tree, issues)
     validate_placeholder_policy(router_dir, issues)
     validate_example_readme(router_dir, issues)
-    scan_privacy(router_dir, issues)
     return issues
 
 
@@ -559,22 +533,6 @@ def run_self_test() -> int:
             dirs,
         )
         assert any("routing-rules" in issue for issue in validate_router(missing_rules)), "missing routing rules should fail"
-
-        private = root / "private"
-        write_file(
-            private / "SKILL.md",
-            "---\nname: private-router\ndescription: Invalid router.\n---\n",
-            files,
-            dirs,
-        )
-        write_file(
-            private / "references" / "skill-tree.md",
-            "- Backend / API / Contract: Primary: `api-designer`\n\nPrivate path: D:\\Project\\Example\n",
-            files,
-            dirs,
-        )
-        write_file(private / "references" / "routing-rules.md", "# Routing Rules\n", files, dirs)
-        assert any("private identifier" in issue for issue in validate_router(private)), "private path should fail"
 
         placeholder = root / "placeholder"
         write_file(

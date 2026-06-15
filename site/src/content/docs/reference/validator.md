@@ -27,7 +27,6 @@ Router package validation:
 - each route chooses at most four skills.
 - examples include a `README.md`.
 - placeholder starter skills are clearly marked.
-- router files do not contain obvious private identifiers.
 
 ## Public-readiness audit
 
@@ -51,7 +50,7 @@ The audit checks:
 - template catalog routes cover every skill listed in the template manifest and do not reference skills outside it.
 - Starlight site entrypoints, robots file, and social preview asset.
 - stale multi-example pages or source folders that conflict with the single template catalog.
-- obvious private identifiers, school or internal names, mojibake, replacement characters, and hidden edit-link UI text.
+- mojibake, replacement characters, and hidden edit-link UI text.
 
 The legacy validator flag remains available for existing scripts:
 

@@ -99,7 +99,7 @@ Expected:
 OK: public-readiness audit passed
 ```
 
-This checks community files, downloads, site entrypoints, stale examples, placeholder policy, obvious private identifiers, mojibake, and hidden edit-link UI text.
+This checks community files, downloads, site entrypoints, stale examples, placeholder policy, mojibake, and hidden edit-link UI text.
 
 ## Lighthouse / Accessibility Gate
 

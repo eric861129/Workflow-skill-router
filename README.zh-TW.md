@@ -177,7 +177,7 @@ Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-enginee
 - `sample-skills/`：可複製參考的 public `SKILL.md` 範例，搭配 template catalog 使用。
 - `downloads/`：產生好的空白與範本 SKILL zip 套件。
 - `recipes/`：API 合約同步、前端除錯、PR/CI、文件、connector-heavy workflow 等短指南。
-- `scripts/validate-router.py`：無外部依賴的 validator，除了檢查 router 結構，也提供 public-readiness audit，確認 community files、downloads、template catalog/manifest parity、site assets、舊 examples 與 privacy leak。
+- `scripts/validate-router.py`：無外部依賴的 validator，除了檢查 router 結構，也提供 public-readiness audit，確認 community files、downloads、template catalog/manifest parity、site assets 與舊 examples。
 - `scripts/audit-public-readiness.py`：公開前專用的 release gate，使用與 `validate-router.py --public-readiness` 相同的檢查邏輯。
 - `scripts/package-downloads.py`：無外部依賴的 SKILL zip packaging 工具。
 - `site/`：部署到 GitHub Pages 的 Astro Starlight 站台。

@@ -99,7 +99,7 @@ python scripts/audit-public-readiness.py .
 OK: public-readiness audit passed
 ```
 
-這會檢查 community files、downloads、site entrypoints、舊 examples、placeholder policy、明顯 private identifiers、亂碼與隱藏的 edit-link UI text。
+這會檢查 community files、downloads、site entrypoints、舊 examples、placeholder policy、亂碼與隱藏的 edit-link UI text。
 
 ## Lighthouse / Accessibility Gate
 

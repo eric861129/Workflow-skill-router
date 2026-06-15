@@ -27,7 +27,6 @@ Router package validation：
 - 每條 route 最多選擇四個 skills。
 - examples 包含 `README.md`。
 - starter placeholder skills 有清楚標註。
-- router files 不包含明顯 private identifiers。
 
 ## Public-readiness audit
 
@@ -51,7 +50,7 @@ Audit 會檢查：
 - template catalog routes 是否覆蓋 template manifest 列出的每個 skill，且沒有引用 manifest 以外的 skill。
 - Starlight site entrypoints、robots file 與 social preview asset。
 - 是否還殘留會和單一 Template Skill Catalog 敘事衝突的舊 examples。
-- 明顯 private identifiers、學校或內部名稱、亂碼、replacement characters，以及隱藏的 edit-link UI text。
+- 亂碼、replacement characters，以及隱藏的 edit-link UI text。
 
 舊的 validator flag 仍保留給既有流程使用：
 
