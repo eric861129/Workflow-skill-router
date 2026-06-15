@@ -15,6 +15,10 @@ Use it when you want examples for:
 - `Debug a browser-only bug in an internal admin dashboard and add a regression check.`
 - `Prepare a PR for a security-sensitive auth/RBAC change and verify CI.`
 
+## Sample route catalog
+
+See [`references/sample-routes.md`](references/sample-routes.md) for 18 copyable routes covering requirements, planning, architecture, API, database, frontend, design systems, debugging, docs, GitHub, CI, security, DevOps, and dependencies.
+
 ## Related sample skills
 
 See `sample-skills/` at the repository root for copyable example `SKILL.md` files that match several routes in this package.

@@ -1,21 +1,8 @@
----
-title: 公司平台範例
-description: 匿名化的企業平台 routing 範例，用來展示真實工作流的複雜度。
----
+# Company Platform Sample Routes
 
-這個範例以公司平台為背景，包含 backend services、customer portal、internal admin、文件、CI/CD、RBAC 與 incident workflow。
+Use these examples as a public-safe company platform catalog. Skill names are anonymized placeholders so teams can map them to their own private or public skills.
 
-## 適合情境
-
-- SaaS platforms
-- internal operations systems
-- customer portals
-- revenue platforms
-- 有 live data 與 deployment gates 的團隊
-
-## Sample route catalog
-
-以下 route 使用匿名化 placeholder skill 名稱，讓團隊可以把 pattern 對應到自己的 platform-specific skills。
+## Route Catalog
 
 ```text
 Route: Platform / Intake > Task boundary and risk > Cross-app change
@@ -106,14 +93,3 @@ Route: Documentation and analytics > Platform docs, KPI dashboard, workspace fil
 Use SKILL: docs-workflow, analytics-reporting, workspace-connector, diagramming
 Reason: docs-workflow keeps durable docs; analytics-reporting explains metrics; workspace-connector handles shared files; diagramming clarifies workflow and data flow.
 ```
-
-## 為什麼重要
-
-這個範例會把 platform-specific judgment 留在任務附近，同時只在 generic engineering skills 能提供不同職責時才加入。
-
-## Source
-
-- [在 GitHub 開啟 `examples/company-platform-sanitized/`](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/company-platform-sanitized)
-- [查看 `references/sample-routes.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/sample-routes.md)
-- [查看 `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/skill-tree.md)
-- [查看 `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/routing-rules.md)

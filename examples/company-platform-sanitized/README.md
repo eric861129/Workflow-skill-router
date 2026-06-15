@@ -12,3 +12,7 @@ Use this if your company has multiple internal apps, customer portals, backend s
 - "Debug an RBAC mismatch between staging data and the admin UI."
 - "Prepare a release of the internal operations dashboard."
 
+## Sample route catalog
+
+See [`references/sample-routes.md`](references/sample-routes.md) for 15 copyable routes covering platform intake, architecture, backend contracts, customer portals, internal admin tools, frontend monorepos, legacy migration, staging data, sensitive changes, incidents, release readiness, deployment promotion, documentation, analytics, and workspace files.
+

@@ -1,18 +1,8 @@
----
-title: Frontend Debugging Example
-description: Choose between browser inspection, Chrome sessions, Playwright, framework expertise, and API debugging.
----
+# Frontend Debugging Sample Routes
 
-Frontend bugs often start as a visible UI problem and then cross browser state, framework state, API data, build output, permissions, and regression coverage.
+Use these examples to choose between browser inspection, Chrome session work, Playwright automation, framework expertise, UI debugging, and API boundary investigation.
 
-## Decision rules
-
-- Use an interactive browser for visual reproduction.
-- Use a real Chrome session only when cookies, login state, extensions, or current tabs matter.
-- Use Playwright after the issue is understood and needs repeatable regression coverage.
-- Use API debugging when data is missing, stale, unauthorized, or malformed.
-
-## Sample routes
+## Route Catalog
 
 ```text
 Route: Frontend / Reproduce > Local rendered app > Runtime behavior
@@ -85,10 +75,3 @@ Route: Frontend / Handoff > Regression after fix > Reviewer-ready evidence
 Use SKILL: test-planning, playwright, frontend-debugging
 Reason: test-planning defines the acceptance case; playwright records repeatable proof; frontend-debugging explains the before-and-after behavior.
 ```
-
-## Source
-
-- [View `examples/frontend-debugging/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/frontend-debugging)
-- [Open `references/sample-routes.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/sample-routes.md)
-- [Open `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/skill-tree.md)
-- [Open `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/routing-rules.md)

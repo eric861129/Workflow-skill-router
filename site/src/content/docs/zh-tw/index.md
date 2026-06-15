@@ -49,7 +49,7 @@ AI coding agent 可以同時擁有很多 skills、connectors 和 workflow。真�
 </div>
 
 ```text
-Route: Frontend / Debugging > Browser reproduction > Customer portal
+Route: Frontend / Debugging > Browser reproduction > Single-page app
 Use SKILL: frontend-debugging, browser, systematic-debugging
 Reason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.
 ```

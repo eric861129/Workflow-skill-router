@@ -1,20 +1,8 @@
----
-title: Common Engineering Routes
-description: A larger routing example built from common real-world software engineering workflows.
----
+# Common Engineering Sample Routes
 
-This example shows how a mature multi-skill agent can route common engineering work without loading every related skill at once.
+Use these examples as a public-safe catalog for real engineering routing patterns. Each route keeps one Primary skill and up to three Supporting skills.
 
-## Best for
-
-- backend, API, OpenAPI, and database work
-- frontend, Vue, browser, Playwright, and design-system work
-- docs, review, CI, DevOps, security, analytics, and connectors
-- readers who want concrete skill names instead of abstract placeholders
-
-## Sample route catalog
-
-These routes use public-safe skill names and cover the same broad categories that appear in real day-to-day engineering work.
+## Route Catalog
 
 ```text
 Route: Requirements / Clarify > Complex feature > Cross-team scope
@@ -123,14 +111,3 @@ Route: DevOps / Local development > Docker Compose and dependency updates > Repe
 Use SKILL: docker-compose-local-dev-skill, devops-engineer, dependency-updater, systematic-debugging
 Reason: docker-compose-local-dev-skill owns local services; devops-engineer checks infrastructure tradeoffs; dependency-updater handles package risk; systematic-debugging helps failures.
 ```
-
-## Source
-
-- [View `examples/common-engineering-routing/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
-- [Open `references/sample-routes.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/sample-routes.md)
-- [Open `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/skill-tree.md)
-- [Open `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/routing-rules.md)
-
-For copyable skill implementations, see:
-
-- [View `sample-skills/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
