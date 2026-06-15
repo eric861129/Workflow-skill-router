@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 const siteUrl = 'https://huangchiyu.com';
 const basePath = '/Workflow-skill-router';
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
-const ogImage = `${siteUrl}${basePath}/og/workflow-skill-router.svg`;
+const ogImage = `${siteUrl}${basePath}/og/workflow-skill-router.png`;
 
 export default defineConfig({
   site: siteUrl,
@@ -128,7 +128,7 @@ export default defineConfig({
         {
           label: 'Reference',
           translations: {
-            'zh-TW': '參考資料',
+            'zh-TW': '參考',
           },
           items: [
             { slug: 'reference/routing-contract' },
