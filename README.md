@@ -90,6 +90,15 @@ Expected result:
 OK: public-readiness audit passed
 ```
 
+Run the site quality gate before a public launch:
+
+```bash
+cd site
+npm run audit:lighthouse
+```
+
+This builds the Starlight site, runs Lighthouse against key English and Traditional Chinese pages, and writes local reports to `site/lighthouse-reports/`.
+
 ## Download Skill Packages
 
 - [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
@@ -170,6 +179,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.
+- `site/scripts/lighthouse-audit.mjs`: formal Lighthouse and accessibility score gate for the public website.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.
 - `docs/`: conceptual docs, customization guidance, and validation checklists.
 

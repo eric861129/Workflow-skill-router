@@ -2,6 +2,7 @@
 site/node_modules/
 site/dist/
 site/.astro/
+site/lighthouse-reports/
 
 # Local UI verification artifacts
 .chrome-*/

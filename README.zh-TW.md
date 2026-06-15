@@ -92,6 +92,15 @@ python scripts/audit-public-readiness.py .
 OK: public-readiness audit passed
 ```
 
+公開站台前，請跑正式 Lighthouse / accessibility 品質 gate：
+
+```bash
+cd site
+npm run audit:lighthouse
+```
+
+這會 build Starlight 站台，對英文與繁中主要頁面跑 Lighthouse，並把本機報告輸出到 `site/lighthouse-reports/`。
+
 ## 下載 SKILL 套件
 
 - [空白 SKILL 套件](downloads/workflow-skill-router-blank.zip)：可直接安裝的 `workflow-skill-router/` starter，適合想建立自己 skill tree 的使用者。
@@ -172,6 +181,7 @@ Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-enginee
 - `scripts/audit-public-readiness.py`：公開前專用的 release gate，使用與 `validate-router.py --public-readiness` 相同的檢查邏輯。
 - `scripts/package-downloads.py`：無外部依賴的 SKILL zip packaging 工具。
 - `site/`：部署到 GitHub Pages 的 Astro Starlight 站台。
+- `site/scripts/lighthouse-audit.mjs`：公開站台的 Lighthouse 與 accessibility 正式分數 gate。
 - `prompts/`：建立或維護個人 router 時可直接複製的 prompts。
 - `docs/`：概念文件、自訂指南與驗證 checklist。
 

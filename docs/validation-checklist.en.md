@@ -100,3 +100,20 @@ OK: public-readiness audit passed
 ```
 
 This checks community files, downloads, site entrypoints, stale examples, placeholder policy, obvious private identifiers, mojibake, and hidden edit-link UI text.
+
+## Lighthouse / Accessibility Gate
+
+Before a public launch, run the formal website quality audit:
+
+```bash
+cd site
+npm run audit:lighthouse
+```
+
+Expected:
+
+```text
+OK: Lighthouse audit passed. Reports written to lighthouse-reports
+```
+
+Default thresholds are performance 70, accessibility 95, best-practices 90, and SEO 90. Local JSON and HTML reports are written to `site/lighthouse-reports/` and are intentionally ignored by git.

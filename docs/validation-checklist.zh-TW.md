@@ -100,3 +100,20 @@ OK: public-readiness audit passed
 ```
 
 這會檢查 community files、downloads、site entrypoints、舊 examples、placeholder policy、明顯 private identifiers、亂碼與隱藏的 edit-link UI text。
+
+## Lighthouse / Accessibility Gate
+
+公開發布前，請執行正式站台品質 audit：
+
+```bash
+cd site
+npm run audit:lighthouse
+```
+
+預期：
+
+```text
+OK: Lighthouse audit passed. Reports written to lighthouse-reports
+```
+
+預設門檻為 performance 70、accessibility 95、best-practices 90、SEO 90。本機 JSON 與 HTML 報告會輸出到 `site/lighthouse-reports/`，並刻意由 git ignore。

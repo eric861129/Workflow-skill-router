@@ -61,6 +61,7 @@ PUBLIC_REQUIRED_FILES = [
     "scripts/audit-public-readiness.py",
     "site/astro.config.mjs",
     "site/package.json",
+    "site/scripts/lighthouse-audit.mjs",
     "site/public/robots.txt",
     "site/public/og/workflow-skill-router.png",
     "site/src/pages/404.astro",

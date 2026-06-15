@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "audit:lighthouse": "npm run build && node scripts/lighthouse-audit.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.40.0",
@@ -15,5 +16,9 @@
   },
   "overrides": {
     "esbuild": "^0.28.1"
+  },
+  "devDependencies": {
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^13.4.0"
   }
 }

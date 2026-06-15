@@ -59,6 +59,23 @@ The legacy validator flag remains available for existing scripts:
 python scripts/validate-router.py --public-readiness .
 ```
 
+## Lighthouse / Accessibility audit
+
+Use this before a public launch to score the generated Starlight site:
+
+```bash
+cd site
+npm run audit:lighthouse
+```
+
+Expected:
+
+```text
+OK: Lighthouse audit passed. Reports written to lighthouse-reports
+```
+
+The audit builds the site, serves `site/dist` locally, runs Lighthouse on key English and Traditional Chinese pages, and writes JSON/HTML reports to `site/lighthouse-reports/`.
+
 ## Self-test
 
 ```bash
@@ -75,6 +92,7 @@ OK: validator self-test passed
 
 - [View `scripts/audit-public-readiness.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
 - [View `scripts/validate-router.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
+- [View `site/scripts/lighthouse-audit.mjs` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/site/scripts/lighthouse-audit.mjs)
 - [View starter router used by the command](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 - [View example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)
 
