@@ -15,3 +15,5 @@ The template package includes `skills/`, with a sanitized `workflow-skill-router
 ```bash
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
+
+The script refuses to build a template from an implicit local skills directory. It also requires at least one private filter unless `--allow-no-private-filters` is passed after auditing the source directory.

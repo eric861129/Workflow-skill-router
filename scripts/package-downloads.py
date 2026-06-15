@@ -30,8 +30,6 @@ BLANK_ZIP = DOWNLOADS_DIR / "workflow-skill-router-blank.zip"
 TEMPLATE_ZIP = DOWNLOADS_DIR / "workflow-skill-router-template.zip"
 TEMPLATE_MANIFEST = DOWNLOADS_DIR / "workflow-skill-router-template-manifest.md"
 
-DEFAULT_SKILLS_ROOT = Path.home() / ".codex" / "skills"
-
 DEFAULT_PRIVATE_MARKERS: list[str] = []
 
 SKIP_DIRS = {
@@ -108,8 +106,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skills-root",
         type=Path,
-        default=Path(os.environ.get("WORKFLOW_SKILL_ROUTER_SKILLS_ROOT", DEFAULT_SKILLS_ROOT)),
-        help="Local Codex skills root to package. Defaults to ~/.codex/skills.",
+        default=os.environ.get("WORKFLOW_SKILL_ROUTER_SKILLS_ROOT"),
+        help="Local Codex skills root to package into the public-safe template.",
     )
     parser.add_argument(
         "--exclude-name",
@@ -128,6 +126,11 @@ def parse_args() -> argparse.Namespace:
         action="append",
         default=[],
         help="Text marker that should be removed from public package contents.",
+    )
+    parser.add_argument(
+        "--allow-no-private-filters",
+        action="store_true",
+        help="Allow template packaging without exclude-name, exclude-prefix, or private-marker filters.",
     )
     return parser.parse_args()
 
@@ -427,6 +430,28 @@ def main() -> int:
         args.private_marker,
         "WORKFLOW_SKILL_ROUTER_PRIVATE_MARKERS",
     )
+
+    if args.skills_root is None:
+        print(
+            "Missing --skills-root. Refusing to package a template from an implicit local skills directory.",
+            file=sys.stderr,
+        )
+        print(
+            "Pass --skills-root plus private filters, or use --allow-no-private-filters only after auditing the source.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not args.allow_no_private_filters and not (exclude_names or exclude_prefixes or private_markers):
+        print(
+            "Missing private filters. Add --exclude-name, --exclude-prefix, or --private-marker.",
+            file=sys.stderr,
+        )
+        print(
+            "If the source truly has no private content, rerun with --allow-no-private-filters.",
+            file=sys.stderr,
+        )
+        return 1
 
     DOWNLOADS_DIR.mkdir(exist_ok=True)
     build_blank_zip()

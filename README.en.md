@@ -96,6 +96,8 @@ Rebuild the packages:
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
 
+The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing your source directory.
+
 The template package is generated from a real local `.codex/skills` folder. It includes the sanitized `workflow-skill-router` and all public skills used in practice, while excluding private organization-specific skills.
 
 ## Practical Examples

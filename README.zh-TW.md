@@ -86,6 +86,8 @@ OK: workflow-skill-router passed validation
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
 
+打包工具不會使用隱含的本機 skills 目錄。除非你明確加上 `--allow-no-private-filters` 並已自行檢查來源目錄，否則至少要提供一個 private filter。
+
 範本包是從真實本機 `.codex/skills` 產生的公開安全版，會排除 private organization-specific skills，並移除其他公開 skill 內的 private lines。
 
 ## 更實際的 Routing 範例

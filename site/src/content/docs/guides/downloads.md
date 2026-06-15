@@ -46,6 +46,8 @@ The template package is public-safe. It is generated from the maintainer's real 
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
 
+The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing the source directory.
+
 ## Source
 
 - [View `downloads/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
