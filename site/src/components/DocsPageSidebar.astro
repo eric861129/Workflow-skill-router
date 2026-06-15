@@ -1,0 +1,51 @@
+---
+import MobileTableOfContents from 'virtual:starlight/components/MobileTableOfContents';
+import TableOfContents from 'virtual:starlight/components/TableOfContents';
+
+const locale = Astro.locals.starlightRoute.locale || 'root';
+const isZh = locale === 'zh-tw';
+const basePath = isZh ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
+const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
+
+const copy = isZh
+  ? {
+      eyebrow: '開源分享',
+      title: '覺得這個 pattern 有用？',
+      body: 'Star repo，或下載 template package 直接試一次 routing。',
+      star: 'Star on GitHub',
+      download: '下載 template',
+    }
+  : {
+      eyebrow: 'Open source',
+      title: 'Useful pattern?',
+      body: 'Star the repo, or download the template package and try routing on your own agent.',
+      star: 'Star on GitHub',
+      download: 'Download template',
+    };
+---
+
+{
+  Astro.locals.starlightRoute.toc && (
+    <>
+      <div class="lg:sl-hidden">
+        <MobileTableOfContents />
+      </div>
+      <div class="right-sidebar-panel sl-hidden lg:sl-block">
+        <div class="sl-container">
+          <TableOfContents />
+          <aside class="wsr-doc-cta" aria-label={copy.title}>
+            <span>{copy.eyebrow}</span>
+            <h2>{copy.title}</h2>
+            <p>{copy.body}</p>
+            <a class="wsr-doc-cta-primary" href={repoUrl} target="_blank" rel="noreferrer">
+              {copy.star}
+            </a>
+            <a class="wsr-doc-cta-secondary" href={`${basePath}/guides/downloads/`}>
+              {copy.download}
+            </a>
+          </aside>
+        </div>
+      </div>
+    </>
+  )
+}

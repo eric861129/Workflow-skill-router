@@ -29,6 +29,9 @@ export default defineConfig({
         light: './src/assets/routing-mark-light.svg',
         dark: './src/assets/routing-mark-dark.svg',
       },
+      components: {
+        PageSidebar: './src/components/DocsPageSidebar.astro',
+      },
       social: [
         {
           icon: 'github',

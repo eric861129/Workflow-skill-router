@@ -136,6 +136,103 @@ const text = {
       '打開 GitHub repo，檢查 starter。如果這個 pattern 能讓你的 AI Agent 工作更清楚，歡迎給它一顆星。',
   },
 }[locale];
+
+const demoText = isZh
+  ? {
+      eyebrow: 'Interactive route demo',
+      title: '點一個任務，馬上看 Agent 應該載入哪些 SKILL',
+      body: '這個 demo 把模糊需求轉成可檢查的 routing output。讀者可以先理解決策，再去下載 starter 或 template package。',
+      prompt: 'User prompt',
+      output: 'Routing output',
+      copy: '複製 route',
+      copied: '已複製',
+      star: '覺得有用就 Star',
+      template: '查看 Template Skill Catalog',
+    }
+  : {
+      eyebrow: 'Interactive route demo',
+      title: 'Pick a task and watch the agent choose its skill set',
+      body: 'This demo turns a fuzzy prompt into a reviewable routing output before any agent starts editing files.',
+      prompt: 'User prompt',
+      output: 'Routing output',
+      copy: 'Copy route',
+      copied: 'Copied',
+      star: 'Star if this helps',
+      template: 'View Template Skill Catalog',
+    };
+
+const routeDemoScenarios = isZh
+  ? [
+      {
+        label: 'API 合約同步',
+        prompt: '新增 customer settings endpoint，更新 OpenAPI，重新產生 TypeScript client，並補上合約測試。',
+        route: 'API / 合約生命週期 > 後端到前端同步',
+        skills: 'api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner',
+        reason:
+          'api-designer 穩定 endpoint 語意；openapi-contract-generation-skill 管理 schema diff；openapi-to-typescript 更新前端型別；qa-test-planner 補齊合約測試。',
+      },
+      {
+        label: 'Vue 瀏覽器回歸',
+        prompt: 'Vue 表單重新整理後會遺失已選值，請在瀏覽器重現並補一個 regression check。',
+        route: '前端 / Vue / UI > 瀏覽器回歸 > 狀態保存',
+        skills: 'vue-expert, systematic-debugging, playwright, qa-test-planner',
+        reason:
+          'vue-expert 處理 component 與 reactivity；systematic-debugging 找出真正原因；playwright 建立可重複瀏覽器檢查；qa-test-planner 定義驗收覆蓋。',
+      },
+      {
+        label: '資料庫效能風險',
+        prompt: '替帳號異動新增 audit tables，並確認 admin activity query 在 migration 後仍然夠快。',
+        route: '資料庫 / Schema 與效能 > Migration 加查詢檢查',
+        skills: 'database-schema-designer, sql-pro, database-optimizer, qa-test-planner',
+        reason:
+          'database-schema-designer 設計 audit tables；sql-pro 保持 SQL 清楚；database-optimizer 檢查 runtime cost；qa-test-planner 規劃 migration 回歸測試。',
+      },
+      {
+        label: 'PR 與 CI 收尾',
+        prompt: 'Review 一個 auth 相關 PR，處理 review feedback，並在 merge 前修好失敗的 CI checks。',
+        route: 'Review / CI readiness > 權限敏感變更',
+        skills: 'receiving-code-review, systematic-debugging, qa-test-planner, commit-work',
+        reason:
+          'receiving-code-review 將 feedback 轉成修改；systematic-debugging 隔離 CI 失敗原因；qa-test-planner 保護 auth 表面；commit-work 準備乾淨提交。',
+      },
+    ]
+  : [
+      {
+        label: 'API contract sync',
+        prompt:
+          'Add a customer settings endpoint, update OpenAPI, regenerate the TypeScript client, and define the contract tests.',
+        route: 'API / Contract lifecycle > Backend-to-frontend sync',
+        skills: 'api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner',
+        reason:
+          'api-designer stabilizes endpoint semantics; openapi-contract-generation-skill manages schema diff; openapi-to-typescript updates frontend types; qa-test-planner defines contract coverage.',
+      },
+      {
+        label: 'Vue browser regression',
+        prompt: 'A Vue form loses selected values after refresh. Reproduce it in the browser and add a regression check.',
+        route: 'Frontend / Vue / UI > Browser regression > State persistence',
+        skills: 'vue-expert, systematic-debugging, playwright, qa-test-planner',
+        reason:
+          'vue-expert handles component and reactivity behavior; systematic-debugging finds the real cause; playwright captures a repeatable browser check; qa-test-planner defines acceptance coverage.',
+      },
+      {
+        label: 'Database performance risk',
+        prompt: 'Add audit tables for account changes and make sure the admin activity query stays fast after the migration.',
+        route: 'Database / Schema and performance > Migration plus query review',
+        skills: 'database-schema-designer, sql-pro, database-optimizer, qa-test-planner',
+        reason:
+          'database-schema-designer models the audit tables; sql-pro keeps queries clear; database-optimizer checks runtime cost; qa-test-planner covers migration regressions.',
+      },
+      {
+        label: 'PR and CI closeout',
+        prompt: 'Review an auth-related PR, address review feedback, and fix the failing CI checks before merge.',
+        route: 'Review / CI readiness > Security-sensitive change',
+        skills: 'receiving-code-review, systematic-debugging, qa-test-planner, commit-work',
+        reason:
+          'receiving-code-review turns feedback into action; systematic-debugging isolates CI failures; qa-test-planner protects the auth surface; commit-work prepares a clean final commit.',
+      },
+    ];
+
+const initialDemo = routeDemoScenarios[0];
 ---
 
 <main class="wsr-landing" data-wsr-home data-locale={locale}>
@@ -199,6 +296,55 @@ const text = {
           <div class="wsr-process-links">
             <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
             <a class="wsr-text-link" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="route-demo" class="wsr-section wsr-route-demo-section">
+    <div class="wsr-shell wsr-route-demo-grid">
+      <div>
+        <span class="wsr-section-eyebrow">{demoText.eyebrow}</span>
+        <h2>{demoText.title}</h2>
+        <p>{demoText.body}</p>
+        <div class="wsr-demo-actions">
+          <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{demoText.star}</a>
+          <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{demoText.template}</a>
+        </div>
+      </div>
+
+      <div class="wsr-route-demo" data-wsr-route-demo>
+        <script type="application/json" data-route-demo-json set:html={JSON.stringify(routeDemoScenarios)} />
+        <div class="wsr-demo-tabs" role="tablist" aria-label={demoText.eyebrow}>
+          {routeDemoScenarios.map((scenario, index) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={index === 0 ? 'true' : 'false'}
+              data-demo-index={index}
+            >
+              {scenario.label}
+            </button>
+          ))}
+        </div>
+
+        <div class="wsr-demo-card">
+          <div class="wsr-demo-prompt">
+            <span>{demoText.prompt}</span>
+            <p data-demo-prompt>{initialDemo.prompt}</p>
+          </div>
+
+          <div class="wsr-demo-output">
+            <div class="wsr-route-header">
+              <span>{demoText.output}</span>
+              <button type="button" data-wsr-copy-route data-copy-label={demoText.copy} data-copied-label={demoText.copied}>
+                {demoText.copy}
+              </button>
+            </div>
+            <pre><code data-demo-output>{`Route: ${initialDemo.route}
+Use SKILL: ${initialDemo.skills}
+Reason: ${initialDemo.reason}`}</code></pre>
           </div>
         </div>
       </div>
@@ -282,6 +428,51 @@ const text = {
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-wsr-route-demo]').forEach((demo) => {
+    const dataNode = demo.querySelector('[data-route-demo-json]');
+    const buttons = Array.from(demo.querySelectorAll('[data-demo-index]'));
+    const promptNode = demo.querySelector('[data-demo-prompt]');
+    const outputNode = demo.querySelector('[data-demo-output]');
+    const copyButton = demo.querySelector('[data-wsr-copy-route]');
+    const scenarios = JSON.parse(dataNode?.textContent || '[]');
+
+    const formatRoute = (scenario) =>
+      `Route: ${scenario.route}\nUse SKILL: ${scenario.skills}\nReason: ${scenario.reason}`;
+
+    const renderScenario = (index) => {
+      const scenario = scenarios[index];
+      if (!scenario || !promptNode || !outputNode) return;
+      promptNode.textContent = scenario.prompt;
+      outputNode.textContent = formatRoute(scenario);
+      buttons.forEach((button) => {
+        const isActive = Number(button.getAttribute('data-demo-index')) === index;
+        button.setAttribute('aria-selected', String(isActive));
+      });
+      if (copyButton instanceof HTMLButtonElement) {
+        copyButton.textContent = copyButton.dataset.copyLabel || copyButton.textContent || '';
+      }
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        renderScenario(Number(button.getAttribute('data-demo-index') || 0));
+      });
+    });
+
+    copyButton?.addEventListener('click', async () => {
+      if (!outputNode?.textContent || !(copyButton instanceof HTMLButtonElement)) return;
+      try {
+        await navigator.clipboard.writeText(outputNode.textContent);
+        copyButton.textContent = copyButton.dataset.copiedLabel || 'Copied';
+        window.setTimeout(() => {
+          copyButton.textContent = copyButton.dataset.copyLabel || 'Copy route';
+        }, 1400);
+      } catch {
+        copyButton.textContent = copyButton.dataset.copyLabel || 'Copy route';
+      }
+    });
+  });
 
   document.querySelectorAll('[data-wsr-carousel]').forEach((carousel) => {
     const track = carousel.querySelector('[data-wsr-track]');
