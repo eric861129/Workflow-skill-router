@@ -40,3 +40,8 @@ Use SKILL: github, code-review, ci, devops, docs, browser, release, planning
 ```
 
 這條 route 太寬，應該依照工作階段拆開。
+
+## Source
+
+- [在 GitHub 開啟 starter `SKILL.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/SKILL.md)
+- [查看 starter routing rules](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/references/routing-rules.md)

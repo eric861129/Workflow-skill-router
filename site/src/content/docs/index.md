@@ -63,3 +63,11 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 - Practical recipes for common workflows.
 - A dependency-free validator.
 - A customization guide for adapting the router to your own skill catalog.
+
+## Source shortcuts
+
+- [Starter router source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [Example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)
+- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [Download packages](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
+- [Full source map](/Workflow-skill-router/reference/source-map/)

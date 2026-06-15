@@ -37,3 +37,8 @@ sample-skills/
 These examples are intentionally generic. They avoid organization names, private paths, hostnames, secrets, and product-specific architecture.
 
 Use them as reference implementations when building your own skill catalog, or download them through the [template skill package](/Workflow-skill-router/guides/downloads/).
+
+## Source
+
+- [View `sample-skills/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [View common engineering routes that use them](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)

@@ -22,8 +22,6 @@ Reason: browser captures rendered behavior; frontend-debugging maps symptoms to 
 
 ## Source
 
-請看：
-
-```text
-examples/frontend-debugging/
-```
+- [在 GitHub 開啟 `examples/frontend-debugging/`](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/frontend-debugging)
+- [開啟 `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/skill-tree.md)
+- [開啟 `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/routing-rules.md)

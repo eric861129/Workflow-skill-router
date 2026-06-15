@@ -41,3 +41,11 @@ workflow-skill-router-template/
 ```bash
 python scripts/package-downloads.py
 ```
+
+## Source
+
+- [在 GitHub 開啟 `downloads/`](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
+- [查看 package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
+- [查看 starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [查看 template example source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [查看 sample skills source](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)

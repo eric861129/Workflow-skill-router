@@ -27,9 +27,7 @@ This route prevents the agent from jumping straight into frontend implementation
 
 ## Source
 
-See:
-
-```text
-examples/company-platform-sanitized/
-```
+- [View `examples/company-platform-sanitized/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/company-platform-sanitized)
+- [Open `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/skill-tree.md)
+- [Open `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/routing-rules.md)
 

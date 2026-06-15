@@ -37,3 +37,9 @@ python scripts/validate-router.py --self-test
 ```text
 OK: validator self-test passed
 ```
+
+## Source
+
+- [在 GitHub 開啟 `scripts/validate-router.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
+- [查看指令使用的 starter router](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [查看 example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)

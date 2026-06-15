@@ -14,6 +14,7 @@ starter/workflow-skill-router/
 Or download the ready-to-install zip:
 
 - [Blank SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
+- [View starter source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 
 For Codex on Windows:
 
@@ -54,6 +55,11 @@ OK: workflow-skill-router passed validation
 ```
 
 For a fuller reference, download the [template SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip). It includes the common engineering router and sample `SKILL.md` folders.
+
+Source:
+
+- [Common engineering router](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
 
 ## 4. Try a route
 

@@ -37,3 +37,8 @@ sample-skills/
 這些範例刻意保持通用，不包含組織名稱、私有路徑、hostnames、secrets 或特定產品架構。
 
 你可以把它們當成建立自己 skill catalog 時的 reference implementations，也可以直接從 [範本 SKILL 套件](/Workflow-skill-router/zh-tw/guides/downloads/)下載。
+
+## Source
+
+- [在 GitHub 開啟 `sample-skills/`](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [查看使用它們的 common engineering routes](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)

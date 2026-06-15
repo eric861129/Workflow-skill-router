@@ -27,8 +27,6 @@ Reason: platform-api-contract protects the schema; client-generation updates typ
 
 ## Source
 
-請看：
-
-```text
-examples/company-platform-sanitized/
-```
+- [在 GitHub 開啟 `examples/company-platform-sanitized/`](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/company-platform-sanitized)
+- [開啟 `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/skill-tree.md)
+- [開啟 `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/company-platform-sanitized/references/routing-rules.md)

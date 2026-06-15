@@ -22,9 +22,7 @@ Reason: browser captures rendered behavior; frontend-debugging maps symptoms to 
 
 ## Source
 
-See:
-
-```text
-examples/frontend-debugging/
-```
+- [View `examples/frontend-debugging/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/frontend-debugging)
+- [Open `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/skill-tree.md)
+- [Open `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/frontend-debugging/references/routing-rules.md)
 

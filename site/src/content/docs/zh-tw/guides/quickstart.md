@@ -14,6 +14,7 @@ starter/workflow-skill-router/
 或直接下載可安裝的 zip：
 
 - [空白 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
+- [查看 starter source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 
 如果你在 Windows 使用 Codex：
 
@@ -54,6 +55,11 @@ OK: workflow-skill-router passed validation
 ```
 
 如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含 common engineering router 和 sample `SKILL.md` folders。
+
+Source:
+
+- [Common engineering router](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
 
 ## 4. 試跑一條 route
 

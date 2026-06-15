@@ -41,3 +41,8 @@ Use SKILL: github, code-review, ci, devops, docs, browser, release, planning
 
 This route is too broad and should be split by work stage.
 
+## Source
+
+- [View starter `SKILL.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/SKILL.md)
+- [View starter routing rules](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/references/routing-rules.md)
+

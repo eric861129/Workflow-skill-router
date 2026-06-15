@@ -38,3 +38,9 @@ Expected:
 OK: validator self-test passed
 ```
 
+## Source
+
+- [View `scripts/validate-router.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
+- [View starter router used by the command](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [View example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)
+

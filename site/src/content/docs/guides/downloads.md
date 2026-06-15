@@ -41,3 +41,11 @@ The template package is public-safe. It includes practical skill writing pattern
 ```bash
 python scripts/package-downloads.py
 ```
+
+## Source
+
+- [View `downloads/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
+- [View package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
+- [View starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [View template example source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [View sample skills source](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)

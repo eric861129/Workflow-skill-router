@@ -64,6 +64,7 @@ export default defineConfig({
             { slug: 'reference/routing-contract' },
             { slug: 'reference/validator' },
             { slug: 'reference/sample-skills' },
+            { slug: 'reference/source-map' },
           ],
         },
       ],

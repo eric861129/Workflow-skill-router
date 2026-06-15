@@ -22,14 +22,10 @@ Reason: openapi-contract-generation-skill manages schema lifecycle; openapi-to-t
 
 ## Source
 
-請看：
-
-```text
-examples/common-engineering-routing/
-```
+- [在 GitHub 開啟 `examples/common-engineering-routing/`](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [開啟 `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/skill-tree.md)
+- [開啟 `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/routing-rules.md)
 
 可複製參考的 skill implementations：
 
-```text
-sample-skills/
-```
+- [在 GitHub 開啟 `sample-skills/`](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)

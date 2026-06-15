@@ -63,3 +63,11 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 - 常見 workflow 的實戰 recipes。
 - 不依賴外部套件的 validator。
 - 依照自己的 skill catalog 客製 router 的指南。
+
+## Source 捷徑
+
+- [Starter router source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [Example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)
+- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [Download packages](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
+- [完整 Source Map](/Workflow-skill-router/zh-tw/reference/source-map/)

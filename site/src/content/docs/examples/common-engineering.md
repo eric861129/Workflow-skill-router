@@ -22,14 +22,10 @@ Reason: openapi-contract-generation-skill manages schema lifecycle; openapi-to-t
 
 ## Source
 
-See:
-
-```text
-examples/common-engineering-routing/
-```
+- [View `examples/common-engineering-routing/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [Open `references/skill-tree.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/skill-tree.md)
+- [Open `references/routing-rules.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/common-engineering-routing/references/routing-rules.md)
 
 For copyable skill implementations, see:
 
-```text
-sample-skills/
-```
+- [View `sample-skills/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)

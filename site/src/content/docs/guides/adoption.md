@@ -44,3 +44,9 @@ Use fictional company-style examples when sharing routers. Do not include:
 
 Use placeholders such as `Acme Corp`, `Customer Portal`, `Internal Admin`, `Revenue Platform`, and `Operations Dashboard`.
 
+## Source
+
+- [View starter router](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+- [View adoption guide source](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/adoption-guide.md)
+- [View prompts](https://github.com/eric861129/Workflow-skill-router/tree/main/prompts)
+
