@@ -28,8 +28,7 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 
 - [在 GitHub 開啟 `prompts/agent-prompt.zh-TW.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/prompts/agent-prompt.zh-TW.md)
 
-````markdown
-# Agent Prompt 繁體中文
+### 初次設定 Prompt
 
 ```text
 你現在要協助我根據目前環境建立一套多 SKILL 應用時的 workflow-skill-router。
@@ -116,7 +115,7 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 最後請用繁體中文回覆，並用清楚的表格與 Markdown 標題整理結果。
 ```
 
-## 維護 Prompt：指定新增 SKILL 寫入既有 Router
+### 維護 Prompt：指定新增 SKILL 寫入既有 Router
 
 ```text
 我目前已經做過一次 workflow-skill-router 設定，現在新增了以下 SKILL，請協助我把它們整合進既有的 workflow-skill-router。
@@ -172,7 +171,7 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 最後請用繁體中文回覆，並用表格整理：新增 SKILL、建議分類、Primary/Supporting 角色、修改位置、原因。
 ```
 
-## 維護 Prompt：自動盤點新增但尚未寫入 Router 的 SKILL
+### 維護 Prompt：自動盤點新增但尚未寫入 Router 的 SKILL
 
 ```text
 我目前已經做過一次 workflow-skill-router 設定，但後來可能又新增了一些 SKILL。
@@ -233,7 +232,6 @@ C:\Users\<you>\.codex\skills\workflow-skill-router
 4. Updated Routes
 5. Validation Results
 ```
-````
 
 Agent 應該先盤點可用 skills，再補齊：
 

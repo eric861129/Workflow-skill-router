@@ -28,8 +28,7 @@ Use the English prompt below, or open the source file:
 
 - [View `prompts/agent-prompt.en.md` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/prompts/agent-prompt.en.md)
 
-````markdown
-# Agent Prompt English
+### Initial Setup Prompt
 
 ```text
 You are helping me build a workflow-skill-router for my current multi-skill AI agent environment.
@@ -116,7 +115,7 @@ Important constraints:
 Reply in clear Markdown with tables where useful.
 ```
 
-## Maintenance Prompt: Add Specified New Skills To An Existing Router
+### Maintenance Prompt: Add Specified New Skills To An Existing Router
 
 ```text
 I have already configured workflow-skill-router once. I have now added the following skills. Please help me integrate them into the existing workflow-skill-router.
@@ -172,7 +171,7 @@ Important constraints:
 Reply with a table covering: new skill, recommended category, Primary/Supporting role, edit location, and reason.
 ```
 
-## Maintenance Prompt: Detect Newly Added Skills Missing From The Router
+### Maintenance Prompt: Detect Newly Added Skills Missing From The Router
 
 ```text
 I have already configured workflow-skill-router once, but I may have added more skills afterward.
@@ -233,7 +232,6 @@ Reply with:
 4. Updated Routes
 5. Validation Results
 ```
-````
 
 The agent should inventory available skills and fill:
 
