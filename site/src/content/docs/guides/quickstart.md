@@ -257,12 +257,12 @@ Expected:
 OK: workflow-skill-router passed validation
 ```
 
-For a fuller reference, download the [template SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip). It includes the common engineering router and sample `SKILL.md` folders.
+For a fuller reference, download the [template SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip). It includes a public-safe export of the maintainer's real local Codex skills catalog and a sanitized `workflow-skill-router`.
 
 Source:
 
-- [Common engineering router](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
-- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
 ## 4. Try a route
 

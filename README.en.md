@@ -87,15 +87,16 @@ python scripts/validate-router.py starter/workflow-skill-router
 ## Downloadable Skill Packages
 
 - [Blank SKILL package](downloads/workflow-skill-router-blank.zip): install this when you want an empty router and your own skill tree.
-- [Template SKILL package](downloads/workflow-skill-router-template.zip): install or inspect this when you want a practical reference with common engineering routes and sample skills.
+- [Template SKILL package](downloads/workflow-skill-router-template.zip): install or inspect this when you want a public-safe export of the maintainer's real local Codex skills catalog.
+- [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
 
 Rebuild the packages:
 
 ```bash
-python scripts/package-downloads.py
+python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
 
-The template package includes public-safe material from this repository: `starter/workflow-skill-router/`, `examples/common-engineering-routing/`, and `sample-skills/`.
+The template package is generated from a real local `.codex/skills` folder. It includes the sanitized `workflow-skill-router` and all public skills used in practice, while excluding private organization-specific skills.
 
 ## Practical Examples
 

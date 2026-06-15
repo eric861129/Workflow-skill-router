@@ -28,6 +28,7 @@ Use these links when you want to inspect the actual repository source instead of
 - [Download packages folder](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
 - [Blank SKILL zip](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
 - [Template SKILL zip](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 - [Validator script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
 

@@ -257,12 +257,12 @@ python scripts/validate-router.py starter/workflow-skill-router
 OK: workflow-skill-router passed validation
 ```
 
-如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含 common engineering router 和 sample `SKILL.md` folders。
+如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含公開安全版的真實本機 Codex skills catalog，以及匿名化後的 `workflow-skill-router`。
 
 Source:
 
-- [Common engineering router](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
-- [Sample skills](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
+- [範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
 ## 4. 試跑一條 route
 

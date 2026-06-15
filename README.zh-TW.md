@@ -77,15 +77,16 @@ OK: workflow-skill-router passed validation
 ## 下載 SKILL 套件
 
 - [空白 SKILL 套件](downloads/workflow-skill-router-blank.zip)：可直接安裝的 `workflow-skill-router/` starter，適合你要自己填 skill tree。
-- [範本 SKILL 套件](downloads/workflow-skill-router-template.zip)：包含空白 starter、常見工程 routing 範例，以及可複製參考的完整 sample `SKILL.md`。
+- [範本 SKILL 套件](downloads/workflow-skill-router-template.zip)：公開安全版的實戰 Codex skills pack，包含匿名化後的 `workflow-skill-router`，以及實際使用中可公開的 SKILL。
+- [範本 manifest](downloads/workflow-skill-router-template-manifest.md)：列出包含的 skill folders、排除的 private skill 數量與匿名化摘要。
 
 本機重新產生兩個 zip：
 
 ```bash
-python scripts/package-downloads.py
+python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
 ```
 
-範本包是公開安全版，會保留實際 SKILL 寫法與常見工程 routing pattern，但不包含組織名稱、私有路徑、部署細節或內部系統名稱。
+範本包是從真實本機 `.codex/skills` 產生的公開安全版，會排除 private organization-specific skills，並移除其他公開 skill 內的 private lines。
 
 ## 更實際的 Routing 範例
 
