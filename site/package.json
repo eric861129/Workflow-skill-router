@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.40.0",
-    "astro": "^6.4.6"
+    "astro": "^6.4.6",
+    "gsap": "^3.15.0"
   },
-  "devDependencies": {},
   "overrides": {
     "esbuild": "^0.28.1"
   }

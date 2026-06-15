@@ -1,0 +1,277 @@
+---
+type Locale = 'en' | 'zh-tw';
+
+const locale = (Astro.props.locale ?? 'en') as Locale;
+const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
+const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
+const isZh = locale === 'zh-tw';
+
+const text = {
+  en: {
+    nav: ['Why it works', 'Examples', 'Validator'],
+    navLinks: ['#why-it-works', '#examples', '#validator'],
+    star: 'Star on GitHub',
+    quickstart: 'Start in 30 seconds',
+    download: 'Download starter',
+    heroTitle: 'AI agent skill routing before the work begins',
+    heroCopy:
+      'Workflow Skill Router is a practical routing pattern for Codex Skills and multi-skill agents: choose one primary skill, add focused support, and keep complex tasks out of context overload.',
+    routeLabel: 'Routing output',
+    route:
+      'Route: Frontend / Debugging > Browser reproduction > Single-page app\nUse SKILL: frontend-debugging, browser, systematic-debugging\nReason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.',
+    introTitle: 'A sharper operating layer for multi-skill agents',
+    introCopy:
+      'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts.',
+    cards: [
+      ['Contract first', 'Every complex route returns task nature, work stage, technical domain, selected skills, and one-line reasons.'],
+      ['Public examples', 'Common engineering, company platform, frontend debugging, and CI review routes show real usage patterns.'],
+      ['Validator included', 'A dependency-free CLI checks structure, route size, primary skill coverage, references, and privacy risk.'],
+      ['Codex-ready starter', 'Copy a clean router skill, fill the skill tree, and validate before sharing it with a team.'],
+      ['Bilingual docs', 'English and Traditional Chinese pages stay aligned so the pattern can travel across teams.'],
+      ['Source-first site', 'Every important page links directly back to the GitHub source folder behind it.'],
+    ],
+    examplesTitle: 'Routes people can copy, inspect, and adapt',
+    examplesCopy:
+      'The site is not a slogan page. It points readers to concrete routing catalogs that show how the pattern behaves in actual engineering work.',
+    accordion: [
+      ['Common engineering', 'Requirements, planning, API design, .NET, database work, Vue, docs, GitHub review, and DevOps.'],
+      ['Company platform', 'Anonymous enterprise-style platform routing for backend contracts, portals, admin UI, releases, incidents, and RBAC.'],
+      ['Frontend debugging', 'Browser, Chrome session, Playwright, framework expertise, layout, data mismatch, and regression handoff.'],
+    ],
+    outcomesTitle: 'Designed for visible outcomes',
+    outcomes: [
+      ['Less context noise', 'A route is narrow enough for the user to correct before the agent edits files.'],
+      ['Faster onboarding', 'A new user can copy the starter, ask an agent to fill the skill tree, and run the validator.'],
+      ['Safer sharing', 'Public examples stay generic while private overlays can keep organization-specific rules local.'],
+    ],
+    validatorTitle: 'Proof before publish',
+    validatorCopy:
+      'The validator makes this pattern feel like a small developer tool, not just a prompt. It checks the starter and every example package before the repo is shared.',
+    validatorCommand: 'python scripts/validate-router.py starter/workflow-skill-router',
+    finalTitle: 'Make skill routing a pattern people can star, fork, and reuse',
+    finalCopy:
+      'Open the repository, inspect the starter, and star it if the pattern helps your AI agent work with less chaos.',
+  },
+  'zh-tw': {
+    nav: ['為什麼有效', '範例', 'Validator'],
+    navLinks: ['#why-it-works', '#examples', '#validator'],
+    star: '到 GitHub 給星星',
+    quickstart: '30 秒開始',
+    download: '下載 starter',
+    heroTitle: 'AI Agent 開工前，先完成 skill routing',
+    heroCopy:
+      'Workflow Skill Router 是給 Codex Skills 與多技能 Agent 使用的實戰 routing pattern：先選一個 primary skill，再補上聚焦的 supporting skills，讓複雜任務不要被上下文噪音淹沒。',
+    routeLabel: 'Routing output',
+    route:
+      'Route: Frontend / Debugging > Browser reproduction > Single-page app\nUse SKILL: frontend-debugging, browser, systematic-debugging\nReason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.',
+    introTitle: '讓多技能 Agent 多一層清楚的工作入口',
+    introCopy:
+      'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再開始執行。',
+    cards: [
+      ['Contract first', '每個複雜 route 都會輸出任務性質、工作階段、技術領域、選用 skills 與一句理由。'],
+      ['Public examples', '常見工程、公司平台、前端除錯與 CI review routes 展示真實可讀的使用方式。'],
+      ['Validator included', '無外部依賴的 CLI 會檢查結構、route 數量、primary skill、references 與隱私風險。'],
+      ['Codex-ready starter', '複製乾淨的 router skill，填入 skill tree，驗證後就能分享給團隊使用。'],
+      ['Bilingual docs', '英文與繁中頁面同步，讓這個 pattern 可以更容易在不同團隊流通。'],
+      ['Source-first site', '重要頁面都直接連回 GitHub source folder，讀者可以快速追到實作內容。'],
+    ],
+    examplesTitle: '可以複製、檢查、改成自己版本的 routes',
+    examplesCopy:
+      '這不是只有口號的介紹頁。站台會直接把讀者帶到具體 routing catalog，看見這個 pattern 在工程工作裡如何運作。',
+    accordion: [
+      ['常見工程', '需求、規劃、API design、.NET、資料庫、Vue、文件、GitHub review 與 DevOps。'],
+      ['公司平台', '匿名化企業平台情境：backend contract、portal、admin UI、release、incident 與 RBAC。'],
+      ['前端除錯', 'Browser、Chrome session、Playwright、framework expertise、layout、資料落差與 regression handoff。'],
+    ],
+    outcomesTitle: '為看得見的成果設計',
+    outcomes: [
+      ['降低上下文噪音', 'Route 小到使用者可以在 Agent 修改檔案前先修正方向。'],
+      ['更快導入', '新使用者可以複製 starter、請 Agent 補齊 skill tree，然後直接跑 validator。'],
+      ['更安全分享', '公開範例保持 generic，組織內規則則可以放在 private overlay。'],
+    ],
+    validatorTitle: '發布前先驗證',
+    validatorCopy:
+      'Validator 讓這個 pattern 比單純 prompt 更像小型 developer tool。分享 repo 前，可以先驗證 starter 和每個 example package。',
+    validatorCommand: 'python scripts/validate-router.py starter/workflow-skill-router',
+    finalTitle: '把 skill routing 變成值得 star、fork、重用的 pattern',
+    finalCopy:
+      '打開 GitHub repo，檢查 starter。如果這個 pattern 能讓你的 AI Agent 工作更清楚，歡迎給它一顆星。',
+  },
+}[locale];
+---
+
+<main class="wsr-landing" data-wsr-home data-locale={locale}>
+  <nav class="wsr-floating-nav" aria-label={isZh ? '首頁導覽' : 'Home navigation'}>
+    <a class="wsr-wordmark" href={rootPath + '/'}>
+      <span class="wsr-wordmark-mark" aria-hidden="true"></span>
+      <span>Workflow Skill Router</span>
+    </a>
+    <div class="wsr-nav-links">
+      {text.nav.map((item, index) => (
+        <a href={text.navLinks[index]}>{item}</a>
+      ))}
+    </div>
+    <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
+  </nav>
+
+  <section class="wsr-hero" aria-labelledby="wsr-hero-title">
+    <div class="wsr-hero-image" aria-hidden="true"></div>
+    <div class="wsr-hero-wash" aria-hidden="true"></div>
+    <div class="wsr-shell wsr-hero-inner">
+      <h1 id="wsr-hero-title" class="wsr-hero-title">{text.heroTitle}</h1>
+      <p class="wsr-hero-copy">{text.heroCopy}</p>
+      <div class="wsr-hero-actions">
+        <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
+        <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/quickstart/`}>{text.quickstart}</a>
+      </div>
+      <div class="wsr-route-showcase" aria-label={text.routeLabel}>
+        <div class="wsr-route-header">
+          <span>{text.routeLabel}</span>
+          <a href={`${rootPath}/reference/routing-contract/`}>{isZh ? '查看 contract' : 'View contract'}</a>
+        </div>
+        <pre><code>{text.route}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="why-it-works" class="wsr-section wsr-section-light">
+    <div class="wsr-shell wsr-section-grid">
+      <div>
+        <h2>{text.introTitle}</h2>
+        <p>{text.introCopy}</p>
+        <a class="wsr-text-link" href={`${rootPath}/guides/adoption/`}>{isZh ? '閱讀客製化指南' : 'Read the customization guide'}</a>
+      </div>
+      <div class="wsr-bento" aria-label={isZh ? '主要能力' : 'Core capabilities'}>
+        {text.cards.map(([title, body], index) => (
+          <a class={`wsr-bento-card wsr-bento-card-${index + 1}`} href={`${rootPath}/reference/source-map/`}>
+            <span>{title}</span>
+            <p>{body}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="examples" class="wsr-section wsr-section-dark wsr-proof" data-wsr-pin>
+    <div class="wsr-shell wsr-proof-grid">
+      <div class="wsr-proof-pin">
+        <h2>{text.examplesTitle}</h2>
+        <p>{text.examplesCopy}</p>
+        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/common-engineering/`}>{isZh ? '查看 routes' : 'Explore routes'}</a>
+      </div>
+      <div class="wsr-proof-stack">
+        <div class="wsr-accordion" aria-label={isZh ? '範例分類' : 'Example categories'}>
+          {text.accordion.map(([title, body], index) => (
+            <a class="wsr-accordion-panel wsr-motion-image" href={`${rootPath}/examples/${index === 0 ? 'common-engineering' : index === 1 ? 'company-platform' : 'frontend-debugging'}/`}>
+              <span>{title}</span>
+              <p>{body}</p>
+            </a>
+          ))}
+        </div>
+        <div class="wsr-outcome-carousel" data-wsr-carousel>
+          <div class="wsr-carousel-controls">
+            <button type="button" data-wsr-prev aria-label={isZh ? '上一個成果' : 'Previous outcome'}>‹</button>
+            <h3>{text.outcomesTitle}</h3>
+            <button type="button" data-wsr-next aria-label={isZh ? '下一個成果' : 'Next outcome'}>›</button>
+          </div>
+          <div class="wsr-carousel-track" data-wsr-track>
+            {text.outcomes.map(([title, body]) => (
+              <article class="wsr-outcome-card wsr-motion-image">
+                <h4>{title}</h4>
+                <p>{body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="validator" class="wsr-section wsr-section-light">
+    <div class="wsr-shell wsr-validator">
+      <div>
+        <h2>{text.validatorTitle}</h2>
+        <p>{text.validatorCopy}</p>
+      </div>
+      <div class="wsr-command-card">
+        <pre><code>{text.validatorCommand}</code></pre>
+        <a class="wsr-text-link" href={`${rootPath}/reference/validator/`}>{isZh ? '查看 Validator CLI' : 'View Validator CLI'}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="wsr-final-cta">
+    <div class="wsr-shell">
+      <h2>{text.finalTitle}</h2>
+      <p>{text.finalCopy}</p>
+      <div class="wsr-hero-actions">
+        <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
+        <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/downloads/`}>{text.download}</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-wsr-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector('[data-wsr-track]');
+    const prev = carousel.querySelector('[data-wsr-prev]');
+    const next = carousel.querySelector('[data-wsr-next]');
+
+    const scrollByCard = (direction) => {
+      if (!track) return;
+      const card = track.querySelector('.wsr-outcome-card');
+      const distance = card ? card.getBoundingClientRect().width + 16 : 280;
+      track.scrollBy({ left: direction * distance, behavior: reduceMotion ? 'auto' : 'smooth' });
+    };
+
+    prev?.addEventListener('click', () => scrollByCard(-1));
+    next?.addEventListener('click', () => scrollByCard(1));
+  });
+
+  if (!reduceMotion) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.from('.wsr-hero-title, .wsr-hero-copy, .wsr-hero-actions, .wsr-route-showcase', {
+      y: 28,
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power3.out',
+      stagger: 0.08,
+    });
+
+    gsap.utils.toArray('.wsr-motion-image').forEach((element) => {
+      gsap.fromTo(
+        element,
+        { scale: 0.92, opacity: 0.62 },
+        {
+          scale: 1,
+          opacity: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: element,
+            start: 'top 88%',
+            end: 'bottom 20%',
+            scrub: true,
+          },
+        },
+      );
+    });
+
+    const media = gsap.matchMedia();
+    media.add('(min-width: 980px)', () => {
+      ScrollTrigger.create({
+        trigger: '.wsr-proof',
+        start: 'top top',
+        end: 'bottom bottom',
+        pin: '.wsr-proof-pin',
+        pinSpacing: false,
+      });
+    });
+  }
+</script>

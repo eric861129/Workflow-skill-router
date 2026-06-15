@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://huangchiyu.com/Workflow-skill-router/sitemap-index.xml

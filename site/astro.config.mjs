@@ -1,13 +1,19 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+const siteUrl = 'https://huangchiyu.com';
+const basePath = '/Workflow-skill-router';
+const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
+const ogImage = `${siteUrl}${basePath}/og/workflow-skill-router.svg`;
+
 export default defineConfig({
-  site: 'https://huangchiyu.com',
-  base: '/Workflow-skill-router',
+  site: siteUrl,
+  base: basePath,
   integrations: [
     starlight({
       title: 'Workflow Skill Router',
-      description: 'A practical routing pattern for multi-skill AI agents.',
+      description:
+        'A practical AI agent skill routing pattern for Codex Skills, workflow routers, and multi-skill agents.',
       defaultLocale: 'root',
       locales: {
         root: {
@@ -27,10 +33,76 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/eric861129/Workflow-skill-router',
+          href: repoUrl,
         },
       ],
       customCss: ['./src/styles/custom.css'],
+      head: [
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'keywords',
+            content:
+              'AI agent skill routing pattern, workflow router, Codex skills, multi-skill agents, agentic workflow, prompt engineering, developer tools',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'theme-color',
+            content: '#08111f',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:type',
+            content: 'website',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:site_name',
+            content: 'Workflow Skill Router',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image',
+            content: ogImage,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image:alt',
+            content: 'Workflow Skill Router routing pattern preview',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'twitter:card',
+            content: 'summary_large_image',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'twitter:image',
+            content: ogImage,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'github:repository',
+            content: repoUrl,
+          },
+        },
+      ],
       sidebar: [
         {
           label: 'Start Here',

@@ -124,9 +124,6 @@ export default defineConfig({
       provider: 'local',
     },
 
-    editLink: {
-      pattern: 'https://github.com/user/repo/edit/main/docs/:path',
-    },
   },
 });
 ```

@@ -1,0 +1,13 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#08111f"/>
+  <rect x="64" y="64" width="1072" height="502" rx="8" fill="#f7fbff"/>
+  <path d="M64 210H1136" stroke="#d8e3ee"/>
+  <path d="M372 270H828" stroke="#08111f" stroke-width="24" stroke-linecap="round"/>
+  <path d="M282 359H918" stroke="#0891b2" stroke-width="18" stroke-linecap="round"/>
+  <path d="M381 422H819" stroke="#84cc16" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="158" cy="138" r="28" fill="#0891b2"/>
+  <circle cx="238" cy="138" r="28" fill="#84cc16"/>
+  <circle cx="318" cy="138" r="28" fill="#f59e0b"/>
+  <text x="600" y="158" text-anchor="middle" fill="#08111f" font-family="Geist, Arial, sans-serif" font-size="58" font-weight="800">Workflow Skill Router</text>
+  <text x="600" y="520" text-anchor="middle" fill="#334155" font-family="Geist, Arial, sans-serif" font-size="32" font-weight="600">AI agent skill routing pattern for multi-skill workflows</text>
+</svg>

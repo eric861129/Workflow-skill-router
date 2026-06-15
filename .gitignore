@@ -3,6 +3,13 @@ site/node_modules/
 site/dist/
 site/.astro/
 
+# Local UI verification artifacts
+.chrome-*/
+site-home-*.png
+site-home-dom.html
+site-preview*.log
+site-preview.pid
+
 # Python
 __pycache__/
 *.pyc

@@ -1,0 +1,57 @@
+---
+title: AI Agent Skill Routing Pattern | Workflow Skill Router
+description: Workflow Skill Router 是給 Codex Skills 與多技能 AI Agent 使用的 workflow router，包含範例、下載與 validator CLI。
+template: splash
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: AI Agent Skill Routing Pattern | Workflow Skill Router
+  - tag: meta
+    attrs:
+      property: og:description
+      content: 在複雜 AI Agent 任務開始前，先路由到一個 primary skill 與聚焦的 supporting skills。
+  - tag: meta
+    attrs:
+      property: og:url
+      content: https://huangchiyu.com/Workflow-skill-router/zh-tw/
+  - tag: meta
+    attrs:
+      property: og:image
+      content: https://huangchiyu.com/Workflow-skill-router/og/workflow-skill-router.svg
+  - tag: meta
+    attrs:
+      name: twitter:title
+      content: AI Agent Skill Routing Pattern | Workflow Skill Router
+  - tag: meta
+    attrs:
+      name: twitter:description
+      content: 給 Codex Skills 與多技能 AI Agent 使用的實戰 workflow router。
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Workflow Skill Router",
+            "url": "https://huangchiyu.com/Workflow-skill-router/zh-tw/",
+            "description": "給 Codex Skills 與多技能 AI Agent 使用的實戰 skill routing pattern。"
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "name": "Workflow Skill Router",
+            "codeRepository": "https://github.com/eric861129/Workflow-skill-router",
+            "programmingLanguage": ["Markdown", "Python", "Astro"],
+            "license": "https://github.com/eric861129/Workflow-skill-router/blob/main/LICENSE",
+            "description": "提供 Codex-ready starter、公開範例、下載包與 validator CLI 的 AI Agent workflow router。"
+          }
+        ]
+      }
+---
+
+import HomeLanding from '../../../components/HomeLanding.astro';
+
+<HomeLanding locale="zh-tw" />
