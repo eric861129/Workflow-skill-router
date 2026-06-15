@@ -535,6 +535,20 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:nth-child(2) .s
   overflow-wrap: anywhere;
 }
 
+.sl-markdown-content .wsr-landing .wsr-route-showcase pre,
+.sl-markdown-content .wsr-landing .wsr-command-card pre,
+.sl-markdown-content .wsr-landing .wsr-template-showcase pre {
+  background: rgb(4 10 20 / 0.82);
+  color: #dff7ff;
+}
+
+.sl-markdown-content .wsr-landing .wsr-route-showcase code,
+.sl-markdown-content .wsr-landing .wsr-command-card code,
+.sl-markdown-content .wsr-landing .wsr-template-showcase code {
+  background: transparent;
+  color: inherit;
+}
+
 .wsr-section {
   padding: 7rem 0;
 }
