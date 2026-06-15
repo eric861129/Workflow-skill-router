@@ -18,7 +18,7 @@ const text = {
   en: {
     nav: ['Why it works', 'Examples', 'Proof'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
-    star: 'Star on GitHub',
+    star: 'View on GitHub',
     quickstart: 'Start in 30 seconds',
     downloadBlank: 'Download blank package',
     download: 'Download template',
@@ -104,14 +104,14 @@ python scripts/evaluate-routing.py \\
   --strict
 
 python -m unittest discover -s tests`,
-    finalTitle: 'Make skill routing a pattern people can star, fork, and reuse',
+    finalTitle: 'Make skill routing a reusable open-source pattern',
     finalCopy:
-      'Open the repository, inspect the starter, and star it if the pattern helps your AI agent work with less chaos.',
+      'Open the repository, inspect the starter, and follow releases if the pattern fits your agent workflow.',
   },
   'zh-tw': {
     nav: ['為什麼有效', '範例', '驗證'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
-    star: '到 GitHub 給星星',
+    star: '查看 GitHub',
     quickstart: '30 秒開始',
     downloadBlank: '下載空白套件',
     download: '下載範本',
@@ -197,9 +197,9 @@ python scripts/evaluate-routing.py \\
   --strict
 
 python -m unittest discover -s tests`,
-    finalTitle: '把 skill routing 變成值得 star、fork、重用的 pattern',
+    finalTitle: '把 skill routing 打磨成可重用的開源 pattern',
     finalCopy:
-      '打開 GitHub repo，檢查 starter。如果這個 pattern 能讓你的 AI Agent 工作更清楚，歡迎給它一顆星。',
+      '打開 GitHub repo，檢查 starter。如果這個 pattern 適合你的 Agent workflow，可以透過 releases 追蹤後續更新。',
   },
 }[locale];
 
@@ -214,7 +214,7 @@ const demoText = isZh
       copied: '已複製',
       copyInstall: '複製安裝指令',
       installCopied: '指令已複製',
-      star: '覺得有用就 Star',
+      star: '查看 GitHub repo',
       template: '查看 Template Skill Catalog',
     }
   : {
@@ -227,7 +227,7 @@ const demoText = isZh
       copied: 'Copied',
       copyInstall: 'Copy install command',
       installCopied: 'Install command copied',
-      star: 'Star if this helps',
+      star: 'View GitHub repo',
       template: 'View Template Skill Catalog',
     };
 
@@ -333,7 +333,7 @@ const initialDemo = routeDemoScenarios[0];
       </button>
       <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer" aria-label={text.star}>
         <span class="wsr-star-full">{text.star}</span>
-        <span class="wsr-star-short">Star</span>
+        <span class="wsr-star-short">GitHub</span>
       </a>
     </div>
   </nav>
