@@ -38,7 +38,111 @@ workflow-skill-router-template/
     <public-safe skill folders>
 ```
 
-範本包是公開安全版：從真實 `.codex/skills` 產生，排除 private organization-specific skills，並移除其他公開 skill 內的 private lines。
+範本包是公開安全版：從真實 `.codex/skills` 產生，排除 private organization-specific skills，並移除其他公開 skill 內的 private lines。目前範本包包含 60 個 public-safe skill folders，完整清單如下。
+
+## 範本包包含的 SKILL
+
+### Router 與 Codex 系統工具
+
+這一組是安裝、建立、維護 SKILL 時最核心的工具，也包含本專案的 router 本體。
+
+- `.system/imagegen`
+- `.system/openai-docs`
+- `.system/plugin-creator`
+- `.system/skill-creator`
+- `.system/skill-installer`
+- `workflow-skill-router`
+
+### 需求、規劃、執行與交接
+
+這一組用在需求釐清、任務拆解、計畫執行、收尾、handoff，以及讓 Agent 維持穩定工程節奏。
+
+- `requirements-clarity`
+- `executing-plans`
+- `session-handoff`
+- `finishing-a-development-branch`
+- `commit-work`
+- `receiving-code-review`
+- `karpathy-guidelines`
+- `writing-clearly-and-concisely`
+
+### 架構、API、後端與資料庫
+
+這一組用在系統設計、API 合約、OpenAPI/TypeScript 同步、C#/.NET、資料庫 schema、SQL 與效能調校。
+
+- `architecture-designer`
+- `c4-architecture`
+- `cloud-architect`
+- `api-designer`
+- `api-guidelines-skill`
+- `openapi-contract-generation-skill`
+- `openapi-to-typescript`
+- `csharp-developer`
+- `dotnet-core-expert`
+- `database-schema-designer`
+- `database-optimizer`
+- `sql-pro`
+
+### 前端、Vue、UI 與設計系統
+
+這一組用在前端實作、Vue Composition API、UI polish、設計系統、Storybook、Tailwind token、截圖轉程式碼與視覺重設計。
+
+- `frontend-design`
+- `vue-expert`
+- `vue-composition-patterns-skill`
+- `design-system`
+- `design-system-starter`
+- `storybook-design-system-skill`
+- `tailwind-design-token-skill`
+- `ui-styling`
+- `ui-ux-pro-max`
+- `gpt-tasteskill`
+- `minimalist-skill`
+- `soft-skill`
+- `taste-skill`
+- `redesign-skill`
+- `image-to-code-skill`
+- `imagegen-frontend-web`
+- `imagegen-frontend-mobile`
+
+### DevOps、本機開發與依賴管理
+
+這一組用在 Docker Compose、本機服務堆疊、CI/CD、雲端/部署思考與 dependency 更新。
+
+- `devops-engineer`
+- `docker-compose-local-dev-skill`
+- `dependency-updater`
+
+### 測試、除錯、瀏覽器與品質驗證
+
+這一組用在系統性除錯、Playwright、QA test plan、回歸測試與實際瀏覽器驗證。
+
+- `systematic-debugging`
+- `playwright`
+- `qa-test-planner`
+
+### 文件、圖表、檔案與規格整理
+
+這一組用在技術文件、使用者文件、Mermaid/C4 圖、PDF、規格反推、共同撰寫與檔案整理。
+
+- `code-documenter`
+- `doc-coauthoring`
+- `mermaid-diagrams`
+- `pdf`
+- `spec-miner`
+- `file-organizer`
+- `agent-md-refactor`
+
+### 產品、品牌、視覺與跨平台應用
+
+這一組用在品牌語氣、banner、視覺設計、Flutter App，以及比較偏產品化或推廣面的工作。
+
+- `brand`
+- `banner-design`
+- `design`
+- `flutter-expert`
+
+範本包刻意不列出被排除的 private skill folder 名稱。你可以把這份清單當成 public-safe 的參考 catalog，再依照自己的 Agent 環境增減 SKILL。
 
 ## 本機重新打包
 
