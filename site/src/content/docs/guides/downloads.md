@@ -12,6 +12,7 @@ Use the blank package when you want to install the router and fill your own skil
 Use the template package when you want a public-safe copy of a real local Codex skills catalog.
 
 - [Download template skill package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [Browse the matching Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/)
 - [View template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 
 ## What is inside
@@ -38,7 +39,7 @@ workflow-skill-router-template/
     <public-safe skill folders>
 ```
 
-The template package is public-safe. It is generated from the maintainer's real `.codex/skills` folder, excludes private organization-specific skills, and omits private lines from otherwise public skill files. The current template package includes 60 public-safe skill folders.
+The template package is public-safe. It is generated from the maintainer's real `.codex/skills` folder, excludes organization-specific skills, and omits sensitive lines from otherwise public skill files. The current template package is documented by the [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/), which turns the included skills into practical routes.
 
 ## Skills Included In The Template Package
 
@@ -155,6 +156,7 @@ The package builder refuses to use an implicit local skills directory. It also r
 ## Source
 
 - [View `downloads/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
+- [View Template Skill Catalog source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [View package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 - [View template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [View starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)

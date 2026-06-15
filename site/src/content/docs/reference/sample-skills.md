@@ -1,6 +1,6 @@
 ---
 title: Sample Skills
-description: Copyable public SKILL.md examples that pair with the common engineering routes.
+description: Copyable public SKILL.md examples that pair with the template skill catalog.
 ---
 
 The repository includes copyable public sample skills so readers can see what routed skills can look like in practice.
@@ -36,9 +36,9 @@ sample-skills/
 
 These examples are intentionally generic. They avoid organization names, private paths, hostnames, secrets, and product-specific architecture.
 
-Use them as reference implementations when building your own skill catalog, or download them through the [template skill package](/Workflow-skill-router/guides/downloads/).
+Use them as reference implementations when building your own skill catalog, or download them through the [template skill package](/Workflow-skill-router/guides/downloads/). The [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/) shows how these skills can be routed together.
 
 ## Source
 
 - [View `sample-skills/` on GitHub](https://github.com/eric861129/Workflow-skill-router/tree/main/sample-skills)
-- [View common engineering routes that use them](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
+- [View Template Skill Catalog routes](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)

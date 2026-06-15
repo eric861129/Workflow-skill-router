@@ -1,3 +1,0 @@
-display_name: Common Engineering Router
-short_description: Route realistic multi-skill engineering workflows.
-default_prompt: "Use common-engineering-router to choose the right skills before starting complex engineering work."

@@ -261,6 +261,7 @@ For a fuller reference, download the [template SKILL package](https://github.com
 
 Source:
 
+- [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/)
 - [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
@@ -269,14 +270,14 @@ Source:
 Ask a complex task:
 
 ```text
-Debug a browser-only bug in the customer portal and add a regression check.
+Debug a Vue-only rendering bug and add a Playwright regression check.
 ```
 
 Expected shape:
 
 ```text
-Route: Frontend / Debugging > Browser reproduction > Customer portal
-Use SKILL: frontend-debugging, browser, playwright
-Reason: frontend-debugging maps UI symptoms to source; browser reproduces rendered behavior; playwright captures the regression.
+Route: Frontend / Vue / UI > Browser regression > Rendered behavior
+Use SKILL: vue-expert, systematic-debugging, playwright
+Reason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.
 ```
 

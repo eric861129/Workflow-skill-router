@@ -1,5 +1,0 @@
-interface:
-  display_name: "Generic Agent Router"
-  short_description: "Minimal route map for a small AI agent skill catalog."
-  default_prompt: "Use generic-agent-router to choose the right skills before starting."
-

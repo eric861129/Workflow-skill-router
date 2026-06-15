@@ -12,42 +12,45 @@ const text = {
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: 'Star on GitHub',
     quickstart: 'Start in 30 seconds',
-    download: 'Download starter',
+    download: 'Download template',
     heroTitle: 'AI agent skill routing before the work begins',
     heroCopy:
       'Workflow Skill Router is a practical routing pattern for Codex Skills and multi-skill agents: choose one primary skill, add focused support, and keep complex tasks out of context overload.',
     routeLabel: 'Routing output',
     route:
-      'Route: Frontend / Debugging > Browser reproduction > Single-page app\nUse SKILL: frontend-debugging, browser, systematic-debugging\nReason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.',
+      'Route: Frontend / Vue / UI > Browser regression > Rendered behavior\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.',
     introTitle: 'A sharper operating layer for multi-skill agents',
     introCopy:
       'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts.',
     cards: [
       ['Contract first', 'Every complex route returns task nature, work stage, technical domain, selected skills, and one-line reasons.'],
-      ['Public examples', 'Common engineering, company platform, frontend debugging, and CI review routes show real usage patterns.'],
+      ['Template catalog', 'One downloadable public-safe skill pack now maps directly to one inspectable routing catalog.'],
       ['Validator included', 'A dependency-free CLI checks structure, route size, primary skill coverage, references, and privacy risk.'],
       ['Codex-ready starter', 'Copy a clean router skill, fill the skill tree, and validate before sharing it with a team.'],
       ['Bilingual docs', 'English and Traditional Chinese pages stay aligned so the pattern can travel across teams.'],
       ['Source-first site', 'Every important page links directly back to the GitHub source folder behind it.'],
     ],
-    examplesTitle: 'Routes people can copy, inspect, and adapt',
+    examplesTitle: 'One template catalog, ready to download and inspect',
     examplesCopy:
-      'The site is not a slogan page. It points readers to concrete routing catalogs that show how the pattern behaves in actual engineering work.',
-    accordion: [
-      ['Common engineering', 'Requirements, planning, API design, .NET, database work, Vue, docs, GitHub review, and DevOps.'],
-      ['Company platform', 'Anonymous enterprise-style platform routing for backend contracts, portals, admin UI, releases, incidents, and RBAC.'],
-      ['Frontend debugging', 'Browser, Chrome session, Playwright, framework expertise, layout, data mismatch, and regression handoff.'],
+      'The example is no longer split across several scenario pages. The template skill catalog mirrors the downloadable pack, so readers can see what they get and how the router uses it.',
+    templateHighlights: [
+      ['Public-safe skills', 'System, planning, architecture, API, backend, database, frontend, docs, DevOps, brand, and product skills.'],
+      ['Practical route catalog', 'Routes are grouped by real engineering categories with one Primary skill and focused Supporting skills.'],
+      ['Source-first proof', 'Every section links back to the GitHub folder and the exact sample route files behind the site.'],
     ],
+    templateCode:
+      'Database / Performance / Slow query\nPrimary: database-optimizer\nSupporting: sql-pro, systematic-debugging',
     outcomesTitle: 'Designed for visible outcomes',
     outcomes: [
       ['Less context noise', 'A route is narrow enough for the user to correct before the agent edits files.'],
-      ['Faster onboarding', 'A new user can copy the starter, ask an agent to fill the skill tree, and run the validator.'],
+      ['Faster onboarding', 'A new user can download the template, inspect the catalog, and adapt routes to their own agent environment.'],
       ['Safer sharing', 'Public examples stay generic while private overlays can keep organization-specific rules local.'],
     ],
     validatorTitle: 'Proof before publish',
     validatorCopy:
-      'The validator makes this pattern feel like a small developer tool, not just a prompt. It checks the starter and every example package before the repo is shared.',
-    validatorCommand: 'python scripts/validate-router.py starter/workflow-skill-router',
+      'The validator makes this pattern feel like a small developer tool, not just a prompt. It checks the blank starter and the template catalog before the repo is shared.',
+    validatorCommand:
+      'python scripts/validate-router.py starter/workflow-skill-router\npython scripts/validate-router.py examples/template-skill-catalog',
     finalTitle: 'Make skill routing a pattern people can star, fork, and reuse',
     finalCopy:
       'Open the repository, inspect the starter, and star it if the pattern helps your AI agent work with less chaos.',
@@ -57,42 +60,45 @@ const text = {
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: '到 GitHub 給星星',
     quickstart: '30 秒開始',
-    download: '下載 starter',
+    download: '下載範本',
     heroTitle: 'AI Agent 開工前，先完成 skill routing',
     heroCopy:
       'Workflow Skill Router 是給 Codex Skills 與多技能 Agent 使用的實戰 routing pattern：先選一個 primary skill，再補上聚焦的 supporting skills，讓複雜任務不要被上下文噪音淹沒。',
     routeLabel: 'Routing output',
     route:
-      'Route: Frontend / Debugging > Browser reproduction > Single-page app\nUse SKILL: frontend-debugging, browser, systematic-debugging\nReason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.',
+      'Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。',
     introTitle: '讓多技能 Agent 多一層清楚的工作入口',
     introCopy:
       'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再開始執行。',
     cards: [
       ['Contract first', '每個複雜 route 都會輸出任務性質、工作階段、技術領域、選用 skills 與一句理由。'],
-      ['Public examples', '常見工程、公司平台、前端除錯與 CI review routes 展示真實可讀的使用方式。'],
+      ['範本 catalog', '現在用一個可下載的 public-safe skill pack，直接對應一份可檢查的 routing catalog。'],
       ['Validator included', '無外部依賴的 CLI 會檢查結構、route 數量、primary skill、references 與隱私風險。'],
       ['Codex-ready starter', '複製乾淨的 router skill，填入 skill tree，驗證後就能分享給團隊使用。'],
       ['Bilingual docs', '英文與繁中頁面同步，讓這個 pattern 可以更容易在不同團隊流通。'],
       ['Source-first site', '重要頁面都直接連回 GitHub source folder，讀者可以快速追到實作內容。'],
     ],
-    examplesTitle: '可以複製、檢查、改成自己版本的 routes',
+    examplesTitle: '一份範本 catalog，下載後就能對照使用',
     examplesCopy:
-      '這不是只有口號的介紹頁。站台會直接把讀者帶到具體 routing catalog，看見這個 pattern 在工程工作裡如何運作。',
-    accordion: [
-      ['常見工程', '需求、規劃、API design、.NET、資料庫、Vue、文件、GitHub review 與 DevOps。'],
-      ['公司平台', '匿名化企業平台情境：backend contract、portal、admin UI、release、incident 與 RBAC。'],
-      ['前端除錯', 'Browser、Chrome session、Playwright、framework expertise、layout、資料落差與 regression handoff。'],
+      '範例不再拆成多個情境頁。Template Skill Catalog 會直接對齊下載包，讓讀者知道拿到哪些 SKILL，以及 router 如何使用它們。',
+    templateHighlights: [
+      ['Public-safe skills', '包含 system、規劃、架構、API、後端、資料庫、前端、文件、DevOps、品牌與產品相關 SKILL。'],
+      ['實戰 route catalog', '依常見工程分類整理，每條 route 都有一個 Primary skill 與聚焦的 Supporting skills。'],
+      ['Source-first proof', '每個區塊都能連回 GitHub folder，以及站台背後實際使用的 sample route files。'],
     ],
+    templateCode:
+      '資料庫 / 效能 / 慢查詢\nPrimary: database-optimizer\nSupporting: sql-pro, systematic-debugging',
     outcomesTitle: '為看得見的成果設計',
     outcomes: [
       ['降低上下文噪音', 'Route 小到使用者可以在 Agent 修改檔案前先修正方向。'],
-      ['更快導入', '新使用者可以複製 starter、請 Agent 補齊 skill tree，然後直接跑 validator。'],
+      ['更快導入', '新使用者可以下載範本、檢查 catalog，再把 routes 改成自己的 Agent 環境。'],
       ['更安全分享', '公開範例保持 generic，組織內規則則可以放在 private overlay。'],
     ],
     validatorTitle: '發布前先驗證',
     validatorCopy:
-      'Validator 讓這個 pattern 比單純 prompt 更像小型 developer tool。分享 repo 前，可以先驗證 starter 和每個 example package。',
-    validatorCommand: 'python scripts/validate-router.py starter/workflow-skill-router',
+      'Validator 讓這個 pattern 比單純 prompt 更像小型 developer tool。分享 repo 前，可以先驗證空白 starter 和範本 catalog。',
+    validatorCommand:
+      'python scripts/validate-router.py starter/workflow-skill-router\npython scripts/validate-router.py examples/template-skill-catalog',
     finalTitle: '把 skill routing 變成值得 star、fork、重用的 pattern',
     finalCopy:
       '打開 GitHub repo，檢查 starter。如果這個 pattern 能讓你的 AI Agent 工作更清楚，歡迎給它一顆星。',
@@ -157,16 +163,28 @@ const text = {
       <div class="wsr-proof-pin">
         <h2>{text.examplesTitle}</h2>
         <p>{text.examplesCopy}</p>
-        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/common-engineering/`}>{isZh ? '查看 routes' : 'Explore routes'}</a>
+        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{isZh ? '查看範本 catalog' : 'Explore template catalog'}</a>
       </div>
       <div class="wsr-proof-stack">
-        <div class="wsr-accordion" aria-label={isZh ? '範例分類' : 'Example categories'}>
-          {text.accordion.map(([title, body], index) => (
-            <a class="wsr-accordion-panel wsr-motion-image" href={`${rootPath}/examples/${index === 0 ? 'common-engineering' : index === 1 ? 'company-platform' : 'frontend-debugging'}/`}>
-              <span>{title}</span>
-              <p>{body}</p>
-            </a>
-          ))}
+        <div class="wsr-template-showcase wsr-motion-image">
+          <div>
+            <span class="wsr-template-kicker">{isZh ? 'Template Skill Catalog' : 'Template Skill Catalog'}</span>
+            <h3>{isZh ? '下載包內容，就是範例內容' : 'The download package is the example'}</h3>
+            <p>{isZh ? '讀者不需要在三個情境頁之間猜哪個才是主範本。這裡直接把 template zip 的 public-safe skills 分類成可複製 routes。' : 'Readers no longer need to choose between several scenario pages. This catalog turns the template zip skills into copyable routes.'}</p>
+          </div>
+          <pre><code>{text.templateCode}</code></pre>
+          <div class="wsr-template-grid">
+            {text.templateHighlights.map(([title, body]) => (
+              <a class="wsr-template-pill" href={`${rootPath}/examples/template-skill-catalog/`}>
+                <span>{title}</span>
+                <p>{body}</p>
+              </a>
+            ))}
+          </div>
+          <div class="wsr-template-actions">
+            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip">{isZh ? '下載範本包' : 'Download template package'}</a>
+            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog">{isZh ? '查看 GitHub source' : 'View GitHub source'}</a>
+          </div>
         </div>
         <div class="wsr-outcome-carousel" data-wsr-carousel>
           <div class="wsr-carousel-controls">

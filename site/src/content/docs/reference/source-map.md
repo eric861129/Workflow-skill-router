@@ -15,12 +15,10 @@ Use these links when you want to inspect the actual repository source instead of
 
 ## Examples
 
-- [Common engineering routing](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
-- [Company platform sanitized](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/company-platform-sanitized)
-- [Frontend debugging](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/frontend-debugging)
-- [Generic agent](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/generic-agent)
-- [Enterprise fullstack](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/enterprise-fullstack)
-- [GitHub CI review](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/github-ci-review)
+- [Template Skill Catalog](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
+- [Template skill tree](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/skill-tree.md)
+- [Template routing rules](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/routing-rules.md)
+- [Template sample routes](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/sample-routes.md)
 
 ## Sample skills and downloads
 

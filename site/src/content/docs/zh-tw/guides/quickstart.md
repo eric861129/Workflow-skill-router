@@ -261,6 +261,7 @@ OK: workflow-skill-router passed validation
 
 Source:
 
+- [範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/)
 - [範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
@@ -269,13 +270,13 @@ Source:
 丟一個複雜任務給 Agent：
 
 ```text
-Debug a browser-only bug in the customer portal and add a regression check.
+請協助排查 Vue 頁面只在瀏覽器呈現時出現的錯誤，並補上 Playwright 回歸測試。
 ```
 
 預期格式：
 
 ```text
-Route: Frontend / Debugging > Browser reproduction > Customer portal
-Use SKILL: frontend-debugging, browser, playwright
-Reason: frontend-debugging maps UI symptoms to source; browser reproduces rendered behavior; playwright captures the regression.
+Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為
+Use SKILL: vue-expert, systematic-debugging, playwright
+Reason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。
 ```

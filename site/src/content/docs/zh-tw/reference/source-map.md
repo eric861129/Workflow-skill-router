@@ -15,12 +15,10 @@ description: 直接開啟站台背後對應的 GitHub repo 資料夾與檔案。
 
 ## 範例
 
-- [Common engineering routing](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/common-engineering-routing)
-- [Company platform sanitized](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/company-platform-sanitized)
-- [Frontend debugging](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/frontend-debugging)
-- [Generic agent](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/generic-agent)
-- [Enterprise fullstack](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/enterprise-fullstack)
-- [GitHub CI review](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/github-ci-review)
+- [範本 Skill Catalog](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
+- [範本 skill tree](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/skill-tree.md)
+- [範本 routing rules](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/routing-rules.md)
+- [範本 sample routes](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/sample-routes.md)
 
 ## Sample skills 與下載
 

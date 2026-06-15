@@ -122,9 +122,7 @@ export default defineConfig({
             'zh-TW': '範例',
           },
           items: [
-            { slug: 'examples/common-engineering' },
-            { slug: 'examples/company-platform' },
-            { slug: 'examples/frontend-debugging' },
+            { slug: 'examples/template-skill-catalog' },
           ],
         },
         {

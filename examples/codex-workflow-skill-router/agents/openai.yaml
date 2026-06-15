@@ -1,4 +1,0 @@
-interface:
-  display_name: "Workflow Skill Router"
-  short_description: "Routes complex Codex tasks to the right SKILL set."
-  default_prompt: "Use $workflow-skill-router to choose the right Codex SKILLs for this task before starting."

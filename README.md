@@ -37,8 +37,8 @@ With routing, the agent selects a small working set:
 
 ```text
 Route: Frontend / Debugging > Browser reproduction > Single-page app
-Use SKILL: frontend-debugging, browser, systematic-debugging
-Reason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.
+Use SKILL: vue-expert, systematic-debugging, playwright
+Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
 ## 30 Second Quickstart
@@ -78,6 +78,7 @@ OK: workflow-skill-router passed validation
 
 - [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
 - [Template SKILL package](downloads/workflow-skill-router-template.zip): a public-safe export of the maintainer's real local Codex skills catalog, including the sanitized `workflow-skill-router` and all public skills used in practice.
+- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the template package.
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
 
 Regenerate both archives locally:
@@ -88,7 +89,7 @@ python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> -
 
 The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing your source directory.
 
-The template package is generated from a real local `.codex/skills` folder. It excludes private organization-specific skills and omits private lines from otherwise public skills.
+The template package is generated from a real local `.codex/skills` folder. It excludes organization-specific skills and omits sensitive lines from otherwise public skills.
 
 ## Practical Routing Examples
 
@@ -98,8 +99,8 @@ The template package is generated from a real local `.codex/skills` folder. It e
 User: Add a new customer settings endpoint, update OpenAPI, and make the frontend client follow it.
 
 Route: API / Contract lifecycle > Backend-to-frontend sync
-Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, build-web-apps:frontend-testing-debugging
-Reason: api-designer stabilizes the endpoint; openapi-contract-generation-skill manages schema diff and contract generation; openapi-to-typescript updates the client types; frontend-testing-debugging verifies rendered consumption.
+Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner
+Reason: api-designer stabilizes the endpoint; openapi-contract-generation-skill manages schema diff and contract generation; openapi-to-typescript updates the client types; qa-test-planner defines contract coverage.
 ```
 
 ### Database migration with performance risk
@@ -117,9 +118,9 @@ Reason: database-schema-designer owns migration shape; sql-pro reviews SQL corre
 ```text
 User: A customer portal form only fails after a browser refresh. Reproduce it and add a regression check.
 
-Route: Frontend / Debugging > Browser reproduction
-Use SKILL: build-web-apps:frontend-testing-debugging, browser:control-in-app-browser, playwright, systematic-debugging
-Reason: frontend-testing-debugging maps UI symptoms to source; browser reproduces real runtime behavior; playwright captures the regression; systematic-debugging keeps the investigation causal.
+Route: Frontend / Vue / UI > Browser regression
+Use SKILL: vue-expert, systematic-debugging, playwright
+Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
 ### PR review and CI repair
@@ -127,9 +128,9 @@ Reason: frontend-testing-debugging maps UI symptoms to source; browser reproduce
 ```text
 User: Review this auth PR, address comments, and fix the failing checks.
 
-Route: GitHub / Review and CI > Security-sensitive PR
-Use SKILL: github:github, receiving-code-review, codex-security:security-diff-scan, github:gh-fix-ci
-Reason: github:github orients the PR; receiving-code-review handles comments; security-diff-scan checks auth and data exposure; gh-fix-ci diagnoses failing checks.
+Route: Review / CI readiness > Security-sensitive change
+Use SKILL: receiving-code-review, systematic-debugging, qa-test-planner, commit-work
+Reason: receiving-code-review handles review feedback; systematic-debugging isolates failing checks; qa-test-planner defines verification; commit-work keeps the final change clean.
 ```
 
 ### Local development stack
@@ -145,8 +146,8 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 ## What Is Included
 
 - `starter/workflow-skill-router/`: a Codex-ready starter skill with an agent-agnostic routing contract.
-- `examples/`: example routers, from minimal generic routing to realistic engineering workflows.
-- `sample-skills/`: copyable public `SKILL.md` examples that pair with the common engineering routes.
+- `examples/template-skill-catalog/`: the single public example catalog that mirrors the template download package.
+- `sample-skills/`: copyable public `SKILL.md` examples that pair with the template catalog.
 - `downloads/`: generated blank and template SKILL zip packages.
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
 - `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
@@ -159,12 +160,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 
 | Example | Best for |
 | --- | --- |
-| `examples/generic-agent` | Any agent with a small skill catalog |
-| `examples/common-engineering-routing` | Realistic engineering routes with concrete skill names |
-| `examples/enterprise-fullstack` | Backend, frontend, docs, CI, and release routing |
-| `examples/frontend-debugging` | Browser vs Playwright vs UI debugging decisions |
-| `examples/github-ci-review` | GitHub PR review, CI failure, and release readiness |
-| `examples/company-platform-sanitized` | An anonymized company platform workflow with real-world complexity |
+| `examples/template-skill-catalog` | The downloadable template package, organized into practical public-safe route categories |
 
 ## Learn More
 

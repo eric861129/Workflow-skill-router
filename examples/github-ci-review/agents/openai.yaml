@@ -1,5 +1,0 @@
-interface:
-  display_name: "GitHub CI Review Router"
-  short_description: "Routes PR, review, CI, and release-readiness work."
-  default_prompt: "Use github-ci-review-router before working on this GitHub task."
-
