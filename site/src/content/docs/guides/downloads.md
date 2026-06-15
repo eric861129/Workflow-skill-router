@@ -38,7 +38,111 @@ workflow-skill-router-template/
     <public-safe skill folders>
 ```
 
-The template package is public-safe. It is generated from the maintainer's real `.codex/skills` folder, excludes private organization-specific skills, and omits private lines from otherwise public skill files.
+The template package is public-safe. It is generated from the maintainer's real `.codex/skills` folder, excludes private organization-specific skills, and omits private lines from otherwise public skill files. The current template package includes 60 public-safe skill folders.
+
+## Skills Included In The Template Package
+
+### Router And Codex System Tools
+
+These skills help install, create, maintain, and route Codex skills. This group also includes the router itself.
+
+- `.system/imagegen`
+- `.system/openai-docs`
+- `.system/plugin-creator`
+- `.system/skill-creator`
+- `.system/skill-installer`
+- `workflow-skill-router`
+
+### Requirements, Planning, Execution, And Handoff
+
+These skills support requirement clarification, task decomposition, implementation plans, branch completion, handoffs, and steady engineering habits.
+
+- `requirements-clarity`
+- `executing-plans`
+- `session-handoff`
+- `finishing-a-development-branch`
+- `commit-work`
+- `receiving-code-review`
+- `karpathy-guidelines`
+- `writing-clearly-and-concisely`
+
+### Architecture, API, Backend, And Database
+
+These skills cover system design, API contracts, OpenAPI and TypeScript sync, C#/.NET, database schema work, SQL, and performance tuning.
+
+- `architecture-designer`
+- `c4-architecture`
+- `cloud-architect`
+- `api-designer`
+- `api-guidelines-skill`
+- `openapi-contract-generation-skill`
+- `openapi-to-typescript`
+- `csharp-developer`
+- `dotnet-core-expert`
+- `database-schema-designer`
+- `database-optimizer`
+- `sql-pro`
+
+### Frontend, Vue, UI, And Design Systems
+
+These skills support frontend implementation, Vue Composition API, UI polish, design systems, Storybook, Tailwind tokens, screenshot-to-code work, and visual redesigns.
+
+- `frontend-design`
+- `vue-expert`
+- `vue-composition-patterns-skill`
+- `design-system`
+- `design-system-starter`
+- `storybook-design-system-skill`
+- `tailwind-design-token-skill`
+- `ui-styling`
+- `ui-ux-pro-max`
+- `gpt-tasteskill`
+- `minimalist-skill`
+- `soft-skill`
+- `taste-skill`
+- `redesign-skill`
+- `image-to-code-skill`
+- `imagegen-frontend-web`
+- `imagegen-frontend-mobile`
+
+### DevOps, Local Development, And Dependency Management
+
+These skills help with Docker Compose, local service stacks, CI/CD, cloud and deployment thinking, and dependency updates.
+
+- `devops-engineer`
+- `docker-compose-local-dev-skill`
+- `dependency-updater`
+
+### Testing, Debugging, Browser, And Quality Verification
+
+These skills cover systematic debugging, Playwright, QA test planning, regression checks, and real browser verification.
+
+- `systematic-debugging`
+- `playwright`
+- `qa-test-planner`
+
+### Documentation, Diagrams, Files, And Specification Work
+
+These skills support technical documentation, user-facing docs, Mermaid/C4 diagrams, PDF work, specification mining, coauthoring, and file organization.
+
+- `code-documenter`
+- `doc-coauthoring`
+- `mermaid-diagrams`
+- `pdf`
+- `spec-miner`
+- `file-organizer`
+- `agent-md-refactor`
+
+### Product, Brand, Visuals, And Cross-Platform Apps
+
+These skills support brand voice, banners, visual design, Flutter apps, and more product-facing or promotional work.
+
+- `brand`
+- `banner-design`
+- `design`
+- `flutter-expert`
+
+The template package intentionally does not list excluded private skill folder names. Use this list as a public-safe reference catalog, then add or remove skills for your own agent environment.
 
 ## Rebuild locally
 

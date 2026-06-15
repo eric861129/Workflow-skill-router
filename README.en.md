@@ -1,22 +1,20 @@
 # Workflow Skill Router
 
-> Help multi-skill AI agents choose the right workflow before they start working.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Validation](https://img.shields.io/badge/validator-python%20scripts%2Fvalidate--router.py-brightgreen.svg)](scripts/validate-router.py)
+[![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.zh-TW.md)
 
-Workflow Skill Router is an **AI Agent skill routing pattern**. It helps agents select a small, explainable set of skills for each task instead of loading every related capability.
+> A practical routing pattern that helps AI agents choose the smallest useful skill set before complex work starts.
 
-## The Problem
+Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. The hard part is no longer "can the agent do this?" The hard part is:
 
-As agents gain more skills, capability becomes less of a constraint than selection quality:
+```text
+Which skills should be active for this task?
+Which skills are merely related but should stay inactive?
+Should planning, implementation, debugging, and verification use the same skills?
+```
 
-- API work may involve architecture, backend, database, tests, docs, and SDK generation.
-- Frontend work may involve UI design, framework knowledge, browser inspection, Playwright, accessibility, and QA.
-- GitHub work may need a live connector, but also code review reasoning and CI diagnosis.
-
-Without routing, an agent often treats "related" as "needed."
-
-## The Pattern
-
-Use a vertical decision model:
+Workflow Skill Router turns a flat skill list into a decision layer:
 
 ```text
 Task nature
@@ -25,72 +23,64 @@ Task nature
       -> 1 primary skill + up to 3 supporting skills
 ```
 
-The router does three things:
+It is not a super skill. It is a small front door that tells an agent what to load next.
 
-1. Classify the task.
-2. Select the smallest sufficient skill set.
-3. Explain why those skills were selected.
+## Before And After
 
-It does not replace the selected skills. It routes to them.
-
-## Output Contract
-
-Complex task:
+Without routing, a frontend bug can trigger every related skill:
 
 ```text
-Route: task nature > work stage > technical domain
-Use SKILL: primary-skill, supporting-skill, supporting-skill
-Reason: one short sentence per SKILL
+frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
 ```
 
-Simple task:
+With routing, the agent selects a small working set:
 
 ```text
-No extra routing needed: reason
+Route: Frontend / Debugging > Browser reproduction > Single-page app
+Use SKILL: frontend-debugging, browser, systematic-debugging
+Reason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.
 ```
 
-## Quickstart
+## 30 Second Quickstart
 
 Website: `https://huangchiyu.com/Workflow-skill-router/`
 Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
 
-Copy the starter:
+1. Copy the starter into your agent's skill directory:
+
+   ```text
+   starter/workflow-skill-router/
+   ```
+
+2. Ask your agent to inventory its available skills and fill:
+
+   ```text
+   workflow-skill-router/
+     SKILL.md
+     references/
+       skill-tree.md
+       routing-rules.md
+   ```
+
+3. Validate the router:
+
+   ```bash
+   python scripts/validate-router.py starter/workflow-skill-router
+   ```
+
+Expected result:
 
 ```text
-starter/workflow-skill-router/
+OK: workflow-skill-router passed validation
 ```
 
-For Codex on Windows, copy it to:
+## Download Skill Packages
 
-```text
-C:\Users\<you>\.codex\skills\workflow-skill-router
-```
-
-Then use the prompt in [prompts/agent-prompt.en.md](prompts/agent-prompt.en.md) to ask your agent to inventory its available skills and fill:
-
-```text
-workflow-skill-router/
-  SKILL.md
-  references/
-    skill-tree.md
-    routing-rules.md
-  agents/
-    openai.yaml
-```
-
-Validate the result:
-
-```bash
-python scripts/validate-router.py starter/workflow-skill-router
-```
-
-## Downloadable Skill Packages
-
-- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): install this when you want an empty router and your own skill tree.
-- [Template SKILL package](downloads/workflow-skill-router-template.zip): install or inspect this when you want a public-safe export of the maintainer's real local Codex skills catalog.
+- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
+- [Template SKILL package](downloads/workflow-skill-router-template.zip): a public-safe export of the maintainer's real local Codex skills catalog, including the sanitized `workflow-skill-router` and all public skills used in practice.
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
 
-Rebuild the packages:
+Regenerate both archives locally:
 
 ```bash
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
@@ -98,21 +88,25 @@ python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> -
 
 The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing your source directory.
 
-The template package is generated from a real local `.codex/skills` folder. It includes the sanitized `workflow-skill-router` and all public skills used in practice, while excluding private organization-specific skills.
+The template package is generated from a real local `.codex/skills` folder. It excludes private organization-specific skills and omits private lines from otherwise public skills.
 
-## Practical Examples
+## Practical Routing Examples
 
-### API and frontend contract sync
+### API contract sync
 
 ```text
+User: Add a new customer settings endpoint, update OpenAPI, and make the frontend client follow it.
+
 Route: API / Contract lifecycle > Backend-to-frontend sync
 Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, build-web-apps:frontend-testing-debugging
 Reason: api-designer stabilizes the endpoint; openapi-contract-generation-skill manages schema diff and contract generation; openapi-to-typescript updates the client types; frontend-testing-debugging verifies rendered consumption.
 ```
 
-### Database migration and query risk
+### Database migration with performance risk
 
 ```text
+User: Add audit tables for account changes and make sure the admin query does not become slow.
+
 Route: Database / Schema and performance > Migration plus query review
 Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
 Reason: database-schema-designer owns migration shape; sql-pro reviews SQL correctness; database-optimizer checks query plans; qa-test-planner defines regression coverage.
@@ -121,6 +115,8 @@ Reason: database-schema-designer owns migration shape; sql-pro reviews SQL corre
 ### Browser-only frontend bug
 
 ```text
+User: A customer portal form only fails after a browser refresh. Reproduce it and add a regression check.
+
 Route: Frontend / Debugging > Browser reproduction
 Use SKILL: build-web-apps:frontend-testing-debugging, browser:control-in-app-browser, playwright, systematic-debugging
 Reason: frontend-testing-debugging maps UI symptoms to source; browser reproduces real runtime behavior; playwright captures the regression; systematic-debugging keeps the investigation causal.
@@ -129,44 +125,56 @@ Reason: frontend-testing-debugging maps UI symptoms to source; browser reproduce
 ### PR review and CI repair
 
 ```text
+User: Review this auth PR, address comments, and fix the failing checks.
+
 Route: GitHub / Review and CI > Security-sensitive PR
 Use SKILL: github:github, receiving-code-review, codex-security:security-diff-scan, github:gh-fix-ci
 Reason: github:github orients the PR; receiving-code-review handles comments; security-diff-scan checks auth and data exposure; gh-fix-ci diagnoses failing checks.
 ```
 
-## Repository Map
+### Local development stack
 
-- `starter/workflow-skill-router/`: blank router skill starter.
-- `examples/`: working routers for generic agents, company platform scenarios, and realistic engineering workflows.
+```text
+User: Create a Docker Compose setup with PostgreSQL, Redis, and MailDev for local development.
+
+Route: DevOps / Local development > Repeatable service stack
+Use SKILL: docker-compose-local-dev-skill, devops-engineer, systematic-debugging
+Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-engineer checks infra tradeoffs; systematic-debugging helps when startup order or health checks fail.
+```
+
+## What Is Included
+
+- `starter/workflow-skill-router/`: a Codex-ready starter skill with an agent-agnostic routing contract.
+- `examples/`: example routers, from minimal generic routing to realistic engineering workflows.
 - `sample-skills/`: copyable public `SKILL.md` examples that pair with the common engineering routes.
 - `downloads/`: generated blank and template SKILL zip packages.
-- `recipes/`: practical route design patterns.
-- `scripts/validate-router.py`: dependency-free validator.
-- `scripts/package-downloads.py`: dependency-free package builder for the downloadable archives.
+- `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
+- `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
+- `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.
-- `prompts/`: creation and maintenance prompts.
-- `docs/`: theory, customization, and validation guidance.
+- `prompts/`: copy-paste prompts for creating or updating a personalized router.
+- `docs/`: conceptual docs, customization guidance, and validation checklists.
 
-## Design Principles
+## Example Routers
 
-- Do not disable every other skill and keep only the router.
-- Do not turn the router into a giant super skill.
-- Select at most four skills per route.
-- Prefer connector/plugin skills when live external systems are the source of truth.
-- Split workflows into stages when a route needs more than four skills.
-- Keep detailed examples outside `SKILL.md` so the router stays light.
+| Example | Best for |
+| --- | --- |
+| `examples/generic-agent` | Any agent with a small skill catalog |
+| `examples/common-engineering-routing` | Realistic engineering routes with concrete skill names |
+| `examples/enterprise-fullstack` | Backend, frontend, docs, CI, and release routing |
+| `examples/frontend-debugging` | Browser vs Playwright vs UI debugging decisions |
+| `examples/github-ci-review` | GitHub PR review, CI failure, and release readiness |
+| `examples/company-platform-sanitized` | An anonymized company platform workflow with real-world complexity |
 
-## Contributing
+## Learn More
 
-Contributions are most useful when they include a reproducible routing scenario:
-
-- user request
-- available skill list
-- expected route
-- route that failed or felt noisy
-- proposed conflict rule
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+- [Main README](README.md)
+- [Traditional Chinese guide](README.zh-TW.md)
+- [Website](https://huangchiyu.com/Workflow-skill-router/)
+- [Traditional Chinese site](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
+- [Customization guide](docs/adoption-guide.md)
+- [System theory](docs/system-theory.en.md)
+- [Validation checklist](docs/validation-checklist.en.md)
 
 ## License
 
