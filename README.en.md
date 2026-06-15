@@ -1,104 +1,72 @@
 # Workflow Skill Router
 
-> Help a multi-skill AI agent choose the right workflow before it starts working.
+> Help multi-skill AI agents choose the right workflow before they start working.
 
-Language: [繁體中文](README.zh-TW.md)
+Workflow Skill Router is an **AI Agent skill routing pattern**. It helps agents select a small, explainable set of skills for each task instead of loading every related capability.
 
-As an AI agent gains more skills, the main problem is often no longer capability. The main problem becomes:
+## The Problem
 
-```text
-Which skills should be used for this task?
-Which skills are merely related but should stay inactive?
-Should requirements, design, implementation, and verification use the same skills?
-```
+As agents gain more skills, capability becomes less of a constraint than selection quality:
 
-Workflow Skill Router is a method and blank starter template for turning a user's actual skill set into a vertical routing system:
+- API work may involve architecture, backend, database, tests, docs, and SDK generation.
+- Frontend work may involve UI design, framework knowledge, browser inspection, Playwright, accessibility, and QA.
+- GitHub work may need a live connector, but also code review reasoning and CI diagnosis.
+
+Without routing, an agent often treats "related" as "needed."
+
+## The Pattern
+
+Use a vertical decision model:
 
 ```text
 Task nature
   -> Work stage
     -> Technical domain
-      -> The actual 1-4 skills to use
+      -> 1 primary skill + up to 3 supporting skills
 ```
 
-This repository is not a fixed skill list. It teaches the method and provides a blank router skill template. The user can copy the template, then use the included prompt to ask an AI agent to inspect the currently installed skills and fill in a personalized `workflow-skill-router`.
-
-## Why This Design
-
-### 1. More Skills Do Not Automatically Mean Better Work
-
-After a system gains many skills, the agent faces a selection problem:
-
-- An API task may involve API, backend, database, testing, and documentation skills.
-- A frontend task may involve UI, framework, browser, Playwright, and QA skills.
-- A GitHub task may need a connector skill, but also review reasoning.
-
-Without a routing layer, an agent may treat "related" as "needed."
-
-### 2. A Flat List Cannot Represent Work Stages
-
-The same backend task needs different skills at different stages:
-
-| Work stage | Question |
-|---|---|
-| Requirements | What problem are we solving, and what is out of scope? |
-| API design | What are the resources, errors, and versioning rules? |
-| Implementation | Which framework and existing architecture should be used? |
-| Database | What schema, indexes, and transaction boundaries are needed? |
-| Verification | Which success and failure cases should be tested? |
-
-Workflow Skill Router adds a work-stage layer on top of technical categories, so the agent does not load every related skill at once.
-
-### 3. The Router Does Not Replace Skills
-
-The router is not a super skill. It does only three things:
+The router does three things:
 
 1. Classify the task.
 2. Select the smallest sufficient skill set.
 3. Explain why those skills were selected.
 
-API design, UI design, debugging, documentation, and implementation still belong to the actual selected skills.
+It does not replace the selected skills. It routes to them.
 
-## How To Use
+## Output Contract
 
-### Step 1: Copy The Blank Starter
+Complex task:
 
-Copy this folder into your agent's skill directory:
+```text
+Route: task nature > work stage > technical domain
+Use SKILL: primary-skill, supporting-skill, supporting-skill
+Reason: one short sentence per SKILL
+```
+
+Simple task:
+
+```text
+No extra routing needed: reason
+```
+
+## Quickstart
+
+Website: `https://eric861129.github.io/Workflow-skill-router/`
+Traditional Chinese site: `https://eric861129.github.io/Workflow-skill-router/zh-tw/`
+
+Copy the starter:
 
 ```text
 starter/workflow-skill-router/
 ```
 
-For Codex on Windows:
+For Codex on Windows, copy it to:
 
 ```text
 C:\Users\<you>\.codex\skills\workflow-skill-router
 ```
 
-This is a blank starter. It contains the full specification and structure, but it does not yet contain your actual skill inventory.
-
-### Step 2: Give The Prompt To Your AI Agent
-
-Use the English prompt:
-
-[prompts/agent-prompt.en.md](prompts/agent-prompt.en.md)
-
-The prompt asks the agent to:
-
-- Read this repository's method.
-- Inventory your currently available skills.
-- Classify skills by task nature, work stage, and technical domain.
-- Generate `skill-tree.md` and `routing-rules.md`.
-- Validate that each route selects no more than 4 skills.
-
-If you have already configured `workflow-skill-router` and later add more skills, the same prompt file also includes two maintenance prompts:
-
-- Add specified new skills into the existing router.
-- Let the agent inspect the environment and add newly available skills that are missing from the router.
-
-### Step 3: Let The Agent Fill Your Router
-
-The agent should update these starter files:
+Then use the prompt in [prompts/agent-prompt.en.md](prompts/agent-prompt.en.md) to ask your agent to inventory its available skills and fill:
 
 ```text
 workflow-skill-router/
@@ -110,69 +78,52 @@ workflow-skill-router/
     openai.yaml
 ```
 
-After that, the skill becomes your environment-specific multi-skill router.
+Validate the result:
 
-## Blank Starter
-
-The starter is here:
-
-[starter/workflow-skill-router](starter/workflow-skill-router)
-
-It includes:
-
-- `SKILL.md`: the router skill specification with placeholders.
-- `references/skill-tree.md`: a placeholder tree for the agent to fill from the user's installed skills.
-- `references/routing-rules.md`: placeholder priority and conflict rules.
-- `agents/openai.yaml`: Codex UI metadata template.
-
-## Chinese Area And English Area
-
-This repository is split by language so readers can stay in one language path.
-
-Chinese area:
-
-- [README.zh-TW.md](README.zh-TW.md): Chinese introduction and usage flow.
-- [docs/system-theory.zh-TW.md](docs/system-theory.zh-TW.md): method details.
-- [docs/validation-checklist.zh-TW.md](docs/validation-checklist.zh-TW.md): validation checklist.
-- [prompts/agent-prompt.zh-TW.md](prompts/agent-prompt.zh-TW.md): Chinese agent prompt.
-
-English area:
-
-- [README.en.md](README.en.md): English introduction and usage flow.
-- [docs/system-theory.en.md](docs/system-theory.en.md): method details.
-- [docs/validation-checklist.en.md](docs/validation-checklist.en.md): validation checklist.
-- [prompts/agent-prompt.en.md](prompts/agent-prompt.en.md): English agent prompt.
-
-Shared templates:
-
-- [starter/workflow-skill-router](starter/workflow-skill-router): blank skill starter.
-- [templates](templates): single-file templates.
-
-## Routing Output Contract
-
-For complex work:
-
-```text
-Route: task nature > work stage > technical domain
-Use SKILL: primary-skill, supporting-skill, supporting-skill
-Reason: one short sentence per skill
+```bash
+python scripts/validate-router.py starter/workflow-skill-router
 ```
 
-For simple work:
+## Repository Map
 
-```text
-No extra routing needed: this is a single-step task.
-```
+- `starter/workflow-skill-router/`: blank router skill starter.
+- `examples/`: working routers for generic agents and company platform scenarios.
+- `recipes/`: practical route design patterns.
+- `scripts/validate-router.py`: dependency-free validator.
+- `site/`: Astro Starlight website for GitHub Pages.
+- `prompts/`: creation and maintenance prompts.
+- `docs/`: theory, adoption, and validation guidance.
+
+## Public Core And Private Overlay
+
+Keep the public router generic. Put team-specific rules in a private overlay:
+
+- Public core: task model, output contract, skill count rules, connector priority.
+- Private overlay: repository names, internal systems, deployment rules, regulated data rules.
+
+This keeps the shared pattern reusable while preserving local accuracy.
 
 ## Design Principles
 
 - Do not disable every other skill and keep only the router.
 - Do not turn the router into a giant super skill.
-- Select at most 4 skills per route.
-- The router chooses and explains; the selected skills do the work.
-- When the task needs GitHub, Teams, Notion, Word, Excel, Browser, or other live external data, connector/plugin skills come first.
-- If a route appears to need more than 4 skills, split it into work stages.
+- Select at most four skills per route.
+- Prefer connector/plugin skills when live external systems are the source of truth.
+- Split workflows into stages when a route needs more than four skills.
+- Keep detailed examples outside `SKILL.md` so the router stays light.
+
+## Contributing
+
+Contributions are most useful when they include a reproducible routing scenario:
+
+- user request
+- available skill list
+- expected route
+- route that failed or felt noisy
+- proposed conflict rule
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-No license is included yet. Add a license before publishing if you want others to reuse, modify, or redistribute this project.
+MIT. See [LICENSE](LICENSE).

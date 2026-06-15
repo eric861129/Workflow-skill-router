@@ -1,43 +1,113 @@
 # Workflow Skill Router
 
-> A lightweight routing layer for multi-skill AI agents.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Validation](https://img.shields.io/badge/validator-python%20scripts%2Fvalidate--router.py-brightgreen.svg)](scripts/validate-router.py)
+[![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.zh-TW.md)
 
-Choose your language:
+> A practical routing pattern that helps AI agents choose the smallest useful skill set before complex work starts.
 
-- [繁體中文](README.zh-TW.md)
-- [English](README.en.md)
+Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. The hard part is no longer "can the agent do this?" The hard part is:
 
-## What This Project Does
+```text
+Which skills should be active for this task?
+Which skills are merely related but should stay inactive?
+Should planning, implementation, debugging, and verification use the same skills?
+```
 
-Workflow Skill Router explains why multi-skill agents need a routing workflow, then provides a blank starter skill and prompts that let an AI agent generate a personalized router from the user's current skills.
-
-Core model:
+Workflow Skill Router turns a flat skill list into a decision layer:
 
 ```text
 Task nature
   -> Work stage
     -> Technical domain
-      -> 1-4 actual skills
+      -> 1 primary skill + up to 3 supporting skills
 ```
 
-It helps an AI Agent decide which skills to use before starting work, without turning every task into a noisy multi-skill workflow.
+It is not a super skill. It is a small front door that tells an agent what to load next.
 
-## Copy-paste Agent Prompts
+## Before And After
 
-- [繁體中文 Prompt](prompts/agent-prompt.zh-TW.md)
-- [English Prompt](prompts/agent-prompt.en.md)
+Without routing, a frontend bug can trigger every related skill:
 
-## Documentation
+```text
+frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
+```
 
-- [系統論](docs/system-theory.zh-TW.md) / [System Theory](docs/system-theory.en.md)
-- [驗證清單](docs/validation-checklist.zh-TW.md) / [Validation Checklist](docs/validation-checklist.en.md)
+With routing, the agent selects a small working set:
 
-## Blank Starter And Templates
+```text
+Route: Frontend / Debugging > Browser reproduction > Single-page app
+Use SKILL: frontend-debugging, browser, systematic-debugging
+Reason: frontend-debugging handles rendered UI failures; browser reproduces the issue; systematic-debugging keeps the investigation causal.
+```
 
-- [Blank starter skill](starter/workflow-skill-router/)
-- [Single-file templates](templates/)
-- [Codex filled example](examples/codex-workflow-skill-router/)
+## 30 Second Quickstart
+
+Website: `https://eric861129.github.io/Workflow-skill-router/`
+Traditional Chinese site: `https://eric861129.github.io/Workflow-skill-router/zh-tw/`
+
+1. Copy the starter into your agent's skill directory:
+
+   ```text
+   starter/workflow-skill-router/
+   ```
+
+2. Ask your agent to inventory its available skills and fill:
+
+   ```text
+   workflow-skill-router/
+     SKILL.md
+     references/
+       skill-tree.md
+       routing-rules.md
+   ```
+
+3. Validate the router:
+
+   ```bash
+   python scripts/validate-router.py starter/workflow-skill-router
+   ```
+
+Expected result:
+
+```text
+OK: workflow-skill-router passed validation
+```
+
+## What Is Included
+
+- `starter/workflow-skill-router/`: a Codex-ready starter skill with an agent-agnostic routing contract.
+- `examples/`: company-focused example routers, from minimal generic routing to enterprise platform workflows.
+- `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
+- `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
+- `site/`: Astro Starlight website for GitHub Pages.
+- `prompts/`: copy-paste prompts for creating or updating a personalized router.
+- `docs/`: conceptual docs and adoption guidance.
+
+## Example Routers
+
+| Example | Best for |
+| --- | --- |
+| `examples/generic-agent` | Any agent with a small skill catalog |
+| `examples/enterprise-fullstack` | Backend, frontend, docs, CI, and release routing |
+| `examples/frontend-debugging` | Browser vs Playwright vs UI debugging decisions |
+| `examples/github-ci-review` | GitHub PR review, CI failure, and release readiness |
+| `examples/company-platform-sanitized` | An anonymized company platform workflow with real-world complexity |
+
+## Recommended GitHub Topics
+
+`ai-agent`, `agentic-workflow`, `codex`, `skills`, `prompt-engineering`, `developer-tools`, `workflow-router`
+
+## Learn More
+
+- [English guide](README.en.md)
+- [繁體中文說明](README.zh-TW.md)
+- [GitHub Pages site](https://eric861129.github.io/Workflow-skill-router/)
+- [Traditional Chinese site](https://eric861129.github.io/Workflow-skill-router/zh-tw/)
+- [Adoption guide](docs/adoption-guide.md)
+- [System theory](docs/system-theory.en.md)
+- [Validation checklist](docs/validation-checklist.en.md)
 
 ## License
 
-No license is included yet. Add a license before publishing if you want others to reuse, modify, or redistribute this project.
+MIT. See [LICENSE](LICENSE).

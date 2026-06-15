@@ -1,0 +1,53 @@
+:root {
+  --sl-color-accent-low: #dbeafe;
+  --sl-color-accent: #2563eb;
+  --sl-color-accent-high: #172554;
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #172554;
+  --sl-color-accent: #60a5fa;
+  --sl-color-accent-high: #dbeafe;
+}
+
+.hero img {
+  filter: drop-shadow(0 24px 50px rgb(15 23 42 / 0.18));
+}
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.signal-card {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--sl-color-bg) 92%, var(--sl-color-accent-low));
+}
+
+.signal-card strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--sl-color-white);
+}
+
+.route-strip {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.route-step {
+  border-left: 4px solid var(--sl-color-accent);
+  padding: 0.85rem 1rem;
+  background: var(--sl-color-gray-6);
+  border-radius: 0.5rem;
+}
+
+.route-step code {
+  font-weight: 700;
+}
+

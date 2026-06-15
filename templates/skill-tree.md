@@ -1,51 +1,44 @@
 # Workflow Skill Tree
 
-Use this tree to choose a small SKILL set.
+Use this tree to choose a small skill set.
 
 Format:
 
 ```text
-task nature / work stage / technical domain: `skill-a`, `skill-b`, `skill-c`
+Task nature / Work stage / Technical domain: Primary: `skill-a`; Supporting: `skill-b`, `skill-c`
 ```
 
-Pick one primary SKILL and up to three supporting SKILLs.
+Each route must choose one Primary skill and zero to three Supporting skills.
 
 ## Requirements / Planning
 
-- Clarify / complex feature: `requirements-clarity`, `brainstorming`, `writing-plans`
-- Plan / multi-step implementation: `executing-plans`, `karpathy-guidelines`
-- Finish / handoff / commit: `session-handoff`, `finishing-a-development-branch`, `commit-work`
+- Requirements / Clarify / Complex feature: Primary: `requirements-clarity`; Supporting: `brainstorming`, `writing-plans`
+- Planning / Implementation / Multi-step work: Primary: `executing-plans`; Supporting: `karpathy-guidelines`
+- Finish / Handoff / Commit: Primary: `session-handoff`; Supporting: `finishing-a-development-branch`, `commit-work`
 
 ## Architecture / API / Backend
 
-- Architecture / system design: `architecture-designer`, `c4-architecture`, `mermaid-diagrams`
-- API / contract design: `api-designer`, `openapi-to-typescript`, `code-documenter`
-- Backend / implementation: `backend-skill`, `database-schema-designer`, `qa-test-planner`
+- Architecture / System design / High-level decision: Primary: `architecture-designer`; Supporting: `c4-architecture`, `diagramming`
+- API / Contract design / REST service: Primary: `api-designer`; Supporting: `client-generation`, `documentation`
+- Backend / Implementation / Service code: Primary: `backend-developer`; Supporting: `database-schema-designer`, `test-planning`
 
 ## Frontend / UI
 
-- New page or app: `frontend-builder`, `frontend-design`, `ui-ux-skill`
-- UI system: `ui-styling`, `design-system`
-- Debug / browser verification: `frontend-debugging`, `browser`, `systematic-debugging`
+- Frontend / New page or app / Web UI: Primary: `frontend-builder`; Supporting: `frontend-design`, `framework-expert`
+- Frontend / Debugging / Browser verification: Primary: `frontend-debugging`; Supporting: `browser`, `systematic-debugging`
 
 ## Docs / Knowledge
 
-- Technical docs: `doc-coauthoring`, `writing-clearly-and-concisely`, `mermaid-diagrams`
-- File formats: `documents`, `spreadsheets`, `presentations`, `pdf`
+- Documentation / Technical guide / Developer audience: Primary: `documentation-writer`; Supporting: `diagramming`, `code-documentation`
+- Documentation / File artifact / Documents, spreadsheets, decks, PDFs: Primary: `file-format-tool`; Supporting: `documentation-writer`
 
-## Debug / Review / CI
+## Review / CI
 
-- Bug investigation: `systematic-debugging`, `browser`
-- Code review: `receiving-code-review`, `github-review-comments`
-- CI failures: `github-fix-ci`, `circleci-builds`, `devops-engineer`
+- Review / Pull request / Code feedback: Primary: `code-review`; Supporting: `github-connector`
+- CI / Failed build / Pipeline diagnosis: Primary: `ci-debugging`; Supporting: `github-connector`, `devops`
 
 ## Connectors
 
-- GitHub: `github`, `github-fix-ci`, `github-review-comments`
-- Teams: `teams`, `teams-messages`, `teams-digest`
-- Notion: `notion-research-documentation`, `notion-knowledge-capture`
-
-## Legacy / Inventory
-
-- Legacy discovery: `spec-miner`, `architecture-designer`, `code-documenter`
-- Prompt or agent docs: `agent-md-refactor`, `file-organizer`, `writing-clearly-and-concisely`
+- Connector / GitHub / PRs, issues, actions: Primary: `github-connector`; Supporting: `code-review`, `ci-debugging`
+- Connector / Browser / Rendered local app: Primary: `browser`; Supporting: `frontend-debugging`, `systematic-debugging`
+- Connector / Workspace files / Docs, sheets, slides: Primary: `workspace-connector`; Supporting: `file-format-tool`

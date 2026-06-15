@@ -1,0 +1,19 @@
+{
+  "name": "workflow-skill-router-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.40.0",
+    "astro": "^6.4.6"
+  },
+  "devDependencies": {},
+  "overrides": {
+    "esbuild": "^0.28.1"
+  }
+}

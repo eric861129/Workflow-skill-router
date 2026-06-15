@@ -1,64 +1,46 @@
 # Workflow Skill Tree
 
-Use this tree to choose a small SKILL set.
+Use this tree to choose a small Codex SKILL set.
 
-Format:
+## Requirements / Planning
 
-```text
-任務性質 -> 工作階段 -> 技術領域 -> SKILLs
-```
+- Requirements / Clarify / Complex feature: Primary: `requirements-clarity`; Supporting: `superpowers:brainstorming`, `superpowers:writing-plans`
+- Planning / Implementation plan / Multi-stage engineering: Primary: `executing-plans`; Supporting: `superpowers:executing-plans`, `karpathy-guidelines`
+- Finish / Handoff / Branch completion: Primary: `session-handoff`; Supporting: `finishing-a-development-branch`, `superpowers:verification-before-completion`, `commit-work`
 
-Pick one primary SKILL and up to three supporting SKILLs.
+## Architecture / API / Backend
 
-## 需求 / 規劃 / 任務拆解
+- Architecture / System design / High-level decisions: Primary: `architecture-designer`; Supporting: `c4-architecture`, `mermaid-diagrams`, `cloud-architect`
+- API / Contract design / REST or GraphQL: Primary: `api-designer`; Supporting: `openapi-to-typescript`, `code-documenter`
+- Backend / C# or .NET / Implementation: Primary: `csharp-developer`; Supporting: `dotnet-core-expert`, `database-schema-designer`, `qa-test-planner`
 
-- 需求 / 釐清 / 複雜功能: `requirements-clarity`, `superpowers:brainstorming`, `superpowers:writing-plans`
-- 規劃 / 實作計畫 / 多階段工程: `executing-plans`, `superpowers:executing-plans`, `karpathy-guidelines`
-- 收尾 / 交接 / 分支完成: `session-handoff`, `finishing-a-development-branch`, `superpowers:verification-before-completion`, `commit-work`
+## Database / SQL
 
-## 架構 / API / 後端
+- Database / Schema / Migration: Primary: `database-schema-designer`; Supporting: `sql-pro`, `build-web-apps:supabase-postgres-best-practices`
+- Database / Performance / Slow query: Primary: `database-optimizer`; Supporting: `sql-pro`, `systematic-debugging`
+- Data contract / API and DB boundary: Primary: `api-designer`; Supporting: `openapi-to-typescript`, `database-schema-designer`
 
-- 架構 / 系統設計 / 高階決策: `architecture-designer`, `c4-architecture`, `mermaid-diagrams`, `cloud-architect`
-- API / 合約設計 / REST 或 GraphQL: `api-designer`, `openapi-to-typescript`, `code-documenter`
-- 後端 / C# 或 .NET / 實作: `csharp-developer`, `dotnet-core-expert`, `database-schema-designer`, `qa-test-planner`
+## Frontend / Web / UI
 
-## 資料庫 / SQL
+- Frontend / New app or page / Vue or general web: Primary: `build-web-apps:frontend-app-builder`; Supporting: `frontend-design`, `ui-ux-pro-max`, `vue-expert`
+- Frontend / UI system / Component styling: Primary: `ckm:ui-styling`; Supporting: `ckm:design-system`, `design-system-starter`, `build-web-apps:shadcn`
+- Frontend / Debug / Browser verification: Primary: `build-web-apps:frontend-testing-debugging`; Supporting: `browser:control-in-app-browser`, `playwright`, `systematic-debugging`
 
-- 資料庫 / Schema / Migration: `database-schema-designer`, `sql-pro`, `build-web-apps:supabase-postgres-best-practices`
-- 資料庫 / 效能 / 慢查詢: `database-optimizer`, `sql-pro`, `systematic-debugging`
-- 資料合約 / API 與 DB 邊界: `api-designer`, `openapi-to-typescript`, `database-schema-designer`
+## Documentation / Knowledge
 
-## 前端 / Web / UI
-
-- 前端 / 新 App 或頁面 / Vue 或通用 Web: `build-web-apps:frontend-app-builder`, `frontend-design`, `ui-ux-pro-max`, `vue-expert`
-- 前端 / UI 系統 / Component styling: `ckm:ui-styling`, `ckm:design-system`, `design-system-starter`, `build-web-apps:shadcn`
-- 前端 / Debug / Browser 驗證: `build-web-apps:frontend-testing-debugging`, `browser:browser`, `playwright`, `systematic-debugging`
-
-## 文件 / 知識 / 內容產出
-
-- 文件 / 技術文件 / 可讀性與結構: `doc-coauthoring`, `code-documenter`, `writing-clearly-and-concisely`, `mermaid-diagrams`
-- 文件 / 架構圖 / C4 或流程圖: `c4-architecture`, `mermaid-diagrams`, `architecture-designer`
-- 文件 / Office 檔案 / Word、Excel、Slides、PDF: `documents:documents`, `spreadsheets:Spreadsheets`, `presentations:Presentations`, `pdf`
+- Documentation / Technical docs / Readability and structure: Primary: `doc-coauthoring`; Supporting: `code-documenter`, `writing-clearly-and-concisely`, `mermaid-diagrams`
+- Documentation / Architecture diagram / C4 or process flow: Primary: `c4-architecture`; Supporting: `mermaid-diagrams`, `architecture-designer`
+- Documentation / Office artifacts / Documents, spreadsheets, decks, PDFs: Primary: `documents:documents`; Supporting: `spreadsheets:Spreadsheets`, `presentations:Presentations`, `pdf`
 
 ## Debug / Review / CI / GitHub
 
-- Debug / Bug 調查 / 根因分析: `systematic-debugging`, `superpowers:systematic-debugging`, `playwright`, `browser:browser`
-- Review / PR 意見 / Code review: `receiving-code-review`, `github:gh-address-comments`, `superpowers:requesting-code-review`
-- CI / GitHub Actions 或 CircleCI / 失敗修復: `github:gh-fix-ci`, `circleci:circleci-builds`, `circleci:circleci-config`, `devops-engineer`
-- Git / Commit 或 PR / 發佈: `commit-work`, `github:yeet`, `github:github`
+- Debug / Bug investigation / Root cause: Primary: `systematic-debugging`; Supporting: `superpowers:systematic-debugging`, `playwright`, `browser:control-in-app-browser`
+- Review / PR feedback / Code review: Primary: `receiving-code-review`; Supporting: `github:gh-address-comments`, `superpowers:requesting-code-review`
+- CI / GitHub Actions or CircleCI / Failure repair: Primary: `github:gh-fix-ci`; Supporting: `circleci:circleci-builds`, `circleci:circleci-config`, `devops-engineer`
+- Git / Commit or PR / Publish: Primary: `commit-work`; Supporting: `github:yeet`, `github:github`
 
-## DevOps / Cloud / 依賴
+## Connectors / Collaboration
 
-- 部署 / Infra / Cloud: `devops-engineer`, `cloud-architect`, `circleci:circleci-cli`, `circleci:chunk`
-- 依賴 / 套件更新 / 風險控管: `dependency-updater`, `systematic-debugging`, `qa-test-planner`
-
-## Connector / 協作
-
-- Teams / 訊息、摘要、任務 / 工作協作: `teams:teams`, `teams:teams-messages`, `teams:teams-daily-digest`, `teams:teams-planner-task-management`
-- OpenAI / 官方產品與 API / 文件查證: `openai-docs`
-- Codex / 外掛與 Skill 管理 / 建立、安裝、驗證: `skill-creator`, `skill-installer`, `plugin-creator`, `superpowers:writing-skills`
-
-## 舊系統 / 盤點 / 整理
-
-- Legacy / 規格反推 / 架構盤點: `spec-miner`, `architecture-designer`, `code-documenter`, `mermaid-diagrams`
-- Agent / Prompt / 檔案整理: `agent-md-refactor`, `file-organizer`, `writing-clearly-and-concisely`
+- Teams / Messages and tasks / Collaboration: Primary: `teams:teams`; Supporting: `teams:teams-messages`, `teams:teams-daily-digest`, `teams:teams-planner-task-management`
+- OpenAI / Product and API docs / Official verification: Primary: `openai-docs`; Supporting: none
+- Codex / Plugin and skill management / Create, install, validate: Primary: `skill-creator`; Supporting: `skill-installer`, `plugin-creator`, `superpowers:writing-skills`

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Enterprise Fullstack Router"
+  short_description: "Routes company platform work across API, UI, docs, CI, and release."
+  default_prompt: "Use enterprise-fullstack-router to choose the right skills before changing the platform."
+

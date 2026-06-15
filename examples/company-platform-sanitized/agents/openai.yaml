@@ -1,0 +1,4 @@
+interface:
+  display_name: "Company Platform Router"
+  short_description: "Anonymized enterprise platform route map for real-world workflows."
+  default_prompt: "Use company-platform-router to choose the right skills before working on this platform task."

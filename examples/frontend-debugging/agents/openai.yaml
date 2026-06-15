@@ -1,0 +1,5 @@
+interface:
+  display_name: "Frontend Debugging Router"
+  short_description: "Routes UI bugs to browser, automation, framework, or API workflows."
+  default_prompt: "Use frontend-debugging-router before debugging this UI issue."
+

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Workflow Skill Router">
+  <rect x="2" y="4" width="32" height="32" rx="8" fill="#e2e8f0"/>
+  <path d="M10 14h9l5 6-5 6h-9l5-6-5-6Z" fill="#2563eb"/>
+  <path d="M23 14h9l-5 6 5 6h-9l5-6-5-6Z" fill="#16a34a"/>
+</svg>

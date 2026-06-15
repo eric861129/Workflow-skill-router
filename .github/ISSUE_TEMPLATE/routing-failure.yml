@@ -1,0 +1,41 @@
+name: Routing failure
+description: Report a route that selected the wrong skills or too many skills.
+title: "[Routing failure]: "
+labels: ["routing", "needs-triage"]
+body:
+  - type: textarea
+    id: request
+    attributes:
+      label: User request
+      description: Paste the prompt or task the agent received.
+    validations:
+      required: true
+  - type: textarea
+    id: skills
+    attributes:
+      label: Available skills
+      description: List the relevant skills the agent could choose from.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual route
+      description: Paste the route the agent selected.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected route
+      description: Describe the route you expected and why.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed private repository names, customer names, hostnames, secrets, and internal paths.
+          required: true
+
