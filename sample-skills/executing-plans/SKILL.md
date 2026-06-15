@@ -1,6 +1,12 @@
 ---
 name: executing-plans
 description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+metadata:
+  domain: workflow
+  scope: execution
+  triggers: written implementation plan, execute plan, implementation checklist, review checkpoint, batch execution
+  exclusions: brainstorming without a plan, requirements clarification, final merge decision, simple one-step command
+  tags: planning, execution, checkpoints, workflow
 ---
 
 # Executing Plans

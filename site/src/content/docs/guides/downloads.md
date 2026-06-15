@@ -5,6 +5,12 @@ description: Download a blank router skill or a practical template package.
 
 ## Download packages
 
+| Package | Best for | Includes | Excludes | Install use | Download |
+| --- | --- | --- | --- | --- | --- |
+| Blank | Building your own router from scratch | `workflow-skill-router/` starter, routing rules, OpenAI agent metadata | Template catalog and sample skill folders | Yes, install into Codex skills | [Download blank](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip) |
+| Full template | Studying the complete public-safe example | Router, manifest, sample skills, root README, per-skill README files | Private skills and sensitive lines | Better for learning than direct install | [Download full](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip) |
+| Clean template | Installing a working reference package | Router, manifest, sample skills, root README | Private skills, sensitive lines, non-essential per-skill README files | Yes, cleaner installable tree | [Download clean](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip) |
+
 Use the blank package when you want to install the router and fill your own skill tree from scratch.
 
 - [Download blank skill](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
@@ -12,8 +18,11 @@ Use the blank package when you want to install the router and fill your own skil
 Use the template package when you want a public-safe copy of a real local Codex skills catalog.
 
 - [Download template skill package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [Download clean template skill package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
 - [Browse the matching Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/)
 - [View template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+
+Use the full template package when you want source context and per-skill documentation. Use the clean template package when you want an install-focused archive that omits non-essential per-skill README files.
 
 ## What is inside
 
@@ -38,6 +47,8 @@ workflow-skill-router-template/
     .system/
     <public-safe skill folders>
 ```
+
+The clean template package has the same installable `skills/` tree, but it removes non-essential per-skill README files. The root package README and manifest are still included.
 
 The template package is public-safe. It is generated from the maintainer's real `.codex/skills` folder, excludes organization-specific skills, and omits sensitive lines from otherwise public skill files. The current template package is documented by the [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/), which turns the included skills into practical routes.
 
@@ -159,4 +170,5 @@ The package builder refuses to use an implicit local skills directory. It also r
 - [View Template Skill Catalog source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [View package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 - [View template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [Download clean template package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
 - [View starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)

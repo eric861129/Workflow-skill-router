@@ -1,6 +1,12 @@
 ---
 name: api-guidelines-skill
 description: "Use when designing or reviewing REST API governance: resource naming, pagination, filtering, versioning, compatibility, error semantics, idempotency, and contract consistency."
+metadata:
+  domain: api
+  scope: design, review
+  triggers: REST API governance, resource naming, pagination, versioning, error semantics, idempotency, contract consistency
+  exclusions: implementation-only backend code, frontend rendering bugs, database tuning
+  tags: api, rest, governance, contract
 ---
 
 # API Guidelines Skill

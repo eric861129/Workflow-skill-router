@@ -3,6 +3,7 @@ type Locale = 'en' | 'zh-tw';
 
 const locale = (Astro.props.locale ?? 'en') as Locale;
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
+const assetRoot = '/Workflow-skill-router';
 const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
 const isZh = locale === 'zh-tw';
 const alternateLocalePath = isZh ? '/Workflow-skill-router/' : '/Workflow-skill-router/zh-tw/';
@@ -19,7 +20,10 @@ const text = {
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: 'Star on GitHub',
     quickstart: 'Start in 30 seconds',
+    downloadBlank: 'Download blank package',
     download: 'Download template',
+    showcase: 'Routing showcase',
+    gifAlt: 'A fuzzy request becoming a small routing output',
     heroTitle: 'AI agent skill routing before the work begins',
     heroCopy:
       'Workflow Skill Router is a practical routing pattern for Codex Skills and multi-skill agents: choose one primary skill, add focused support, and keep complex tasks out of context overload.',
@@ -72,6 +76,11 @@ const text = {
     validatorTitle: 'Proof before publish',
     validatorCopy:
       'The proof flow checks router structure, scans the sample skill catalog, evaluates route quality, and runs the unit tests before the repo is shared.',
+    proofStats: [
+      ['30', 'routing scenarios'],
+      ['19', 'unit tests'],
+      ['100', 'a11y / SEO gate'],
+    ],
     validatorCommand: `# 1. Validate router structure
 python scripts/validate-router.py starter/workflow-skill-router
 python scripts/validate-router.py examples/template-skill-catalog
@@ -81,7 +90,9 @@ python scripts/scan-skills.py ./sample-skills \\
   --out /tmp/skill-index.json \\
   --markdown /tmp/skill-index.md \\
   --warnings /tmp/skill-warnings.md \\
-  --suggest-tree /tmp/suggested-skill-tree.md
+  --suggest-tree /tmp/suggested-skill-tree.md \\
+  --fail-on-private \\
+  --fail-on-duplicates
 
 # 3. Evaluate routing quality
 python scripts/evaluate-routing.py \\
@@ -89,7 +100,8 @@ python scripts/evaluate-routing.py \\
   --predictions evaluation/predictions.example.jsonl \\
   --report /tmp/routing-report.md \\
   --json-report /tmp/routing-report.json \\
-  --fail-on-violations
+  --fail-on-violations \\
+  --strict
 
 python -m unittest discover -s tests`,
     finalTitle: 'Make skill routing a pattern people can star, fork, and reuse',
@@ -101,7 +113,10 @@ python -m unittest discover -s tests`,
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: '到 GitHub 給星星',
     quickstart: '30 秒開始',
+    downloadBlank: '下載空白套件',
     download: '下載範本',
+    showcase: '案例展示',
+    gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
     heroTitle: 'AI Agent 開工前，先完成 skill routing',
     heroCopy:
       'Workflow Skill Router 是給 Codex Skills 與多技能 Agent 使用的實戰 routing pattern：先選一個 primary skill，再補上聚焦的 supporting skills，讓複雜任務不要被上下文噪音淹沒。',
@@ -154,6 +169,11 @@ python -m unittest discover -s tests`,
     validatorTitle: '發布前先驗證',
     validatorCopy:
       'Proof flow 會先驗證 router 結構、掃描 sample skill catalog、評估 routing quality，並執行 unit tests，再分享 repo。',
+    proofStats: [
+      ['30', 'routing scenarios'],
+      ['19', 'unit tests'],
+      ['100', 'a11y / SEO gate'],
+    ],
     validatorCommand: `# 1. 驗證 router 結構
 python scripts/validate-router.py starter/workflow-skill-router
 python scripts/validate-router.py examples/template-skill-catalog
@@ -163,7 +183,9 @@ python scripts/scan-skills.py ./sample-skills \\
   --out /tmp/skill-index.json \\
   --markdown /tmp/skill-index.md \\
   --warnings /tmp/skill-warnings.md \\
-  --suggest-tree /tmp/suggested-skill-tree.md
+  --suggest-tree /tmp/suggested-skill-tree.md \\
+  --fail-on-private \\
+  --fail-on-duplicates
 
 # 3. 評估 routing quality
 python scripts/evaluate-routing.py \\
@@ -171,7 +193,8 @@ python scripts/evaluate-routing.py \\
   --predictions evaluation/predictions.example.jsonl \\
   --report /tmp/routing-report.md \\
   --json-report /tmp/routing-report.json \\
-  --fail-on-violations
+  --fail-on-violations \\
+  --strict
 
 python -m unittest discover -s tests`,
     finalTitle: '把 skill routing 變成值得 star、fork、重用的 pattern',
@@ -189,6 +212,8 @@ const demoText = isZh
       output: 'Routing output',
       copy: '複製 route',
       copied: '已複製',
+      copyInstall: '複製安裝指令',
+      installCopied: '指令已複製',
       star: '覺得有用就 Star',
       template: '查看 Template Skill Catalog',
     }
@@ -200,6 +225,8 @@ const demoText = isZh
       output: 'Routing output',
       copy: 'Copy route',
       copied: 'Copied',
+      copyInstall: 'Copy install command',
+      installCopied: 'Install command copied',
       star: 'Star if this helps',
       template: 'View Template Skill Catalog',
     };
@@ -319,6 +346,7 @@ const initialDemo = routeDemoScenarios[0];
       <p class="wsr-hero-copy">{text.heroCopy}</p>
       <div class="wsr-hero-actions">
         <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
+        <a class="wsr-button wsr-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip">{text.downloadBlank}</a>
         <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/quickstart/`}>{text.quickstart}</a>
       </div>
       <div class="wsr-route-showcase" aria-label={text.routeLabel}>
@@ -328,6 +356,17 @@ const initialDemo = routeDemoScenarios[0];
         </div>
         <pre><code>{text.route}</code></pre>
       </div>
+      <a class="wsr-hero-demo-gif" href={`${rootPath}/showcase/`}>
+        <img
+          src={`${assetRoot}/assets/fuzzy-to-route-output.gif`}
+          alt={text.gifAlt}
+          width="640"
+          height="360"
+          loading="lazy"
+          decoding="async"
+        />
+        <span>{text.showcase}</span>
+      </a>
     </div>
   </section>
 
@@ -357,6 +396,7 @@ const initialDemo = routeDemoScenarios[0];
           <p>{text.processNote}</p>
           <div class="wsr-process-links">
             <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
+            <a class="wsr-text-link" href={`${rootPath}/showcase/`}>{text.showcase}</a>
             <a class="wsr-text-link" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
           </div>
         </div>
@@ -373,6 +413,9 @@ const initialDemo = routeDemoScenarios[0];
         <div class="wsr-demo-actions">
           <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{demoText.star}</a>
           <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{demoText.template}</a>
+          <button class="wsr-button wsr-button-secondary-dark" type="button" data-wsr-copy-install data-copy-label={demoText.copyInstall} data-copied-label={demoText.installCopied}>
+            {demoText.copyInstall}
+          </button>
         </div>
       </div>
 
@@ -465,6 +508,14 @@ Reason: ${initialDemo.reason}`}</code></pre>
       <div>
         <h2>{text.validatorTitle}</h2>
         <p>{text.validatorCopy}</p>
+        <div class="wsr-proof-stats" aria-label={isZh ? '驗證數字' : 'Validation stats'}>
+          {text.proofStats.map(([value, label]) => (
+            <span>
+              <strong>{value}</strong>
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
       <div class="wsr-command-card">
         <pre><code>{text.validatorCommand}</code></pre>
@@ -486,9 +537,6 @@ Reason: ${initialDemo.reason}`}</code></pre>
 </main>
 
 <script>
-  import gsap from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const themeKey = 'starlight-theme';
   const themeQuery = window.matchMedia('(prefers-color-scheme: light)');
@@ -585,6 +633,30 @@ Reason: ${initialDemo.reason}`}</code></pre>
     });
   });
 
+  document.querySelectorAll('[data-wsr-copy-install]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const command = `$Repo = "https://github.com/eric861129/Workflow-skill-router"
+$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
+$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
+$Skills = Join-Path $env:USERPROFILE ".codex\\skills"
+Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
+Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
+New-Item -ItemType Directory -Force -Path $Skills | Out-Null
+Expand-Archive -Force -Path $Zip -DestinationPath $Skills
+python $Validator (Join-Path $Skills "workflow-skill-router")`;
+      try {
+        await navigator.clipboard.writeText(command);
+        button.textContent = button.dataset.copiedLabel || 'Copied';
+        window.setTimeout(() => {
+          button.textContent = button.dataset.copyLabel || 'Copy install command';
+        }, 1400);
+      } catch {
+        button.textContent = button.dataset.copyLabel || 'Copy install command';
+      }
+    });
+  });
+
   document.querySelectorAll('[data-wsr-carousel]').forEach((carousel) => {
     const track = carousel.querySelector('[data-wsr-track]');
     const prev = carousel.querySelector('[data-wsr-prev]');
@@ -601,44 +673,4 @@ Reason: ${initialDemo.reason}`}</code></pre>
     next?.addEventListener('click', () => scrollByCard(1));
   });
 
-  if (!reduceMotion) {
-    gsap.registerPlugin(ScrollTrigger);
-
-    gsap.from('.wsr-hero-title, .wsr-hero-copy, .wsr-hero-actions, .wsr-route-showcase', {
-      y: 28,
-      opacity: 0,
-      duration: 0.9,
-      ease: 'power3.out',
-      stagger: 0.08,
-    });
-
-    gsap.utils.toArray('.wsr-motion-image').forEach((element) => {
-      gsap.fromTo(
-        element,
-        { scale: 0.92, opacity: 0.62 },
-        {
-          scale: 1,
-          opacity: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: element,
-            start: 'top 88%',
-            end: 'bottom 20%',
-            scrub: true,
-          },
-        },
-      );
-    });
-
-    const media = gsap.matchMedia();
-    media.add('(min-width: 980px)', () => {
-      ScrollTrigger.create({
-        trigger: '.wsr-proof',
-        start: 'top top',
-        end: 'bottom bottom',
-        pin: '.wsr-proof-pin',
-        pinSpacing: false,
-      });
-    });
-  }
 </script>

@@ -27,6 +27,9 @@ jobs:
       - name: Audit public readiness
         run: python scripts/validate-router.py --public-readiness .
 
+      - name: Run dedicated public-readiness audit
+        run: python scripts/audit-public-readiness.py .
+
       - name: Scan sample skills
         run: >
           python scripts/scan-skills.py ./sample-skills
@@ -34,6 +37,8 @@ jobs:
           --markdown /tmp/skill-index.md
           --warnings /tmp/skill-warnings.md
           --suggest-tree /tmp/suggested-skill-tree.md
+          --fail-on-private
+          --fail-on-duplicates
 
       - name: Evaluate routing examples
         run: >
@@ -43,6 +48,7 @@ jobs:
           --report /tmp/routing-report.md
           --json-report /tmp/routing-report.json
           --fail-on-violations
+          --strict
 
       - name: Run unit tests
         run: python -m unittest discover -s tests

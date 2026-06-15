@@ -1,6 +1,12 @@
 ---
 name: receiving-code-review
 description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+metadata:
+  domain: review
+  scope: review, implementation
+  triggers: code review feedback, requested changes, PR comments, reviewer suggestion, unclear feedback
+  exclusions: authoring new feature without review feedback, CI-only failure, release notes only
+  tags: review, pull-request, feedback, verification
 ---
 
 # Code Review Reception

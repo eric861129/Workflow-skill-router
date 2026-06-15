@@ -3,26 +3,62 @@ title: Quickstart
 description: Install the starter router, fill your skill tree, and validate it.
 ---
 
-## 1. Copy the starter
+## Choose your path
 
-Copy this folder into your agent's skill directory:
+If you only want to try the framework, clone the repo and validate the starter router.
 
-```text
-starter/workflow-skill-router/
+If you want to build your own router, install the blank package into your agent's skill directory, then ask your agent to inventory your actual skills and fill the starter references.
+
+## 1. Try in 30 seconds
+
+This path does not install a skill. It only proves that the framework and starter validate correctly.
+
+```bash
+git clone https://github.com/eric861129/Workflow-skill-router.git
+cd Workflow-skill-router
+python scripts/validate-router.py starter/workflow-skill-router
 ```
 
-Or download the ready-to-install zip:
+Expected:
+
+```text
+OK: workflow-skill-router passed validation
+```
+
+## 2. Install the blank skill
+
+Use this path when you want Codex or another skill-aware agent to load `workflow-skill-router` as an installed skill.
 
 - [Blank SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
 - [View starter source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 
-For Codex on Windows:
+For Codex on Windows PowerShell:
 
-```text
-C:\Users\<you>\.codex\skills\workflow-skill-router
+```powershell
+$Repo = "https://github.com/eric861129/Workflow-skill-router"
+$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
+$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
+$Skills = Join-Path $env:USERPROFILE ".codex\skills"
+Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
+Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
+New-Item -ItemType Directory -Force -Path $Skills | Out-Null
+Expand-Archive -Force -Path $Zip -DestinationPath $Skills
+python $Validator (Join-Path $Skills "workflow-skill-router")
 ```
 
-## 2. Ask your agent to fill the router
+For macOS or Linux:
+
+```bash
+curl -L -o /tmp/workflow-skill-router-blank.zip https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip
+curl -L -o /tmp/workflow-skill-router-validate-router.py https://github.com/eric861129/Workflow-skill-router/raw/main/scripts/validate-router.py
+mkdir -p "$HOME/.codex/skills"
+unzip -o /tmp/workflow-skill-router-blank.zip -d "$HOME/.codex/skills"
+python /tmp/workflow-skill-router-validate-router.py "$HOME/.codex/skills/workflow-skill-router"
+```
+
+Both install commands validate the installed skill path after extraction.
+
+## 3. Ask your agent to fill the router
 
 Use the English prompt below, or open the source file:
 
@@ -243,9 +279,9 @@ workflow-skill-router/
     routing-rules.md
 ```
 
-## 3. Validate
+## 4. Validate
 
-Run:
+Run this from a cloned repo when you are validating the starter or a customized router folder:
 
 ```bash
 python scripts/validate-router.py starter/workflow-skill-router
@@ -265,7 +301,9 @@ Source:
 - [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
-## 4. Try a route
+The install commands above already validate the installed path under your skill directory.
+
+## 5. Try a route
 
 Ask a complex task:
 

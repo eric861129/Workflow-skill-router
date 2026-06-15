@@ -7,6 +7,8 @@ metadata:
   version: "1.1.0"
   domain: backend
   triggers: .NET Core, .NET 8, ASP.NET Core, C# 12, minimal API, Entity Framework Core, microservices .NET, CQRS, MediatR
+  exclusions: frontend-only changes, non-.NET backend work, documentation-only edits, database-only performance tuning
+  tags: dotnet, aspnet-core, minimal-api, clean-architecture
   role: specialist
   scope: implementation
   output-format: code

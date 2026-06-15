@@ -1,6 +1,12 @@
 ---
 name: systematic-debugging
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+metadata:
+  domain: debugging
+  scope: investigation, repair
+  triggers: bug, test failure, unexpected behavior, flaky behavior, regression, root cause
+  exclusions: straightforward content edits, greenfield design without failure evidence, commit formatting only
+  tags: debugging, root-cause, tests, regressions
 ---
 
 # Systematic Debugging

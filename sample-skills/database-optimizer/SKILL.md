@@ -7,6 +7,8 @@ metadata:
   version: "1.1.0"
   domain: infrastructure
   triggers: database optimization, slow query, query performance, database tuning, index optimization, execution plan, EXPLAIN ANALYZE, database performance, PostgreSQL optimization, MySQL optimization
+  exclusions: schema modeling without performance risk, frontend state bugs, API naming decisions
+  tags: database, performance, sql, query-plans
   role: specialist
   scope: optimization
   output-format: analysis-and-code

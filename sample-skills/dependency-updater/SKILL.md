@@ -4,6 +4,11 @@ description: Smart dependency management for any language. Auto-detects project 
 license: MIT
 metadata:
   version: 1.0.0
+  domain: dependency-management
+  scope: maintenance, upgrade
+  triggers: dependency update, package upgrade, outdated packages, dependency conflict, security patch, version bump
+  exclusions: application feature work, code review without dependency changes, infrastructure deployment, visual design
+  tags: dependencies, maintenance, security-updates, package-management
 ---
 
 # Dependency Updater
@@ -230,15 +235,13 @@ When dependencies are broken, run diagnosis:
 ### Emergency Fixes
 
 ```bash
-# Node.js - Nuclear reset
-rm -rf node_modules package-lock.json
-npm cache clean --force
+# Node.js - reinstall after manually reviewing generated dependency artifacts
+npm cache verify
 npm install
 
-# Python - Clean virtualenv
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
+# Python - create a fresh virtual environment without deleting the old one
+python -m venv .venv-fresh
+source .venv-fresh/bin/activate
 pip install -r requirements.txt
 
 # Go - Reset modules

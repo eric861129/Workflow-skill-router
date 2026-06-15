@@ -2,6 +2,12 @@
 name: frontend-design
 description: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.
 license: Complete terms in LICENSE.txt
+metadata:
+  domain: frontend
+  scope: design, implementation
+  triggers: frontend page, web component, visual polish, UI design, landing page, production-grade interface, responsive layout
+  exclusions: backend API design, database migration, documentation-only edits, CI repair
+  tags: frontend, ui-design, responsive, visual-polish
 ---
 
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.

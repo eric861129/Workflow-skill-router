@@ -1,6 +1,12 @@
 ---
 name: commit-work
 description: "Create high-quality git commits: review/stage intended changes, split into logical commits, and write clear commit messages (including Conventional Commits). Use when the user asks to commit, craft a commit message, stage changes, or split work into multiple commits."
+metadata:
+  domain: git
+  scope: release, hygiene
+  triggers: commit, stage changes, commit message, split commits, Conventional Commits
+  exclusions: code implementation before changes are ready, issue triage, browser debugging
+  tags: git, commits, release, hygiene
 ---
 
 # Commit work

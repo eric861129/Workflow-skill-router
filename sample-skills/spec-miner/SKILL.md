@@ -8,6 +8,8 @@ metadata:
   version: "1.1.0"
   domain: workflow
   triggers: reverse engineer, legacy code, code analysis, undocumented, understand codebase, existing system
+  exclusions: greenfield feature design, simple docs typo, UI visual polish, dependency-only updates
+  tags: reverse-engineering, legacy, code-analysis, specifications
   role: specialist
   scope: review
   output-format: document

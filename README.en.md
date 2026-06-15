@@ -1,33 +1,98 @@
 # Workflow Skill Router
 
+[![Validate router tools](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml/badge.svg)](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/eric861129/Workflow-skill-router)](https://github.com/eric861129/Workflow-skill-router/releases)
+[![Downloads](https://img.shields.io/github/downloads/eric861129/Workflow-skill-router/total)](https://github.com/eric861129/Workflow-skill-router/releases)
+[![Stars](https://img.shields.io/github/stars/eric861129/Workflow-skill-router?style=social)](https://github.com/eric861129/Workflow-skill-router/stargazers)
+[![Site](https://img.shields.io/website?url=https%3A%2F%2Fhuangchiyu.com%2FWorkflow-skill-router%2F&label=site)](https://huangchiyu.com/Workflow-skill-router/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Validation](https://img.shields.io/badge/validator-python%20scripts%2Fvalidate--router.py-brightgreen.svg)](scripts/validate-router.py)
 [![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.zh-TW.md)
 
-> A practical routing pattern that helps AI agents choose the smallest useful skill set before complex work starts.
+> A Codex-ready routing layer that helps AI agents choose one primary skill plus focused supporting skills before complex work starts.
 
 **Not another prompt collection. A routing layer for multi-skill AI agents.**
 
-Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. The hard part is no longer "can the agent do this?" The hard part is:
+Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. Workflow Skill Router turns that flat list into a small, reviewable decision before execution begins.
+
+## Before And After
+
+Without routing, a frontend bug can trigger every related skill:
 
 ```text
-Which skills should be active for this task?
-Which skills are merely related but should stay inactive?
-Should planning, implementation, debugging, and verification use the same skills?
+frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
 ```
 
-Workflow Skill Router turns a flat skill list into a decision layer:
+With routing, the agent selects a small working set:
 
 ```text
-Task nature
-  -> Work stage
-    -> Technical domain
-      -> 1 primary skill + up to 3 supporting skills
+Route: Frontend / Debugging > Browser reproduction > Single-page app
+Use SKILL: vue-expert, systematic-debugging, playwright
+Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
-It is not a super skill. It is a small front door that tells an agent what to load next.
+![Fuzzy request to route output demo](docs/assets/fuzzy-to-route-output.gif)
 
-![Workflow Skill Router before and after demo](docs/assets/demo-routing-before-after.svg)
+Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after.svg)
+
+## 30 Second Quickstart
+
+Website: `https://huangchiyu.com/Workflow-skill-router/`
+Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
+
+Try the framework without installing anything:
+
+```bash
+git clone https://github.com/eric861129/Workflow-skill-router.git
+cd Workflow-skill-router
+python scripts/validate-router.py starter/workflow-skill-router
+```
+
+Install the blank skill into Codex on Windows PowerShell:
+
+```powershell
+$Repo = "https://github.com/eric861129/Workflow-skill-router"
+$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
+$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
+$Skills = Join-Path $env:USERPROFILE ".codex\skills"
+Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
+Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
+New-Item -ItemType Directory -Force -Path $Skills | Out-Null
+Expand-Archive -Force -Path $Zip -DestinationPath $Skills
+python $Validator (Join-Path $Skills "workflow-skill-router")
+```
+
+For macOS and Linux install commands, see the [Quickstart guide](https://huangchiyu.com/Workflow-skill-router/guides/quickstart/).
+
+Expected result:
+
+```text
+OK: workflow-skill-router passed validation
+```
+
+## Proof
+
+- `30` benchmark scenarios in `evaluation/scenarios.example.jsonl`.
+- `19` unit tests for scanner and evaluator behavior.
+- Public-readiness audit for community files, downloads, manifests, examples, site entrypoints, and mojibake checks.
+- Lighthouse gate across English and Traditional Chinese pages; latest local pass had 100 accessibility, best-practices, and SEO scores.
+- Strict CI checks scanner privacy, duplicate skill ids, route violations, and exact routing expectations.
+
+## Download Skill Packages
+
+- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
+- [Template SKILL package](downloads/workflow-skill-router-template.zip): the full public-safe reference export of the maintainer's real local Codex skills catalog.
+- [Clean template SKILL package](downloads/workflow-skill-router-template-clean.zip): the install-focused package that removes non-essential per-skill README files.
+- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the template package.
+- [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
+
+## Why Star This
+
+Star the repo if you want to track a practical pattern for:
+
+- keeping multi-skill agents out of context overload,
+- benchmarking routing decisions with repeatable scenarios,
+- publishing public-safe skill catalogs without leaking private rules,
+- turning local skill folders into installable template packages.
 
 ## What This Project Helps You Do
 
@@ -92,55 +157,6 @@ python scripts/evaluate-routing.py \
 | Over-routing Rate | 0.0 |
 ```
 
-## Before And After
-
-Without routing, a frontend bug can trigger every related skill:
-
-```text
-frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
-```
-
-With routing, the agent selects a small working set:
-
-```text
-Route: Frontend / Debugging > Browser reproduction > Single-page app
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
-```
-
-## 30 Second Quickstart
-
-Website: `https://huangchiyu.com/Workflow-skill-router/`
-Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
-
-1. Copy the starter into your agent's skill directory:
-
-   ```text
-   starter/workflow-skill-router/
-   ```
-
-2. Ask your agent to inventory its available skills and fill:
-
-   ```text
-   workflow-skill-router/
-     SKILL.md
-     references/
-       skill-tree.md
-       routing-rules.md
-   ```
-
-3. Validate the router:
-
-   ```bash
-   python scripts/validate-router.py starter/workflow-skill-router
-   ```
-
-Expected result:
-
-```text
-OK: workflow-skill-router passed validation
-```
-
 Before publishing your own router package or public examples, run the full repository audit:
 
 ```bash
@@ -162,14 +178,7 @@ npm run audit:lighthouse
 
 This builds the Starlight site, runs Lighthouse against key English and Traditional Chinese pages, and writes local reports to `site/lighthouse-reports/`.
 
-## Download Skill Packages
-
-- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
-- [Template SKILL package](downloads/workflow-skill-router-template.zip): a public-safe export of the maintainer's real local Codex skills catalog, including the sanitized `workflow-skill-router` and all public skills used in practice.
-- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the template package.
-- [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
-
-Regenerate both archives locally:
+Regenerate all three archives locally:
 
 ```bash
 python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
@@ -280,6 +289,12 @@ Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract
 - [Customization guide](docs/adoption-guide.md)
 - [System theory](docs/system-theory.en.md)
 - [Validation checklist](docs/validation-checklist.en.md)
+- [Roadmap](docs/roadmap.md)
+- [Case studies](docs/case-studies.md)
+- [Showcase](docs/showcase.md)
+- [Anti-over-routing guide](docs/anti-over-routing.md)
+- [Forward tests](evaluation/forward-tests/)
+- [Shareable demo asset](docs/assets/route-demo-social.svg)
 
 ## License
 

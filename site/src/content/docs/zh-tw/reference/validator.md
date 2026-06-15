@@ -48,7 +48,9 @@ python scripts/scan-skills.py ./sample-skills \
   --out /tmp/skill-index.json \
   --markdown /tmp/skill-index.md \
   --warnings /tmp/skill-warnings.md \
-  --suggest-tree /tmp/suggested-skill-tree.md
+  --suggest-tree /tmp/suggested-skill-tree.md \
+  --fail-on-private \
+  --fail-on-duplicates
 ```
 
 正式 release gate 可加上 `--fail-on-private` 與 `--fail-on-duplicates`。Scanner 會輸出 machine-readable index、Markdown summary、warnings report 與 suggested skill tree。
@@ -61,7 +63,8 @@ python scripts/evaluate-routing.py \
   --predictions evaluation/predictions.example.jsonl \
   --report /tmp/routing-report.md \
   --json-report /tmp/routing-report.json \
-  --fail-on-violations
+  --fail-on-violations \
+  --strict
 ```
 
 若 primary mismatch 或 expected supporting skill 缺失也要讓 CI 失敗，請加上 `--strict`。
@@ -90,6 +93,19 @@ OK: Lighthouse audit passed. Reports written to lighthouse-reports
 ```
 
 這個 audit 會 build 站台、在本機 serve `site/dist`、對英文與繁中主要頁面跑 Lighthouse，並將 JSON/HTML 報告輸出到 `site/lighthouse-reports/`。
+
+## Public URL / HTTPS smoke test
+
+公開站台刻意使用 project path：`https://huangchiyu.com/Workflow-skill-router/`。除非專案未來搬到專屬 custom domain，否則不要在這個 repo 加 `CNAME`。
+
+在這種設定下，GitHub Pages API 仍可能顯示 `cname=null` 或 `https_enforced=false`。公開 gate 以訪客實際行為為準：
+
+```bash
+curl -fsS --head https://huangchiyu.com/Workflow-skill-router/
+curl -fsS -I -L http://huangchiyu.com/Workflow-skill-router/
+```
+
+預期：HTTPS 回 `200`，HTTP 最終導到 HTTPS project path。
 
 ## Source
 

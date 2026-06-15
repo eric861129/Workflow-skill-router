@@ -3,6 +3,8 @@
 
 Source root: local maintainer Codex skills directory
 
+Full reference package: `workflow-skill-router-template.zip`
+
 Included public-safe skill folders:
 
 - `.system/imagegen`
@@ -68,10 +70,11 @@ Included public-safe skill folders:
 
 Excluded private skill folders: 15
 
-Sanitized text files: 143
+Sanitized text files: 62
 
 Notes:
 
 - Excluded private skill folder names are intentionally not listed in this public manifest.
 - Text lines matching private markers are omitted from the package.
 - Binary assets are copied only from included public-safe skill folders.
+- `workflow-skill-router-template-clean.zip` excludes per-skill README files for a cleaner installable package.

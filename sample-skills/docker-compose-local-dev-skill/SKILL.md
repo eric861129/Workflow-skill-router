@@ -1,6 +1,12 @@
 ---
 name: docker-compose-local-dev-skill
 description: "Use when creating, reviewing, or troubleshooting Docker Compose local development stacks: services, ports, volumes, health checks, databases, caches, mail sinks, env files, and repeatable startup."
+metadata:
+  domain: devops
+  scope: implementation, troubleshooting
+  triggers: Docker Compose, local development stack, services, ports, volumes, health checks, env files, database container, cache container
+  exclusions: production Kubernetes deployment, application feature logic, UI component design, database query tuning
+  tags: docker-compose, local-dev, devops, containers
 ---
 
 # Docker Compose Local Dev Skill

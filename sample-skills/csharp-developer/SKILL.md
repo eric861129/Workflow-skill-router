@@ -7,6 +7,8 @@ metadata:
   version: "1.1.0"
   domain: language
   triggers: C#, .NET, ASP.NET Core, Blazor, Entity Framework, EF Core, Minimal API, MAUI, SignalR
+  exclusions: non-.NET backend work, frontend-only UI polish, database tuning without C# changes, documentation-only edits
+  tags: csharp, dotnet, aspnet-core, ef-core
   role: specialist
   scope: implementation
   output-format: code

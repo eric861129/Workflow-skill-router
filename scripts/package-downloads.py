@@ -5,6 +5,7 @@ Outputs:
 
 - blank: a ready-to-install `workflow-skill-router/` starter skill
 - template: a public-safe skills pack generated from a local Codex skills root
+- template-clean: the same public-safe pack without non-essential per-skill README files
 
 The template package is intended for maintainers who want to publish a sanitized
 copy of their real local skill catalog. Private skill names, private prefixes,
@@ -28,6 +29,7 @@ DOWNLOADS_DIR = REPO_ROOT / "downloads"
 
 BLANK_ZIP = DOWNLOADS_DIR / "workflow-skill-router-blank.zip"
 TEMPLATE_ZIP = DOWNLOADS_DIR / "workflow-skill-router-template.zip"
+TEMPLATE_CLEAN_ZIP = DOWNLOADS_DIR / "workflow-skill-router-template-clean.zip"
 TEMPLATE_MANIFEST = DOWNLOADS_DIR / "workflow-skill-router-template-manifest.md"
 
 DEFAULT_PRIVATE_MARKERS: list[str] = []
@@ -238,8 +240,13 @@ def add_tree(
     archive_root: str,
     markers: list[str],
     sanitized_files: list[str],
+    *,
+    skip_readme: bool = False,
 ) -> None:
     for path in iter_files(source):
+        if skip_readme and path.name.lower() == "readme.md":
+            continue
+
         rel = path.relative_to(source).as_posix()
         archive_path = f"{archive_root}/{rel}"
 
@@ -362,13 +369,21 @@ C:\\Users\\<you>\\.codex\\skills
 """
 
 
-def manifest_text(report: PackageReport) -> str:
+def manifest_text(report: PackageReport, *, clean_package: bool = False) -> str:
     included = "\n".join(f"- `{name}`" for name in report.included)
+    clean_note = "- `workflow-skill-router-template-clean.zip` excludes per-skill README files for a cleaner installable package."
+    package_shape = (
+        "Clean installable package: `workflow-skill-router-template-clean.zip`"
+        if clean_package
+        else "Full reference package: `workflow-skill-router-template.zip`"
+    )
 
     return f"""
 # Workflow Skill Router Template Manifest
 
 Source root: local maintainer Codex skills directory
+
+{package_shape}
 
 Included public-safe skill folders:
 
@@ -383,10 +398,47 @@ Notes:
 - Excluded private skill folder names are intentionally not listed in this public manifest.
 - Text lines matching private markers are omitted from the package.
 - Binary assets are copied only from included public-safe skill folders.
+{clean_note}
 """
 
 
-def build_template_zip(
+def build_template_archive(
+    zip_path: Path,
+    archive_root: str,
+    sources: list[SkillSource],
+    excluded_count: int,
+    private_markers: list[str],
+    skills_root: Path,
+    *,
+    clean_package: bool = False,
+) -> PackageReport:
+    sanitized_files: list[str] = []
+    included_names = [source.archive_name for source in sources]
+
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        add_text(zip_file, f"{archive_root}/README.md", template_readme())
+        for source in sources:
+            add_tree(
+                zip_file,
+                source.source,
+                f"{archive_root}/skills/{source.archive_name}",
+                private_markers,
+                sanitized_files,
+                skip_readme=clean_package,
+            )
+
+        report = PackageReport(
+            included=included_names,
+            excluded_count=excluded_count,
+            sanitized_files=sanitized_files,
+            source_root=skills_root,
+        )
+        add_text(zip_file, f"{archive_root}/MANIFEST.md", manifest_text(report, clean_package=clean_package))
+
+    return report
+
+
+def build_template_zips(
     skills_root: Path,
     exclude_names: set[str],
     exclude_prefixes: list[str],
@@ -396,27 +448,23 @@ def build_template_zip(
         raise FileNotFoundError(f"Skills root does not exist: {skills_root}")
 
     sources, excluded_count = collect_skill_sources(skills_root, exclude_names, exclude_prefixes)
-    sanitized_files: list[str] = []
-    included_names = [source.archive_name for source in sources]
-
-    with zipfile.ZipFile(TEMPLATE_ZIP, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-        add_text(zip_file, "workflow-skill-router-template/README.md", template_readme())
-        for source in sources:
-            add_tree(
-                zip_file,
-                source.source,
-                f"workflow-skill-router-template/skills/{source.archive_name}",
-                private_markers,
-                sanitized_files,
-            )
-
-        report = PackageReport(
-            included=included_names,
-            excluded_count=excluded_count,
-            sanitized_files=sanitized_files,
-            source_root=skills_root,
-        )
-        add_text(zip_file, "workflow-skill-router-template/MANIFEST.md", manifest_text(report))
+    report = build_template_archive(
+        TEMPLATE_ZIP,
+        "workflow-skill-router-template",
+        sources,
+        excluded_count,
+        private_markers,
+        skills_root,
+    )
+    build_template_archive(
+        TEMPLATE_CLEAN_ZIP,
+        "workflow-skill-router-template-clean",
+        sources,
+        excluded_count,
+        private_markers,
+        skills_root,
+        clean_package=True,
+    )
 
     TEMPLATE_MANIFEST.write_text(manifest_text(report), encoding="utf-8")
     return report
@@ -457,7 +505,7 @@ def main() -> int:
     build_blank_zip()
 
     try:
-        report = build_template_zip(
+        report = build_template_zips(
             args.skills_root,
             exclude_names=exclude_names,
             exclude_prefixes=exclude_prefixes,
@@ -467,7 +515,10 @@ def main() -> int:
         print(exc, file=sys.stderr)
         return 1
 
-    issues = validate_zip_private_markers(TEMPLATE_ZIP, private_markers)
+    issues = [
+        *validate_zip_private_markers(TEMPLATE_ZIP, private_markers),
+        *validate_zip_private_markers(TEMPLATE_CLEAN_ZIP, private_markers),
+    ]
     if issues:
         for issue in issues:
             print(issue, file=sys.stderr)
@@ -475,6 +526,7 @@ def main() -> int:
 
     print(f"Wrote {BLANK_ZIP.relative_to(REPO_ROOT)}")
     print(f"Wrote {TEMPLATE_ZIP.relative_to(REPO_ROOT)}")
+    print(f"Wrote {TEMPLATE_CLEAN_ZIP.relative_to(REPO_ROOT)}")
     print(f"Wrote {TEMPLATE_MANIFEST.relative_to(REPO_ROOT)}")
     print(f"Included public-safe skill folders: {len(report.included)}")
     print(f"Excluded private skill folders: {report.excluded_count}")

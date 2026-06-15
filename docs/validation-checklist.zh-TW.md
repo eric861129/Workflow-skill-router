@@ -117,3 +117,20 @@ OK: Lighthouse audit passed. Reports written to lighthouse-reports
 ```
 
 預設門檻為 performance 70、accessibility 95、best-practices 90、SEO 90。本機 JSON 與 HTML 報告會輸出到 `site/lighthouse-reports/`，並刻意由 git ignore。
+
+## Public URL / HTTPS Gate
+
+這個 repo 的站台使用 `https://huangchiyu.com/Workflow-skill-router/` 這種 project path。除非未來決定搬到專屬 custom domain，否則不要在這個 repo 加 `CNAME`，避免讓 project repo 嘗試接管整個 host，而不是只服務這個 path。
+
+在這種 project-path 設定下，GitHub Pages API 可能顯示 `cname=null` 或 `https_enforced=false`。公開驗收以訪客實際行為為準：
+
+```bash
+curl -fsS --head https://huangchiyu.com/Workflow-skill-router/
+curl -fsS -I -L http://huangchiyu.com/Workflow-skill-router/
+```
+
+預期：HTTPS 回 `200`，HTTP 最終導到 `https://huangchiyu.com/Workflow-skill-router/`。
+
+## UTF-8 / Windows 顯示檢查
+
+所有繁體中文文件與範例都應維持 UTF-8。Windows 上檢查中文內容時，建議使用 `Get-Content -Encoding UTF8`、VS Code 或 `rg`。舊版 PowerShell code page 可能把正確的 UTF-8 檔案顯示成亂碼。

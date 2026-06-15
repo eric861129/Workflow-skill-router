@@ -3,26 +3,62 @@ title: 快速開始
 description: 安裝 starter router、填入 skill tree，並用 validator 驗證。
 ---
 
-## 1. 複製 starter
+## 選擇你的路徑
 
-把這個資料夾複製到你的 Agent skill 目錄：
+如果你只是想先試用 framework，請 clone repo 並驗證 starter router。
 
-```text
-starter/workflow-skill-router/
+如果你想建立自己的 router，請先把空白套件安裝到 Agent skill 目錄，再請 Agent 盤點你的實際 skills，並填寫 starter references。
+
+## 1. 30 秒試用
+
+這條路徑不會安裝 SKILL，只用來確認 framework 與 starter 可以正常驗證。
+
+```bash
+git clone https://github.com/eric861129/Workflow-skill-router.git
+cd Workflow-skill-router
+python scripts/validate-router.py starter/workflow-skill-router
 ```
 
-或直接下載可安裝的 zip：
+預期結果：
+
+```text
+OK: workflow-skill-router passed validation
+```
+
+## 2. 安裝空白 SKILL
+
+如果你希望 Codex 或其他支援 skill 的 Agent 載入 `workflow-skill-router`，請使用這條路徑。
 
 - [空白 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
 - [查看 starter source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
 
-如果你在 Windows 使用 Codex：
+Windows PowerShell：
 
-```text
-C:\Users\<you>\.codex\skills\workflow-skill-router
+```powershell
+$Repo = "https://github.com/eric861129/Workflow-skill-router"
+$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
+$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
+$Skills = Join-Path $env:USERPROFILE ".codex\skills"
+Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
+Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
+New-Item -ItemType Directory -Force -Path $Skills | Out-Null
+Expand-Archive -Force -Path $Zip -DestinationPath $Skills
+python $Validator (Join-Path $Skills "workflow-skill-router")
 ```
 
-## 2. 請 Agent 補齊 router
+macOS 或 Linux：
+
+```bash
+curl -L -o /tmp/workflow-skill-router-blank.zip https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip
+curl -L -o /tmp/workflow-skill-router-validate-router.py https://github.com/eric861129/Workflow-skill-router/raw/main/scripts/validate-router.py
+mkdir -p "$HOME/.codex/skills"
+unzip -o /tmp/workflow-skill-router-blank.zip -d "$HOME/.codex/skills"
+python /tmp/workflow-skill-router-validate-router.py "$HOME/.codex/skills/workflow-skill-router"
+```
+
+兩種安裝指令都會在解壓縮後驗證安裝後的 skill 路徑。
+
+## 3. 請 Agent 補齊 router
 
 使用下面的繁中 prompt，或開啟 source 檔案：
 
@@ -243,9 +279,9 @@ workflow-skill-router/
     routing-rules.md
 ```
 
-## 3. 執行驗證
+## 4. 執行驗證
 
-執行：
+如果你是 clone repo 後驗證 starter 或自訂 router folder，請執行：
 
 ```bash
 python scripts/validate-router.py starter/workflow-skill-router
@@ -257,6 +293,8 @@ python scripts/validate-router.py starter/workflow-skill-router
 OK: workflow-skill-router passed validation
 ```
 
+上面的安裝指令已經會驗證 skill 目錄中的安裝路徑。
+
 如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含公開安全版的真實本機 Codex skills catalog，以及匿名化後的 `workflow-skill-router`。
 
 Source:
@@ -265,7 +303,7 @@ Source:
 - [範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
-## 4. 試跑一條 route
+## 5. 試跑一條 route
 
 丟一個複雜任務給 Agent：
 

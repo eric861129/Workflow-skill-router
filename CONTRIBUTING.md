@@ -39,8 +39,8 @@ Run the validation flow before opening a PR:
 python scripts/validate-router.py starter/workflow-skill-router
 python scripts/validate-router.py examples/template-skill-catalog
 python scripts/audit-public-readiness.py .
-python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md
-python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations
+python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md --fail-on-private --fail-on-duplicates
+python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations --strict
 python -m unittest discover -s tests
 ```
 

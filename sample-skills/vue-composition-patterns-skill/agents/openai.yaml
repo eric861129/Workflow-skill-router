@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vue Composition Patterns"
+  short_description: "Guides Vue 3 composables, watchers, and reactive state."
+  default_prompt: "Use vue-composition-patterns-skill to review the Vue Composition API design."

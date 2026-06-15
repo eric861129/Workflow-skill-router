@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Designer"
+  short_description: "Designs system architecture and records tradeoffs."
+  default_prompt: "Use architecture-designer to evaluate the architecture and document the decision."

@@ -2,15 +2,104 @@
 
 This tree is generated from domains and stages metadata. Overlap detection is a deterministic keyword heuristic, not semantic analysis.
 
+## Api
+
+### Design
+- api-guidelines-skill
+
+### Generation
+- openapi-to-typescript
+
+### Implementation
+- openapi-to-typescript
+
+### Review
+- api-guidelines-skill
+
 ## Api-Architecture
 
 ### Design
 - architecture-designer
 
+## Architecture
+
+### Design
+- c4-architecture
+
+### Documentation
+- c4-architecture
+
 ## Backend
 
 ### Implementation
 - dotnet-core-expert
+
+## Browser
+
+### Automation
+- playwright
+
+### Verification
+- playwright
+
+## Debugging
+
+### Investigation
+- systematic-debugging
+
+### Repair
+- systematic-debugging
+
+## Dependency-Management
+
+### Maintenance
+- dependency-updater
+
+### Upgrade
+- dependency-updater
+
+## Devops
+
+### Implementation
+- docker-compose-local-dev-skill
+
+### Troubleshooting
+- docker-compose-local-dev-skill
+
+## Engineering-Practice
+
+### Implementation
+- karpathy-guidelines
+
+### Review
+- karpathy-guidelines
+
+## Frontend
+
+### Debugging
+- frontend-debugging-workflow
+
+### Design
+- frontend-design
+- vue-composition-patterns-skill
+
+### Implementation
+- frontend-design
+- vue-composition-patterns-skill
+
+### Review
+- vue-composition-patterns-skill
+
+### Verification
+- frontend-debugging-workflow
+
+## Git
+
+### Hygiene
+- commit-work
+
+### Release
+- commit-work
 
 ## Infrastructure
 
@@ -27,48 +116,38 @@ This tree is generated from domains and stages metadata. Overlap detection is a 
 ### Implementation
 - code-documenter
 
-## Uncategorized
-
-### Uncategorized
-- api-guidelines-skill
-- c4-architecture
-- commit-work
-- dependency-updater
-- docker-compose-local-dev-skill
-- executing-plans
-- finishing-a-development-branch
-- frontend-debugging-workflow
-- frontend-design
-- karpathy-guidelines
-- openapi-to-typescript
-- playwright
+### Planning
 - qa-test-planner
-- receiving-code-review
+
+### Verification
+- qa-test-planner
+
+## Requirements
+
+### Clarification
 - requirements-clarity
-- systematic-debugging
-- vue-composition-patterns-skill
+
+### Planning
+- requirements-clarity
+
+## Review
+
+### Implementation
+- receiving-code-review
+
+### Review
+- receiving-code-review
 
 ## Workflow
 
+### Completion
+- finishing-a-development-branch
+
+### Execution
+- executing-plans
+
+### Release
+- finishing-a-development-branch
+
 ### Review
 - spec-miner
-
-## Metadata Gaps
-
-- api-guidelines-skill
-- c4-architecture
-- commit-work
-- dependency-updater
-- docker-compose-local-dev-skill
-- executing-plans
-- finishing-a-development-branch
-- frontend-debugging-workflow
-- frontend-design
-- karpathy-guidelines
-- openapi-to-typescript
-- playwright
-- qa-test-planner
-- receiving-code-review
-- requirements-clarity
-- systematic-debugging
-- vue-composition-patterns-skill
