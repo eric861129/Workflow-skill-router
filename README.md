@@ -77,7 +77,8 @@ OK: workflow-skill-router passed validation
 ## What Is Included
 
 - `starter/workflow-skill-router/`: a Codex-ready starter skill with an agent-agnostic routing contract.
-- `examples/`: company-focused example routers, from minimal generic routing to enterprise platform workflows.
+- `examples/`: example routers, from minimal generic routing to realistic engineering workflows.
+- `sample-skills/`: copyable public `SKILL.md` examples that pair with the common engineering routes.
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
 - `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
 - `site/`: Astro Starlight website for GitHub Pages.
@@ -89,6 +90,7 @@ OK: workflow-skill-router passed validation
 | Example | Best for |
 | --- | --- |
 | `examples/generic-agent` | Any agent with a small skill catalog |
+| `examples/common-engineering-routing` | Realistic engineering routes with concrete skill names |
 | `examples/enterprise-fullstack` | Backend, frontend, docs, CI, and release routing |
 | `examples/frontend-debugging` | Browser vs Playwright vs UI debugging decisions |
 | `examples/github-ci-review` | GitHub PR review, CI failure, and release readiness |

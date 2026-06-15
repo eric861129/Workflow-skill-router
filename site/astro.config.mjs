@@ -49,6 +49,7 @@ export default defineConfig({
             'zh-TW': '範例',
           },
           items: [
+            { slug: 'examples/common-engineering' },
             { slug: 'examples/company-platform' },
             { slug: 'examples/frontend-debugging' },
           ],
@@ -61,6 +62,7 @@ export default defineConfig({
           items: [
             { slug: 'reference/routing-contract' },
             { slug: 'reference/validator' },
+            { slug: 'reference/sample-skills' },
           ],
         },
       ],

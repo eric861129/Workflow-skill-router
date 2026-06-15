@@ -54,7 +54,8 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 ## What you get
 
 - A Codex-ready starter skill.
-- Company-focused example routers.
+- Common engineering and company-focused example routers.
+- Copyable sample `SKILL.md` files.
 - Practical recipes for common workflows.
 - A dependency-free validator.
 - A customization guide for adapting the router to your own skill catalog.

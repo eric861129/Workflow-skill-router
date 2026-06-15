@@ -77,7 +77,8 @@ OK: workflow-skill-router passed validation
 ## 這個 repo 包含什麼
 
 - `starter/workflow-skill-router/`：Codex-ready starter，同時保留 agent-agnostic routing contract。
-- `examples/`：公司/企業情境範例，從最小 generic agent 到複雜公司平台 workflow。
+- `examples/`：範例 routers，從最小 generic agent 到真實工程 workflow。
+- `sample-skills/`：可複製參考的公開 `SKILL.md` 範例，對應 common engineering routes。
 - `recipes/`：API 合約同步、前端除錯、PR/CI、文件圖表、connector-heavy workflow 的實用模式。
 - `scripts/validate-router.py`：無外部相依的 validator，檢查結構、route 數量、Primary 標記與隱私字串。
 - `site/`：可部署到 GitHub Pages 的 Astro Starlight 網站。
@@ -89,6 +90,7 @@ OK: workflow-skill-router passed validation
 | 範例 | 適合情境 |
 | --- | --- |
 | `examples/generic-agent` | 任何擁有小型 skill catalog 的 Agent |
+| `examples/common-engineering-routing` | 使用實際 skill 名稱的常見工程 routing 情境 |
 | `examples/enterprise-fullstack` | 後端、前端、文件、CI、release routing |
 | `examples/frontend-debugging` | Browser、Playwright、UI debugging 的選擇 |
 | `examples/github-ci-review` | GitHub PR review、CI failure、release readiness |

@@ -87,7 +87,8 @@ python scripts/validate-router.py starter/workflow-skill-router
 ## Repository Map
 
 - `starter/workflow-skill-router/`: blank router skill starter.
-- `examples/`: working routers for generic agents and company platform scenarios.
+- `examples/`: working routers for generic agents, company platform scenarios, and realistic engineering workflows.
+- `sample-skills/`: copyable public `SKILL.md` examples that pair with the common engineering routes.
 - `recipes/`: practical route design patterns.
 - `scripts/validate-router.py`: dependency-free validator.
 - `site/`: Astro Starlight website for GitHub Pages.

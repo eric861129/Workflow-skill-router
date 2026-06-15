@@ -54,7 +54,8 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 ## 你會得到什麼
 
 - Codex-ready 的 starter skill。
-- 以公司平台情境包裝的範例 routers。
+- 常見工程與公司平台情境的範例 routers。
+- 可複製參考的 sample `SKILL.md`。
 - 常見 workflow 的實戰 recipes。
 - 不依賴外部套件的 validator。
 - 依照自己的 skill catalog 客製 router 的指南。

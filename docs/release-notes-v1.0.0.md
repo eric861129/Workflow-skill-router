@@ -7,6 +7,8 @@ Workflow Skill Router v1.0.0 packages the project as a public AI Agent skill rou
 - Agent-agnostic routing model with a Codex-ready starter.
 - Dependency-free validator for router packages.
 - Five company-focused example routers.
+- Common engineering routing example with concrete skill names.
+- Copyable public sample skills.
 - Practical recipes for common routing scenarios.
 - Customization guidance for adapting the starter router.
 - GitHub issue and PR templates for routing failures and example requests.
