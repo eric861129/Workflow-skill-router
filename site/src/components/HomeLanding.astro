@@ -15,7 +15,7 @@ const themeLabels = isZh
 
 const text = {
   en: {
-    nav: ['Why it works', 'Examples', 'Validator'],
+    nav: ['Why it works', 'Examples', 'Proof'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: 'Star on GitHub',
     quickstart: 'Start in 30 seconds',
@@ -71,15 +71,33 @@ const text = {
     ],
     validatorTitle: 'Proof before publish',
     validatorCopy:
-      'The validator makes this pattern feel like a small developer tool, not just a prompt. It checks the blank starter and the template catalog before the repo is shared.',
-    validatorCommand:
-      'python scripts/validate-router.py starter/workflow-skill-router\npython scripts/validate-router.py examples/template-skill-catalog',
+      'The proof flow checks router structure, scans the sample skill catalog, evaluates route quality, and runs the unit tests before the repo is shared.',
+    validatorCommand: `# 1. Validate router structure
+python scripts/validate-router.py starter/workflow-skill-router
+python scripts/validate-router.py examples/template-skill-catalog
+
+# 2. Scan skill catalog
+python scripts/scan-skills.py ./sample-skills \\
+  --out /tmp/skill-index.json \\
+  --markdown /tmp/skill-index.md \\
+  --warnings /tmp/skill-warnings.md \\
+  --suggest-tree /tmp/suggested-skill-tree.md
+
+# 3. Evaluate routing quality
+python scripts/evaluate-routing.py \\
+  --scenarios evaluation/scenarios.example.jsonl \\
+  --predictions evaluation/predictions.example.jsonl \\
+  --report /tmp/routing-report.md \\
+  --json-report /tmp/routing-report.json \\
+  --fail-on-violations
+
+python -m unittest discover -s tests`,
     finalTitle: 'Make skill routing a pattern people can star, fork, and reuse',
     finalCopy:
       'Open the repository, inspect the starter, and star it if the pattern helps your AI agent work with less chaos.',
   },
   'zh-tw': {
-    nav: ['為什麼有效', '範例', 'Validator'],
+    nav: ['為什麼有效', '範例', '驗證'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: '到 GitHub 給星星',
     quickstart: '30 秒開始',
@@ -135,9 +153,27 @@ const text = {
     ],
     validatorTitle: '發布前先驗證',
     validatorCopy:
-      'Validator 讓這個 pattern 比單純 prompt 更像小型 developer tool。分享 repo 前，可以先驗證空白 starter 和範本 catalog。',
-    validatorCommand:
-      'python scripts/validate-router.py starter/workflow-skill-router\npython scripts/validate-router.py examples/template-skill-catalog',
+      'Proof flow 會先驗證 router 結構、掃描 sample skill catalog、評估 routing quality，並執行 unit tests，再分享 repo。',
+    validatorCommand: `# 1. 驗證 router 結構
+python scripts/validate-router.py starter/workflow-skill-router
+python scripts/validate-router.py examples/template-skill-catalog
+
+# 2. 掃描 skill catalog
+python scripts/scan-skills.py ./sample-skills \\
+  --out /tmp/skill-index.json \\
+  --markdown /tmp/skill-index.md \\
+  --warnings /tmp/skill-warnings.md \\
+  --suggest-tree /tmp/suggested-skill-tree.md
+
+# 3. 評估 routing quality
+python scripts/evaluate-routing.py \\
+  --scenarios evaluation/scenarios.example.jsonl \\
+  --predictions evaluation/predictions.example.jsonl \\
+  --report /tmp/routing-report.md \\
+  --json-report /tmp/routing-report.json \\
+  --fail-on-violations
+
+python -m unittest discover -s tests`,
     finalTitle: '把 skill routing 變成值得 star、fork、重用的 pattern',
     finalCopy:
       '打開 GitHub repo，檢查 starter。如果這個 pattern 能讓你的 AI Agent 工作更清楚，歡迎給它一顆星。',
@@ -432,7 +468,7 @@ Reason: ${initialDemo.reason}`}</code></pre>
       </div>
       <div class="wsr-command-card">
         <pre><code>{text.validatorCommand}</code></pre>
-        <a class="wsr-text-link" href={`${rootPath}/reference/validator/`}>{isZh ? '查看 Validator CLI' : 'View Validator CLI'}</a>
+        <a class="wsr-text-link" href={`${rootPath}/reference/validator/`}>{isZh ? '查看驗證工具鏈' : 'View validation toolchain'}</a>
       </div>
     </div>
   </section>

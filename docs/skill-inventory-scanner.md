@@ -63,10 +63,10 @@ Public-safety warnings include:
 - localhost URLs
 - internal domain patterns such as `.local`, `.internal`, and `intranet`
 - token-like strings
-- secret, password, credential, API key, or access token terms
+- credential-like assignments for secret, password, credential, API key, or access token fields
 - local home paths such as `C:\Users\name\` or `/Users/name/`
 
-Public-safety findings are warnings by default. Use `--fail-on-private` when you want them to fail CI.
+Reserved documentation emails such as `user@example.com`, `user@example.org`, and `user@example.net` are treated as public-safe examples. Public-safety findings are warnings by default. Use `--fail-on-private` when you want them to fail CI.
 
 ## Suggested Skill Tree
 

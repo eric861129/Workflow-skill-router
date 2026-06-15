@@ -1,36 +1,27 @@
 ---
-title: Validator CLI
-description: Validate router packages before publishing or sharing them.
+title: Validation Toolchain
+description: Validate router structure, public readiness, skill inventory, routing quality, and tests before publishing.
 ---
 
-The repository includes a dependency-free validator:
+Workflow Skill Router includes a dependency-free validation toolchain. Use it before publishing a router repo, release, or public template package.
+
+## 1. Validate router structure
 
 ```bash
 python scripts/validate-router.py starter/workflow-skill-router
+python scripts/validate-router.py examples/template-skill-catalog
 ```
 
 Expected:
 
 ```text
 OK: workflow-skill-router passed validation
+OK: template-skill-catalog passed validation
 ```
 
-## What it checks
+This checks `SKILL.md`, required reference files, route `Primary:` markers, max skill count, example README files, and placeholder policy.
 
-Router package validation:
-
-- `SKILL.md` exists.
-- YAML frontmatter has only `name` and `description`.
-- `references/skill-tree.md` exists.
-- `references/routing-rules.md` exists.
-- route lines include `Primary:`.
-- each route chooses at most four skills.
-- examples include a `README.md`.
-- placeholder starter skills are clearly marked.
-
-## Public-readiness audit
-
-Use this before publishing a router repo, release, or public template package:
+## 2. Audit public readiness
 
 ```bash
 python scripts/audit-public-readiness.py .
@@ -42,21 +33,46 @@ Expected:
 OK: public-readiness audit passed
 ```
 
-The audit checks:
+The audit checks community files, downloads, template catalog/manifest parity, site entrypoints, stale examples, mojibake, replacement characters, and hidden edit-link UI text.
 
-- README, license, security policy, code of conduct, contributing guide, funding metadata, issue templates, and PR template.
-- starter router and template example validation.
-- blank/template downloads and manifest files.
-- template catalog routes cover every skill listed in the template manifest and do not reference skills outside it.
-- Starlight site entrypoints, robots file, and social preview asset.
-- stale multi-example pages or source folders that conflict with the single template catalog.
-- mojibake, replacement characters, and hidden edit-link UI text.
-
-The legacy validator flag remains available for existing scripts:
+The legacy validator flag remains available:
 
 ```bash
 python scripts/validate-router.py --public-readiness .
 ```
+
+## 3. Scan the skill catalog
+
+```bash
+python scripts/scan-skills.py ./sample-skills \
+  --out /tmp/skill-index.json \
+  --markdown /tmp/skill-index.md \
+  --warnings /tmp/skill-warnings.md \
+  --suggest-tree /tmp/suggested-skill-tree.md
+```
+
+Use `--fail-on-private` and `--fail-on-duplicates` for release gates. The scanner writes a machine-readable index, Markdown summary, warnings report, and suggested skill tree.
+
+## 4. Evaluate routing quality
+
+```bash
+python scripts/evaluate-routing.py \
+  --scenarios evaluation/scenarios.example.jsonl \
+  --predictions evaluation/predictions.example.jsonl \
+  --report /tmp/routing-report.md \
+  --json-report /tmp/routing-report.json \
+  --fail-on-violations
+```
+
+Add `--strict` when primary mismatches or missing expected supporting skills should fail CI.
+
+## 5. Run unit tests
+
+```bash
+python -m unittest discover -s tests
+```
+
+The test suite covers the evaluator and scanner with standard-library `unittest`.
 
 ## Lighthouse / Accessibility audit
 
@@ -75,23 +91,10 @@ OK: Lighthouse audit passed. Reports written to lighthouse-reports
 
 The audit builds the site, serves `site/dist` locally, runs Lighthouse on key English and Traditional Chinese pages, and writes JSON/HTML reports to `site/lighthouse-reports/`.
 
-## Self-test
-
-```bash
-python scripts/validate-router.py --self-test
-```
-
-Expected:
-
-```text
-OK: validator self-test passed
-```
-
 ## Source
 
-- [View `scripts/audit-public-readiness.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
 - [View `scripts/validate-router.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
-- [View `site/scripts/lighthouse-audit.mjs` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/site/scripts/lighthouse-audit.mjs)
-- [View starter router used by the command](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
-- [View example routers](https://github.com/eric861129/Workflow-skill-router/tree/main/examples)
-
+- [View `scripts/audit-public-readiness.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
+- [View `scripts/scan-skills.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/scan-skills.py)
+- [View `scripts/evaluate-routing.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/evaluate-routing.py)
+- [View the evaluation examples](https://github.com/eric861129/Workflow-skill-router/tree/main/evaluation)

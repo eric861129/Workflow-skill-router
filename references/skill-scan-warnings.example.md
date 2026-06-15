@@ -67,19 +67,15 @@
 - openapi-to-typescript: missing stages metadata
 - openapi-to-typescript: missing triggers metadata
 - openapi-to-typescript: tags are missing or too sparse
-- playwright: email address: user@example.com
 - playwright: missing domains metadata
 - playwright: missing exclusions metadata
 - playwright: missing stages metadata
 - playwright: missing triggers metadata
 - playwright: tags are missing or too sparse
-- qa-test-planner: email address: test@example.com
 - qa-test-planner: missing domains metadata
 - qa-test-planner: missing exclusions metadata
 - qa-test-planner: missing stages metadata
 - qa-test-planner: missing triggers metadata
-- qa-test-planner: secret keyword: Password
-- qa-test-planner: secret keyword: password
 - qa-test-planner: tags are missing or too sparse
 - receiving-code-review: missing domains metadata
 - receiving-code-review: missing exclusions metadata
@@ -204,7 +200,6 @@
 - tags are missing or too sparse
 
 ### playwright
-- email address: user@example.com
 - missing domains metadata
 - missing exclusions metadata
 - missing stages metadata
@@ -212,9 +207,6 @@
 - tags are missing or too sparse
 
 ### qa-test-planner
-- email address: test@example.com
-- secret keyword: Password
-- secret keyword: password
 - missing domains metadata
 - missing exclusions metadata
 - missing stages metadata

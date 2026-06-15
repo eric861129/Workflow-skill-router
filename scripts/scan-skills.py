@@ -58,11 +58,15 @@ PRIVATE_PATTERNS = [
     ("localhost URL", re.compile(r"https?://(?:localhost|127\.0\.0\.1|\[?::1\]?)(?:[/:?#][^\s)]*)?", re.IGNORECASE)),
     ("internal domain", re.compile(r"\b(?:[A-Za-z0-9-]+\.)+(?:local|internal|intranet)\b|\bintranet\b", re.IGNORECASE)),
     ("token-like string", re.compile(r"\b(?:sk|pk|ghp|xoxb|xoxp|xoxa)[-_][A-Za-z0-9_-]{10,}\b")),
-    ("secret keyword", re.compile(r"\b(?:secret|password|credential|api[_ -]?key|access[_ -]?token)\b", re.IGNORECASE)),
     ("absolute local path", re.compile(r"(?:[A-Za-z]:\\Users\\[^\\\s]+\\|/Users/[^/\s]+/)")),
 ]
 
 PRIVATE_IP_PATTERN = re.compile(r"\b(?:10|127|172|192)\.(?:\d{1,3}\.){2}\d{1,3}\b")
+SAFE_EMAIL_DOMAINS = {"example.com", "example.org", "example.net"}
+CREDENTIAL_ASSIGNMENT_PATTERN = re.compile(
+    r"^\s*(?:[-*]\s*)?(?:secret|password|credential|api[_ -]?key|access[_ -]?token)\b\s*(?:=|:)\s*['\"]?[A-Za-z0-9_./+=!@#$%^&*-]{8,}",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def slugify(value: str, fallback: str = "skill") -> str:
@@ -226,10 +230,12 @@ def private_warnings(text: str) -> list[str]:
     for label, pattern in PRIVATE_PATTERNS:
         for match in pattern.finditer(text):
             value = match.group(0)
-            if label == "email address" and value.endswith("@example.com"):
-                # example.com is safe for public examples, but still useful to catch in tests
-                pass
+            if label == "email address" and value.rsplit("@", 1)[-1].lower() in SAFE_EMAIL_DOMAINS:
+                continue
             warnings.append(f"{label}: {value}")
+
+    for match in CREDENTIAL_ASSIGNMENT_PATTERN.finditer(text):
+        warnings.append(f"credential-like assignment: {match.group(0)}")
 
     for match in PRIVATE_IP_PATTERN.finditer(text):
         value = match.group(0)

@@ -33,15 +33,14 @@ Use placeholders such as `Acme Corp`, `Customer Portal`, `Internal Admin`, `Reve
 
 ## Validation
 
-Run the validator before opening a PR:
+Run the validation flow before opening a PR:
 
 ```bash
 python scripts/validate-router.py starter/workflow-skill-router
-```
-
-For examples:
-
-```bash
-python scripts/validate-router.py examples/generic-agent
+python scripts/validate-router.py examples/template-skill-catalog
+python scripts/audit-public-readiness.py .
+python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md
+python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations
+python -m unittest discover -s tests
 ```
 

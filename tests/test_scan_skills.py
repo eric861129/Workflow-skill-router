@@ -190,7 +190,7 @@ stages: [planning]
             (skill_dir / "SKILL.md").write_text(
                 """# Private Marker
 
-Contact admin@example.com or visit http://localhost:3000 before using this token-like value sk-test-1234567890abcdef.
+Contact admin@platform.internal or visit http://localhost:3000 before using this token-like value sk-test-1234567890abcdef.
 """,
                 encoding="utf-8",
             )
@@ -202,6 +202,24 @@ Contact admin@example.com or visit http://localhost:3000 before using this token
             self.assertTrue(any("email address" in warning for warning in skill["private_warnings"]))
             self.assertTrue(any("localhost URL" in warning for warning in skill["private_warnings"]))
             self.assertIn("private-marker", warnings)
+
+    def test_example_email_domains_are_public_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = root / "public-example"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text(
+                """# Public Example
+
+Use user@example.com and https://example.com/form in copyable examples.
+""",
+                encoding="utf-8",
+            )
+
+            code, data, _markdown, _warnings, _tree = self.run_scanner([root], "--fail-on-private")
+
+            self.assertEqual(code, 0)
+            self.assertEqual(data["skills"][0]["private_warnings"], [])
 
     def test_quality_warnings_for_short_description_and_missing_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

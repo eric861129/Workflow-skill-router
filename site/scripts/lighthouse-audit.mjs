@@ -192,7 +192,12 @@ async function main() {
 
     console.log(`\nOK: Lighthouse audit passed. Reports written to ${path.relative(siteRoot, reportRoot)}`);
   } finally {
-    await chrome.kill();
+    try {
+      await chrome.kill();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`WARN: Lighthouse audit passed, but Chrome cleanup failed: ${message}`);
+    }
     await new Promise((resolve) => server.close(resolve));
   }
 }
