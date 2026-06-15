@@ -581,6 +581,9 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:nth-child(2) .s
   line-height: 1.06;
   font-weight: 800;
   letter-spacing: 0;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+  word-break: normal;
 }
 
 .wsr-section p,
@@ -593,6 +596,102 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:nth-child(2) .s
 
 .wsr-section-dark p {
   color: rgb(248 250 252 / 0.72);
+}
+
+.wsr-process-panel {
+  border: 1px solid var(--wsr-line);
+  border-radius: 8px;
+  padding: 1.15rem;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.94), rgb(225 245 250 / 0.72)),
+    #fff;
+  box-shadow: 0 24px 54px rgb(15 23 42 / 0.08);
+}
+
+:root[data-theme='dark'] .wsr-process-panel {
+  background:
+    linear-gradient(145deg, rgb(13 24 38 / 0.96), rgb(8 52 68 / 0.66)),
+    #0d1826;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.22);
+}
+
+.wsr-process-kicker {
+  display: block;
+  color: var(--wsr-cyan);
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wsr-process-list {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.wsr-process-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--wsr-line) 74%, transparent);
+  border-radius: 8px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--wsr-paper) 88%, white 12%);
+}
+
+:root[data-theme='dark'] .wsr-process-step {
+  background: rgb(8 17 31 / 0.46);
+}
+
+.wsr-process-number {
+  display: inline-grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 8px;
+  background: #08111f;
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.wsr-process-label {
+  display: block;
+  color: var(--wsr-cyan);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.wsr-process-step h3,
+.wsr-process-note h3 {
+  margin: 0.25rem 0 0;
+  color: var(--wsr-ink);
+  font-size: 1.04rem;
+  line-height: 1.25;
+}
+
+.wsr-process-step p,
+.wsr-process-note p {
+  margin-top: 0.45rem;
+  color: var(--wsr-muted);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.wsr-process-note {
+  margin-top: 1rem;
+  border-left: 3px solid var(--wsr-lime);
+  border-radius: 8px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--wsr-lime) 11%, transparent);
+}
+
+.wsr-process-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.9rem;
 }
 
 .wsr-bento {

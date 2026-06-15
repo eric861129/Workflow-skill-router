@@ -22,14 +22,30 @@ const text = {
     introTitle: 'A sharper operating layer for multi-skill agents',
     introCopy:
       'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts.',
-    cards: [
-      ['Contract first', 'Every complex route returns task nature, work stage, technical domain, selected skills, and one-line reasons.'],
-      ['Template catalog', 'One downloadable public-safe skill pack now maps directly to one inspectable routing catalog.'],
-      ['Validator included', 'A dependency-free CLI checks structure, route size, primary skill coverage, references, and privacy risk.'],
-      ['Codex-ready starter', 'Copy a clean router skill, fill the skill tree, and validate before sharing it with a team.'],
-      ['Bilingual docs', 'English and Traditional Chinese pages stay aligned so the pattern can travel across teams.'],
-      ['Source-first site', 'Every important page links directly back to the GitHub source folder behind it.'],
+    introLink: 'Read the customization guide',
+    processLabel: 'How the router thinks',
+    processSteps: [
+      [
+        'Task shape',
+        'Classify the work before choosing tools',
+        'The router first separates task nature, work stage, and technical domain so the agent does not treat every request as generic implementation work.',
+      ],
+      [
+        'Primary owner',
+        'Choose exactly one skill to lead',
+        'A Primary skill owns the main reasoning path. Supporting skills can help, but they should not compete for control of the task.',
+      ],
+      [
+        'Focused support',
+        'Add only the skills that reduce risk',
+        'Routes stay small: usually one Primary skill plus one to three Supporting skills for APIs, databases, browser checks, docs, CI, or release work.',
+      ],
     ],
+    processNoteTitle: 'The result is easier to review before execution',
+    processNote:
+      'Instead of asking the agent to remember every workflow at once, the user sees a short routing contract and can correct it before files are edited.',
+    contractLink: 'View routing contract',
+    templateLink: 'Explore template catalog',
     examplesTitle: 'One template catalog, ready to download and inspect',
     examplesCopy:
       'The example is no longer split across several scenario pages. The template skill catalog mirrors the downloadable pack, so readers can see what they get and how the router uses it.',
@@ -67,17 +83,33 @@ const text = {
     routeLabel: 'Routing output',
     route:
       'Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。',
-    introTitle: '讓多技能 Agent 多一層清楚的工作入口',
+    introTitle: '讓多技能 Agent 有清楚入口',
     introCopy:
       'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再開始執行。',
-    cards: [
-      ['Contract first', '每個複雜 route 都會輸出任務性質、工作階段、技術領域、選用 skills 與一句理由。'],
-      ['範本 catalog', '現在用一個可下載的 public-safe skill pack，直接對應一份可檢查的 routing catalog。'],
-      ['Validator included', '無外部依賴的 CLI 會檢查結構、route 數量、primary skill、references 與隱私風險。'],
-      ['Codex-ready starter', '複製乾淨的 router skill，填入 skill tree，驗證後就能分享給團隊使用。'],
-      ['Bilingual docs', '英文與繁中頁面同步，讓這個 pattern 可以更容易在不同團隊流通。'],
-      ['Source-first site', '重要頁面都直接連回 GitHub source folder，讀者可以快速追到實作內容。'],
+    introLink: '閱讀客製化指南',
+    processLabel: 'Router 的判斷方式',
+    processSteps: [
+      [
+        '任務形狀',
+        '先分類工作，再選工具',
+        'Router 會先拆出任務性質、工作階段與技術領域，避免 Agent 把所有需求都當成一般實作任務處理。',
+      ],
+      [
+        'Primary owner',
+        '只選一個主要 SKILL 負責',
+        'Primary skill 負責主要推理路徑；Supporting skills 可以協助，但不應該互相搶主導權。',
+      ],
+      [
+        '聚焦支援',
+        '只加入真正降低風險的 SKILL',
+        'Route 會保持小而清楚：通常是一個 Primary skill，加上一到三個處理 API、資料庫、瀏覽器驗證、文件、CI 或 release 的 Supporting skills。',
+      ],
     ],
+    processNoteTitle: '重點是讓執行前就能被檢查',
+    processNote:
+      '使用者看到的是一份短短的 routing contract，可以在 Agent 修改檔案前先修正方向，而不是讓 Agent 一次背著所有 workflow 往前衝。',
+    contractLink: '查看 routing contract',
+    templateLink: '查看範本 catalog',
     examplesTitle: '一份範本 catalog，下載後就能對照使用',
     examplesCopy:
       '範例不再拆成多個情境頁。Template Skill Catalog 會直接對齊下載包，讓讀者知道拿到哪些 SKILL，以及 router 如何使用它們。',
@@ -133,7 +165,7 @@ const text = {
       <div class="wsr-route-showcase" aria-label={text.routeLabel}>
         <div class="wsr-route-header">
           <span>{text.routeLabel}</span>
-          <a href={`${rootPath}/reference/routing-contract/`}>{isZh ? '查看 contract' : 'View contract'}</a>
+          <a href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
         </div>
         <pre><code>{text.route}</code></pre>
       </div>
@@ -145,15 +177,30 @@ const text = {
       <div>
         <h2>{text.introTitle}</h2>
         <p>{text.introCopy}</p>
-        <a class="wsr-text-link" href={`${rootPath}/guides/adoption/`}>{isZh ? '閱讀客製化指南' : 'Read the customization guide'}</a>
+        <a class="wsr-text-link" href={`${rootPath}/guides/adoption/`}>{text.introLink}</a>
       </div>
-      <div class="wsr-bento" aria-label={isZh ? '主要能力' : 'Core capabilities'}>
-        {text.cards.map(([title, body], index) => (
-          <a class={`wsr-bento-card wsr-bento-card-${index + 1}`} href={`${rootPath}/reference/source-map/`}>
-            <span>{title}</span>
-            <p>{body}</p>
-          </a>
-        ))}
+      <div class="wsr-process-panel" aria-label={text.processLabel}>
+        <span class="wsr-process-kicker">{text.processLabel}</span>
+        <div class="wsr-process-list">
+          {text.processSteps.map(([label, title, body], index) => (
+            <article class="wsr-process-step">
+              <span class="wsr-process-number">{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <span class="wsr-process-label">{label}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div class="wsr-process-note">
+          <h3>{text.processNoteTitle}</h3>
+          <p>{text.processNote}</p>
+          <div class="wsr-process-links">
+            <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
+            <a class="wsr-text-link" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -163,12 +210,12 @@ const text = {
       <div class="wsr-proof-pin">
         <h2>{text.examplesTitle}</h2>
         <p>{text.examplesCopy}</p>
-        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{isZh ? '查看範本 catalog' : 'Explore template catalog'}</a>
+        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
       </div>
       <div class="wsr-proof-stack">
         <div class="wsr-template-showcase wsr-motion-image">
           <div>
-            <span class="wsr-template-kicker">{isZh ? 'Template Skill Catalog' : 'Template Skill Catalog'}</span>
+            <span class="wsr-template-kicker">Template Skill Catalog</span>
             <h3>{isZh ? '下載包內容，就是範例內容' : 'The download package is the example'}</h3>
             <p>{isZh ? '讀者不需要在三個情境頁之間猜哪個才是主範本。這裡直接把 template zip 的 public-safe skills 分類成可複製 routes。' : 'Readers no longer need to choose between several scenario pages. This catalog turns the template zip skills into copyable routes.'}</p>
           </div>
