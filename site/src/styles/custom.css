@@ -441,6 +441,7 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:has(.wsr-landin
 
 .wsr-wordmark,
 .wsr-nav-links,
+.wsr-nav-actions,
 .wsr-nav-star {
   color: #f8fafc;
 }
@@ -471,31 +472,79 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:has(.wsr-landin
   justify-content: center;
 }
 
+.wsr-nav-actions {
+  display: inline-flex;
+  justify-self: end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .wsr-nav-links a,
+.wsr-locale-switch,
+.wsr-theme-toggle,
 .wsr-nav-star {
   border-radius: 8px;
   padding: 0.55rem 0.75rem;
   color: #f8fafc;
+  border: 0;
   font-size: 0.88rem;
   font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
   text-decoration: none;
   transition: background 180ms ease, transform 180ms ease;
 }
 
 .wsr-nav-links a:hover,
+.wsr-locale-switch:hover,
+.wsr-theme-toggle:hover,
 .wsr-nav-star:hover {
   background: rgb(255 255 255 / 0.12);
   transform: translateY(-1px);
 }
 
+.wsr-locale-switch,
+.wsr-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.45rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.08);
+  color: #f8fafc;
+}
+
+.wsr-theme-toggle {
+  gap: 0.42rem;
+  cursor: pointer;
+}
+
+.wsr-theme-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: inset -3px -1px 0 rgb(8 17 31 / 0.92);
+}
+
+.wsr-theme-toggle[data-theme='light'] .wsr-theme-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgb(245 158 11 / 0.16);
+}
+
 .wsr-nav-star {
-  justify-self: end;
   background: #f8fafc;
   color: #08111f;
 }
 
+.wsr-star-short {
+  display: none;
+}
+
 .sl-markdown-content .wsr-landing .wsr-wordmark,
-.sl-markdown-content .wsr-landing .wsr-nav-links a {
+.sl-markdown-content .wsr-landing .wsr-nav-links a,
+.sl-markdown-content .wsr-landing .wsr-locale-switch,
+.sl-markdown-content .wsr-landing .wsr-theme-toggle {
   color: #f8fafc !important;
   text-decoration: none;
 }
@@ -1352,21 +1401,57 @@ body:has(.wsr-landing) main[data-pagefind-body] > .content-panel:has(.wsr-landin
   .wsr-floating-nav {
     display: flex;
     justify-content: space-between;
+    gap: 0.55rem;
+    padding: 0.55rem;
+  }
+
+  .wsr-nav-actions {
+    flex: 0 0 auto;
+    gap: 0.28rem;
+  }
+
+  .wsr-wordmark {
+    gap: 0.45rem;
   }
 
   .wsr-wordmark span:last-child {
-    max-width: 7.5rem;
+    max-width: 6.25rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .wsr-locale-switch,
+  .wsr-theme-toggle,
   .wsr-nav-star {
-    max-width: 7.25rem;
-    padding-inline: 0.65rem;
+    min-height: 2.4rem;
+    padding-inline: 0.58rem;
+    font-size: 0.78rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .wsr-theme-toggle {
+    width: 2.4rem;
+    padding-inline: 0;
+  }
+
+  .wsr-theme-toggle [data-wsr-theme-label] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .wsr-star-full {
+    display: none;
+  }
+
+  .wsr-star-short {
+    display: inline;
   }
 
   .wsr-hero-title {

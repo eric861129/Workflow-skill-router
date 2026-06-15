@@ -5,6 +5,13 @@ const locale = (Astro.props.locale ?? 'en') as Locale;
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
 const isZh = locale === 'zh-tw';
+const alternateLocalePath = isZh ? '/Workflow-skill-router/' : '/Workflow-skill-router/zh-tw/';
+const alternateLocaleLabel = isZh ? 'EN' : '繁中';
+const localeSwitchLabel = isZh ? '切換到英文版' : 'Switch to Traditional Chinese';
+const themeToggleLabel = isZh ? '切換深淺模式' : 'Toggle color theme';
+const themeLabels = isZh
+  ? { light: '淺色', dark: '深色' }
+  : { light: 'Light', dark: 'Dark' };
 
 const text = {
   en: {
@@ -246,7 +253,26 @@ const initialDemo = routeDemoScenarios[0];
         <a href={text.navLinks[index]}>{item}</a>
       ))}
     </div>
-    <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
+    <div class="wsr-nav-actions">
+      <a class="wsr-locale-switch" href={alternateLocalePath} aria-label={localeSwitchLabel}>
+        {alternateLocaleLabel}
+      </a>
+      <button
+        class="wsr-theme-toggle"
+        type="button"
+        data-wsr-theme-toggle
+        data-light-label={themeLabels.light}
+        data-dark-label={themeLabels.dark}
+        aria-label={themeToggleLabel}
+      >
+        <span class="wsr-theme-dot" aria-hidden="true"></span>
+        <span data-wsr-theme-label>{themeLabels.dark}</span>
+      </button>
+      <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer" aria-label={text.star}>
+        <span class="wsr-star-full">{text.star}</span>
+        <span class="wsr-star-short">Star</span>
+      </a>
+    </div>
   </nav>
 
   <section class="wsr-hero" aria-labelledby="wsr-hero-title">
@@ -428,6 +454,55 @@ Reason: ${initialDemo.reason}`}</code></pre>
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const themeKey = 'starlight-theme';
+  const themeQuery = window.matchMedia('(prefers-color-scheme: light)');
+  const normalizeTheme = (theme) => (theme === 'light' || theme === 'dark' ? theme : null);
+  const storedTheme = () => {
+    try {
+      return normalizeTheme(localStorage.getItem(themeKey));
+    } catch {
+      return null;
+    }
+  };
+  const saveTheme = (theme) => {
+    try {
+      localStorage.setItem(themeKey, theme);
+    } catch {
+      // The visible theme still changes even when browser storage is unavailable.
+    }
+  };
+  const systemTheme = () => (themeQuery.matches ? 'light' : 'dark');
+  const currentTheme = () =>
+    storedTheme() ||
+    normalizeTheme(document.documentElement.dataset.theme) ||
+    systemTheme();
+
+  const updateThemeToggle = (theme) => {
+    document.querySelectorAll('[data-wsr-theme-toggle]').forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const label = button.querySelector('[data-wsr-theme-label]');
+      if (label) {
+        label.textContent = theme === 'light' ? button.dataset.lightLabel || 'Light' : button.dataset.darkLabel || 'Dark';
+      }
+      button.dataset.theme = theme;
+    });
+  };
+
+  const applyTheme = (theme) => {
+    document.documentElement.dataset.theme = theme;
+    saveTheme(theme);
+    globalThis.StarlightThemeProvider?.updatePickers?.(theme);
+    updateThemeToggle(theme);
+  };
+
+  applyTheme(currentTheme());
+
+  document.querySelectorAll('[data-wsr-theme-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    });
+  });
 
   document.querySelectorAll('[data-wsr-route-demo]').forEach((demo) => {
     const dataNode = demo.querySelector('[data-route-demo-json]');
