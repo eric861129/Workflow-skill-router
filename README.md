@@ -29,6 +29,69 @@ It is not a super skill. It is a small front door that tells an agent what to lo
 
 ![Workflow Skill Router before and after demo](docs/assets/demo-routing-before-after.svg)
 
+## What This Project Helps You Do
+
+- Inventory your available skills into a machine-readable catalog.
+- Organize skills by workflow stage, technical domain, triggers, and exclusions.
+- Route tasks to one primary skill and a small number of supporting skills.
+- Validate that routes are explainable, bounded, and public-safe.
+- Evaluate routing quality with repeatable scenarios and predictions.
+
+## Framework Quickstart
+
+```bash
+git clone https://github.com/eric861129/Workflow-skill-router.git
+cd Workflow-skill-router
+
+python scripts/validate-router.py starter/workflow-skill-router
+
+python scripts/scan-skills.py ./sample-skills \
+  --out references/skill-index.example.json \
+  --markdown references/skill-index.example.md \
+  --warnings references/skill-scan-warnings.example.md \
+  --suggest-tree references/suggested-skill-tree.example.md
+
+python scripts/evaluate-routing.py \
+  --scenarios evaluation/scenarios.example.jsonl \
+  --predictions evaluation/predictions.example.jsonl \
+  --report evaluation/report.example.md
+```
+
+## Recommended Workflow
+
+1. Copy the starter.
+2. Inventory available skills.
+3. Define the skill tree.
+4. Define routing rules.
+5. Add routing scenarios.
+6. Generate predictions.
+7. Evaluate routing quality.
+8. Run validation before publishing.
+
+## Quality Gates
+
+- Max 4 skills per route unless the work is explicitly staged.
+- Primary skill must be clear.
+- Supporting skills should be minimal and distinct.
+- Route explanation should be present.
+- Forbidden skills should not be selected.
+- Private markers should not appear in public packages or examples.
+- Scenario coverage should grow as routing mistakes are discovered.
+
+## Example Report Preview
+
+```text
+# Routing Evaluation Report
+
+| Metric | Value |
+| --- | ---: |
+| Scenario Count | 30 |
+| Primary Accuracy | 1.0 |
+| Forbidden Skill Violation Rate | 0.0 |
+| Max Skill Count Violation Rate | 0.0 |
+| Over-routing Rate | 0.0 |
+```
+
 ## Before And After
 
 Without routing, a frontend bug can trigger every related skill:
@@ -177,6 +240,11 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
 - `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, and stale examples.
 - `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
+- `scripts/scan-skills.py`: dependency-free skill inventory scanner that writes JSON, Markdown, warnings, and a suggested tree.
+- `scripts/evaluate-routing.py`: dependency-free routing benchmark evaluator for scenarios and predictions.
+- `evaluation/`: example benchmark scenarios, predictions, schema docs, and generated report.
+- `references/`: generated example scanner outputs.
+- `tests/`: standard-library unit tests for scanner and evaluator behavior.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `site/scripts/lighthouse-audit.mjs`: formal Lighthouse and accessibility score gate for the public website.

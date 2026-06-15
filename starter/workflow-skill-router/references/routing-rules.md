@@ -21,6 +21,14 @@ For a public-safe catalog with concrete skill names, compare this starter with `
 - If more than four skills seem useful, split the work into stages.
 - Do not include two skills that do the same job unless one is a connector and one is a reasoning/review skill.
 
+## Evaluation Flow
+
+- Keep route examples small enough to turn into scenarios.
+- Record one expected Primary skill and only distinct Supporting skills.
+- Add forbidden skills when a related domain should stay inactive.
+- Use `max_skills` to enforce the smallest useful route size.
+- Re-run `scripts/evaluate-routing.py` after changing this file or the skill tree.
+
 ## Conflict Handling
 
 - Local skill vs connector skill: choose the connector when live external state is the source of truth; choose the local skill when implementing or reasoning over repository code.

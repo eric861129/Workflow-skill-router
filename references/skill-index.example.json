@@ -1,0 +1,688 @@
+{
+  "generated_at": "2026-01-01T00:00:00Z",
+  "skill_count": 23,
+  "skills": [
+    {
+      "dependencies": [],
+      "description": "Use when designing or reviewing REST API governance: resource naming, pagination, filtering, versioning, compatibility, error semantics, idempotency, and contract consistency.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "api-guidelines-skill",
+      "path": "sample-skills/api-guidelines-skill/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "api-guidelines-skill",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [
+        "fullstack-guardian",
+        "devops-engineer",
+        "secure-code-guardian"
+      ],
+      "description": "Use when designing new high-level system architecture, reviewing existing designs, or making architectural decisions. Invoke to create architecture diagrams, write Architecture Decision Records (ADRs), evaluate technology trade-offs, design component interactions, and plan for scalability. Use for system design, architecture review, microservices structuring, ADR authoring, scalability planning, and infrastructure pattern selection — distinct from code-level design patterns or database-only design tasks.",
+      "domains": [
+        "api-architecture"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "architecture-designer",
+      "path": "sample-skills/architecture-designer/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "architecture-designer",
+      "stages": [
+        "design"
+      ],
+      "tags": [],
+      "triggers": [
+        "architecture",
+        "system design",
+        "design pattern",
+        "microservices",
+        "scalability",
+        "ADR",
+        "technical design",
+        "infrastructure"
+      ]
+    },
+    {
+      "dependencies": [],
+      "description": "Generate architecture documentation using C4 model Mermaid diagrams. Use when asked to create architecture diagrams, document system architecture, visualize software structure, create C4 diagrams, or generate context/container/component/deployment diagrams. Triggers include \"architecture diagram\", \"C4 diagram\", \"system context\", \"container diagram\", \"component diagram\", \"deployment diagram\", \"document architecture\", \"visualize architecture\".",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "c4-architecture",
+      "path": "sample-skills/c4-architecture/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "c4-architecture",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [
+        "spec-miner",
+        "fullstack-guardian",
+        "code-reviewer"
+      ],
+      "description": "Generates, formats, and validates technical documentation — including docstrings, OpenAPI/Swagger specs, JSDoc annotations, doc portals, and user guides. Use when adding docstrings to functions or classes, creating API documentation, building documentation sites, or writing tutorials and user guides. Invoke for OpenAPI/Swagger specs, JSDoc, doc portals, getting started guides.",
+      "domains": [
+        "quality"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "code-documenter",
+      "path": "sample-skills/code-documenter/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "code-documenter",
+      "stages": [
+        "implementation"
+      ],
+      "tags": [],
+      "triggers": [
+        "documentation",
+        "docstrings",
+        "OpenAPI",
+        "Swagger",
+        "JSDoc",
+        "comments",
+        "API docs",
+        "tutorials",
+        "user guides",
+        "doc site"
+      ]
+    },
+    {
+      "dependencies": [],
+      "description": "Create high-quality git commits: review/stage intended changes, split into logical commits, and write clear commit messages (including Conventional Commits). Use when the user asks to commit, craft a commit message, stage changes, or split work into multiple commits.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "commit-work",
+      "path": "sample-skills/commit-work/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "commit-work",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [
+        "api-designer",
+        "database-optimizer",
+        "devops-engineer"
+      ],
+      "description": "Use when building C# applications with .NET 8+, ASP.NET Core APIs, or Blazor web apps. Builds REST APIs using minimal or controller-based routing, configures database access with Entity Framework Core, implements async patterns and cancellation, structures applications with CQRS via MediatR, and scaffolds Blazor components with state management. Invoke for C#, .NET, ASP.NET Core, Blazor, Entity Framework, EF Core, Minimal API, MAUI, SignalR.",
+      "domains": [
+        "language"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "csharp-developer",
+      "path": "sample-skills/csharp-developer/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "csharp-developer",
+      "stages": [
+        "implementation"
+      ],
+      "tags": [],
+      "triggers": [
+        "C#",
+        ".NET",
+        "ASP.NET Core",
+        "Blazor",
+        "Entity Framework",
+        "EF Core",
+        "Minimal API",
+        "MAUI",
+        "SignalR"
+      ]
+    },
+    {
+      "dependencies": [
+        "devops-engineer"
+      ],
+      "description": "Optimizes database queries and improves performance across PostgreSQL and MySQL systems. Use when investigating slow queries, analyzing execution plans, or optimizing database performance. Invoke for index design, query rewrites, configuration tuning, partitioning strategies, lock contention resolution.",
+      "domains": [
+        "infrastructure"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "database-optimizer",
+      "path": "sample-skills/database-optimizer/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "database-optimizer",
+      "stages": [
+        "optimization"
+      ],
+      "tags": [],
+      "triggers": [
+        "database optimization",
+        "slow query",
+        "query performance",
+        "database tuning",
+        "index optimization",
+        "execution plan",
+        "EXPLAIN ANALYZE",
+        "database performance",
+        "PostgreSQL optimization",
+        "MySQL optimization"
+      ]
+    },
+    {
+      "dependencies": [],
+      "description": "Smart dependency management for any language. Auto-detects project type, applies safe updates automatically, prompts for major versions, diagnoses and fixes dependency issues.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "dependency-updater",
+      "path": "sample-skills/dependency-updater/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "dependency-updater",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when creating, reviewing, or troubleshooting Docker Compose local development stacks: services, ports, volumes, health checks, databases, caches, mail sinks, env files, and repeatable startup.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "docker-compose-local-dev-skill",
+      "path": "sample-skills/docker-compose-local-dev-skill/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "docker-compose-local-dev-skill",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [
+        "fullstack-guardian",
+        "microservices-architect",
+        "cloud-architect",
+        "test-master"
+      ],
+      "description": "Use when building .NET 8 applications with minimal APIs, clean architecture, or cloud-native microservices. Invoke for Entity Framework Core, CQRS with MediatR, JWT authentication, AOT compilation.",
+      "domains": [
+        "backend"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "dotnet-core-expert",
+      "path": "sample-skills/dotnet-core-expert/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "dotnet-core-expert",
+      "stages": [
+        "implementation"
+      ],
+      "tags": [],
+      "triggers": [
+        ".NET Core",
+        ".NET 8",
+        "ASP.NET Core",
+        "C# 12",
+        "minimal API",
+        "Entity Framework Core",
+        "microservices .NET",
+        "CQRS",
+        "MediatR"
+      ]
+    },
+    {
+      "dependencies": [],
+      "description": "Use when you have a written implementation plan to execute in a separate session with review checkpoints",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "executing-plans",
+      "path": "sample-skills/executing-plans/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "executing-plans",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "finishing-a-development-branch",
+      "path": "sample-skills/finishing-a-development-branch/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "finishing-a-development-branch",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when investigating rendered frontend bugs, browser-only failures, broken interactions, visual regressions, hydration issues, or UI behavior that needs browser reproduction and regression coverage.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "frontend-debugging-workflow",
+      "path": "sample-skills/frontend-debugging-workflow/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "frontend-debugging-workflow",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "frontend-design",
+      "path": "sample-skills/frontend-design/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "frontend-design",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing, or refactoring code to avoid overcomplication, make surgical changes, surface assumptions, and define verifiable success criteria.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "karpathy-guidelines",
+      "path": "sample-skills/karpathy-guidelines/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "karpathy-guidelines",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Converts OpenAPI 3.0 JSON/YAML to TypeScript interfaces and type guards. This skill should be used when the user asks to generate types from OpenAPI, convert schema to TS, create API interfaces, or generate TypeScript types from an API specification.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "openapi-to-typescript",
+      "path": "sample-skills/openapi-to-typescript/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "openapi-to-typescript",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when the task requires automating a real browser from the terminal (navigation, form filling, snapshots, screenshots, data extraction, UI-flow debugging) via `playwright-cli` or the bundled wrapper script.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "playwright",
+      "path": "sample-skills/playwright/SKILL.md",
+      "private_warnings": [
+        "email address: user@example.com"
+      ],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "playwright",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Generate comprehensive test plans, manual test cases, regression test suites, and bug reports for QA engineers. Includes Figma MCP integration for design validation.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "qa-test-planner",
+      "path": "sample-skills/qa-test-planner/SKILL.md",
+      "private_warnings": [
+        "email address: test@example.com",
+        "secret keyword: Password",
+        "secret keyword: password"
+      ],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "qa-test-planner",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "receiving-code-review",
+      "path": "sample-skills/receiving-code-review/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "receiving-code-review",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when a request is ambiguous, high-impact, multi-stakeholder, or likely to need scope boundaries, acceptance criteria, constraints, risks, and staged implementation decisions before coding.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "requirements-clarity",
+      "path": "sample-skills/requirements-clarity/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "requirements-clarity",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [
+        "feature-forge",
+        "fullstack-guardian",
+        "architecture-designer"
+      ],
+      "description": "Reverse-engineering specialist that extracts specifications from existing codebases. Use when working with legacy or undocumented systems, inherited projects, or old codebases with no documentation. Invoke to map code dependencies, generate API documentation from source, identify undocumented business logic, figure out what code does, or create architecture documentation from implementation. Trigger phrases: reverse engineer, old codebase, no docs, no documentation, figure out how this works, inherited project, legacy analysis, code archaeology, undocumented features.",
+      "domains": [
+        "workflow"
+      ],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "spec-miner",
+      "path": "sample-skills/spec-miner/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing exclusions metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "spec-miner",
+      "stages": [
+        "review"
+      ],
+      "tags": [],
+      "triggers": [
+        "reverse engineer",
+        "legacy code",
+        "code analysis",
+        "undocumented",
+        "understand codebase",
+        "existing system"
+      ]
+    },
+    {
+      "dependencies": [],
+      "description": "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "systematic-debugging",
+      "path": "sample-skills/systematic-debugging/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "systematic-debugging",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    },
+    {
+      "dependencies": [],
+      "description": "Use when designing, refactoring, or reviewing Vue 3 Composition API patterns: composables, watchers, lifecycle effects, shared state, route-aware logic, and browser API wrappers.",
+      "domains": [],
+      "exclusions": [],
+      "has_frontmatter": true,
+      "name": "vue-composition-patterns-skill",
+      "path": "sample-skills/vue-composition-patterns-skill/SKILL.md",
+      "private_warnings": [],
+      "quality_warnings": [
+        "missing domains metadata",
+        "missing exclusions metadata",
+        "missing stages metadata",
+        "missing triggers metadata",
+        "tags are missing or too sparse"
+      ],
+      "skill_id": "vue-composition-patterns-skill",
+      "stages": [],
+      "tags": [],
+      "triggers": []
+    }
+  ],
+  "source_paths": [
+    "sample-skills"
+  ],
+  "warnings": [
+    "api-guidelines-skill: missing domains metadata",
+    "api-guidelines-skill: missing exclusions metadata",
+    "api-guidelines-skill: missing stages metadata",
+    "api-guidelines-skill: missing triggers metadata",
+    "api-guidelines-skill: tags are missing or too sparse",
+    "architecture-designer: missing exclusions metadata",
+    "architecture-designer: tags are missing or too sparse",
+    "c4-architecture: missing domains metadata",
+    "c4-architecture: missing exclusions metadata",
+    "c4-architecture: missing stages metadata",
+    "c4-architecture: missing triggers metadata",
+    "c4-architecture: tags are missing or too sparse",
+    "code-documenter: missing exclusions metadata",
+    "code-documenter: tags are missing or too sparse",
+    "commit-work: missing domains metadata",
+    "commit-work: missing exclusions metadata",
+    "commit-work: missing stages metadata",
+    "commit-work: missing triggers metadata",
+    "commit-work: tags are missing or too sparse",
+    "csharp-developer: missing exclusions metadata",
+    "csharp-developer: tags are missing or too sparse",
+    "database-optimizer: missing exclusions metadata",
+    "database-optimizer: tags are missing or too sparse",
+    "dependency-updater: missing domains metadata",
+    "dependency-updater: missing exclusions metadata",
+    "dependency-updater: missing stages metadata",
+    "dependency-updater: missing triggers metadata",
+    "dependency-updater: tags are missing or too sparse",
+    "docker-compose-local-dev-skill: missing domains metadata",
+    "docker-compose-local-dev-skill: missing exclusions metadata",
+    "docker-compose-local-dev-skill: missing stages metadata",
+    "docker-compose-local-dev-skill: missing triggers metadata",
+    "docker-compose-local-dev-skill: tags are missing or too sparse",
+    "dotnet-core-expert: missing exclusions metadata",
+    "dotnet-core-expert: tags are missing or too sparse",
+    "executing-plans: missing domains metadata",
+    "executing-plans: missing exclusions metadata",
+    "executing-plans: missing stages metadata",
+    "executing-plans: missing triggers metadata",
+    "executing-plans: tags are missing or too sparse",
+    "finishing-a-development-branch: missing domains metadata",
+    "finishing-a-development-branch: missing exclusions metadata",
+    "finishing-a-development-branch: missing stages metadata",
+    "finishing-a-development-branch: missing triggers metadata",
+    "finishing-a-development-branch: tags are missing or too sparse",
+    "frontend-debugging-workflow: missing domains metadata",
+    "frontend-debugging-workflow: missing exclusions metadata",
+    "frontend-debugging-workflow: missing stages metadata",
+    "frontend-debugging-workflow: missing triggers metadata",
+    "frontend-debugging-workflow: tags are missing or too sparse",
+    "frontend-design: missing domains metadata",
+    "frontend-design: missing exclusions metadata",
+    "frontend-design: missing stages metadata",
+    "frontend-design: missing triggers metadata",
+    "frontend-design: tags are missing or too sparse",
+    "karpathy-guidelines: missing domains metadata",
+    "karpathy-guidelines: missing exclusions metadata",
+    "karpathy-guidelines: missing stages metadata",
+    "karpathy-guidelines: missing triggers metadata",
+    "karpathy-guidelines: tags are missing or too sparse",
+    "openapi-to-typescript: missing domains metadata",
+    "openapi-to-typescript: missing exclusions metadata",
+    "openapi-to-typescript: missing stages metadata",
+    "openapi-to-typescript: missing triggers metadata",
+    "openapi-to-typescript: tags are missing or too sparse",
+    "playwright: email address: user@example.com",
+    "playwright: missing domains metadata",
+    "playwright: missing exclusions metadata",
+    "playwright: missing stages metadata",
+    "playwright: missing triggers metadata",
+    "playwright: tags are missing or too sparse",
+    "qa-test-planner: email address: test@example.com",
+    "qa-test-planner: missing domains metadata",
+    "qa-test-planner: missing exclusions metadata",
+    "qa-test-planner: missing stages metadata",
+    "qa-test-planner: missing triggers metadata",
+    "qa-test-planner: secret keyword: Password",
+    "qa-test-planner: secret keyword: password",
+    "qa-test-planner: tags are missing or too sparse",
+    "receiving-code-review: missing domains metadata",
+    "receiving-code-review: missing exclusions metadata",
+    "receiving-code-review: missing stages metadata",
+    "receiving-code-review: missing triggers metadata",
+    "receiving-code-review: tags are missing or too sparse",
+    "requirements-clarity: missing domains metadata",
+    "requirements-clarity: missing exclusions metadata",
+    "requirements-clarity: missing stages metadata",
+    "requirements-clarity: missing triggers metadata",
+    "requirements-clarity: tags are missing or too sparse",
+    "spec-miner: missing exclusions metadata",
+    "spec-miner: tags are missing or too sparse",
+    "systematic-debugging: missing domains metadata",
+    "systematic-debugging: missing exclusions metadata",
+    "systematic-debugging: missing stages metadata",
+    "systematic-debugging: missing triggers metadata",
+    "systematic-debugging: tags are missing or too sparse",
+    "vue-composition-patterns-skill: missing domains metadata",
+    "vue-composition-patterns-skill: missing exclusions metadata",
+    "vue-composition-patterns-skill: missing stages metadata",
+    "vue-composition-patterns-skill: missing triggers metadata",
+    "vue-composition-patterns-skill: tags are missing or too sparse"
+  ]
+}

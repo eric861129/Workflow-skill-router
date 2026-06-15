@@ -1,6 +1,6 @@
 # Sample Skills
 
-These are copyable `SKILL.md` examples that pair with `examples/common-engineering-routing`.
+These are copyable `SKILL.md` examples that pair with `examples/template-skill-catalog`, the scanner examples in `references/`, and the routing evaluation benchmark in `evaluation/`.
 
 Most folders are complete public-safe skill folders copied from a real local Codex skill catalog. A few folders are intentionally rewritten into shorter public examples when the original local skill contained organization-specific context.
 
@@ -12,6 +12,16 @@ They are all intentionally generic:
 - no product-specific architecture
 
 Use them as references for how to write a practical skill body, not as a required skill catalog.
+
+Generate a catalog from these examples:
+
+```bash
+python scripts/scan-skills.py ./sample-skills \
+  --out references/skill-index.example.json \
+  --markdown references/skill-index.example.md \
+  --warnings references/skill-scan-warnings.example.md \
+  --suggest-tree references/suggested-skill-tree.example.md
+```
 
 ## Included Skills
 

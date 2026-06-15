@@ -21,6 +21,9 @@ Use this checklist before publishing or relying on a workflow skill router.
 - [ ] Supporting skills cover distinct jobs.
 - [ ] Broad meta skills are not default choices.
 - [ ] Connector tasks prefer connector/plugin skills.
+- [ ] Routing scenarios cover forbidden-skill and over-routing boundary cases.
+- [ ] `max_skills` is set to the smallest useful route size.
+- [ ] Predictions include a concrete non-empty explanation.
 
 ## Conflict Rules
 
@@ -100,6 +103,41 @@ OK: public-readiness audit passed
 ```
 
 This checks community files, downloads, site entrypoints, stale examples, placeholder policy, mojibake, and hidden edit-link UI text.
+
+## Routing Evaluation Gate
+
+Before changing router rules or publishing a new template, run:
+
+```bash
+python scripts/evaluate-routing.py \
+  --scenarios evaluation/scenarios.example.jsonl \
+  --predictions evaluation/predictions.example.jsonl \
+  --report /tmp/routing-report.md \
+  --json-report /tmp/routing-report.json \
+  --fail-on-violations
+```
+
+Expected:
+
+```text
+exit code 0, no forbidden skill violations, no max skill count violations, no missing predictions
+```
+
+Add `--strict` when primary mismatches and missing expected supporting skills should block the change.
+
+## Skill Inventory Gate
+
+Before relying on a skill catalog, run:
+
+```bash
+python scripts/scan-skills.py ./sample-skills \
+  --out /tmp/skill-index.json \
+  --markdown /tmp/skill-index.md \
+  --warnings /tmp/skill-warnings.md \
+  --suggest-tree /tmp/suggested-skill-tree.md
+```
+
+Review warnings for duplicate ids, sparse metadata, overlap, and public-safety markers.
 
 ## Lighthouse / Accessibility Gate
 
