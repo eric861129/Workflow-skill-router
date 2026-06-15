@@ -43,8 +43,8 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 
 ## 30 秒快速開始
 
-網站：`https://eric861129.github.io/Workflow-skill-router/`
-繁中站台：`https://eric861129.github.io/Workflow-skill-router/zh-tw/`
+網站：`https://huangchiyu.com/Workflow-skill-router/`
+繁中站台：`https://huangchiyu.com/Workflow-skill-router/zh-tw/`
 
 1. 複製 starter 到你的 Agent skill 目錄：
 
@@ -82,7 +82,7 @@ OK: workflow-skill-router passed validation
 - `scripts/validate-router.py`：無外部相依的 validator，檢查結構、route 數量、Primary 標記與隱私字串。
 - `site/`：可部署到 GitHub Pages 的 Astro Starlight 網站。
 - `prompts/`：建立與維護個人化 router 的 prompt。
-- `docs/`：方法論、採用指南與驗證清單。
+- `docs/`：方法論、客製化指南與驗證清單。
 
 ## 範例 Router
 
@@ -94,35 +94,12 @@ OK: workflow-skill-router passed validation
 | `examples/github-ci-review` | GitHub PR review、CI failure、release readiness |
 | `examples/company-platform-sanitized` | 匿名化公司平台 workflow，保留真實複雜度 |
 
-## Public Core 與 Private Overlay
-
-公開 repo 建議只放 generic core：
-
-- 任務分類模型
-- 輸出格式
-- SKILL 數量限制
-- connector 優先規則
-- 可匿名化分享的企業範例
-
-公司內部規則建議放在 private overlay：
-
-- 真實 repo 名稱
-- 內部系統名稱
-- 部署流程
-- 敏感資料與權限規則
-
-這樣公開版容易被別人採用，私有版仍保留工作現場的準確性。
-
-## 建議 GitHub Topics
-
-`ai-agent`, `agentic-workflow`, `codex`, `skills`, `prompt-engineering`, `developer-tools`, `workflow-router`
-
 ## 更多文件
 
 - [English guide](README.en.md)
-- [GitHub Pages site](https://eric861129.github.io/Workflow-skill-router/)
-- [繁中站台](https://eric861129.github.io/Workflow-skill-router/zh-tw/)
-- [採用指南](docs/adoption-guide.zh-TW.md)
+- [網站](https://huangchiyu.com/Workflow-skill-router/)
+- [繁中站台](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
+- [客製化指南](docs/adoption-guide.zh-TW.md)
 - [系統論](docs/system-theory.zh-TW.md)
 - [驗證清單](docs/validation-checklist.zh-TW.md)
 

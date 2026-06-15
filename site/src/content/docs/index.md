@@ -57,4 +57,4 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 - Company-focused example routers.
 - Practical recipes for common workflows.
 - A dependency-free validator.
-- A public-core/private-overlay adoption model.
+- A customization guide for adapting the router to your own skill catalog.

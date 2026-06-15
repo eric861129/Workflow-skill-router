@@ -51,8 +51,8 @@ No extra routing needed: reason
 
 ## Quickstart
 
-Website: `https://eric861129.github.io/Workflow-skill-router/`
-Traditional Chinese site: `https://eric861129.github.io/Workflow-skill-router/zh-tw/`
+Website: `https://huangchiyu.com/Workflow-skill-router/`
+Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
 
 Copy the starter:
 
@@ -92,16 +92,7 @@ python scripts/validate-router.py starter/workflow-skill-router
 - `scripts/validate-router.py`: dependency-free validator.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `prompts/`: creation and maintenance prompts.
-- `docs/`: theory, adoption, and validation guidance.
-
-## Public Core And Private Overlay
-
-Keep the public router generic. Put team-specific rules in a private overlay:
-
-- Public core: task model, output contract, skill count rules, connector priority.
-- Private overlay: repository names, internal systems, deployment rules, regulated data rules.
-
-This keeps the shared pattern reusable while preserving local accuracy.
+- `docs/`: theory, customization, and validation guidance.
 
 ## Design Principles
 

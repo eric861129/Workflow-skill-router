@@ -57,4 +57,4 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 - 以公司平台情境包裝的範例 routers。
 - 常見 workflow 的實戰 recipes。
 - 不依賴外部套件的 validator。
-- public core / private overlay 的導入方式。
+- 依照自己的 skill catalog 客製 router 的指南。

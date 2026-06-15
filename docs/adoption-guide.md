@@ -1,27 +1,10 @@
-# Adoption Guide
+# Customization Guide
 
-Workflow Skill Router works best when you separate the public routing pattern from your private company rules.
+Workflow Skill Router is a starter pattern. Customize it by mapping your agent's actual skills to the routing contract.
 
-## Recommended Model
+## Step 1: Copy The Starter
 
-```text
-public core
-  -> shared task model
-  -> output contract
-  -> skill count rules
-  -> connector priority
-
-private overlay
-  -> repository names
-  -> internal systems
-  -> deployment rules
-  -> customer data policies
-  -> team-specific review gates
-```
-
-## Step 1: Start With The Public Core
-
-Copy `starter/workflow-skill-router/` into your agent skill directory and keep it generic. The starter should describe how routing works, not every detail of your company.
+Copy `starter/workflow-skill-router/` into your agent skill directory.
 
 ## Step 2: Inventory Your Skills
 
@@ -57,9 +40,9 @@ Conflict rules are what make the router valuable. Add rules for common overlaps:
 - file-format tool vs generic documentation skill
 - broad meta workflow vs narrow implementation skill
 
-## Step 5: Keep Private Details Out Of Public Examples
+## Step 5: Share Examples Responsibly
 
-Before publishing examples, remove:
+Use fictional company-style examples when sharing routers. Do not include:
 
 - real repository paths
 - internal project names

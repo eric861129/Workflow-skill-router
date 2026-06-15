@@ -43,8 +43,8 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 
 ## 30 Second Quickstart
 
-Website: `https://eric861129.github.io/Workflow-skill-router/`
-Traditional Chinese site: `https://eric861129.github.io/Workflow-skill-router/zh-tw/`
+Website: `https://huangchiyu.com/Workflow-skill-router/`
+Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
 
 1. Copy the starter into your agent's skill directory:
 
@@ -82,7 +82,7 @@ OK: workflow-skill-router passed validation
 - `scripts/validate-router.py`: dependency-free validation for router structure, route size, Primary markers, and privacy leaks.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.
-- `docs/`: conceptual docs and adoption guidance.
+- `docs/`: conceptual docs, customization guidance, and validation checklists.
 
 ## Example Routers
 
@@ -94,17 +94,13 @@ OK: workflow-skill-router passed validation
 | `examples/github-ci-review` | GitHub PR review, CI failure, and release readiness |
 | `examples/company-platform-sanitized` | An anonymized company platform workflow with real-world complexity |
 
-## Recommended GitHub Topics
-
-`ai-agent`, `agentic-workflow`, `codex`, `skills`, `prompt-engineering`, `developer-tools`, `workflow-router`
-
 ## Learn More
 
 - [English guide](README.en.md)
 - [繁體中文說明](README.zh-TW.md)
-- [GitHub Pages site](https://eric861129.github.io/Workflow-skill-router/)
-- [Traditional Chinese site](https://eric861129.github.io/Workflow-skill-router/zh-tw/)
-- [Adoption guide](docs/adoption-guide.md)
+- [Website](https://huangchiyu.com/Workflow-skill-router/)
+- [Traditional Chinese site](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
+- [Customization guide](docs/adoption-guide.md)
 - [System theory](docs/system-theory.en.md)
 - [Validation checklist](docs/validation-checklist.en.md)
 

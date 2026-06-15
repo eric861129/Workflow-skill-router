@@ -8,7 +8,7 @@ Workflow Skill Router v1.0.0 packages the project as a public AI Agent skill rou
 - Dependency-free validator for router packages.
 - Five company-focused example routers.
 - Practical recipes for common routing scenarios.
-- Public core and private overlay adoption guidance.
+- Customization guidance for adapting the starter router.
 - GitHub issue and PR templates for routing failures and example requests.
 - English and Traditional Chinese documentation entrypoints.
 
@@ -25,8 +25,4 @@ Expected:
 ```text
 OK: workflow-skill-router passed validation
 ```
-
-## Recommended Topics
-
-`ai-agent`, `agentic-workflow`, `codex`, `skills`, `prompt-engineering`, `developer-tools`, `workflow-router`
 

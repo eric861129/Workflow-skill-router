@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
-  site: 'https://eric861129.github.io',
+  site: 'https://huangchiyu.com',
   base: '/Workflow-skill-router',
   integrations: [
     starlight({
@@ -30,9 +30,6 @@ export default defineConfig({
           href: 'https://github.com/eric861129/Workflow-skill-router',
         },
       ],
-      editLink: {
-        baseUrl: 'https://github.com/eric861129/Workflow-skill-router/edit/main/site/src/content/docs/',
-      },
       customCss: ['./src/styles/custom.css'],
       sidebar: [
         {

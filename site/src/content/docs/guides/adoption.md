@@ -1,25 +1,11 @@
 ---
-title: Adoption Guide
-description: Use a public core and private overlay to keep routing reusable and company-specific.
+title: Customization Guide
+description: Adapt Workflow Skill Router to your own agent skill catalog.
 ---
 
-## Recommended structure
+## Start with the starter
 
-Keep public routing rules generic and put company details in a private overlay.
-
-```text
-public core
-  -> task model
-  -> output contract
-  -> skill count rules
-  -> connector priority
-
-private overlay
-  -> repository names
-  -> internal systems
-  -> deployment rules
-  -> customer data policies
-```
+Copy `starter/workflow-skill-router/` into your agent's skill directory. The starter gives you the output contract, route shape, and reference files to fill.
 
 ## Inventory your skills
 
@@ -45,9 +31,9 @@ Common conflicts:
 - file-format tool vs generic documentation skill
 - broad meta workflow vs narrow implementation skill
 
-## Sanitize public examples
+## Share examples responsibly
 
-Before publishing examples, remove:
+Use fictional company-style examples when sharing routers. Do not include:
 
 - real repository paths
 - internal project names
