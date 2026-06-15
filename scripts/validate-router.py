@@ -47,6 +47,7 @@ PUBLIC_REQUIRED_FILES = [
     "SECURITY.md",
     "CODE_OF_CONDUCT.md",
     ".github/FUNDING.yml",
+    ".github/ISSUE_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/general-issue.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
