@@ -11,6 +11,10 @@ description: 安裝 starter router、填入 skill tree，並用 validator 驗證
 starter/workflow-skill-router/
 ```
 
+或直接下載可安裝的 zip：
+
+- [空白 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
+
 如果你在 Windows 使用 Codex：
 
 ```text
@@ -48,6 +52,8 @@ python scripts/validate-router.py starter/workflow-skill-router
 ```text
 OK: workflow-skill-router passed validation
 ```
+
+如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含 common engineering router 和 sample `SKILL.md` folders。
 
 ## 4. 試跑一條 route
 

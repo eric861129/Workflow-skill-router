@@ -74,13 +74,80 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 OK: workflow-skill-router passed validation
 ```
 
+## 下載 SKILL 套件
+
+- [空白 SKILL 套件](downloads/workflow-skill-router-blank.zip)：可直接安裝的 `workflow-skill-router/` starter，適合你要自己填 skill tree。
+- [範本 SKILL 套件](downloads/workflow-skill-router-template.zip)：包含空白 starter、常見工程 routing 範例，以及可複製參考的完整 sample `SKILL.md`。
+
+本機重新產生兩個 zip：
+
+```bash
+python scripts/package-downloads.py
+```
+
+範本包是公開安全版，會保留實際 SKILL 寫法與常見工程 routing pattern，但不包含組織名稱、私有路徑、部署細節或內部系統名稱。
+
+## 更實際的 Routing 範例
+
+### API 合約與前端同步
+
+```text
+使用者：新增 customer settings endpoint，更新 OpenAPI，並讓前端 client 跟上。
+
+Route: API / Contract lifecycle > Backend-to-frontend sync
+Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, build-web-apps:frontend-testing-debugging
+Reason: api-designer 穩定 endpoint 設計；openapi-contract-generation-skill 處理 schema diff 與 contract generation；openapi-to-typescript 更新 client types；frontend-testing-debugging 驗證畫面端使用情境。
+```
+
+### 資料庫 Migration 與效能風險
+
+```text
+使用者：新增帳號異動 audit tables，並確認 admin 查詢不會變慢。
+
+Route: Database / Schema and performance > Migration plus query review
+Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
+Reason: database-schema-designer 負責 migration shape；sql-pro 檢查 SQL 正確性；database-optimizer 檢查 query plan；qa-test-planner 補上回歸測試面。
+```
+
+### 只在瀏覽器發生的前端 Bug
+
+```text
+使用者：customer portal 表單在 refresh 後才會壞，請重現並補 regression check。
+
+Route: Frontend / Debugging > Browser reproduction
+Use SKILL: build-web-apps:frontend-testing-debugging, browser:control-in-app-browser, playwright, systematic-debugging
+Reason: frontend-testing-debugging 對應 UI 症狀到前端來源；browser 重現真實 runtime 行為；playwright 固化回歸測試；systematic-debugging 保持因果式排查。
+```
+
+### PR Review 與 CI 修復
+
+```text
+使用者：review 這個 auth PR，處理 comments，並修掉 failing checks。
+
+Route: GitHub / Review and CI > Security-sensitive PR
+Use SKILL: github:github, receiving-code-review, codex-security:security-diff-scan, github:gh-fix-ci
+Reason: github:github 定位 PR 狀態；receiving-code-review 處理 review comments；security-diff-scan 檢查 auth 與資料外洩風險；gh-fix-ci 診斷 failing checks。
+```
+
+### 本機開發環境
+
+```text
+使用者：建立 Docker Compose，包含 PostgreSQL、Redis、MailDev，讓新成員可以一鍵啟動。
+
+Route: DevOps / Local development > Repeatable service stack
+Use SKILL: docker-compose-local-dev-skill, devops-engineer, systematic-debugging
+Reason: docker-compose-local-dev-skill 負責本機服務設計；devops-engineer 檢查基礎設施取捨；systematic-debugging 處理啟動順序與 health check 問題。
+```
+
 ## 這個 repo 包含什麼
 
 - `starter/workflow-skill-router/`：Codex-ready starter，同時保留 agent-agnostic routing contract。
 - `examples/`：範例 routers，從最小 generic agent 到真實工程 workflow。
 - `sample-skills/`：可複製參考的公開 `SKILL.md` 範例，對應 common engineering routes。
+- `downloads/`：已產生的空白與範本 SKILL zip 套件。
 - `recipes/`：API 合約同步、前端除錯、PR/CI、文件圖表、connector-heavy workflow 的實用模式。
 - `scripts/validate-router.py`：無外部相依的 validator，檢查結構、route 數量、Primary 標記與隱私字串。
+- `scripts/package-downloads.py`：無外部相依的下載套件打包工具。
 - `site/`：可部署到 GitHub Pages 的 Astro Starlight 網站。
 - `prompts/`：建立與維護個人化 router 的 prompt。
 - `docs/`：方法論、客製化指南與驗證清單。

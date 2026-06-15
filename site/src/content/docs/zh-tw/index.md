@@ -12,6 +12,9 @@ hero:
     - text: 30 秒開始
       link: /Workflow-skill-router/zh-tw/guides/quickstart/
       icon: right-arrow
+    - text: 下載套件
+      link: /Workflow-skill-router/zh-tw/guides/downloads/
+      icon: download
     - text: GitHub Repo
       link: https://github.com/eric861129/Workflow-skill-router
       icon: external
@@ -54,6 +57,7 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 ## 你會得到什麼
 
 - Codex-ready 的 starter skill。
+- 可下載的空白與範本 skill package。
 - 常見工程與公司平台情境的範例 routers。
 - 可複製參考的 sample `SKILL.md`。
 - 常見 workflow 的實戰 recipes。

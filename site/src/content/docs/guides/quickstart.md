@@ -11,6 +11,10 @@ Copy this folder into your agent's skill directory:
 starter/workflow-skill-router/
 ```
 
+Or download the ready-to-install zip:
+
+- [Blank SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
+
 For Codex on Windows:
 
 ```text
@@ -48,6 +52,8 @@ Expected:
 ```text
 OK: workflow-skill-router passed validation
 ```
+
+For a fuller reference, download the [template SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip). It includes the common engineering router and sample `SKILL.md` folders.
 
 ## 4. Try a route
 

@@ -12,6 +12,9 @@ hero:
     - text: Start in 30 seconds
       link: /Workflow-skill-router/guides/quickstart/
       icon: right-arrow
+    - text: Download packages
+      link: /Workflow-skill-router/guides/downloads/
+      icon: download
     - text: View on GitHub
       link: https://github.com/eric861129/Workflow-skill-router
       icon: external
@@ -54,6 +57,7 @@ Reason: frontend-debugging handles rendered UI failures; browser reproduces the 
 ## What you get
 
 - A Codex-ready starter skill.
+- Downloadable blank and template skill packages.
 - Common engineering and company-focused example routers.
 - Copyable sample `SKILL.md` files.
 - Practical recipes for common workflows.

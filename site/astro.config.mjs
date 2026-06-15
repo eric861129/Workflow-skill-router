@@ -40,6 +40,7 @@ export default defineConfig({
           items: [
             { slug: '' },
             { slug: 'guides/quickstart' },
+            { slug: 'guides/downloads' },
             { slug: 'guides/adoption' },
           ],
         },

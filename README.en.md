@@ -84,13 +84,62 @@ Validate the result:
 python scripts/validate-router.py starter/workflow-skill-router
 ```
 
+## Downloadable Skill Packages
+
+- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): install this when you want an empty router and your own skill tree.
+- [Template SKILL package](downloads/workflow-skill-router-template.zip): install or inspect this when you want a practical reference with common engineering routes and sample skills.
+
+Rebuild the packages:
+
+```bash
+python scripts/package-downloads.py
+```
+
+The template package includes public-safe material from this repository: `starter/workflow-skill-router/`, `examples/common-engineering-routing/`, and `sample-skills/`.
+
+## Practical Examples
+
+### API and frontend contract sync
+
+```text
+Route: API / Contract lifecycle > Backend-to-frontend sync
+Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, build-web-apps:frontend-testing-debugging
+Reason: api-designer stabilizes the endpoint; openapi-contract-generation-skill manages schema diff and contract generation; openapi-to-typescript updates the client types; frontend-testing-debugging verifies rendered consumption.
+```
+
+### Database migration and query risk
+
+```text
+Route: Database / Schema and performance > Migration plus query review
+Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
+Reason: database-schema-designer owns migration shape; sql-pro reviews SQL correctness; database-optimizer checks query plans; qa-test-planner defines regression coverage.
+```
+
+### Browser-only frontend bug
+
+```text
+Route: Frontend / Debugging > Browser reproduction
+Use SKILL: build-web-apps:frontend-testing-debugging, browser:control-in-app-browser, playwright, systematic-debugging
+Reason: frontend-testing-debugging maps UI symptoms to source; browser reproduces real runtime behavior; playwright captures the regression; systematic-debugging keeps the investigation causal.
+```
+
+### PR review and CI repair
+
+```text
+Route: GitHub / Review and CI > Security-sensitive PR
+Use SKILL: github:github, receiving-code-review, codex-security:security-diff-scan, github:gh-fix-ci
+Reason: github:github orients the PR; receiving-code-review handles comments; security-diff-scan checks auth and data exposure; gh-fix-ci diagnoses failing checks.
+```
+
 ## Repository Map
 
 - `starter/workflow-skill-router/`: blank router skill starter.
 - `examples/`: working routers for generic agents, company platform scenarios, and realistic engineering workflows.
 - `sample-skills/`: copyable public `SKILL.md` examples that pair with the common engineering routes.
+- `downloads/`: generated blank and template SKILL zip packages.
 - `recipes/`: practical route design patterns.
 - `scripts/validate-router.py`: dependency-free validator.
+- `scripts/package-downloads.py`: dependency-free package builder for the downloadable archives.
 - `site/`: Astro Starlight website for GitHub Pages.
 - `prompts/`: creation and maintenance prompts.
 - `docs/`: theory, customization, and validation guidance.
