@@ -1,0 +1,4 @@
+interface:
+  display_name: "Systematic Debugging"
+  short_description: "Finds root causes before proposing fixes."
+  default_prompt: "Use systematic-debugging to investigate the failure before changing code."

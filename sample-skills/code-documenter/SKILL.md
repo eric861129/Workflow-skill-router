@@ -7,6 +7,8 @@ metadata:
   version: "1.1.0"
   domain: quality
   triggers: documentation, docstrings, OpenAPI, Swagger, JSDoc, comments, API docs, tutorials, user guides, doc site
+  exclusions: runtime debugging, feature implementation, database performance tuning, visual UI design
+  tags: documentation, docstrings, api-docs, guides
   role: specialist
   scope: implementation
   output-format: code

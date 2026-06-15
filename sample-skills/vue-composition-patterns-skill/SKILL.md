@@ -1,6 +1,12 @@
 ---
 name: vue-composition-patterns-skill
 description: "Use when designing, refactoring, or reviewing Vue 3 Composition API patterns: composables, watchers, lifecycle effects, shared state, route-aware logic, and browser API wrappers."
+metadata:
+  domain: frontend
+  scope: design, implementation, review
+  triggers: Vue 3, Composition API, composable, watcher, lifecycle effect, reactive state, route-aware logic
+  exclusions: non-Vue frontend work, browser automation, backend API contract design
+  tags: vue, composition-api, frontend, reactivity
 ---
 
 # Vue Composition Patterns Skill

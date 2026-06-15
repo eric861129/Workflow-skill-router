@@ -155,3 +155,20 @@ OK: Lighthouse audit passed. Reports written to lighthouse-reports
 ```
 
 Default thresholds are performance 70, accessibility 95, best-practices 90, and SEO 90. Local JSON and HTML reports are written to `site/lighthouse-reports/` and are intentionally ignored by git.
+
+## Public URL / HTTPS Gate
+
+This repo publishes the site as a project path under `https://huangchiyu.com/Workflow-skill-router/`. Do not add a repo-level `CNAME` file unless the project intentionally moves to a dedicated custom domain, because a CNAME can try to claim the whole host instead of only this path.
+
+GitHub Pages API may report `cname=null` or `https_enforced=false` for this project-path setup. Treat the live visitor behavior as the publishing gate:
+
+```bash
+curl -fsS --head https://huangchiyu.com/Workflow-skill-router/
+curl -fsS -I -L http://huangchiyu.com/Workflow-skill-router/
+```
+
+Expected: HTTPS returns `200`, and HTTP resolves to `https://huangchiyu.com/Workflow-skill-router/`.
+
+## UTF-8 / Windows Display Check
+
+All Traditional Chinese docs and examples are stored as UTF-8. On Windows, prefer `Get-Content -Encoding UTF8`, VS Code, or `rg` when checking Chinese text. A legacy PowerShell code page can display mojibake even when the file is valid UTF-8.

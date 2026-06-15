@@ -237,20 +237,18 @@ Vulnerabilities are reported with severity levels:
 
 When dependencies are completely broken:
 
-### Node.js - Nuclear Reset
+### Node.js - Reinstall After Reviewing Generated Artifacts
 
 ```bash
-rm -rf node_modules package-lock.json
-npm cache clean --force
+npm cache verify
 npm install
 ```
 
-### Python - Clean Virtual Environment
+### Python - Fresh Virtual Environment
 
 ```bash
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv-fresh
+source .venv-fresh/bin/activate
 pip install -r requirements.txt
 ```
 

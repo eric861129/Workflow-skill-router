@@ -22,9 +22,12 @@ const thresholds = {
 const routes = [
   { name: 'home-en', path: '/' },
   { name: 'home-zh-tw', path: '/zh-tw/' },
+  { name: 'showcase-en', path: '/showcase/' },
+  { name: 'showcase-zh-tw', path: '/zh-tw/showcase/' },
   { name: 'downloads-en', path: '/guides/downloads/' },
   { name: 'template-catalog-en', path: '/examples/template-skill-catalog/' },
   { name: 'template-catalog-zh-tw', path: '/zh-tw/examples/template-skill-catalog/' },
+  { name: 'case-studies-en', path: '/examples/case-studies/' },
   { name: 'validator-en', path: '/reference/validator/' },
 ];
 

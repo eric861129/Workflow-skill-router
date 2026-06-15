@@ -2,6 +2,12 @@
 name: qa-test-planner
 description: Generate comprehensive test plans, manual test cases, regression test suites, and bug reports for QA engineers. Includes Figma MCP integration for design validation.
 trigger: explicit
+metadata:
+  domain: quality
+  scope: planning, verification
+  triggers: test plan, manual test cases, regression suite, acceptance criteria, bug report, QA coverage
+  exclusions: implementation without test planning, production deployment, code formatting
+  tags: qa, testing, regression, acceptance
 ---
 
 # QA Test Planner

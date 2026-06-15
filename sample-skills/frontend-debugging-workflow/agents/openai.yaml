@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Debugging"
+  short_description: "Routes rendered UI bugs through reproduction and regression checks."
+  default_prompt: "Use frontend-debugging-workflow to reproduce and isolate the rendered frontend issue."

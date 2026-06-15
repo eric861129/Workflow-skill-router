@@ -5,6 +5,12 @@ description: 下載空白 router skill 或實戰範本 skill package。
 
 ## 下載套件
 
+| Package | Best for | Includes | Excludes | Install use | Download |
+| --- | --- | --- | --- | --- | --- |
+| Blank | 從零建立自己的 router | `workflow-skill-router/` starter、routing rules、OpenAI agent metadata | Template catalog 與 sample skill folders | 可以，適合安裝到 Codex skills | [下載 blank](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip) |
+| Full template | 研究完整 public-safe 範例 | Router、manifest、sample skills、root README、per-skill README files | Private skills 與 sensitive lines | 較適合學習，不建議直接當乾淨安裝包 | [下載 full](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip) |
+| Clean template | 安裝可用的參考 package | Router、manifest、sample skills、root README | Private skills、sensitive lines、非必要 per-skill README files | 可以，安裝樹比較乾淨 | [下載 clean](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip) |
+
 如果你想先安裝 router，再依照自己的 Agent skill catalog 從零開始填 skill tree，請下載空白版。
 
 - [下載空白 SKILL](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
@@ -12,8 +18,11 @@ description: 下載空白 router skill 或實戰範本 skill package。
 如果你想直接參考一組從真實本機 Codex skills catalog 產生的公開安全實戰範本，請下載範本包。
 
 - [下載範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [下載 Clean 範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
 - [瀏覽對應的範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/)
 - [查看範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+
+完整範本包適合拿來閱讀 source context 與 per-skill 文件；clean 範本包適合直接安裝，會移除非必要的 per-skill README。
 
 ## 內容包含什麼
 
@@ -38,6 +47,8 @@ workflow-skill-router-template/
     .system/
     <public-safe skill folders>
 ```
+
+Clean 範本包保留相同的可安裝 `skills/` tree，但移除非必要的 per-skill README。根目錄 README 與 manifest 仍會保留。
 
 範本包是公開安全版：從真實 `.codex/skills` 產生，排除組織專用 SKILL，並移除其他公開 skill 內的敏感行。現在這份範本包會搭配 [範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/) 使用，直接把下載包內的 SKILL 整理成可理解、可複製的 routes。
 
@@ -159,4 +170,5 @@ python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> -
 - [查看範本 Skill Catalog source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [查看 package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 - [查看範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [下載 Clean 範本 package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
 - [查看 starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)

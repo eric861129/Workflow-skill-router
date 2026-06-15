@@ -1,6 +1,12 @@
 ---
 name: requirements-clarity
 description: Use when a request is ambiguous, high-impact, multi-stakeholder, or likely to need scope boundaries, acceptance criteria, constraints, risks, and staged implementation decisions before coding.
+metadata:
+  domain: requirements
+  scope: planning, clarification
+  triggers: ambiguous request, scope boundary, acceptance criteria, stakeholder tradeoff, constraints, staged implementation
+  exclusions: trivial command, already-specified implementation task, final verification only
+  tags: requirements, planning, acceptance, scope
 ---
 
 # Requirements Clarity

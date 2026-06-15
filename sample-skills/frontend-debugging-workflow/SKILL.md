@@ -1,6 +1,12 @@
 ---
 name: frontend-debugging-workflow
 description: Use when investigating rendered frontend bugs, browser-only failures, broken interactions, visual regressions, hydration issues, or UI behavior that needs browser reproduction and regression coverage.
+metadata:
+  domain: frontend
+  scope: debugging, verification
+  triggers: browser-only bug, rendered UI failure, broken interaction, visual regression, hydration issue, frontend regression
+  exclusions: pure backend failure, database migration, documentation-only edit
+  tags: frontend, debugging, browser, regression
 ---
 
 # Frontend Debugging Workflow

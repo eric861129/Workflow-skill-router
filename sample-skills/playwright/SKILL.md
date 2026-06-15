@@ -1,6 +1,12 @@
 ---
 name: "playwright"
 description: "Use when the task requires automating a real browser from the terminal (navigation, form filling, snapshots, screenshots, data extraction, UI-flow debugging) via `playwright-cli` or the bundled wrapper script."
+metadata:
+  domain: browser
+  scope: verification, automation
+  triggers: browser automation, screenshot, UI flow, form filling, browser snapshot, regression capture
+  exclusions: manual visual critique without automation, backend-only unit tests, API design
+  tags: playwright, browser, automation, screenshots
 ---
 
 

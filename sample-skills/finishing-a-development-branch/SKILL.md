@@ -1,6 +1,12 @@
 ---
 name: finishing-a-development-branch
 description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+metadata:
+  domain: workflow
+  scope: completion, release
+  triggers: implementation complete, tests pass, finish branch, merge decision, open pull request, cleanup before handoff
+  exclusions: active feature coding, failing tests, unclear requirements, initial planning
+  tags: branch-completion, release-readiness, pull-request, handoff
 ---
 
 # Finishing a Development Branch

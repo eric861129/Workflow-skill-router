@@ -126,7 +126,9 @@ export default defineConfig({
             'zh-TW': '範例',
           },
           items: [
+            { slug: 'showcase' },
             { slug: 'examples/template-skill-catalog' },
+            { slug: 'examples/case-studies' },
           ],
         },
         {

@@ -48,7 +48,9 @@ python scripts/scan-skills.py ./sample-skills \
   --out /tmp/skill-index.json \
   --markdown /tmp/skill-index.md \
   --warnings /tmp/skill-warnings.md \
-  --suggest-tree /tmp/suggested-skill-tree.md
+  --suggest-tree /tmp/suggested-skill-tree.md \
+  --fail-on-private \
+  --fail-on-duplicates
 ```
 
 Use `--fail-on-private` and `--fail-on-duplicates` for release gates. The scanner writes a machine-readable index, Markdown summary, warnings report, and suggested skill tree.
@@ -61,7 +63,8 @@ python scripts/evaluate-routing.py \
   --predictions evaluation/predictions.example.jsonl \
   --report /tmp/routing-report.md \
   --json-report /tmp/routing-report.json \
-  --fail-on-violations
+  --fail-on-violations \
+  --strict
 ```
 
 Add `--strict` when primary mismatches or missing expected supporting skills should fail CI.
@@ -90,6 +93,19 @@ OK: Lighthouse audit passed. Reports written to lighthouse-reports
 ```
 
 The audit builds the site, serves `site/dist` locally, runs Lighthouse on key English and Traditional Chinese pages, and writes JSON/HTML reports to `site/lighthouse-reports/`.
+
+## Public URL / HTTPS smoke test
+
+The public site intentionally uses the project path `https://huangchiyu.com/Workflow-skill-router/`. Do not add a repo-level `CNAME` file unless the project moves to a dedicated custom domain.
+
+GitHub Pages API can still report `cname=null` or `https_enforced=false` for this setup. The publishing gate is live visitor behavior:
+
+```bash
+curl -fsS --head https://huangchiyu.com/Workflow-skill-router/
+curl -fsS -I -L http://huangchiyu.com/Workflow-skill-router/
+```
+
+Expected: HTTPS returns `200`, and HTTP resolves to the HTTPS project path.
 
 ## Source
 
