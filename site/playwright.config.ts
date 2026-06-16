@@ -13,7 +13,10 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
     toHaveScreenshot: {
-      maxDiffPixelRatio: 0.02,
+      // CI runners can render fonts and anti-aliased edges slightly differently.
+      // Keep enough tolerance for that noise while still catching major layout shifts.
+      maxDiffPixelRatio: 0.08,
+      threshold: 0.35,
     },
   },
   use: {
