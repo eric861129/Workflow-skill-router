@@ -36,5 +36,8 @@ description: 直接開啟站台背後對應的 GitHub repo 資料夾與檔案。
 - [Recipes](https://github.com/eric861129/Workflow-skill-router/tree/main/recipes)
 - [Prompts](https://github.com/eric861129/Workflow-skill-router/tree/main/prompts)
 - [Project docs](https://github.com/eric861129/Workflow-skill-router/tree/main/docs)
+- [Blank Router 端到端教學 source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/zh-tw/guides/blank-router-walkthrough.md)
+- [Troubleshooting source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/zh-tw/guides/troubleshooting.md)
+- [Adapter notes source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/zh-tw/guides/adapters.md)
 - [Astro Starlight site source](https://github.com/eric861129/Workflow-skill-router/tree/main/site)
 - [Site content pages](https://github.com/eric861129/Workflow-skill-router/tree/main/site/src/content/docs)

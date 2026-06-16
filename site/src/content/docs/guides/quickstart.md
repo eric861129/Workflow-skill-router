@@ -64,6 +64,8 @@ Use the English prompt below, or open the source file:
 
 - [View `prompts/agent-prompt.en.md` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/prompts/agent-prompt.en.md)
 
+If you want a complete copyable setup from blank install to validated router, use the [Blank Router walkthrough](/Workflow-skill-router/guides/blank-router-walkthrough/). If an install or validator command fails, open [Troubleshooting](/Workflow-skill-router/guides/troubleshooting/).
+
 ### Initial Setup Prompt
 
 ```text

@@ -5,6 +5,10 @@ description: Five shareable before-and-after examples for Workflow Skill Router.
 
 Use these examples when explaining the project in a post, issue, or README snippet.
 
+## 60-second demo
+
+<img src="/Workflow-skill-router/assets/workflow-skill-router-60s-demo.gif" alt="60-second Workflow Skill Router demo showing a fuzzy request, route selection, validation, and download call to action" width="720" height="405" loading="lazy" decoding="async" />
+
 ## API contract sync
 
 Before:

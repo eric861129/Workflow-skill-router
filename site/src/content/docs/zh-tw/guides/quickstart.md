@@ -64,6 +64,8 @@ python /tmp/workflow-skill-router-validate-router.py "$HOME/.codex/skills/workfl
 
 - [在 GitHub 開啟 `prompts/agent-prompt.zh-TW.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/prompts/agent-prompt.zh-TW.md)
 
+如果你想看從空白安裝到完成驗證的可複製流程，請看 [Blank Router 端到端教學](/Workflow-skill-router/zh-tw/guides/blank-router-walkthrough/)。如果安裝或 validator command 失敗，請看 [Troubleshooting](/Workflow-skill-router/zh-tw/guides/troubleshooting/)。
+
 ### 初次設定 Prompt
 
 ```text

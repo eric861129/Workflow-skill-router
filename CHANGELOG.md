@@ -6,6 +6,14 @@ All notable changes to Workflow Skill Router are documented here.
 
 - Nothing yet.
 
+## v1.2.0
+
+- Added a complete Blank Router walkthrough from install to validation.
+- Added Troubleshooting and FAQ coverage for install paths, PowerShell, Python, zip extraction, validator errors, and public-readiness checks.
+- Added Claude, Cursor, and Gemini adapter notes for non-Codex instruction surfaces.
+- Added a 60-second demo GIF and connected it from README and the documentation site showcase.
+- Calibrated the public onboarding links across README, Quickstart, and the Starlight sidebar.
+
 ## v1.1.2
 
 - Synced the patch release target with the latest `main` branch.
