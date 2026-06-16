@@ -44,9 +44,9 @@ Which package should I download?
 
 | Package | Use it when | Download |
 | --- | --- | --- |
-| Blank Router | You want to build your own router from your own skills, triggers, exclusions, and routing rules. | [workflow-skill-router-blank.zip](downloads/workflow-skill-router-blank.zip) |
-| Reference Template | You want to study a public-safe example before adapting the blank router to your workflow. | [workflow-skill-router-template-clean.zip](downloads/workflow-skill-router-template-clean.zip) |
-| Full source archive | You need per-skill README files, source context, or audit material behind the reference template. | [workflow-skill-router-template.zip](downloads/workflow-skill-router-template.zip) |
+| Blank Router | You want to build your own router from your own skills, triggers, exclusions, and routing rules. | [workflow-skill-router-blank.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/) |
+| Reference Template | You want to study a public-safe example before adapting the blank router to your workflow. | [workflow-skill-router-template-clean.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/) |
+| Full source archive | You need per-skill README files, source context, or audit material behind the reference template. | [workflow-skill-router-template.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/) |
 
 Try the framework without installing anything:
 
@@ -82,19 +82,23 @@ OK: workflow-skill-router passed validation
 
 ## Proof
 
-- `30` benchmark scenarios in `evaluation/scenarios.example.jsonl`.
-- `19` unit tests for scanner and evaluator behavior.
+- `80` benchmark scenarios in `evaluation/scenarios.example.jsonl`.
+- Public routing metrics trend from `v1.2.0` to `v1.3.0`.
+- Public-safe Routing Gallery generated from root-level route cases.
+- Unit tests for scanner, evaluator, route cases, and metrics behavior.
 - Public-readiness audit for community files, downloads, manifests, examples, site entrypoints, and mojibake checks.
 - Lighthouse gate across English and Traditional Chinese pages; latest local pass had 100 accessibility, best-practices, and SEO scores.
 - Strict CI checks scanner privacy, duplicate skill ids, route violations, and exact routing expectations.
 
 ## Download Skill Packages
 
-- [Blank Router package](downloads/workflow-skill-router-blank.zip): the main download for people who want to build their own router from their own skills, naming conventions, triggers, exclusions, and routing rules.
-- [Reference Template package](downloads/workflow-skill-router-template-clean.zip): a public-safe example for learning the structure before adapting the blank router to your own workflow.
-- [Full source archive](downloads/workflow-skill-router-template.zip): the larger source archive with per-skill README files, useful only when you need source context or audit material.
+- [Blank Router package](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/): the main download for people who want to build their own router from their own skills, naming conventions, triggers, exclusions, and routing rules.
+- [Reference Template package](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/): a public-safe example for learning the structure before adapting the blank router to your own workflow.
+- [Full source archive](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/): the larger source archive with per-skill README files, useful only when you need source context or audit material.
 - [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the Reference Template.
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
+
+Direct repository paths for audit and offline use: [Blank Router](downloads/workflow-skill-router-blank.zip), [Reference Template](downloads/workflow-skill-router-template-clean.zip), [Full source archive](downloads/workflow-skill-router-template.zip).
 
 ## Project Roadmap And Community
 
@@ -161,7 +165,7 @@ python scripts/evaluate-routing.py \
 
 | Metric | Value |
 | --- | ---: |
-| Scenario Count | 30 |
+| Scenario Count | 80 |
 | Primary Accuracy | 1.0 |
 | Forbidden Skill Violation Rate | 0.0 |
 | Max Skill Count Violation Rate | 0.0 |
@@ -262,11 +266,15 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
 - `scripts/scan-skills.py`: dependency-free skill inventory scanner that writes JSON, Markdown, warnings, and a suggested tree.
 - `scripts/evaluate-routing.py`: dependency-free routing benchmark evaluator for scenarios and predictions.
-- `evaluation/`: example benchmark scenarios, predictions, schema docs, and generated report.
+- `scripts/validate-route-cases.py`: public route case schema and public-safety validator.
+- `scripts/build-route-gallery.py`: generator for site gallery data and route-case evaluator scenarios.
+- `scripts/render-routing-metrics-trend.py`: generator for release-level metrics trend docs and site data.
+- `route-cases/`: canonical public-safe route cases accepted from maintainers and contributors.
+- `evaluation/`: benchmark scenarios, predictions, schema docs, generated route-case scenarios, metrics history, and generated report.
 - `references/`: generated example scanner outputs.
-- `tests/`: standard-library unit tests for scanner and evaluator behavior.
+- `tests/`: standard-library unit tests for scanner, evaluator, route case, and metrics behavior.
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
-- `site/`: Astro Starlight website for GitHub Pages.
+- `site/`: Astro Starlight website for GitHub Pages, including Playwright smoke and visual tests.
 - `site/scripts/lighthouse-audit.mjs`: formal Lighthouse and accessibility score gate for the public website.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.
 - `docs/`: conceptual docs, customization guidance, and validation checklists.

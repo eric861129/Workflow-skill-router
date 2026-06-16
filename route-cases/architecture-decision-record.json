@@ -1,0 +1,39 @@
+{
+  "id": "architecture-decision-record",
+  "title": "Architecture decision record",
+  "domain": "architecture",
+  "task": "Write an ADR for splitting a reporting feature into ingestion, storage, and dashboard layers.",
+  "context": "The team needs a concise decision record with tradeoffs, constraints, and follow-up risks.",
+  "route": {
+    "path": "Architecture / ADR > Reporting pipeline > Layered decision",
+    "primary": "architecture-designer",
+    "supporting": [
+      "c4-architecture",
+      "spec-miner"
+    ],
+    "reason": "Architecture owns the decision, C4 clarifies system boundaries, and spec mining extracts constraints from the request."
+  },
+  "omitted_skills": [
+    {
+      "skill": "database-optimizer",
+      "reason": "The decision record is not yet optimizing a concrete query."
+    },
+    {
+      "skill": "frontend-debugging-workflow",
+      "reason": "No rendered frontend defect is being debugged."
+    }
+  ],
+  "tags": [
+    "architecture",
+    "adr",
+    "docs"
+  ],
+  "public_safety": {
+    "fictionalized": true,
+    "no_private_paths": true,
+    "no_secrets": true,
+    "no_customer_names": true,
+    "no_live_credentials": true,
+    "review_notes": "Uses fictional reporting architecture context."
+  }
+}

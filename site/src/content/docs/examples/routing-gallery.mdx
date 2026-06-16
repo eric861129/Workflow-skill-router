@@ -1,0 +1,21 @@
+---
+title: Routing Gallery
+description: Public-safe route cases that show how fuzzy requests become focused skill routes.
+---
+
+import RouteGallery from '../../../components/RouteGallery.astro';
+
+The gallery is generated from root-level `route-cases/*.json` files. Each case is intentionally public-safe and includes the selected route, omitted skills, tags, and review notes.
+
+<RouteGallery locale="en" />
+
+## Submit a case
+
+Use the route case issue template when you want to propose a new public-safe example. Keep real customer names, local paths, hostnames, credentials, and private repository details out of the submission.
+
+Run these checks before opening a pull request:
+
+```bash
+python scripts/validate-route-cases.py route-cases
+python scripts/build-route-gallery.py --check
+```

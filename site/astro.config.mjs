@@ -30,6 +30,7 @@ export default defineConfig({
         dark: './src/assets/routing-mark-dark.svg',
       },
       components: {
+        Head: './src/components/Head.astro',
         PageSidebar: './src/components/DocsPageSidebar.astro',
       },
       disable404Route: true,
@@ -130,6 +131,7 @@ export default defineConfig({
           },
           items: [
             { slug: 'showcase' },
+            { slug: 'examples/routing-gallery' },
             { slug: 'examples/template-skill-catalog' },
             { slug: 'examples/case-studies' },
           ],
@@ -141,6 +143,8 @@ export default defineConfig({
           },
           items: [
             { slug: 'reference/routing-contract' },
+            { slug: 'reference/routing-metrics-trends' },
+            { slug: 'reference/analytics' },
             { slug: 'reference/validator' },
             { slug: 'reference/sample-skills' },
             { slug: 'reference/source-map' },

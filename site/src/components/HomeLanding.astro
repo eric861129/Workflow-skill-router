@@ -75,11 +75,11 @@ const text = {
     ],
     validatorTitle: 'Proof before publish',
     validatorCopy:
-      'The proof flow checks router structure, scans the sample skill catalog, evaluates route quality, and runs the unit tests before the repo is shared.',
+      'The proof flow checks router structure, scans the sample skill catalog, validates public route cases, evaluates route quality, and runs the unit tests before the repo is shared.',
     proofStats: [
-      ['30', 'routing scenarios'],
-      ['19', 'unit tests'],
-      ['100', 'a11y / SEO gate'],
+      ['80', 'routing scenarios'],
+      ['12', 'route cases'],
+      ['0%', 'violation rate'],
     ],
     validatorCommand: `# 1. Validate router structure
 python scripts/validate-router.py starter/workflow-skill-router
@@ -168,11 +168,11 @@ python -m unittest discover -s tests`,
     ],
     validatorTitle: '發布前先驗證',
     validatorCopy:
-      'Proof flow 會先驗證 router 結構、掃描 sample skill catalog、評估 routing quality，並執行 unit tests，再分享 repo。',
+      'Proof flow 會先驗證 router 結構、掃描 sample skill catalog、驗證 public route cases、評估 routing quality，並執行 unit tests，再分享 repo。',
     proofStats: [
-      ['30', 'routing scenarios'],
-      ['19', 'unit tests'],
-      ['100', 'a11y / SEO gate'],
+      ['80', 'routing scenarios'],
+      ['12', 'route cases'],
+      ['0%', 'violation rate'],
     ],
     validatorCommand: `# 1. 驗證 router 結構
 python scripts/validate-router.py starter/workflow-skill-router
@@ -331,7 +331,7 @@ const initialDemo = routeDemoScenarios[0];
         <span class="wsr-theme-dot" aria-hidden="true"></span>
         <span data-wsr-theme-label>{themeLabels.dark}</span>
       </button>
-      <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer" aria-label={text.star}>
+      <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer" aria-label={text.star} data-analytics-event="site_nav_github">
         <span class="wsr-star-full">{text.star}</span>
         <span class="wsr-star-short">GitHub</span>
       </a>
@@ -343,8 +343,8 @@ const initialDemo = routeDemoScenarios[0];
       <h1 id="wsr-hero-title" class="wsr-hero-title">{text.heroTitle}</h1>
       <p class="wsr-hero-copy">{text.heroCopy}</p>
       <div class="wsr-hero-actions">
-        <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
-        <a class="wsr-button wsr-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip">{text.downloadBlank}</a>
+        <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer" data-analytics-event="site_hero_github">{text.star}</a>
+        <a class="wsr-button wsr-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_hero_download_blank">{text.downloadBlank}</a>
         <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/quickstart/`}>{text.quickstart}</a>
       </div>
       <div class="wsr-route-showcase" aria-label={text.routeLabel}>

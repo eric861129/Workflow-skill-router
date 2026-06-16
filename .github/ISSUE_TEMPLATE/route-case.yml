@@ -1,0 +1,63 @@
+name: Route case submission
+description: Propose a public-safe route case for the Routing Gallery and benchmark.
+title: "[Route case]: "
+labels: ["route-case", "needs-triage"]
+body:
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      description: Use lowercase kebab-case, such as api, frontend, database, docs, release, connector, or simple-task.
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: User task
+      description: Paste the fuzzy request after removing private details.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Routing context
+      description: Add facts that should affect skill selection.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-route
+    attributes:
+      label: Expected route
+      description: Include route.path, route.primary, route.supporting, and route.reason.
+      value: |
+        path:
+        primary:
+        supporting:
+        reason:
+    validations:
+      required: true
+  - type: textarea
+    id: omitted-skills
+    attributes:
+      label: Omitted skills
+      description: List tempting skills that should not be selected and explain why.
+    validations:
+      required: true
+  - type: textarea
+    id: validation-context
+    attributes:
+      label: Validation context
+      description: Mention whether this should become a gallery-only case or also a benchmark scenario.
+    validations:
+      required: true
+  - type: checkboxes
+    id: public-safety
+    attributes:
+      label: Public-safe checklist
+      options:
+        - label: I fictionalized the case and removed private repository names, local paths, hostnames, customer names, and organization-specific identifiers.
+          required: true
+        - label: I did not include secrets, tokens, credentials, regulated data, screenshots, or live system details.
+          required: true
+        - label: The expected route selects at most 4 skills and does not repeat the primary skill in supporting skills.
+          required: true

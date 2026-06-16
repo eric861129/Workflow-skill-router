@@ -7,7 +7,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "audit:lighthouse": "npm run build && node scripts/lighthouse-audit.mjs"
+    "audit:lighthouse": "npm run build && node scripts/lighthouse-audit.mjs",
+    "test:site:smoke": "playwright test --project=chromium-smoke",
+    "test:site:visual": "playwright test --project=chromium-visual",
+    "test:site:update-snapshots": "playwright test --project=chromium-visual --update-snapshots"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.40.0",
@@ -17,6 +20,7 @@
     "esbuild": "^0.28.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "chrome-launcher": "^1.2.1",
     "lighthouse": "^13.4.0"
   }

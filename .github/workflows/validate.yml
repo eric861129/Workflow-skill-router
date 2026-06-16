@@ -57,6 +57,15 @@ jobs:
           --fail-on-violations
           --strict
 
+      - name: Validate route cases
+        run: python scripts/validate-route-cases.py route-cases
+
+      - name: Check generated route gallery data
+        run: python scripts/build-route-gallery.py --check
+
+      - name: Check routing metrics trend data
+        run: python scripts/render-routing-metrics-trend.py --check
+
       - name: Run unit tests
         run: python -m unittest discover -s tests
 
@@ -71,3 +80,15 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Install Playwright browsers
+        working-directory: site
+        run: npx playwright install --with-deps chromium
+
+      - name: Run documentation site smoke tests
+        working-directory: site
+        run: npm run test:site:smoke
+
+      - name: Run documentation site visual regression tests
+        working-directory: site
+        run: npm run test:site:visual
