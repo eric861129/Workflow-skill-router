@@ -28,7 +28,7 @@ description: 下載空白 router skill，或先參考一套範例再設計自己
         <dd>Template catalog 與 sample skill folders</dd>
       </div>
     </dl>
-    <a class="wsr-download-button" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip">下載 Blank Router</a>
+    <a class="wsr-download-button" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_download_blank_router">下載 Blank Router</a>
   </article>
 
   <article class="wsr-download-card">
@@ -51,14 +51,14 @@ description: 下載空白 router skill，或先參考一套範例再設計自己
         <dd>Private skills、sensitive lines、非必要 per-skill README files</dd>
       </div>
     </dl>
-    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip">下載 Reference Template</a>
+    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip" data-analytics-event="site_download_reference_template">下載 Reference Template</a>
   </article>
 </div>
 
 <div class="wsr-download-support">
   <a href="/Workflow-skill-router/zh-tw/examples/template-skill-catalog/">瀏覽對應的範本 Skill Catalog</a>
   <a href="https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md">查看範本 manifest</a>
-  <a href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip">下載 Full source archive</a>
+  <a href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip" data-analytics-event="site_download_full_source">下載 Full source archive</a>
 </div>
 
 只有在需要 per-skill README、source context，或想 audit 範本來源時，才下載 **Full source archive**。

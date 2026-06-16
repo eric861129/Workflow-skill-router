@@ -6,6 +6,17 @@ All notable changes to Workflow Skill Router are documented here.
 
 - Nothing yet.
 
+## v1.3.0
+
+- Added a public-safe Routing Gallery generated from root-level `route-cases/*.json`.
+- Added route case validation and generated gallery/evaluation data.
+- Expanded the routing benchmark from 30 to 80 scenarios across API, frontend, database, docs, release, connector, simple task, and anti-over-routing boundaries.
+- Added routing metrics history and a documentation site trend page for release-level metrics.
+- Added Playwright site smoke tests and key visual regression snapshots.
+- Added disabled-by-default Plausible-compatible analytics hooks and transparent README CTA redirect pages.
+- Added route case contribution guidance, an issue template, and monthly release cadence documentation.
+- Updated README proof, package CTA links, roadmap, CI validation, and release documentation for the v1.3.0 quality gate.
+
 ## v1.2.0
 
 - Added a complete Blank Router walkthrough from install to validation.

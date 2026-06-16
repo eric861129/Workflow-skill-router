@@ -28,7 +28,7 @@ Most readers should start with **Blank Router**. It gives you the router structu
         <dd>Template catalog and sample skill folders</dd>
       </div>
     </dl>
-    <a class="wsr-download-button" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip">Download Blank Router</a>
+    <a class="wsr-download-button" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_download_blank_router">Download Blank Router</a>
   </article>
 
   <article class="wsr-download-card">
@@ -51,14 +51,14 @@ Most readers should start with **Blank Router**. It gives you the router structu
         <dd>Private skills, sensitive lines, non-essential per-skill README files</dd>
       </div>
     </dl>
-    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip">Download Reference Template</a>
+    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip" data-analytics-event="site_download_reference_template">Download Reference Template</a>
   </article>
 </div>
 
 <div class="wsr-download-support">
   <a href="/Workflow-skill-router/examples/template-skill-catalog/">Browse the matching Template Skill Catalog</a>
   <a href="https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md">View template manifest</a>
-  <a href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip">Download Full source archive</a>
+  <a href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip" data-analytics-event="site_download_full_source">Download Full source archive</a>
 </div>
 
 Download **Full source archive** only when you need per-skill README files, source context, or audit material behind the reference template.

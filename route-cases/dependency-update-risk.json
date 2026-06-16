@@ -1,0 +1,39 @@
+{
+  "id": "dependency-update-risk",
+  "title": "Dependency update risk",
+  "domain": "maintenance",
+  "task": "Update a documentation site dependency and investigate one failing build step.",
+  "context": "The dependency bump is small, but the build fails during static generation.",
+  "route": {
+    "path": "Maintenance / Dependencies > Static site build > Regression isolation",
+    "primary": "dependency-updater",
+    "supporting": [
+      "systematic-debugging",
+      "qa-test-planner"
+    ],
+    "reason": "Dependency management owns the bump, debugging isolates the build regression, and QA defines the validation gate."
+  },
+  "omitted_skills": [
+    {
+      "skill": "frontend-design",
+      "reason": "The task is dependency and build behavior, not visual redesign."
+    },
+    {
+      "skill": "code-documenter",
+      "reason": "Docs content should not change until the dependency issue is solved."
+    }
+  ],
+  "tags": [
+    "dependencies",
+    "ci",
+    "static-site"
+  ],
+  "public_safety": {
+    "fictionalized": true,
+    "no_private_paths": true,
+    "no_secrets": true,
+    "no_customer_names": true,
+    "no_live_credentials": true,
+    "review_notes": "No real package incident details are included."
+  }
+}

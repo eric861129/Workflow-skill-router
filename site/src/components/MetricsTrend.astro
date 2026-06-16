@@ -1,0 +1,125 @@
+---
+import metricsData from '../data/routing-metrics-history.generated.json';
+
+type Locale = 'en' | 'zh-tw';
+
+const locale = (Astro.props.locale ?? 'en') as Locale;
+const isZh = locale === 'zh-tw';
+const history = metricsData.history;
+const latest = history[history.length - 1];
+const labels = isZh
+  ? {
+      summary: '公開 benchmark 趨勢用來追蹤 router release 的 route 品質，不宣稱代表所有模型或所有任務。',
+      scenarios: 'Scenarios',
+      primary: 'Primary accuracy',
+      recall: 'Supporting recall',
+      precision: 'Supporting precision',
+      forbidden: 'Forbidden violation rate',
+      maxSkill: 'Max skill violation rate',
+      overRouting: 'Over-routing rate',
+      version: 'Version',
+      date: 'Date',
+      notes: 'Notes',
+    }
+  : {
+      summary:
+        'The public benchmark trend tracks route quality across router releases. It does not claim model-wide or task-wide performance.',
+      scenarios: 'Scenarios',
+      primary: 'Primary accuracy',
+      recall: 'Supporting recall',
+      precision: 'Supporting precision',
+      forbidden: 'Forbidden violation rate',
+      maxSkill: 'Max skill violation rate',
+      overRouting: 'Over-routing rate',
+      version: 'Version',
+      date: 'Date',
+      notes: 'Notes',
+    };
+
+const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
+const maxScenarioCount = Math.max(...history.map((row) => row.scenario_count));
+const chartWidth = 560;
+const chartHeight = 180;
+const points = history
+  .map((row, index) => {
+    const x = history.length === 1 ? chartWidth / 2 : (index / (history.length - 1)) * chartWidth;
+    const y = chartHeight - (row.scenario_count / maxScenarioCount) * (chartHeight - 24) - 12;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  })
+  .join(' ');
+---
+
+<section class="wsr-metrics-trend">
+  <p>{labels.summary}</p>
+
+  <div class="wsr-metric-summary" aria-label="Latest routing metrics">
+    <div>
+      <span>{labels.scenarios}</span>
+      <strong>{latest.scenario_count}</strong>
+    </div>
+    <div>
+      <span>{labels.primary}</span>
+      <strong>{percent(latest.primary_accuracy)}</strong>
+    </div>
+    <div>
+      <span>{labels.overRouting}</span>
+      <strong>{percent(latest.over_routing_rate)}</strong>
+    </div>
+  </div>
+
+  <figure class="wsr-metrics-chart">
+    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="Scenario count trend">
+      <line x1="0" y1={chartHeight - 12} x2={chartWidth} y2={chartHeight - 12}></line>
+      <polyline points={points}></polyline>
+      {
+        history.map((row, index) => {
+          const [x, y] = points.split(' ')[index].split(',');
+          return (
+            <g>
+              <circle cx={x} cy={y} r="5"></circle>
+              <text x={x} y={Number(y) - 12}>{row.version}</text>
+            </g>
+          );
+        })
+      }
+    </svg>
+    <figcaption>{labels.scenarios}: {history[0].scenario_count} -> {latest.scenario_count}</figcaption>
+  </figure>
+
+  <div class="wsr-table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>{labels.version}</th>
+          <th>{labels.date}</th>
+          <th>{labels.scenarios}</th>
+          <th>{labels.primary}</th>
+          <th>{labels.recall}</th>
+          <th>{labels.precision}</th>
+          <th>{labels.forbidden}</th>
+          <th>{labels.maxSkill}</th>
+          <th>{labels.overRouting}</th>
+          <th>{labels.notes}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          history.map((row) => (
+            <tr>
+              <td>{row.version}</td>
+              <td>{row.date}</td>
+              <td>{row.scenario_count}</td>
+              <td>{percent(row.primary_accuracy)}</td>
+              <td>{percent(row.supporting_recall)}</td>
+              <td>{percent(row.supporting_precision)}</td>
+              <td>{percent(row.forbidden_violation_rate)}</td>
+              <td>{percent(row.max_skill_count_violation_rate)}</td>
+              <td>{percent(row.over_routing_rate)}</td>
+              <td>{row.notes}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

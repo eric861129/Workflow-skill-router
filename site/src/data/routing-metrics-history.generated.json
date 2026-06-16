@@ -1,0 +1,37 @@
+{
+  "history": [
+    {
+      "date": "2026-06-16",
+      "forbidden_violation_rate": 0.0,
+      "max_skill_count_violation_rate": 0.0,
+      "notes": "Baseline public onboarding release benchmark.",
+      "over_routing_rate": 0.0,
+      "primary_accuracy": 1.0,
+      "scenario_count": 30,
+      "supporting_precision": 1.0,
+      "supporting_recall": 1.0,
+      "version": "v1.2.0"
+    },
+    {
+      "date": "2026-06-16",
+      "forbidden_violation_rate": 0.0,
+      "max_skill_count_violation_rate": 0.0,
+      "notes": "Expanded public benchmark covering API, frontend, database, docs, release, connector, simple task, and anti-over-routing boundaries.",
+      "over_routing_rate": 0.0,
+      "primary_accuracy": 1.0,
+      "scenario_count": 80,
+      "supporting_precision": 1.0,
+      "supporting_recall": 1.0,
+      "version": "v1.3.0"
+    }
+  ],
+  "metric_fields": [
+    "primary_accuracy",
+    "supporting_recall",
+    "supporting_precision",
+    "forbidden_violation_rate",
+    "max_skill_count_violation_rate",
+    "over_routing_rate"
+  ],
+  "schema_version": "1.0"
+}

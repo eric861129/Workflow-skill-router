@@ -1,0 +1,36 @@
+{
+  "id": "simple-command-boundary",
+  "title": "Simple command boundary",
+  "domain": "simple-task",
+  "task": "Show the current Git branch and latest commit summary.",
+  "context": "The user only needs a direct local command result, not a multi-skill workflow.",
+  "route": {
+    "path": "Simple task > Direct command > No router expansion",
+    "primary": "no-skill-needed",
+    "supporting": [],
+    "reason": "A simple status request should be answered directly without loading unrelated skills."
+  },
+  "omitted_skills": [
+    {
+      "skill": "finishing-a-development-branch",
+      "reason": "The user did not ask to complete or release the branch."
+    },
+    {
+      "skill": "commit-work",
+      "reason": "No commit operation is requested."
+    }
+  ],
+  "tags": [
+    "simple-task",
+    "anti-over-routing",
+    "git"
+  ],
+  "public_safety": {
+    "fictionalized": true,
+    "no_private_paths": true,
+    "no_secrets": true,
+    "no_customer_names": true,
+    "no_live_credentials": true,
+    "review_notes": "Boundary case uses generic Git status language."
+  }
+}

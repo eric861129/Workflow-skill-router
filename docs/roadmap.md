@@ -9,12 +9,21 @@ Workflow Skill Router is intentionally small: it should stay a routing layer, no
 - Clean installable template package without non-essential per-skill README files.
 - More obvious README and website proof sections for first-time visitors.
 
-## v1.3
+## v1.3 Delivered
 
-- Larger routing benchmark with more boundary and anti-over-routing scenarios.
-- Community route gallery for reusable public-safe workflow examples.
-- Agent-agnostic adapter notes for tools beyond Codex.
-- Better guidance for generating predictions from a router without leaking private context.
+- 80-scenario routing benchmark with API, frontend, database, docs, release, connector, simple-task, and anti-over-routing coverage.
+- Community Routing Gallery generated from root-level public-safe route cases.
+- Public metrics history from `v1.2.0` to `v1.3.0`.
+- Playwright smoke and key visual snapshots for the documentation site.
+- Privacy-first analytics hooks and transparent README CTA landing pages.
+- Route case submission guide, issue template, and monthly release cadence.
+
+## v1.4 Next
+
+- Accept more community route cases and publish a larger gallery taxonomy.
+- Add forward-test snapshots for real router predictions generated outside the fixture file.
+- Publish a short launch article comparing over-routing examples before and after the gallery.
+- Improve adapter examples for additional AI coding tools as their official settings stabilize.
 
 ## Future
 

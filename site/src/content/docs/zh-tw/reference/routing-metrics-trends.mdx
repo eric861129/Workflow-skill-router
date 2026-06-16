@@ -1,0 +1,24 @@
+---
+title: Routing Metrics 趨勢
+description: 公開 benchmark 的 routing accuracy、violation rate 與 over-routing rate 歷史。
+---
+
+import MetricsTrend from '../../../../components/MetricsTrend.astro';
+
+這個頁面追蹤本 repository release benchmark 的變化。它適合用來看 route 品質與 benchmark 覆蓋是否退步，不代表所有模型或所有任務的通用表現。
+
+<MetricsTrend locale="zh-tw" />
+
+## 重現方式
+
+```bash
+python scripts/evaluate-routing.py \
+  --scenarios evaluation/scenarios.example.jsonl \
+  --predictions evaluation/predictions.example.jsonl \
+  --report /tmp/routing-report.md \
+  --json-report /tmp/routing-report.json \
+  --fail-on-violations \
+  --strict
+
+python scripts/render-routing-metrics-trend.py --check
+```

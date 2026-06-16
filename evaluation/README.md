@@ -7,6 +7,8 @@ Routing evaluation turns skill selection into something you can inspect, compare
 - `scenarios.example.jsonl` describes the benchmark tasks and the expected route.
 - `predictions.example.jsonl` describes what a router actually selected for each scenario.
 - `report.example.md` is a readable report generated from the two files.
+- `route-cases.generated.jsonl` is generated from public route cases for gallery-linked evaluation.
+- `metrics-history.jsonl` records release-level trend metrics.
 - `schema.md` documents the JSONL fields and normalization rules.
 
 Use scenarios for stable expectations. Use predictions for the current router output. Keeping them separate makes it easy to compare two router versions against the same benchmark.
@@ -25,6 +27,8 @@ python scripts/evaluate-routing.py \
 Add `--strict` when primary mismatches or missing expected supporting skills should fail CI.
 
 ## Create Your Own Scenarios
+
+The public example benchmark currently targets 80 scenarios. Keep it between 50 and 100 records so it stays broad enough to catch regressions and small enough to review.
 
 Start with real routing decisions that matter:
 
@@ -54,6 +58,19 @@ You can create predictions manually, or ask an agent to route each scenario and 
 - `Route Explanation Present Rate`: predictions with non-empty explanations.
 
 See [`docs/routing-metrics.md`](../docs/routing-metrics.md) for detailed definitions and improvement guidance.
+See [`docs/routing-metrics-trends.md`](../docs/routing-metrics-trends.md) for the release-level trend history.
+
+## Route Case Generated Scenarios
+
+Public route cases live in `route-cases/*.json`. They generate gallery data and additional evaluation scenarios:
+
+```bash
+python scripts/validate-route-cases.py route-cases
+python scripts/build-route-gallery.py
+python scripts/build-route-gallery.py --check
+```
+
+Add a hand-authored benchmark scenario when a route case introduces a new behavior that should become a release gate. Keep generated route-case scenarios as gallery-linked coverage.
 
 ## CI Usage
 

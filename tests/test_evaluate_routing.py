@@ -240,6 +240,26 @@ class EvaluateRoutingTests(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertTrue(any("invalid JSON" in issue for issue in report_json["schema_errors"]))
 
+    def test_repository_benchmark_has_v1_3_scenario_count(self) -> None:
+        scenarios_path = REPO_ROOT / "evaluation" / "scenarios.example.jsonl"
+        predictions_path = REPO_ROOT / "evaluation" / "predictions.example.jsonl"
+        scenarios = [
+            json.loads(line)
+            for line in scenarios_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        predictions = [
+            json.loads(line)
+            for line in predictions_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+        self.assertGreaterEqual(len(scenarios), 50)
+        self.assertLessEqual(len(scenarios), 100)
+        self.assertEqual(len(scenarios), 80)
+        self.assertEqual(len(predictions), len(scenarios))
+        self.assertEqual({row["id"] for row in predictions}, {row["id"] for row in scenarios})
+
 
 if __name__ == "__main__":
     unittest.main()

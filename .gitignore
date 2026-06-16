@@ -3,6 +3,8 @@ site/node_modules/
 site/dist/
 site/.astro/
 site/lighthouse-reports/
+site/playwright-report/
+site/test-results/
 
 # Local UI verification artifacts
 .chrome-*/

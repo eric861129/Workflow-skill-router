@@ -1,0 +1,39 @@
+{
+  "id": "docs-source-map-cleanup",
+  "title": "Documentation source-map cleanup",
+  "domain": "docs",
+  "task": "Clean up stale documentation links after moving examples into a new folder.",
+  "context": "Readers need source links that still point to the files behind the published docs.",
+  "route": {
+    "path": "Docs / Source map > Link integrity > Public docs",
+    "primary": "code-documenter",
+    "supporting": [
+      "spec-miner",
+      "qa-test-planner"
+    ],
+    "reason": "Documentation owns the reader-facing shape; spec mining finds stale source assumptions, and QA defines link checks."
+  },
+  "omitted_skills": [
+    {
+      "skill": "api-guidelines-skill",
+      "reason": "No API contract is being designed."
+    },
+    {
+      "skill": "frontend-design",
+      "reason": "The site layout is not the main defect."
+    }
+  ],
+  "tags": [
+    "docs",
+    "source-map",
+    "maintenance"
+  ],
+  "public_safety": {
+    "fictionalized": true,
+    "no_private_paths": true,
+    "no_secrets": true,
+    "no_customer_names": true,
+    "no_live_credentials": true,
+    "review_notes": "Uses generic documentation locations only."
+  }
+}

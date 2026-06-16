@@ -1,0 +1,29 @@
+---
+const provider = import.meta.env.PUBLIC_ANALYTICS_PROVIDER;
+const plausibleDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
+const plausibleScriptUrl =
+  import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL ??
+  'https://plausible.io/js/script.outbound-links.file-downloads.js';
+const enabled = provider === 'plausible' && Boolean(plausibleDomain);
+---
+
+{
+  enabled && (
+    <>
+      <script defer data-domain={plausibleDomain} src={plausibleScriptUrl}></script>
+      <script is:inline>
+        {`
+          document.addEventListener('click', (event) => {
+            const target = event.target instanceof Element
+              ? event.target.closest('[data-analytics-event]')
+              : null;
+            if (!target || typeof window.plausible !== 'function') return;
+            const eventName = target.getAttribute('data-analytics-event');
+            if (!eventName) return;
+            window.plausible(eventName);
+          });
+        `}
+      </script>
+    </>
+  )
+}
