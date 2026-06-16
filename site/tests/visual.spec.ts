@@ -4,7 +4,6 @@ const pages = [
   { name: 'home', path: './' },
   { name: 'downloads', path: 'guides/downloads/' },
   { name: 'gallery', path: 'examples/routing-gallery/' },
-  { name: 'metrics', path: 'reference/routing-metrics-trends/' },
 ];
 
 const viewports = [

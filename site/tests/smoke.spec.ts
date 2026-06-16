@@ -5,9 +5,9 @@ const pages = [
   { path: 'guides/downloads/', text: 'Download packages' },
   { path: 'guides/quickstart/', text: 'Try in 30 seconds' },
   { path: 'examples/routing-gallery/', text: 'Routing Gallery' },
-  { path: 'reference/routing-metrics-trends/', text: 'Routing Metrics Trends' },
+  { path: 'reference/validator/', text: 'Validation Toolchain' },
   { path: 'zh-tw/examples/routing-gallery/', text: '路由案例 Gallery' },
-  { path: 'zh-tw/reference/routing-metrics-trends/', text: 'Routing Metrics 趨勢' },
+  { path: 'zh-tw/reference/validator/', text: '驗證工具鏈' },
 ];
 
 for (const pageCase of pages) {

@@ -143,8 +143,6 @@ export default defineConfig({
           },
           items: [
             { slug: 'reference/routing-contract' },
-            { slug: 'reference/routing-metrics-trends' },
-            { slug: 'reference/analytics' },
             { slug: 'reference/validator' },
             { slug: 'reference/sample-skills' },
             { slug: 'reference/source-map' },
