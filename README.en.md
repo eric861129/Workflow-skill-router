@@ -85,9 +85,9 @@ OK: workflow-skill-router passed validation
 - [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the template package.
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
 
-## Why Star This
+## Project Roadmap And Community
 
-Star the repo if you want to track a practical pattern for:
+Follow releases or watch the repo to track work on:
 
 - keeping multi-skill agents out of context overload,
 - benchmarking routing decisions with repeatable scenarios,

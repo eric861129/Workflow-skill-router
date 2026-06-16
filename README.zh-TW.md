@@ -85,9 +85,9 @@ OK: workflow-skill-router passed validation
 - [Template Skill Catalog](examples/template-skill-catalog)：對應範本包的 routing catalog。
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md)：列出包含的 skill folders、排除的 private skill 數量與 sanitization summary。
 
-## 為什麼值得 Star
+## 專案 Roadmap 與社群方向
 
-如果你想追蹤以下方向，歡迎 star：
+你可以透過 release 或 watch 追蹤以下方向：
 
 - 讓多技能 Agent 避免 context overload。
 - 用 benchmark scenarios 評估 routing 決策。
