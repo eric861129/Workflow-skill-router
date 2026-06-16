@@ -36,5 +36,8 @@ Use these links when you want to inspect the actual repository source instead of
 - [Recipes](https://github.com/eric861129/Workflow-skill-router/tree/main/recipes)
 - [Prompts](https://github.com/eric861129/Workflow-skill-router/tree/main/prompts)
 - [Project docs](https://github.com/eric861129/Workflow-skill-router/tree/main/docs)
+- [Blank Router walkthrough source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/guides/blank-router-walkthrough.md)
+- [Troubleshooting source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/guides/troubleshooting.md)
+- [Adapter notes source](https://github.com/eric861129/Workflow-skill-router/blob/main/site/src/content/docs/guides/adapters.md)
 - [Astro Starlight site source](https://github.com/eric861129/Workflow-skill-router/tree/main/site)
 - [Site content pages](https://github.com/eric861129/Workflow-skill-router/tree/main/site/src/content/docs)

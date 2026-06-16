@@ -116,6 +116,9 @@ export default defineConfig({
           items: [
             { slug: '' },
             { slug: 'guides/quickstart' },
+            { slug: 'guides/blank-router-walkthrough' },
+            { slug: 'guides/troubleshooting' },
+            { slug: 'guides/adapters' },
             { slug: 'guides/downloads' },
             { slug: 'guides/adoption' },
           ],

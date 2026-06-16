@@ -30,8 +30,9 @@ Use SKILL: vue-expert, systematic-debugging, playwright
 Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
-![Fuzzy request to route output demo](docs/assets/fuzzy-to-route-output.gif)
+![60-second Workflow Skill Router demo](docs/assets/workflow-skill-router-60s-demo.gif)
 
+Short routing output demo: [fuzzy request to route output GIF](docs/assets/fuzzy-to-route-output.gif)
 Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after.svg)
 
 ## 30 Second Quickstart
@@ -70,6 +71,8 @@ python $Validator (Join-Path $Skills "workflow-skill-router")
 ```
 
 For macOS and Linux install commands, see the [Quickstart guide](https://huangchiyu.com/Workflow-skill-router/guides/quickstart/).
+
+For a complete blank-router setup, see the [Blank Router walkthrough](https://huangchiyu.com/Workflow-skill-router/guides/blank-router-walkthrough/). If installation or validation fails, open [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/).
 
 Expected result:
 
@@ -286,7 +289,11 @@ The limit keeps context focused. One primary skill owns the work; supporting ski
 
 ### Can this work with Claude, Cursor, Gemini, or other agents?
 
-Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract is plain text: skill inventory, routing rules, sample routes, and validator. Any agent that can read project instructions or custom rules can adapt it.
+Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract is plain text: skill inventory, routing rules, sample routes, and validator. Any agent that can read project instructions or custom rules can adapt it. See the [Claude, Cursor, and Gemini adapter notes](https://huangchiyu.com/Workflow-skill-router/guides/adapters/).
+
+### The install command failed. Where should I look?
+
+Open the [Troubleshooting guide](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/). It covers install paths, PowerShell, Python, zip extraction, validator errors, and public-readiness checks.
 
 ## Learn More
 
@@ -294,6 +301,9 @@ Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract
 - [Traditional Chinese guide](README.zh-TW.md)
 - [Website](https://huangchiyu.com/Workflow-skill-router/)
 - [Traditional Chinese site](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
+- [Blank Router walkthrough](https://huangchiyu.com/Workflow-skill-router/guides/blank-router-walkthrough/)
+- [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/)
+- [Claude, Cursor, and Gemini adapter notes](https://huangchiyu.com/Workflow-skill-router/guides/adapters/)
 - [Customization guide](docs/adoption-guide.md)
 - [System theory](docs/system-theory.en.md)
 - [Validation checklist](docs/validation-checklist.en.md)
