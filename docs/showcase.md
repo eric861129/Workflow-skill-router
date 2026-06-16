@@ -4,7 +4,9 @@ Five shareable before/after examples for explaining why Workflow Skill Router ex
 
 ## 60-second Demo
 
-![60-second Workflow Skill Router demo](assets/workflow-skill-router-60s-demo.gif)
+![High-resolution Workflow Skill Router demo](assets/workflow_skill_rout-GIF.gif)
+
+Lightweight fallback: [60-second Workflow Skill Router demo](assets/workflow-skill-router-60s-demo.gif)
 
 ## 1. API Contract Sync
 

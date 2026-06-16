@@ -7,7 +7,9 @@ Use these examples when explaining the project in a post, issue, or README snipp
 
 ## 60-second demo
 
-<img src="/Workflow-skill-router/assets/workflow-skill-router-60s-demo.gif" alt="60-second Workflow Skill Router demo showing a fuzzy request, route selection, validation, and download call to action" width="720" height="405" loading="lazy" decoding="async" />
+<img src="/Workflow-skill-router/assets/workflow_skill_rout-GIF.gif" alt="High-resolution Workflow Skill Router demo showing the router concept and public launch flow" width="1280" height="720" loading="lazy" decoding="async" />
+
+Lightweight fallback: [60-second demo GIF](/Workflow-skill-router/assets/workflow-skill-router-60s-demo.gif).
 
 ## API contract sync
 

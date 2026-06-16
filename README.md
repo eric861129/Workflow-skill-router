@@ -30,8 +30,11 @@ Use SKILL: vue-expert, systematic-debugging, playwright
 Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
+Lightweight demo preview:
+
 ![60-second Workflow Skill Router demo](docs/assets/workflow-skill-router-60s-demo.gif)
 
+High-resolution demo: [polished 1280x720 Workflow Skill Router GIF](docs/assets/workflow_skill_rout-GIF.gif)
 Short routing output demo: [fuzzy request to route output GIF](docs/assets/fuzzy-to-route-output.gif)
 Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after.svg)
 

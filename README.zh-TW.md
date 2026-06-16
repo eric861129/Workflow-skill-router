@@ -30,8 +30,11 @@ Use SKILL: vue-expert, systematic-debugging, playwright
 Reason: vue-expert 處理 component 行為；systematic-debugging 維持因果式排查；playwright 固化回歸驗證。
 ```
 
+輕量 demo 預覽：
+
 ![60 秒 Workflow Skill Router demo](docs/assets/workflow-skill-router-60s-demo.gif)
 
+高畫質 demo：[精修版 1280x720 Workflow Skill Router GIF](docs/assets/workflow_skill_rout-GIF.gif)
 短版 route output demo：[模糊需求到 route output GIF](docs/assets/fuzzy-to-route-output.gif)
 靜態預覽：[before/after routing SVG](docs/assets/demo-routing-before-after.svg)
 
