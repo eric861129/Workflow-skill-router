@@ -213,38 +213,46 @@ python -m unittest discover -s tests`,
 const heroText = isZh
   ? {
       eyebrow: 'Codex SKILL / Routing Layer',
-      title: 'Workflow Skill Router',
-      body: '在 Codex 開始工作前，先說清楚由哪個 skill 主導、哪些 skill 協助，以及原因。',
+      title: '工作開始前，先管好 SKILL 選擇',
+      body: '把每個 Codex 任務先收斂成小而可審查的 SKILL route，再開始改檔。',
       primary: '下載 Blank Router',
-      secondary: '閱讀 routing contract',
-      explainerLabel: '這個 SKILL 會輸出什麼',
-      explainerTitle: '一份可審查的 routing contract',
-      explainerNote: '邊界很清楚：它只做 skill selection，不授權工具，也不取代 approval policy。',
+      secondary: '查看 route 範例',
+      explainerLabel: '這個 SKILL 做什麼',
+      explainerTitle: '把模糊任務轉成清楚 route',
     }
   : {
       eyebrow: 'Codex SKILL / Routing Layer',
-      title: 'Workflow Skill Router',
-      body: 'Explains which skill should lead, which skills should assist, and why, before Codex starts work.',
+      title: 'Skill selection governance before the work begins',
+      body: 'Turn each Codex request into a small, reviewable SKILL route before files change.',
       primary: 'Download Blank Router',
-      secondary: 'Read routing contract',
-      explainerLabel: 'What this SKILL produces',
-      explainerTitle: 'A route you can review before execution',
-      explainerNote: 'Boundary: skill selection only. Tool permissions and approval policy stay external.',
+      secondary: 'View routing examples',
+      explainerLabel: 'What this SKILL does',
+      explainerTitle: 'Turn a messy request into a clear route',
     };
 
-const heroContractRows = isZh
-  ? [
-      ['讀取', '使用者任務、目前階段、可用的 SKILL catalog。'],
-      ['選擇', '一個 Primary skill，加上少量真正降低風險的 Supporting skills。'],
-      ['輸出', 'Route、skill list、reason，以及開工前可檢查的 review point。'],
-      ['邊界', '只收斂 skill 組合；工具權限與 approval policy 仍由既有機制處理。'],
-    ]
-  : [
-      ['Reads', 'The user task, current work stage, and available SKILL catalog.'],
-      ['Chooses', 'One Primary skill plus only the Supporting skills that reduce risk.'],
-      ['Returns', 'Route, skill list, reason, and a review point before work starts.'],
-      ['Boundary', 'Selection only; tool permissions and approval policy stay with existing controls.'],
-    ];
+const heroPreview = isZh
+  ? {
+      requestLabel: '模糊任務',
+      request: '幫我修首頁 Hero，讓用戶一眼懂這個 SKILL。',
+      routeLabel: '選定的 SKILL route',
+      route: [
+        ['Primary', 'design-taste-frontend'],
+        ['Supporting', 'ui-ux-pro-max'],
+        ['Why', '先處理第一印象與可讀性，再檢查 RWD。'],
+        ['Boundary', '只選擇 SKILL，不授權工具。'],
+      ],
+    }
+  : {
+      requestLabel: 'Messy request',
+      request: 'Fix the homepage Hero so first-time users understand this SKILL.',
+      routeLabel: 'Selected SKILL route',
+      route: [
+        ['Primary', 'design-taste-frontend'],
+        ['Supporting', 'ui-ux-pro-max'],
+        ['Why', 'Clarify first impression, then check responsive readability.'],
+        ['Boundary', 'Selects SKILLs only. Tool permissions stay external.'],
+      ],
+    };
 ---
 
 <main class="wsr-landing" data-wsr-home data-locale={locale}>
@@ -288,24 +296,35 @@ const heroContractRows = isZh
         <p class="wsr-hero-copy">{heroText.body}</p>
         <div class="wsr-hero-actions">
           <a class="wsr-button wsr-button-primary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_hero_download_blank">{heroText.primary}</a>
-          <a class="wsr-button wsr-button-secondary" href={`${rootPath}/reference/routing-contract/`}>{heroText.secondary}</a>
+          <a class="wsr-button wsr-button-secondary" href={`${rootPath}/showcase/`}>{heroText.secondary}</a>
         </div>
       </div>
 
-      <div id="route-demo" class="wsr-hero-explainer" aria-label={heroText.explainerLabel}>
+      <div id="route-demo" class="wsr-hero-explainer wsr-hero-preview" aria-label={heroText.explainerLabel}>
         <div class="wsr-hero-explainer-header">
           <span>{heroText.explainerLabel}</span>
           <h2>{heroText.explainerTitle}</h2>
         </div>
-        <div class="wsr-hero-contract">
-          {heroContractRows.map(([label, value]) => (
-            <div>
-              <span>{label}</span>
-              <p>{value}</p>
+        <div class="wsr-hero-preview-flow">
+          <div class="wsr-hero-request">
+            <span>{heroPreview.requestLabel}</span>
+            <p>{heroPreview.request}</p>
+          </div>
+          <div class="wsr-hero-flow-rail" aria-hidden="true">
+            <span></span>
+          </div>
+          <div class="wsr-hero-route-card">
+            <span>{heroPreview.routeLabel}</span>
+            <div class="wsr-hero-route-list">
+              {heroPreview.route.map(([label, value]) => (
+                <div>
+                  <span>{label}</span>
+                  <p>{value}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-        <p class="wsr-hero-explainer-note">{heroText.explainerNote}</p>
       </div>
     </div>
   </section>

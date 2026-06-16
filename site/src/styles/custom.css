@@ -764,7 +764,7 @@ body:has(.wsr-landing) .pagination-links {
   grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
   align-items: center;
   gap: clamp(2rem, 5vw, 4.5rem);
-  padding: 7rem 0 4.5rem;
+  padding: 6rem 0 4.25rem;
   text-align: left;
 }
 
@@ -791,14 +791,14 @@ body:has(.wsr-landing) .pagination-links {
 }
 
 .wsr-hero-title {
-  max-width: 17ch;
+  max-width: 20ch;
   color: #f8fafc;
-  font-size: clamp(3rem, 6.2vw, 5.3rem);
-  line-height: 1;
+  font-size: clamp(2.85rem, 5vw, 4.15rem);
+  line-height: 1.04;
   font-weight: 800;
   letter-spacing: 0;
   overflow-wrap: anywhere;
-  text-wrap: balance;
+  text-wrap: initial;
 }
 
 .wsr-hero-copy {
@@ -814,6 +814,7 @@ body:has(.wsr-landing) .pagination-links {
   width: 100%;
   max-width: 42rem;
   justify-self: end;
+  position: relative;
   border: 1px solid rgb(255 255 255 / 0.16);
   border-radius: 8px;
   padding: 1.1rem;
@@ -848,47 +849,102 @@ body:has(.wsr-landing) .pagination-links {
   text-wrap: balance;
 }
 
-.wsr-hero-contract {
+.wsr-hero-preview-flow {
   display: grid;
-  overflow: hidden;
+  grid-template-columns: minmax(0, 0.92fr) 2.75rem minmax(0, 1.08fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.wsr-hero-request,
+.wsr-hero-route-card {
+  display: grid;
+  align-content: start;
+  gap: 0.78rem;
+  min-width: 0;
   border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 8px;
+  padding: 0.92rem;
   background: rgb(4 10 20 / 0.62);
 }
 
-.wsr-hero-contract div {
-  display: grid;
-  grid-template-columns: minmax(7.5rem, 0.44fr) minmax(0, 1fr);
-  gap: 1rem;
-  min-width: 0;
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
-  padding: 0.9rem 1rem;
+.wsr-hero-route-card {
+  background:
+    linear-gradient(145deg, rgb(103 232 249 / 0.09), rgb(132 204 22 / 0.07)),
+    rgb(4 10 20 / 0.72);
 }
 
-.wsr-hero-contract div:last-child {
-  border-bottom: 0;
-}
-
-.wsr-hero-contract span {
+.wsr-hero-request > span,
+.wsr-hero-route-card > span {
   color: #a3e635;
   font-size: 0.76rem;
   font-weight: 850;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.07em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.wsr-hero-request p {
+  margin: 0;
+  color: rgb(248 250 252 / 0.92);
+  font-size: 1.04rem;
+  line-height: 1.58;
+}
+
+.wsr-hero-flow-rail {
+  display: grid;
+  place-items: center;
+}
+
+.wsr-hero-flow-rail span {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(103 232 249 / 0.2), #67e8f9 54%, #a3e635);
+}
+
+.wsr-hero-flow-rail span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 0.46rem;
+  height: 0.46rem;
+  border-top: 2px solid #a3e635;
+  border-right: 2px solid #a3e635;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.wsr-hero-route-list {
+  display: grid;
+  gap: 0.52rem;
+}
+
+.wsr-hero-route-list div {
+  display: grid;
+  grid-template-columns: minmax(5.35rem, 0.42fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 8px;
+  padding: 0.64rem 0.7rem;
+  background: rgb(8 17 31 / 0.58);
+}
+
+.wsr-hero-route-list span {
+  color: rgb(190 242 100 / 0.94);
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
   line-height: 1.45;
 }
 
-.wsr-hero-contract p {
+.wsr-hero-route-list p {
   margin: 0;
   color: rgb(248 250 252 / 0.9);
-  font-size: 0.94rem;
-  line-height: 1.55;
-}
-
-.wsr-hero-explainer-note {
-  margin: 0;
-  color: rgb(226 239 251 / 0.72);
-  font-size: 0.92rem;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  line-height: 1.48;
 }
 
 .wsr-hero-actions {
@@ -1503,13 +1559,13 @@ body:has(.wsr-landing) .pagination-links {
 
 @media (min-width: 720px) {
   .wsr-hero-title {
-    font-size: clamp(3.35rem, 5.3vw, 4.45rem);
+    font-size: clamp(2.95rem, 4vw, 3.35rem);
   }
 }
 
 @media (min-width: 1100px) {
   .wsr-hero-title {
-    font-size: 4.35rem;
+    font-size: 3.2rem;
   }
 
   .wsr-section h2,
@@ -1698,14 +1754,40 @@ body:has(.wsr-landing) .pagination-links {
     font-size: 1.2rem;
   }
 
-  .wsr-hero-contract div {
+  .wsr-hero-preview-flow {
     grid-template-columns: minmax(0, 100%);
-    gap: 0.28rem;
-    padding: 0.7rem 0.75rem;
+    gap: 0.55rem;
   }
 
-  .wsr-hero-contract p,
-  .wsr-hero-explainer-note {
+  .wsr-hero-request,
+  .wsr-hero-route-card {
+    gap: 0.6rem;
+    padding: 0.72rem;
+  }
+
+  .wsr-hero-flow-rail {
+    min-height: 1.55rem;
+  }
+
+  .wsr-hero-flow-rail span {
+    width: 2px;
+    height: 1.55rem;
+    background: linear-gradient(180deg, rgb(103 232 249 / 0.2), #67e8f9 54%, #a3e635);
+  }
+
+  .wsr-hero-flow-rail span::after {
+    inset: auto auto 0 50%;
+    transform: translate(-50%, 2px) rotate(135deg);
+  }
+
+  .wsr-hero-route-list div {
+    grid-template-columns: minmax(0, 100%);
+    gap: 0.25rem;
+    padding: 0.58rem 0.62rem;
+  }
+
+  .wsr-hero-request p,
+  .wsr-hero-route-list p {
     font-size: 0.84rem;
   }
 
