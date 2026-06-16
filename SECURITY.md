@@ -34,6 +34,17 @@ Out of scope:
 - User-created private overlays.
 - Vulnerabilities in unrelated local Codex skill folders outside this repository.
 
+## Dependency Governance
+
+The public release packages do not ship the documentation site's Node.js development dependency tree. Production/runtime dependency audits for the static site should pass with:
+
+```bash
+cd site
+npm audit --omit=dev --audit-level=moderate
+```
+
+Development-only audit findings, including the monitored Lighthouse tooling advisory, are tracked in [docs/dependency-governance.md](docs/dependency-governance.md).
+
 ## Maintainer Response
 
 The maintainer will review credible reports, remove exposed private content if needed, and publish a fix or advisory when the issue affects released assets.

@@ -362,7 +362,7 @@ erDiagram
 ```markdown
 # Dashboard Overview
 
-![Dashboard with numbered annotations](./images/dashboard-annotated.png)
+<!-- Insert your dashboard screenshot with numbered annotations here. -->
 
 **Key features:**
 
@@ -380,7 +380,7 @@ erDiagram
 4. Click "Create"
 5. **Important:** Copy the key immediately - it won't be shown again
 
-![Create API key dialog](./images/create-key.png)
+<!-- Insert your API key creation dialog screenshot here. -->
 ```
 
 ## Troubleshooting Guides

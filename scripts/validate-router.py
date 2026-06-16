@@ -7,6 +7,7 @@ The validator is intentionally dependency-free so it can run in a fresh clone.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 import tempfile
@@ -43,16 +44,31 @@ PUBLIC_REQUIRED_FILES = [
     ".github/ISSUE_TEMPLATE/routing-failure.yml",
     ".github/ISSUE_TEMPLATE/example-request.yml",
     "docs/assets/demo-routing-before-after.svg",
+    "docs/assets/workflow-skill-router-demo.mp4",
+    "docs/assets/workflow-skill-router-demo.webm",
+    "docs/assets/workflow-skill-router-demo-poster.png",
+    "docs/assets/workflow-skill-router-social-preview.png",
+    "docs/dependency-governance.md",
+    "docs/launch/v1.3.1-launch-checklist.md",
+    "docs/launch/v1.3.1-launch-posts.md",
     "downloads/README.md",
     "downloads/workflow-skill-router-blank.zip",
     "downloads/workflow-skill-router-template.zip",
     "downloads/workflow-skill-router-template-clean.zip",
     "downloads/workflow-skill-router-template-manifest.md",
     "docs/roadmap.md",
+    "docs/release-notes-v1.3.1.md",
     "scripts/audit-public-readiness.py",
+    "scripts/check-markdown-links.py",
+    "scripts/validate-router.py",
     "site/astro.config.mjs",
     "site/package.json",
+    "site/scripts/generate-demo-assets.mjs",
+    "site/scripts/generate-social-assets.mjs",
     "site/scripts/lighthouse-audit.mjs",
+    "site/public/assets/workflow-skill-router-demo.mp4",
+    "site/public/assets/workflow-skill-router-demo.webm",
+    "site/public/assets/workflow-skill-router-demo-poster.png",
     "site/public/robots.txt",
     "site/public/og/workflow-skill-router.png",
     "site/src/pages/404.astro",
@@ -70,12 +86,13 @@ PUBLIC_REQUIRED_DIRS = [
     "prompts",
 ]
 
+MOJIBAKE_MARKERS = [chr(codepoint) for codepoint in (0x875C, 0x929D, 0x96FF, 0x5697, 0x646E, 0x981D, 0x9908, 0x761D, 0x747C, 0x61AD, 0x92B4)]
 PUBLIC_FORBIDDEN_PATTERNS = [
-    re.compile(r"林口康橋|康橋國際|康橋"),
-    re.compile(r"Edit page|編輯頁面", re.IGNORECASE),
+    re.compile("|".join(["Edit " + "page", r"\u7de8\u8f2f\u9801\u9762"]), re.IGNORECASE),
     re.compile(r"\uFFFD"),
-    re.compile(r"蝜|銝|雿|嚗|摮|頝|餈|瘝|瑼|憭|銴"),
+    re.compile("|".join(re.escape(marker) for marker in MOJIBAKE_MARKERS)),
 ]
+PUBLIC_FORBIDDEN_MARKERS_ENV = "WORKFLOW_SKILL_ROUTER_PUBLIC_FORBIDDEN_MARKERS"
 
 PUBLIC_SKIP_DIR_NAMES = {
     ".astro",
@@ -93,7 +110,6 @@ PUBLIC_SKIP_DIR_NAMES = {
 PUBLIC_SKIP_FILE_NAMES = {
     "site-preview.err.log",
     "site-preview.log",
-    "validate-router.py",
 }
 
 ROUTE_SKILL_MARKERS = ("Primary:", "Supporting:", "Use SKILL:")
@@ -258,10 +274,20 @@ def iter_public_text_files(root: Path):
         yield path
 
 
+def iter_public_forbidden_patterns():
+    yield from PUBLIC_FORBIDDEN_PATTERNS
+
+    raw_markers = os.environ.get(PUBLIC_FORBIDDEN_MARKERS_ENV, "")
+    for marker in re.split(r"[\r\n;]+", raw_markers):
+        marker = marker.strip()
+        if marker:
+            yield re.compile(re.escape(marker))
+
+
 def scan_public_text(root: Path, issues: list[str]) -> None:
     for path in iter_public_text_files(root):
         text = read_text(path)
-        for pattern in PUBLIC_FORBIDDEN_PATTERNS:
+        for pattern in iter_public_forbidden_patterns():
             match = pattern.search(text)
             if match:
                 value = match.group(0)
@@ -357,8 +383,8 @@ def validate_required_public_files(root: Path, issues: list[str]) -> None:
         path = root / relative
         if not path.is_file():
             issues.append(f"{relative}: required public-readiness file is missing")
-        elif path.suffix == ".zip" and path.stat().st_size == 0:
-            issues.append(f"{relative}: download archive is empty")
+        elif path.suffix.lower() in {".mp4", ".png", ".webm", ".zip"} and path.stat().st_size == 0:
+            issues.append(f"{relative}: required binary asset is empty")
 
     for relative in PUBLIC_REQUIRED_DIRS:
         path = root / relative
@@ -638,6 +664,26 @@ def run_self_test() -> int:
         for relative in PUBLIC_REQUIRED_DIRS:
             (public_root / relative).mkdir(parents=True, exist_ok=True)
         assert not validate_public_readiness(public_root), "public-readiness fixture should pass"
+
+        scanned_paths = {path.relative_to(public_root).as_posix() for path in iter_public_text_files(public_root)}
+        assert "scripts/validate-router.py" in scanned_paths, "public-readiness should scan validator source"
+
+        synthetic_marker = "PUBLIC_READINESS_SYNTHETIC_PRIVATE_MARKER"
+        previous_markers = os.environ.get(PUBLIC_FORBIDDEN_MARKERS_ENV)
+        try:
+            os.environ[PUBLIC_FORBIDDEN_MARKERS_ENV] = synthetic_marker
+            (public_root / "scripts" / "validate-router.py").write_text(
+                f"{synthetic_marker}\n",
+                encoding="utf-8",
+            )
+            marker_issues = validate_public_readiness(public_root)
+            assert any(synthetic_marker in issue for issue in marker_issues), "env marker should fail public-readiness"
+        finally:
+            if previous_markers is None:
+                os.environ.pop(PUBLIC_FORBIDDEN_MARKERS_ENV, None)
+            else:
+                os.environ[PUBLIC_FORBIDDEN_MARKERS_ENV] = previous_markers
+            (public_root / "scripts" / "validate-router.py").write_text("placeholder\n", encoding="utf-8")
 
         parity_mismatch = root / "parity-mismatch"
         write_file(

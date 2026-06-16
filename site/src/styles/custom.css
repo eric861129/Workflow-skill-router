@@ -117,6 +117,15 @@ body {
   color: var(--wsr-doc-text);
 }
 
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--wsr-doc-border);
+  border-radius: 8px;
+  background: #07111f;
+}
+
 a {
   text-underline-offset: 0.18em;
 }
