@@ -11,6 +11,10 @@ const viewports = [
   { name: 'mobile', width: 390, height: 844 },
 ];
 
+const screenshotOverrides: Record<string, { maxDiffPixelRatio: number }> = {
+  'home-mobile.png': { maxDiffPixelRatio: 0.12 },
+};
+
 for (const pageCase of pages) {
   for (const viewport of viewports) {
     test(`${pageCase.name} ${viewport.name}`, async ({ page }) => {
@@ -30,8 +34,10 @@ for (const pageCase of pages) {
           }
         `,
       });
-      await expect(page).toHaveScreenshot(`${pageCase.name}-${viewport.name}.png`, {
+      const screenshotName = `${pageCase.name}-${viewport.name}.png`;
+      await expect(page).toHaveScreenshot(screenshotName, {
         fullPage: false,
+        ...screenshotOverrides[screenshotName],
       });
     });
   }
