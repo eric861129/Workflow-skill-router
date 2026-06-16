@@ -37,6 +37,9 @@ jobs:
       - name: Run dedicated public-readiness audit
         run: python scripts/audit-public-readiness.py .
 
+      - name: Check markdown local links
+        run: python scripts/check-markdown-links.py .
+
       - name: Scan sample skills
         run: >
           python scripts/scan-skills.py ./sample-skills
@@ -79,6 +82,8 @@ jobs:
         working-directory: site
         run: |
           npm ci
+          npm run assets:demo:check
+          npm run assets:social:check
           npm run build
 
       - name: Install Playwright browsers

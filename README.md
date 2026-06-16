@@ -30,11 +30,12 @@ Use SKILL: vue-expert, systematic-debugging, playwright
 Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
 ```
 
-Lightweight demo preview:
+Demo preview:
 
-![60-second Workflow Skill Router demo](docs/assets/workflow-skill-router-60s-demo.gif)
+[![Workflow Skill Router demo poster](docs/assets/workflow-skill-router-demo-poster.png)](https://huangchiyu.com/Workflow-skill-router/showcase/)
 
-High-resolution demo: [polished 1280x720 Workflow Skill Router GIF](docs/assets/workflow_skill_rout-GIF.gif)
+Watch the polished demo: [MP4](docs/assets/workflow-skill-router-demo.mp4), [WebM](docs/assets/workflow-skill-router-demo.webm), or [site showcase](https://huangchiyu.com/Workflow-skill-router/showcase/).
+GIF fallback: [high-resolution demo GIF](docs/assets/workflow_skill_rout-GIF.gif) or [lightweight 60-second GIF](docs/assets/workflow-skill-router-60s-demo.gif)
 Short routing output demo: [fuzzy request to route output GIF](docs/assets/fuzzy-to-route-output.gif)
 Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after.svg)
 
@@ -179,6 +180,7 @@ Before publishing your own router package or public examples, run the full repos
 
 ```bash
 python scripts/audit-public-readiness.py .
+python scripts/check-markdown-links.py .
 ```
 
 Expected result:
@@ -191,7 +193,11 @@ Run the site quality gate before a public launch:
 
 ```bash
 cd site
+npm ci
+npm run assets:demo:check
+npm run assets:social:check
 npm run audit:lighthouse
+npm audit --omit=dev --audit-level=moderate
 ```
 
 This builds the Starlight site, runs Lighthouse against key English and Traditional Chinese pages, and writes local reports to `site/lighthouse-reports/`.
@@ -267,6 +273,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
 - `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, and stale examples.
 - `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
+- `scripts/check-markdown-links.py`: dependency-free local Markdown/MDX link checker for docs, README, and examples.
 - `scripts/scan-skills.py`: dependency-free skill inventory scanner that writes JSON, Markdown, warnings, and a suggested tree.
 - `scripts/evaluate-routing.py`: dependency-free routing benchmark evaluator for scenarios and predictions.
 - `scripts/validate-route-cases.py`: public route case schema and public-safety validator.
@@ -279,6 +286,8 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 - `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
 - `site/`: Astro Starlight website for GitHub Pages, including Playwright smoke and visual tests.
 - `site/scripts/lighthouse-audit.mjs`: formal Lighthouse and accessibility score gate for the public website.
+- `site/scripts/generate-demo-assets.mjs`: reproducible demo poster/WebM asset generator.
+- `site/scripts/generate-social-assets.mjs`: reproducible Open Graph/social preview generator.
 - `prompts/`: copy-paste prompts for creating or updating a personalized router.
 - `docs/`: conceptual docs, customization guidance, and validation checklists.
 
@@ -318,12 +327,14 @@ Open the [Troubleshooting guide](https://huangchiyu.com/Workflow-skill-router/gu
 - [Customization guide](docs/adoption-guide.md)
 - [System theory](docs/system-theory.en.md)
 - [Validation checklist](docs/validation-checklist.en.md)
+- [Dependency governance](docs/dependency-governance.md)
 - [Roadmap](docs/roadmap.md)
 - [Case studies](docs/case-studies.md)
 - [Showcase](docs/showcase.md)
 - [Anti-over-routing guide](docs/anti-over-routing.md)
 - [Forward tests](evaluation/forward-tests/)
 - [Shareable demo asset](docs/assets/route-demo-social.svg)
+- [Social preview PNG](docs/assets/workflow-skill-router-social-preview.png)
 
 ## License
 

@@ -6,6 +6,16 @@ All notable changes to Workflow Skill Router are documented here.
 
 - Nothing yet.
 
+## v1.3.1
+
+- Removed hard-coded private markers from public validator source and added environment-based marker injection for local/private scans.
+- Made public-readiness scan validator source and added self-tests for validator self-scan coverage.
+- Added a standard-library Markdown/MDX local link checker and wired it into CI.
+- Replaced heavy showcase GIF embedding with MP4/WebM demo assets, a poster image, and GIF fallback links.
+- Regenerated social preview assets for the documentation site and GitHub repository settings.
+- Added dependency governance notes for the monitored Lighthouse development-tooling audit advisory.
+- Added v1.3.1 launch checklist and ready-to-post community announcement drafts.
+
 ## v1.3.0
 
 - Added a public-safe Routing Gallery generated from root-level `route-cases/*.json`.

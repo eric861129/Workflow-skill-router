@@ -7,9 +7,13 @@ Use these examples when explaining the project in a post, issue, or README snipp
 
 ## 60-second demo
 
-<img src="/Workflow-skill-router/assets/workflow_skill_rout-GIF.gif" alt="High-resolution Workflow Skill Router demo showing the router concept and public launch flow" width="1280" height="720" loading="lazy" decoding="async" />
+<video controls muted playsinline preload="metadata" poster="/Workflow-skill-router/assets/workflow-skill-router-demo-poster.png" width="1280" height="720">
+  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4" type="video/mp4" />
+  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.webm" type="video/webm" />
+  <a href="/Workflow-skill-router/assets/workflow_skill_rout-GIF.gif">View the high-resolution demo GIF</a>
+</video>
 
-Lightweight fallback: [60-second demo GIF](/Workflow-skill-router/assets/workflow-skill-router-60s-demo.gif).
+Fallbacks: [WebM](/Workflow-skill-router/assets/workflow-skill-router-demo.webm), [MP4](/Workflow-skill-router/assets/workflow-skill-router-demo.mp4), [high-resolution GIF](/Workflow-skill-router/assets/workflow_skill_rout-GIF.gif), [lightweight 60-second GIF](/Workflow-skill-router/assets/workflow-skill-router-60s-demo.gif).
 
 ## API contract sync
 

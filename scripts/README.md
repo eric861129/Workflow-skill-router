@@ -18,6 +18,20 @@ python scripts/validate-router.py --public-readiness .
 
 Exit code is non-zero when required files, router structure, route limits, placeholder policy, public-readiness checks, or catalog parity checks fail.
 
+Private marker strings for local or private CI scans can be injected without committing them:
+
+```bash
+WORKFLOW_SKILL_ROUTER_PUBLIC_FORBIDDEN_MARKERS="marker-one;marker-two" python scripts/validate-router.py --public-readiness .
+```
+
+## `check-markdown-links.py`
+
+Checks rendered local links and media references in Markdown and MDX files. Fenced code blocks, external URLs, mailto links, and pure anchors are ignored.
+
+```bash
+python scripts/check-markdown-links.py .
+```
+
 ## `scan-skills.py`
 
 Scans skill markdown files and writes a JSON index, Markdown summary, warnings report, and optional suggested skill tree.
@@ -60,8 +74,11 @@ Useful flags:
 The repository validation workflow runs:
 
 ```bash
+python scripts/validate-router.py --self-test
 python scripts/validate-router.py starter/workflow-skill-router
 python scripts/validate-router.py --public-readiness .
+python scripts/audit-public-readiness.py .
+python scripts/check-markdown-links.py .
 python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md
 python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations
 python -m unittest discover -s tests

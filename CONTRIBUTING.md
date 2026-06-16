@@ -63,14 +63,27 @@ Use placeholders such as `Acme Corp`, `Customer Portal`, `Internal Admin`, `Reve
 Run the validation flow before opening a PR:
 
 ```bash
+python scripts/validate-router.py --self-test
 python scripts/validate-router.py starter/workflow-skill-router
 python scripts/validate-router.py examples/template-skill-catalog
+python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
+python scripts/check-markdown-links.py .
 python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md --fail-on-private --fail-on-duplicates
 python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations --strict
 python scripts/validate-route-cases.py route-cases
 python scripts/build-route-gallery.py --check
 python scripts/render-routing-metrics-trend.py --check
 python -m unittest discover -s tests
+python scripts/smoke-release-assets.py --downloads-dir downloads --work-dir /tmp/wsr-release-smoke
+cd site
+npm ci
+npm run assets:demo:check
+npm run assets:social:check
+npm run build
+npm run test:site:smoke
+npm run test:site:visual
+npm run audit:lighthouse
+npm audit --omit=dev --audit-level=moderate
 ```
 
