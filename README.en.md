@@ -79,10 +79,10 @@ OK: workflow-skill-router passed validation
 
 ## Download Skill Packages
 
-- [Blank SKILL package](downloads/workflow-skill-router-blank.zip): a ready-to-install `workflow-skill-router/` starter for people who want to fill their own skill tree.
-- [Template SKILL package](downloads/workflow-skill-router-template.zip): the full public-safe reference export of the maintainer's real local Codex skills catalog.
-- [Clean template SKILL package](downloads/workflow-skill-router-template-clean.zip): the install-focused package that removes non-essential per-skill README files.
-- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the template package.
+- [Blank Router package](downloads/workflow-skill-router-blank.zip): the main download for people who want to build their own router from their own skills, naming conventions, triggers, exclusions, and routing rules.
+- [Reference Template package](downloads/workflow-skill-router-template-clean.zip): a public-safe example for learning the structure before adapting the blank router to your own workflow.
+- [Full source archive](downloads/workflow-skill-router-template.zip): the larger source archive with per-skill README files, useful only when you need source context or audit material.
+- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the Reference Template.
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
 
 ## Project Roadmap And Community
@@ -92,7 +92,7 @@ Follow releases or watch the repo to track work on:
 - keeping multi-skill agents out of context overload,
 - benchmarking routing decisions with repeatable scenarios,
 - publishing public-safe skill catalogs without leaking private rules,
-- turning local skill folders into installable template packages.
+- building public-safe reference packages from local skill folders.
 
 ## What This Project Helps You Do
 
@@ -186,7 +186,7 @@ python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> -
 
 The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing your source directory.
 
-The template package is generated from a real local `.codex/skills` folder. It excludes organization-specific skills and omits sensitive lines from otherwise public skills.
+The Reference Template is generated from a real local `.codex/skills` folder. It excludes organization-specific skills and omits sensitive lines from otherwise public skills. Use it to study the pattern, then adapt Blank Router to your own skill set.
 
 ## Practical Routing Examples
 
@@ -264,7 +264,7 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 
 | Example | Best for |
 | --- | --- |
-| `examples/template-skill-catalog` | The downloadable template package, organized into practical public-safe route categories |
+| `examples/template-skill-catalog` | The Reference Template, organized into practical public-safe route categories |
 
 ## FAQ
 

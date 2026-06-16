@@ -21,7 +21,7 @@ const text = {
     star: 'View on GitHub',
     quickstart: 'Start in 30 seconds',
     downloadBlank: 'Download blank package',
-    download: 'Download template',
+    download: 'Downloads',
     showcase: 'Routing showcase',
     gifAlt: 'A fuzzy request becoming a small routing output',
     heroTitle: 'AI agent skill routing before the work begins',
@@ -56,10 +56,10 @@ const text = {
     processNote:
       'Instead of asking the agent to remember every workflow at once, the user sees a short routing contract and can correct it before files are edited.',
     contractLink: 'View routing contract',
-    templateLink: 'Explore template catalog',
-    examplesTitle: 'One template catalog, ready to download and inspect',
+    templateLink: 'Explore Reference Template',
+    examplesTitle: 'A reference template for designing your own router',
     examplesCopy:
-      'The example is no longer split across several scenario pages. The template skill catalog mirrors the downloadable pack, so readers can see what they get and how the router uses it.',
+      'The example is no longer a second product to choose. It shows one public-safe catalog so readers can learn the structure, then adapt Blank Router to their own skills.',
     templateHighlights: [
       ['Public-safe skills', 'System, planning, architecture, API, backend, database, frontend, docs, DevOps, brand, and product skills.'],
       ['Practical route catalog', 'Routes are grouped by real engineering categories with one Primary skill and focused Supporting skills.'],
@@ -114,7 +114,7 @@ python -m unittest discover -s tests`,
     star: '查看 GitHub',
     quickstart: '30 秒開始',
     downloadBlank: '下載空白套件',
-    download: '下載範本',
+    download: '下載套件',
     showcase: '案例展示',
     gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
     heroTitle: 'AI Agent 開工前，先完成 skill routing',
@@ -149,10 +149,10 @@ python -m unittest discover -s tests`,
     processNote:
       '使用者看到的是一份短短的 routing contract，可以在 Agent 修改檔案前先修正方向，而不是讓 Agent 一次背著所有 workflow 往前衝。',
     contractLink: '查看 routing contract',
-    templateLink: '查看範本 catalog',
-    examplesTitle: '一份範本 catalog，下載後就能對照使用',
+    templateLink: '查看 Reference Template',
+    examplesTitle: '用一份參考範本，設計自己的 Router',
     examplesCopy:
-      '範例不再拆成多個情境頁。Template Skill Catalog 會直接對齊下載包，讓讀者知道拿到哪些 SKILL，以及 router 如何使用它們。',
+      '範例不是另一個要照抄的成品。Template Skill Catalog 只示範 public-safe skills 如何被分類與 routing，方便你回頭用 Blank Router 做自己的版本。',
     templateHighlights: [
       ['Public-safe skills', '包含 system、規劃、架構、API、後端、資料庫、前端、文件、DevOps、品牌與產品相關 SKILL。'],
       ['實戰 route catalog', '依常見工程分類整理，每條 route 都有一個 Primary skill 與聚焦的 Supporting skills。'],
@@ -207,7 +207,7 @@ const demoText = isZh
   ? {
       eyebrow: 'Interactive route demo',
       title: '點一個任務，馬上看 Agent 應該載入哪些 SKILL',
-      body: '這個 demo 把模糊需求轉成可檢查的 routing output。讀者可以先理解決策，再去下載 starter 或 template package。',
+      body: '這個 demo 把模糊需求轉成可檢查的 routing output。讀者可以先理解決策，再去下載 Blank Router 或研究 Reference Template。',
       prompt: 'User prompt',
       output: 'Routing output',
       copy: '複製 route',
@@ -339,8 +339,6 @@ const initialDemo = routeDemoScenarios[0];
   </nav>
 
   <section class="wsr-hero" aria-labelledby="wsr-hero-title">
-    <div class="wsr-hero-image" aria-hidden="true"></div>
-    <div class="wsr-hero-wash" aria-hidden="true"></div>
     <div class="wsr-shell wsr-hero-inner">
       <h1 id="wsr-hero-title" class="wsr-hero-title">{text.heroTitle}</h1>
       <p class="wsr-hero-copy">{text.heroCopy}</p>
@@ -480,15 +478,21 @@ Reason: ${initialDemo.reason}`}</code></pre>
             ))}
           </div>
           <div class="wsr-template-actions">
-            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip">{isZh ? '下載範本包' : 'Download template package'}</a>
+            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip">{isZh ? '下載 Reference Template' : 'Download Reference Template'}</a>
             <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog">{isZh ? '查看 GitHub source' : 'View GitHub source'}</a>
           </div>
         </div>
         <div class="wsr-outcome-carousel" data-wsr-carousel>
           <div class="wsr-carousel-controls">
-            <button type="button" data-wsr-prev aria-label={isZh ? '上一個成果' : 'Previous outcome'}>‹</button>
+            <button type="button" data-wsr-prev aria-label={isZh ? '上一個成果' : 'Previous outcome'}>
+              <span aria-hidden="true">←</span>
+              <span>{isZh ? '上一則' : 'Previous'}</span>
+            </button>
             <h3>{text.outcomesTitle}</h3>
-            <button type="button" data-wsr-next aria-label={isZh ? '下一個成果' : 'Next outcome'}>›</button>
+            <button type="button" data-wsr-next aria-label={isZh ? '下一個成果' : 'Next outcome'}>
+              <span>{isZh ? '下一則' : 'Next'}</span>
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
           <div class="wsr-carousel-track" data-wsr-track>
             {text.outcomes.map(([title, body]) => (

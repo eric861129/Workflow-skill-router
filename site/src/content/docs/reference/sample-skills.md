@@ -36,7 +36,7 @@ sample-skills/
 
 These examples are intentionally generic. They avoid organization names, private paths, hostnames, secrets, and product-specific architecture.
 
-Use them as reference implementations when building your own skill catalog, or download them through the [template skill package](/Workflow-skill-router/guides/downloads/). The [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/) shows how these skills can be routed together.
+Use them as reference implementations when building your own skill catalog, or study them through the [Reference Template](/Workflow-skill-router/guides/downloads/). The [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/) shows how these skills can be routed together.
 
 ## Source
 

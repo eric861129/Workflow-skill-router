@@ -3,7 +3,7 @@ title: Validation Toolchain
 description: Validate router structure, public readiness, skill inventory, routing quality, and tests before publishing.
 ---
 
-Workflow Skill Router includes a dependency-free validation toolchain. Use it before publishing a router repo, release, or public template package.
+Workflow Skill Router includes a dependency-free validation toolchain. Use it before publishing a router repo, release, or public router package.
 
 ## 1. Validate router structure
 

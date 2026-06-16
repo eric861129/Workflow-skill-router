@@ -1,9 +1,11 @@
 
-# Workflow Skill Router Template Manifest
+# Workflow Skill Router Reference Template Manifest
 
 Source root: local maintainer Codex skills directory
 
-Full reference package: `workflow-skill-router-template.zip`
+Reference Template package: `workflow-skill-router-template-clean.zip`
+
+Full source archive: `workflow-skill-router-template.zip`
 
 Included public-safe skill folders:
 
@@ -77,4 +79,5 @@ Notes:
 - Excluded private skill folder names are intentionally not listed in this public manifest.
 - Text lines matching private markers are omitted from the package.
 - Binary assets are copied only from included public-safe skill folders.
-- `workflow-skill-router-template-clean.zip` excludes per-skill README files for a cleaner installable package.
+- `workflow-skill-router-template-clean.zip` is the recommended Reference Template for learning the package structure and adapting it to your own router.
+- `workflow-skill-router-template.zip` is the Full source archive. Download it only when you need per-skill README files, source context, or audit material.

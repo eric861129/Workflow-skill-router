@@ -3,7 +3,7 @@ title: 驗證工具鏈
 description: 發布前驗證 router 結構、public readiness、skill inventory、routing quality 與 tests。
 ---
 
-Workflow Skill Router 內建不依賴外部套件的 validation toolchain。發布 router repo、release 或公開 template package 前，請先執行這組檢查。
+Workflow Skill Router 內建不依賴外部套件的 validation toolchain。發布 router repo、release 或公開 router package 前，請先執行這組檢查。
 
 ## 1. 驗證 router 結構
 

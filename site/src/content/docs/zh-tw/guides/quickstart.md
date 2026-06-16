@@ -295,12 +295,13 @@ OK: workflow-skill-router passed validation
 
 上面的安裝指令已經會驗證 skill 目錄中的安裝路徑。
 
-如果你想看更完整的參考，可以下載 [範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)。裡面包含公開安全版的真實本機 Codex skills catalog，以及匿名化後的 `workflow-skill-router`。
+如果你想看一套可運作的參考範例，可以下載 [Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)。請把它當成結構與 route 寫法參考，再回頭用 Blank Router 改成自己的 skill set。
 
 Source:
 
 - [範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/)
 - [範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
 ## 5. 試跑一條 route

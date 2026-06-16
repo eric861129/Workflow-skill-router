@@ -293,12 +293,13 @@ Expected:
 OK: workflow-skill-router passed validation
 ```
 
-For a fuller reference, download the [template SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip). It includes a public-safe export of the maintainer's real local Codex skills catalog and a sanitized `workflow-skill-router`.
+If you want to study a working example, download the [Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip). Treat it as a model for structure and route writing, then adapt the blank router to your own skill set.
 
 Source:
 
 - [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/)
 - [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
+- [Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
 - [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
 
 The install commands above already validate the installed path under your skill directory.

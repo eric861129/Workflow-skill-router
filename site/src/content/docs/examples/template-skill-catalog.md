@@ -1,11 +1,12 @@
 ---
 title: Template Skill Catalog
-description: A single public-safe example catalog that mirrors the downloadable template skill package.
+description: A single public-safe example catalog that mirrors the Reference Template package.
 ---
 
-This example is the fastest way to understand the template download package. It shows which public-safe skills are included and how they can be routed in practical engineering work.
+This example is the fastest way to understand the Reference Template. It shows which public-safe skills are included and how they can be routed in practical engineering work. Use it as a model for designing your own router, not as a catalog you need to copy as-is.
 
-- [Download the template skill package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [Download the Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
+- [Download the Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
 - [View the template source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [Open the template sample routes](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/sample-routes.md)
 

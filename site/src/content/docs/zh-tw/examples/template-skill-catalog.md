@@ -1,11 +1,12 @@
 ---
 title: Template Skill Catalog
-description: 對齊範本下載包的單一公開範例，展示 public-safe skills 如何被 router 分類使用。
+description: 對齊 Reference Template 的單一公開範例，展示 public-safe skills 如何被 router 分類使用。
 ---
 
-這個範例是理解範本下載包最快的入口。它展示下載後會拿到哪些 public-safe skills，以及在真實工程工作中可以怎麼路由。
+這個範例是理解 Reference Template 最快的入口。它展示下載後會拿到哪些 public-safe skills，以及在真實工程工作中可以怎麼路由。請把它當成設計自己 router 的參考，不是需要照抄的最終 catalog。
 
-- [下載範本 SKILL 套件](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
+- [下載 Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
+- [下載 Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
 - [查看範例 source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
 - [查看 sample routes](https://github.com/eric861129/Workflow-skill-router/blob/main/examples/template-skill-catalog/references/sample-routes.md)
 

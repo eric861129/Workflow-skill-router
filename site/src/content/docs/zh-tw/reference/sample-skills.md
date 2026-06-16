@@ -36,7 +36,7 @@ sample-skills/
 
 這些範例刻意保持通用，不包含組織名稱、私有路徑、hostnames、secrets 或特定產品架構。
 
-你可以把它們當成建立自己 skill catalog 時的 reference implementations，也可以直接從 [範本 SKILL 套件](/Workflow-skill-router/zh-tw/guides/downloads/)下載。[範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/) 會示範這些 SKILL 可以怎麼一起被 router 使用。
+你可以把它們當成建立自己 skill catalog 時的 reference implementations，也可以透過 [Reference Template](/Workflow-skill-router/zh-tw/guides/downloads/)研究它們。[範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/) 會示範這些 SKILL 可以怎麼一起被 router 使用。
 
 ## Source
 

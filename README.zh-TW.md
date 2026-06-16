@@ -79,10 +79,10 @@ OK: workflow-skill-router passed validation
 
 ## 下載 SKILL 套件
 
-- [空白 SKILL 套件](downloads/workflow-skill-router-blank.zip)：只包含 `workflow-skill-router/` starter，適合從自己的 skill tree 開始。
-- [完整範本 SKILL 套件](downloads/workflow-skill-router-template.zip)：公開安全版的完整 reference export。
-- [Clean 範本 SKILL 套件](downloads/workflow-skill-router-template-clean.zip)：偏安裝用途，移除非必要 per-skill README。
-- [Template Skill Catalog](examples/template-skill-catalog)：對應範本包的 routing catalog。
+- [Blank Router 套件](downloads/workflow-skill-router-blank.zip)：主要下載入口，適合依照自己的 skills、命名習慣、觸發條件、排除條件與 routing rules 建立自己的 router。
+- [Reference Template 套件](downloads/workflow-skill-router-template-clean.zip)：公開安全版參考範例，用來理解結構與寫法，再回頭改造成自己的 workflow。
+- [Full source archive](downloads/workflow-skill-router-template.zip)：保留 per-skill README 的完整 source archive，只有需要 source context 或 audit 範本來源時才下載。
+- [Template Skill Catalog](examples/template-skill-catalog)：對應 Reference Template 的 routing catalog。
 - [Template manifest](downloads/workflow-skill-router-template-manifest.md)：列出包含的 skill folders、排除的 private skill 數量與 sanitization summary。
 
 ## 專案 Roadmap 與社群方向
@@ -92,7 +92,7 @@ OK: workflow-skill-router passed validation
 - 讓多技能 Agent 避免 context overload。
 - 用 benchmark scenarios 評估 routing 決策。
 - 分享 public-safe skill catalog，同時保留私有規則在本機。
-- 把本機 skill folders 打包成可安裝的 template package。
+- 從本機 skill folders 產生 public-safe reference package。
 
 ## 這個專案可以幫你做什麼
 
@@ -172,7 +172,7 @@ python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> -
 
 Package builder 不會偷偷使用預設本機 skills 目錄。除非你明確傳入 `--allow-no-private-filters` 並已自行檢查來源目錄，否則至少需要一個 private filter。
 
-範本套件來自真實 `.codex/skills` 目錄，但已排除組織專屬 skills，並移除 public skills 中可能含有敏感內容的行。
+Reference Template 來自真實 `.codex/skills` 目錄，但已排除組織專屬 skills，並移除 public skills 中可能含有敏感內容的行。請把它當成設計模式參考，再用 Blank Router 改成自己的 skill set。
 
 ## 實用 Routing 範例
 
@@ -250,7 +250,7 @@ Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-enginee
 
 | Example | 適用情境 |
 | --- | --- |
-| `examples/template-skill-catalog` | 將可下載 template package 整理成實用且 public-safe 的 route categories |
+| `examples/template-skill-catalog` | 將 Reference Template 整理成實用且 public-safe 的 route categories |
 
 ## 常見問題
 
