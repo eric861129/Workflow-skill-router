@@ -7,6 +7,8 @@ description: 依照自己的 Agent skill catalog 調整 Workflow Skill Router。
 
 把 `starter/workflow-skill-router/` 複製到你的 Agent skill 目錄。Starter 會提供輸出格式、route 結構，以及需要填寫的 reference files。
 
+Workflow Skill Router 處理的是 Skill 選擇失控，不是授權問題。請保留既有的 scope contracts、runtime permissions、approval policies 與 tool access controls。
+
 ## 盤點你的 skills
 
 先依來源分組：

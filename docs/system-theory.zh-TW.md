@@ -2,6 +2,8 @@
 
 Workflow Skill Router 是多 SKILL AI Agent 的一層「垂直路由」。它不增加能力本身，而是決定本次任務應該使用哪些能力、依什麼順序使用、哪些能力暫時不要使用。
 
+放在 Agent governance 的脈絡裡，它處理的是 Agent sprawl 裡的「Skill 選擇失控」問題。它不是權限邊界，也不取代 scope contract、runtime permission、approval policy 或 tool access controls。它只是在任務開始前，讓 Agent 先做一個小而可審查的 routing decision。
+
 ## 1. 問題
 
 當 SKILL 數量少時，平面清單很直覺：
@@ -61,6 +63,8 @@ Router 只做三件事：
 3. 說明選擇理由。
 
 Router 不應該把所有 SKILL 的完整內容塞進自己身上。否則它會變成又一個大型、低精度、容易過度觸發的 meta skill。
+
+它也不是安全邊界。Router 可以判斷 `playwright` 適合瀏覽器回歸任務，但 runtime permissions 與 approval policies 仍然要決定 Agent 能不能開瀏覽器、寫檔或呼叫外部系統。
 
 ## 4. 建議檔案結構
 

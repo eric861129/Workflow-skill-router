@@ -13,7 +13,7 @@ export default defineConfig({
     starlight({
       title: 'Workflow Skill Router',
       description:
-        'A practical AI agent skill routing pattern for Codex Skills, workflow routers, and multi-skill agents.',
+        'A practical skill selection layer for Codex Skills, workflow routers, and multi-skill AI agents.',
       defaultLocale: 'root',
       locales: {
         root: {
@@ -48,7 +48,7 @@ export default defineConfig({
           attrs: {
             name: 'keywords',
             content:
-              'AI agent skill routing pattern, workflow router, Codex skills, multi-skill agents, agentic workflow, prompt engineering, developer tools',
+              'AI agent skill routing pattern, agent sprawl, skill selection sprawl, workflow router, Codex skills, multi-skill agents, agent governance, developer tools',
           },
         },
         {
@@ -143,6 +143,7 @@ export default defineConfig({
           },
           items: [
             { slug: 'reference/routing-contract' },
+            { slug: 'reference/agent-governance-positioning' },
             { slug: 'reference/validator' },
             { slug: 'reference/sample-skills' },
             { slug: 'reference/source-map' },

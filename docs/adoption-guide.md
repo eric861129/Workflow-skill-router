@@ -2,6 +2,8 @@
 
 Workflow Skill Router is a starter pattern. Customize it by mapping your agent's actual skills to the routing contract.
 
+It addresses skill selection sprawl, not authorization. Keep your existing scope contracts, runtime permissions, approval policies, and tool access controls in place.
+
 ## Step 1: Copy The Starter
 
 Copy `starter/workflow-skill-router/` into your agent skill directory.

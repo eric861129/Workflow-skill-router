@@ -24,6 +24,7 @@ No extra routing needed: reason
 - Add supporting skills only when they cover distinct jobs.
 - Prefer connectors when live external state is the source of truth.
 - Split work into stages when more than four skills seem useful.
+- Treat the route as instruction selection, not authorization. Runtime permissions and approval policies still decide what the agent may do.
 
 ## Good route
 

@@ -9,7 +9,7 @@ description: Route complex AI agent tasks to the smallest useful skill set befor
 
 Use this as a thin routing layer before substantial work. It maps the user's request from task nature to work stage, technical domain, and a small skill set.
 
-The router does not replace the selected skills. It only chooses and explains which skills should be active.
+The router addresses skill selection sprawl. It does not replace the selected skills, scope contracts, runtime permissions, approval policies, or tool access controls. It only chooses and explains which already-available skills should be active.
 
 ## Routing Workflow
 

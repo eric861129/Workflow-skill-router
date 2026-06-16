@@ -2,6 +2,8 @@
 
 Workflow Skill Router 是一個 starter pattern。你可以依照自己的 Agent skill catalog，整理出適合目前環境的 routing rules。
 
+它處理的是 Skill 選擇失控，不是授權問題。請保留既有的 scope contracts、runtime permissions、approval policies 與 tool access controls。
+
 ## Step 1：複製 starter
 
 把 `starter/workflow-skill-router/` 複製到你的 Agent skill 目錄。

@@ -8,11 +8,24 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.zh-TW.md)
 
-> A Codex-ready routing layer that helps AI agents choose one primary skill plus focused supporting skills before complex work starts.
+> A Codex-ready routing layer for one slice of agent sprawl: skill selection sprawl.
 
 **Not another prompt collection. A routing layer for multi-skill AI agents.**
 
 Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. Workflow Skill Router turns that flat list into a small, reviewable decision before execution begins.
+
+Workflow Skill Router addresses one layer of agent sprawl: skill selection sprawl. It does not replace scope contracts, runtime permissions, or approval policies. Instead, it gives agents a small, reviewable routing decision before work starts, using only the skills that already exist and are already allowed in your environment.
+
+## Positioning
+
+Workflow Skill Router is a pre-execution skill selection layer. It helps an agent decide:
+
+- which one skill should own the task as Primary,
+- which supporting skills are truly needed,
+- which tempting but unnecessary skills should stay out,
+- why this route is the smallest useful skill set.
+
+It is not a security boundary. Pair it with your normal scope contracts, runtime permissions, approval policies, and tool access controls.
 
 ## Before And After
 
@@ -303,6 +316,10 @@ Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-eng
 
 Yes. A system prompt defines how an agent should behave. Workflow Skill Router decides which skill instructions should be loaded for a specific task. It sits before execution: classify the task, choose 1 primary skill and up to 3 supporting skills, then explain the route.
 
+### Is this an agent permission or sandbox layer?
+
+No. Workflow Skill Router narrows skill selection before work starts. It does not grant permissions, enforce sandbox rules, approve tool calls, or replace your scope contract. Use it with your existing governance controls.
+
 ### Why limit each route to 1-4 skills?
 
 The limit keeps context focused. One primary skill owns the work; supporting skills add domain knowledge, verification, or tooling. If a task truly needs more than 4 skills, split it into stages and route each stage separately.
@@ -324,6 +341,7 @@ Open the [Troubleshooting guide](https://huangchiyu.com/Workflow-skill-router/gu
 - [Blank Router walkthrough](https://huangchiyu.com/Workflow-skill-router/guides/blank-router-walkthrough/)
 - [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/)
 - [Claude, Cursor, and Gemini adapter notes](https://huangchiyu.com/Workflow-skill-router/guides/adapters/)
+- [Agent governance positioning](https://huangchiyu.com/Workflow-skill-router/reference/agent-governance-positioning/)
 - [Customization guide](docs/adoption-guide.md)
 - [System theory](docs/system-theory.en.md)
 - [Validation checklist](docs/validation-checklist.en.md)

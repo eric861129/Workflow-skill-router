@@ -7,6 +7,8 @@ description: Adapt Workflow Skill Router to your own agent skill catalog.
 
 Copy `starter/workflow-skill-router/` into your agent's skill directory. The starter gives you the output contract, route shape, and reference files to fill.
 
+Workflow Skill Router addresses skill selection sprawl, not authorization. Keep your existing scope contracts, runtime permissions, approval policies, and tool access controls in place.
+
 ## Inventory your skills
 
 Group skills by source:

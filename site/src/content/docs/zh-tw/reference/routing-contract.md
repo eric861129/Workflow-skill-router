@@ -24,6 +24,7 @@ No extra routing needed: reason
 - supporting skills 只在負責不同工作時加入。
 - 當 live external state 是事實來源時，優先使用 connector。
 - 如果看起來需要超過四個 skills，代表任務應該拆成多個階段。
+- 把 route 視為 instruction selection，不是 authorization。Agent 能做什麼，仍由 runtime permissions 與 approval policies 決定。
 
 ## Good route
 

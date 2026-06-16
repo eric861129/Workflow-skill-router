@@ -24,15 +24,19 @@ const text = {
     download: 'Downloads',
     showcase: 'Routing showcase',
     gifAlt: 'A fuzzy request becoming a small routing output',
-    heroTitle: 'AI agent skill routing before the work begins',
+    heroTitle: 'Skill selection governance before the work begins',
     heroCopy:
-      'Workflow Skill Router is a practical routing pattern for Codex Skills and multi-skill agents: choose one primary skill, add focused support, and keep complex tasks out of context overload.',
+      'Workflow Skill Router addresses one layer of agent sprawl: skill selection sprawl. It gives agents a small, reviewable routing decision before work starts.',
+    positioningLabel: 'Positioning',
+    positioningTitle: 'A skill selection layer, not a permission system',
+    positioningCopy:
+      'It does not replace scope contracts, runtime permissions, approval policies, or tool access controls. It only selects the smallest useful skill set from skills that already exist and are already allowed.',
     routeLabel: 'Routing output',
     route:
       'Route: Frontend / Vue / UI > Browser regression > Rendered behavior\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.',
     introTitle: 'A sharper operating layer for multi-skill agents',
     introCopy:
-      'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts.',
+      'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts, then leaves authorization and approval to your existing governance layers.',
     introLink: 'Read the customization guide',
     processLabel: 'How the router thinks',
     processSteps: [
@@ -117,15 +121,19 @@ python -m unittest discover -s tests`,
     download: '下載套件',
     showcase: '案例展示',
     gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
-    heroTitle: 'AI Agent 開工前，先完成 skill routing',
+    heroTitle: 'AI Agent 開工前，先治理 Skill 選擇',
     heroCopy:
-      'Workflow Skill Router 是給 Codex Skills 與多技能 Agent 使用的實戰 routing pattern：先選一個 primary skill，再補上聚焦的 supporting skills，讓複雜任務不要被上下文噪音淹沒。',
+      'Workflow Skill Router 處理的是 Agent sprawl 裡的「Skill 選擇失控」問題。它讓 Agent 在任務開始前，先做一個小而可審查的 routing decision。',
+    positioningLabel: '專案定位',
+    positioningTitle: '它是 skill selection layer，不是權限系統',
+    positioningCopy:
+      '它不取代 scope contracts、runtime permissions、approval policies 或 tool access controls。它只會從已存在、已允許的 skills 中，選出最小必要組合。',
     routeLabel: 'Routing output',
     route:
       'Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。',
     introTitle: '讓多技能 Agent 有清楚入口',
     introCopy:
-      'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再開始執行。',
+      'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再把授權與核准交回既有治理層。',
     introLink: '閱讀客製化指南',
     processLabel: 'Router 的判斷方式',
     processSteps: [
@@ -342,6 +350,11 @@ const initialDemo = routeDemoScenarios[0];
     <div class="wsr-shell wsr-hero-inner">
       <h1 id="wsr-hero-title" class="wsr-hero-title">{text.heroTitle}</h1>
       <p class="wsr-hero-copy">{text.heroCopy}</p>
+      <div class="wsr-positioning-callout">
+        <span>{text.positioningLabel}</span>
+        <h2>{text.positioningTitle}</h2>
+        <p>{text.positioningCopy}</p>
+      </div>
       <div class="wsr-hero-actions">
         <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer" data-analytics-event="site_hero_github">{text.star}</a>
         <a class="wsr-button wsr-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_hero_download_blank">{text.downloadBlank}</a>

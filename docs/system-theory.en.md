@@ -2,6 +2,8 @@
 
 Workflow Skill Router is a vertical routing layer for multi-skill AI agents. It does not add capability by itself. It decides which capabilities to use, in what order, and which ones to avoid for the current task.
 
+In agent governance terms, it addresses one layer of agent sprawl: skill selection sprawl. It does not replace scope contracts, runtime permissions, approval policies, or tool access controls. It gives the agent a small, reviewable routing decision before work starts.
+
 ## 1. The Problem
 
 When a system has only a few skills, a flat list is easy to manage:
@@ -61,6 +63,8 @@ The router does three things:
 3. Explain the choice.
 
 It should not copy the full content of every skill into itself. That would create another large, vague, noisy meta skill.
+
+It is also not a security boundary. A router can decide that `playwright` is useful for a browser regression task, but runtime permissions and approval policies still decide whether the agent may open a browser, write files, or call external systems.
 
 ## 4. Recommended Files
 
