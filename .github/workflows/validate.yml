@@ -89,6 +89,27 @@ jobs:
         working-directory: site
         run: npm run test:site:smoke
 
+  site-visual:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install site dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: site
+        run: npx playwright install chromium
+
       - name: Run documentation site visual regression tests
         working-directory: site
         run: npm run test:site:visual
