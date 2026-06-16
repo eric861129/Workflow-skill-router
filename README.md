@@ -39,6 +39,14 @@ Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after
 Website: `https://huangchiyu.com/Workflow-skill-router/`
 Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
 
+Which package should I download?
+
+| Package | Use it when | Download |
+| --- | --- | --- |
+| Blank Router | You want to build your own router from your own skills, triggers, exclusions, and routing rules. | [workflow-skill-router-blank.zip](downloads/workflow-skill-router-blank.zip) |
+| Reference Template | You want to study a public-safe example before adapting the blank router to your workflow. | [workflow-skill-router-template-clean.zip](downloads/workflow-skill-router-template-clean.zip) |
+| Full source archive | You need per-skill README files, source context, or audit material behind the reference template. | [workflow-skill-router-template.zip](downloads/workflow-skill-router-template.zip) |
+
 Try the framework without installing anything:
 
 ```bash

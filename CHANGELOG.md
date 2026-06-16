@@ -4,11 +4,24 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+- Nothing yet.
+
+## v1.1.2
+
+- Synced the patch release target with the latest `main` branch.
+- Added README package selector guidance for Blank Router, Reference Template, and Full source archive.
+- Added release asset smoke testing for downloadable zip packages and manifest contents.
+- Added the documentation site build to the main validation workflow.
+
+## v1.1.1
+
 - Added public launch showcase material for before/after routing examples.
 - Added anti-over-routing guidance for keeping routes small and reviewable.
 - Added forward-test records for real agent routing usage.
 - Completed sample skill metadata coverage to reduce scanner warnings.
 - Improved release packaging with clearer download comparison and release-note workflow.
+- Added a clean installable Reference Template package.
+- Updated the documentation site dependency baseline.
 
 ## v1.1.0
 

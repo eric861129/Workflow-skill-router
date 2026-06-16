@@ -3,6 +3,8 @@
 
 Source root: local maintainer Codex skills directory
 
+Blank Router package: `workflow-skill-router-blank.zip`
+
 Reference Template package: `workflow-skill-router-template-clean.zip`
 
 Full source archive: `workflow-skill-router-template.zip`
