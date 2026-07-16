@@ -22,3 +22,6 @@ packages/router-core/src/*.egg-info/
 # Local isolated worktrees
 .worktrees/
 
+# Generated release, evaluation and local canary output
+dist/
+

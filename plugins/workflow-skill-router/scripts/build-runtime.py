@@ -16,7 +16,7 @@ ENTRYPOINT = b"from workflow_skill_router.cli import main\nraise SystemExit(main
 
 
 def eligible_files() -> list[Path]:
-    result = subprocess.run(["git", "ls-files", "--cached", "--", "packages/router-core/src/workflow_skill_router"],
+    result = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "--", "packages/router-core/src/workflow_skill_router"],
                             cwd=ROOT, text=True, capture_output=True, check=True)
     files = []
     for name in result.stdout.splitlines():
@@ -45,19 +45,22 @@ def build_bytes() -> bytes:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--check", action="store_true"); args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--output", type=Path, default=OUTPUT)
+    args = parser.parse_args()
     data = build_bytes()
     if args.check:
-        return 0 if OUTPUT.is_file() and OUTPUT.read_bytes() == data else 1
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    temporary = OUTPUT.with_name(OUTPUT.name + ".tmp")
+        return 0 if args.output.is_file() and args.output.read_bytes() == data else 1
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = args.output.with_name(args.output.name + ".tmp")
     try:
         with temporary.open("wb") as handle:
             handle.write(data); handle.flush(); os.fsync(handle.fileno())
-        os.replace(temporary, OUTPUT)
+        os.replace(temporary, args.output)
     finally:
         if temporary.exists(): temporary.unlink()
-    print(f"{OUTPUT} sha256:{sha256(data).hexdigest()}")
+    print(f"{args.output} sha256:{sha256(data).hexdigest()}")
     return 0
 
 
