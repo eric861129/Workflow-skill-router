@@ -5,21 +5,24 @@ import json
 from pathlib import Path
 import sys
 
+from .evaluation import configure_evaluation_parser, run_evaluation_cli
+
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="workflow-skill-router", description="Workflow Skill Router V2")
-    sub = parser.add_subparsers(dest="command")
-    serve = sub.add_parser("serve-jsonl", help="啟動長存 JSONL bridge")
+    parser = argparse.ArgumentParser(
+        prog="workflow-skill-router",
+        description="Workflow Skill Router V2",
+    )
+    subparsers = parser.add_subparsers(dest="command")
+    serve = subparsers.add_parser("serve-jsonl", help="Serve the JSONL runtime bridge")
     serve.add_argument("--database", required=True)
-    doctor = sub.add_parser("doctor", help="檢查 Python、runtime 與 Plugin 能力")
+    doctor = subparsers.add_parser("doctor", help="Inspect Python and plugin runtime readiness")
     doctor.add_argument("--database")
-    sub.add_parser("status", help="讀取 Router/Goal 狀態")
-    sub.add_parser("plan", help="建立 Single、Phased 或 Managed Goal 計畫")
-    sub.add_parser("validate-route", help="驗證 JIT route 與 single-use activation")
-    evaluation = sub.add_parser("evaluation", help="真實模型評測與 artifact 管理")
-    evaluation_sub = evaluation.add_subparsers(dest="evaluation_command")
-    for name in ("run", "import", "compare", "export", "publish", "export-status"):
-        evaluation_sub.add_parser(name)
+    subparsers.add_parser("status", help="Inspect Router and Goal status")
+    subparsers.add_parser("plan", help="Plan Single, Phased, or Managed Goal work")
+    subparsers.add_parser("validate-route", help="Validate a JIT route and activation")
+    evaluation = subparsers.add_parser("evaluation", help="Run or inspect evaluation artifacts")
+    configure_evaluation_parser(evaluation)
     return parser
 
 
@@ -27,7 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command is None:
-        parser.print_help(); return 0
+        parser.print_help()
+        return 0
     if args.command == "serve-jsonl":
         from workflow_skill_router.bridge import serve
         from workflow_skill_router.local_control import LocalControlPlaneService
@@ -49,7 +53,9 @@ def main(argv: list[str] | None = None) -> int:
             "tools": readiness_document(),
         }, ensure_ascii=False, sort_keys=True))
         return 0
-    print("此命令需要 Plugin/MCP host context；純 CLI 不會自行授予 runtime 權限。")
+    if args.command == "evaluation":
+        return run_evaluation_cli(args)
+    print("This command requires Plugin/MCP host context; use the bundled runtime tools.")
     return 2
 
 

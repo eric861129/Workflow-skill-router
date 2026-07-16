@@ -88,8 +88,12 @@ RUNTIME_READINESS: Mapping[str, ToolRuntimeReadiness] = {
         "run_model_evaluation",
         "configured-adapter-required",
         "R2",
-        ("configured-evaluation-adapter", "sealed-evaluation-case"),
-        "Configure a trusted adapter or report manual-required evidence.",
+        (
+            "configured-evaluation-adapter",
+            "sealed-evaluation-case",
+            "trusted-subprocess-adapter-config",
+        ),
+        "Configure a trusted host-side adapter or report manual-required evidence.",
     ),
     "compare_evaluations": _entry(
         "compare_evaluations",

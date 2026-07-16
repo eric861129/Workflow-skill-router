@@ -29,7 +29,10 @@ class EvaluationFacade:
 
     def run(self, command):
         authorization = self._ports.run_authorizer.validate_reference(command.context, command.authorization_ref)
-        adapter = self._ports.adapter_registry.require(authorization.adapter_kind)
+        adapter = self._ports.adapter_registry.require(
+            authorization.adapter_kind,
+            authorization=authorization,
+        )
         case = self._ports.sealed_case_repository.require(command.sealed_case_ref)
         return self._ports.worker_broker.run(case, authorization, adapter, command.repeats)
 

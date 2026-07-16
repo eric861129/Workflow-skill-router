@@ -19,5 +19,10 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual("host-task", selected.kind)
         self.assertEqual("scheduled", selected.status)
 
+    def test_trusted_subprocess_fresh_model_adapter_is_discoverable(self):
+        selected = select_execution_adapter(["evaluation:subprocess:fresh-model"], "behavior")
+        self.assertEqual("subprocess", selected.kind)
+        self.assertEqual("fresh-model-execution", selected.evidence_class)
+
 
 if __name__ == "__main__": unittest.main()

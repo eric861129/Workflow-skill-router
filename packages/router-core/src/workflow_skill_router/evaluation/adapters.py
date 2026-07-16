@@ -18,6 +18,8 @@ def select_execution_adapter(capability_ids: Iterable[str], profile: str) -> Ada
         return AdapterSelection("host-task", EvaluationStatus.SCHEDULED, "fresh-model-execution")
     if "external:fresh-session" in capabilities:
         return AdapterSelection("external-provider", EvaluationStatus.SCHEDULED, "fresh-model-execution")
+    if "evaluation:subprocess:fresh-model" in capabilities:
+        return AdapterSelection("subprocess", EvaluationStatus.SCHEDULED, "fresh-model-execution")
     return AdapterSelection("manual-import", EvaluationStatus.MANUAL_REQUIRED, "manual-provenance",
                             "fresh-execution-adapter-unavailable")
 
