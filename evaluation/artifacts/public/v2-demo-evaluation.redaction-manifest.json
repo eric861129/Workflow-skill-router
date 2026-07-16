@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"sanitized","removed_fields":["raw_trace","prompt_content","local_paths","credentials","review_receipt"]}

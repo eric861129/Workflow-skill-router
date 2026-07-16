@@ -1,0 +1,44 @@
+---
+import demo from '../data/router-demo-v2.generated.json';
+import '../styles/adaptive-router-demo.css';
+interface Props { locale: 'en' | 'zh-TW'; initialPreset?: string }
+const { locale, initialPreset = 'small-auto' } = Astro.props;
+const copy = locale === 'zh-TW'
+  ? { eyebrow: 'V2 ROUTING FLIGHT RECORDER', title: '看見 Router 在每個決策點做了什麼', request: '輸入', decision: '判斷', audit: '稽核軌跡', approve: '同意輔助', reject: '拒絕輔助' }
+  : { eyebrow: 'V2 ROUTING FLIGHT RECORDER', title: 'See every decision the router made', request: 'Input', decision: 'Decision', audit: 'Audit trail', approve: 'Approve support', reject: 'Reject support' };
+---
+<section class="adaptive-router-demo" data-router-demo data-locale={locale} data-initial={initialPreset} aria-labelledby="router-demo-title">
+  <header class="router-demo-header">
+    <span>{copy.eyebrow}</span>
+    <h2 id="router-demo-title">{copy.title}</h2>
+    <div class="router-demo-signal"><i></i> CORE-DERIVED / READ-ONLY UI</div>
+  </header>
+  <div class="router-demo-tabs" role="tablist" aria-label={locale === 'zh-TW' ? '路由情境' : 'Routing scenarios'}>
+    {demo.presets.map((preset, index) => <button type="button" role="tab" aria-selected={preset.id === initialPreset ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} data-testid={`demo-preset-${preset.id}`} data-preset={preset.id}><span>{String(index + 1).padStart(2, '0')}</span>{preset.title[locale]}</button>)}
+  </div>
+  <div class="router-demo-console">
+    <article class="router-demo-request">
+      <span class="router-demo-label">{copy.request}</span>
+      <p data-demo-request></p>
+      <div class="router-demo-actions" data-demo-consent hidden>
+        <button type="button" data-testid="demo-consent-approve" data-branch="support-approved">{copy.approve}</button>
+        <button type="button" data-testid="demo-consent-reject" data-branch="support-rejected">{copy.reject}</button>
+      </div>
+    </article>
+    <article class="router-demo-decision">
+      <span class="router-demo-label">{copy.decision}</span>
+      <div class="router-demo-envelope"><span>ENVELOPE</span><strong data-demo-envelope></strong></div>
+      <div data-demo-route></div>
+      <div class="router-demo-status" data-testid="demo-status"></div>
+      <div class="router-demo-coverage" data-testid="demo-explicit-coverage"></div>
+    </article>
+    <article class="router-demo-audit">
+      <span class="router-demo-label">{copy.audit}</span>
+      <ol data-demo-events></ol>
+      <div data-demo-graph></div>
+      <div data-demo-evaluation></div>
+    </article>
+  </div>
+  <script type="application/json" data-demo-payload set:html={JSON.stringify(demo)}></script>
+</section>
+<script>import '../scripts/adaptive-router-demo';</script>

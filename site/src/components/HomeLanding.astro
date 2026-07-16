@@ -1,4 +1,5 @@
 ---
+import AdaptiveRouterDemo from './AdaptiveRouterDemo.astro';
 type Locale = 'en' | 'zh-tw';
 
 const locale = (Astro.props.locale ?? 'en') as Locale;
@@ -328,6 +329,8 @@ const heroPreview = isZh
       </div>
     </div>
   </section>
+
+  <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} />
 
   <section id="why-it-works" class="wsr-section wsr-section-light">
     <div class="wsr-shell wsr-section-grid">

@@ -1,0 +1,8 @@
+{
+  "schema_id": "workflow-skill-router/public-evaluation-status",
+  "schema_version": "2.0.0-alpha.1",
+  "status": "manual-required",
+  "evidence_class": "behavior",
+  "provenance": "No verified fresh-task adapter was available during deterministic site generation.",
+  "limitations": ["No public score is emitted without a trusted human review attestation.", "Tier 0 Contract fixtures are not real model evaluation."]
+}
