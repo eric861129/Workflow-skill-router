@@ -47,6 +47,29 @@ class SupportPolicy(StrEnum):
     FORBID = "forbid"
 
 
+class ScopeKind(StrEnum):
+    WORKFLOW = "workflow"
+    WORK_ITEM = "work-item"
+    PHASE = "phase"
+    TASK = "task"
+
+
+class SkillDisposition(StrEnum):
+    ACTIVE_REQUIRED = "active-required"
+    ACTIVE_PRIMARY = "active-primary"
+    ACTIVE_SUPPORT = "active-support"
+    ALLOWED_NOT_SELECTED = "allowed-not-selected"
+    NOT_APPLICABLE = "not-applicable"
+    REJECTED = "rejected"
+
+
+class CoverageStatus(StrEnum):
+    SATISFIED = "satisfied"
+    UNCOVERED = "uncovered"
+    WAIVED = "waived"
+    NOT_APPLICABLE = "not-applicable"
+
+
 @dataclass(frozen=True, slots=True)
 class DirectiveInput:
     text: str
@@ -114,3 +137,63 @@ class RequestDecision:
     execution_kind: ExecutionKind
     routing: RoutingProfile | None
 
+
+@dataclass(frozen=True, slots=True)
+class ScopeAnchor:
+    scope_anchor_id: str
+    kind: ScopeKind
+    aggregate_id: str
+    parent_scope_anchor_id: str | None
+    semantic_scope_digest: str
+    lineage_root_id: str
+    stable_scope_key: str
+    created_revision: int
+
+
+@dataclass(frozen=True, slots=True)
+class SkillConstraint:
+    skill_id: str
+    purpose: str
+
+
+@dataclass(frozen=True, slots=True)
+class SkillSelectionPolicy:
+    mode: SelectionMode
+    explicit_skill_ids: tuple[str, ...]
+    explicit_semantics: ExplicitSemantics | None
+    support_policy: SupportPolicy
+    approved_support_refs: tuple[str, ...]
+    rejected_support_refs: tuple[str, ...]
+    consent_scope: ScopeKind
+    lock_scope: ScopeKind
+    scope_anchor_id: str
+    plan_revision: int
+
+    def __post_init__(self) -> None:
+        if self.plan_revision < 1:
+            raise ValueError("plan_revision 必須大於等於 1")
+        if self.mode is SelectionMode.AUTO:
+            if self.explicit_skill_ids or self.explicit_semantics is not None:
+                raise ValueError("auto policy 不可包含 explicit SKILL")
+        elif not self.explicit_skill_ids or self.explicit_semantics is None:
+            raise ValueError("explicit-locked policy 必須包含技能與語意")
+        if len(set(self.explicit_skill_ids)) != len(self.explicit_skill_ids):
+            raise ValueError("explicit_skill_ids 不可重複")
+
+
+@dataclass(frozen=True, slots=True)
+class ExplicitSkillDisposition:
+    skill_id: str
+    scope_anchor_id: str
+    disposition: SkillDisposition
+    route_ref: str | None
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExplicitSkillCoverage:
+    skill_id: str
+    scope_anchor_id: str
+    status: CoverageStatus
+    evidence_refs: tuple[str, ...]
+    reason: str
