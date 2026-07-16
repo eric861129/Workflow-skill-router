@@ -1,4 +1,4 @@
-import { copyFile, mkdir, stat, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile, readFile, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -11,19 +11,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(siteRoot, '..');
 const siteAssets = path.join(siteRoot, 'public', 'assets');
-const docsAssets = path.join(repoRoot, 'docs', 'assets');
 const run = promisify(execFile);
 const demoData = path.join(siteRoot, 'src', 'data', 'router-demo-v2.generated.json');
 
 const outputs = {
-  sitePoster: path.join(siteAssets, 'workflow-skill-router-demo-poster.png'),
-  docsPoster: path.join(docsAssets, 'workflow-skill-router-demo-poster.png'),
+  posterSource: path.join(siteRoot, 'dist', 'workflow-skill-router-demo-poster-source.png'),
+  sitePoster: path.join(siteAssets, 'workflow-skill-router-demo-poster.webp'),
   siteWebm: path.join(siteAssets, 'workflow-skill-router-demo.webm'),
-  docsWebm: path.join(docsAssets, 'workflow-skill-router-demo.webm'),
   siteMp4: path.join(siteAssets, 'workflow-skill-router-demo.mp4'),
-  docsMp4: path.join(docsAssets, 'workflow-skill-router-demo.mp4'),
   siteManifest: path.join(siteAssets, 'workflow-skill-router-demo-manifest.json'),
-  docsManifest: path.join(docsAssets, 'workflow-skill-router-demo-manifest.json'),
 };
 
 const digest = (data) => createHash('sha256').update(data).digest('hex');
@@ -235,12 +231,15 @@ async function assertFile(filePath, maximumBytes) {
 }
 
 async function checkAssets() {
-  await assertFile(outputs.sitePoster, 1_500_000);
-  await assertFile(outputs.docsPoster, 1_500_000);
+  try {
+    await stat(outputs.posterSource);
+    throw new Error(`${path.relative(repoRoot, outputs.posterSource)} is a stale temporary source file.`);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  await assertFile(outputs.sitePoster, 250_000);
   await assertFile(outputs.siteWebm, 12_000_000);
-  await assertFile(outputs.docsWebm, 12_000_000);
   await assertFile(outputs.siteMp4, 15_000_000);
-  await assertFile(outputs.docsMp4, 15_000_000);
   const manifest = JSON.parse(await readFile(outputs.siteManifest, 'utf8'));
   for (const [key, filePath] of Object.entries({ poster: outputs.sitePoster, webm: outputs.siteWebm, mp4: outputs.siteMp4 })) {
     const actual = digest(await readFile(filePath));
@@ -252,36 +251,48 @@ async function checkAssets() {
 
 async function generateAssets() {
   await mkdir(siteAssets, { recursive: true });
-  await mkdir(docsAssets, { recursive: true });
+  await mkdir(path.dirname(outputs.posterSource), { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
   try {
+    if (!ffmpegPath) throw new Error('ffmpeg-static executable is unavailable.');
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
     await page.setContent(assetHtml());
-    await page.screenshot({ path: outputs.sitePoster, clip: { x: 0, y: 0, width: 1280, height: 720 } });
-    await copyFile(outputs.sitePoster, outputs.docsPoster);
+    await page.screenshot({
+      path: outputs.posterSource,
+      clip: { x: 0, y: 0, width: 1280, height: 720 },
+    });
+    await run(ffmpegPath, [
+      '-y',
+      '-i', outputs.posterSource,
+      '-frames:v', '1',
+      '-c:v', 'libwebp',
+      '-quality', '82',
+      outputs.sitePoster,
+    ]);
 
     await page.setContent(recordingPageHtml());
     const bytes = await page.evaluate(() => window.recordDemo());
     await writeFile(outputs.siteWebm, Buffer.from(bytes));
-    await copyFile(outputs.siteWebm, outputs.docsWebm);
-    if (!ffmpegPath) throw new Error('ffmpeg-static executable is unavailable.');
     const revision = digest(await readFile(demoData));
     await run(ffmpegPath, ['-y', '-i', outputs.siteWebm, '-metadata', `comment=demo-revision:${revision}`,
       '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputs.siteMp4]);
-    await copyFile(outputs.siteMp4, outputs.docsMp4);
     const manifest = {
       schema_version: '1.0', source: { path: 'site/src/data/router-demo-v2.generated.json', sha256: revision },
       outputs: {
-        poster: { sha256: digest(await readFile(outputs.sitePoster)), width: 1280, height: 720, codec: 'png' },
+        poster: { sha256: digest(await readFile(outputs.sitePoster)), width: 1280, height: 720, codec: 'webp' },
         webm: { sha256: digest(await readFile(outputs.siteWebm)), width: 1280, height: 720, codec: 'vp9' },
         mp4: { sha256: digest(await readFile(outputs.siteMp4)), width: 1280, height: 720, codec: 'h264' },
       },
     };
     await writeFile(outputs.siteManifest, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-    await copyFile(outputs.siteManifest, outputs.docsManifest);
   } finally {
     await browser.close();
+    try {
+      await unlink(outputs.posterSource);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
   }
 
   await checkAssets();

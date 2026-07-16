@@ -21,9 +21,9 @@ V2 首頁提供七個可檢查情境，涵蓋 Single、Phased、Managed Goal、E
 
 這段影片只是讓頁面不那麼單調的視覺輔助，不是互動 Demo，也不是實際操作教學。真正的 route before/after 範例在下方。
 
-<video controls muted playsinline preload="metadata" poster="/Workflow-skill-router/assets/workflow-skill-router-demo-poster.png" width="1280" height="720">
-  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4" type="video/mp4" />
+<video controls muted playsinline preload="none" poster="/Workflow-skill-router/assets/workflow-skill-router-demo-poster.webp" width="1280" height="720">
   <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.webm" type="video/webm" />
+  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4" type="video/mp4" />
   <a href="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4">開啟視覺預覽影片</a>
 </video>
 

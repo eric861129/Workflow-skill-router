@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { access, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 
 const pages = [
   { path: './', text: 'Workflow Skill Router' },
@@ -29,6 +34,68 @@ test('mobile navigation exposes the full brand and named theme control', async (
   await page.goto('./');
   await expect(page.getByRole('link', { name: 'Workflow Skill Router', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /toggle color theme/i })).toBeVisible();
+});
+
+test('homepage keyboard focus and heading hierarchy stay accessible', async ({ page }) => {
+  await page.goto('./');
+
+  const primaryAction = page.locator('.wsr-hero').getByRole('link', { name: /install plugin \+ mcp/i });
+  await primaryAction.focus();
+  await expect(primaryAction).toBeFocused();
+  const focusStyle = await primaryAction.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth };
+  });
+  expect(focusStyle.outlineStyle).not.toBe('none');
+  expect(focusStyle.outlineWidth).not.toBe('0px');
+
+  const headingLevels = await page.locator('main h1, main h2, main h3, main h4, main h5, main h6').evaluateAll(
+    (headings) => headings.map((heading) => Number(heading.tagName.slice(1))),
+  );
+  expect(headingLevels.filter((level) => level === 1)).toHaveLength(1);
+  expect(headingLevels[0]).toBe(1);
+  await expect(page.locator('h1#_top')).toHaveCount(1);
+  for (let index = 1; index < headingLevels.length; index += 1) {
+    expect(headingLevels[index] - headingLevels[index - 1]).toBeLessThanOrEqual(1);
+  }
+});
+
+test('flight recorder exposes named copy and keyboard disclosure controls', async ({ page }) => {
+  await page.goto('./');
+  const disclosure = page.getByTestId('demo-mcp-step').first().locator('summary');
+  await disclosure.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('demo-mcp-step').first()).toHaveAttribute('open', '');
+  await expect(page.getByRole('button', { name: 'Copy JSON' }).first()).toBeVisible();
+});
+
+test('production output excludes legacy media fallbacks', async () => {
+  const legacyAssets = [
+    'workflow_skill_rout-GIF.gif',
+    'workflow-skill-router-60s-demo.gif',
+    'workflow-skill-router-demo-poster.png',
+  ];
+
+  for (const asset of legacyAssets) {
+    await expect(access(path.join(siteRoot, 'dist', 'assets', asset))).rejects.toThrow();
+  }
+});
+
+test('Lighthouse gate audits V2 routes at 90/100/100/100', async () => {
+  const source = await readFile(path.join(siteRoot, 'scripts', 'lighthouse-audit.mjs'), 'utf8');
+  expect(source).toContain("accessibility: Number(process.env.LH_MIN_ACCESSIBILITY ?? 1)");
+  expect(source).toContain("'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? 1)");
+  expect(source).toContain('seo: Number(process.env.LH_MIN_SEO ?? 1)');
+
+  for (const route of [
+    '/guides/v2-routing/',
+    '/reference/mcp-tools/',
+    '/guides/install-plugin/',
+    '/guides/install-skill/',
+  ]) {
+    expect(source).toContain(`path: '${route}'`);
+  }
+  expect(source).not.toContain('template-catalog');
 });
 
 for (const pageCase of pages) {

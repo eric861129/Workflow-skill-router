@@ -2,23 +2,23 @@
   "schema_version": "1.0",
   "source": {
     "path": "site/src/data/router-demo-v2.generated.json",
-    "sha256": "34d9c39125f8293e84a287f2a4c860e9f3c2353ca41b8fcfea923cc3a4711253"
+    "sha256": "119c234e82e00ecb788efb9c24bbe440f43ed2ed1797998047ab34ef9ec9df28"
   },
   "outputs": {
     "poster": {
-      "sha256": "d3f03392c334f3e78a74aa8b740f65bf4a4ff53f7383ad2d591ff4ccbd38e986",
+      "sha256": "46739b3b822aeb74aead31e45180eb237ec463ca8f24fed9df4787ff7827180a",
       "width": 1280,
       "height": 720,
-      "codec": "png"
+      "codec": "webp"
     },
     "webm": {
-      "sha256": "665cb3954a70b14df1b086149b5bd6f3ccd2337150b020e782b91ee93bbf1269",
+      "sha256": "6c80419628c304d2a3b50c88bf87f30fa94f4072268fce754ee8bcb2b667fb19",
       "width": 1280,
       "height": 720,
       "codec": "vp9"
     },
     "mp4": {
-      "sha256": "71f39c6b4a68165fef63690b319b1c2246fab33ff89e7b970e94628137b40276",
+      "sha256": "c802cd932472eb8aea3f2b4c6fa8227acb12dea26efaa9c3f1943c60f7f43f65",
       "width": 1280,
       "height": 720,
       "codec": "h264"

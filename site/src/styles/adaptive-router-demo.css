@@ -70,7 +70,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   border-bottom: 1px solid var(--router-line);
-  color: #6f7569;
+  color: var(--router-muted);
   font-size: 0.57rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -106,7 +106,7 @@
 .router-demo-tabs button span {
   display: block;
   margin-bottom: 0.45rem;
-  color: #62685c;
+  color: var(--router-muted);
 }
 
 .router-demo-tabs button:hover {
@@ -226,7 +226,7 @@
 .router-demo-envelope span,
 .router-demo-route p span {
   display: block;
-  color: #7d8376;
+  color: var(--router-muted);
   font-size: 0.61rem;
   letter-spacing: 0.1em;
 }
@@ -247,7 +247,7 @@
 }
 
 .router-demo-route p b { color: var(--router-paper); font-size: 0.82rem; }
-.router-demo-route p small { margin-top: 0.2rem; color: #71766c; font-size: 0.58rem; }
+.router-demo-route p small { margin-top: 0.2rem; color: var(--router-muted); font-size: 0.58rem; }
 
 .router-demo-status {
   margin-top: 1.7rem;
@@ -287,13 +287,13 @@
 .adaptive-router-demo .router-demo-mcp-step > summary::-webkit-details-marker { display: none; }
 .adaptive-router-demo .router-demo-mcp-step > summary::marker { content: ""; font-size: 0; }
 .adaptive-router-demo .router-demo-mcp-step > summary::before { display: none !important; content: none !important; }
-.adaptive-router-demo .router-demo-mcp-step > summary::after { content: "+"; grid-column: 4; grid-row: 1; color: #697060; }
+.adaptive-router-demo .router-demo-mcp-step > summary::after { content: "+"; grid-column: 4; grid-row: 1; color: var(--router-muted); }
 .adaptive-router-demo .router-demo-mcp-step[open] > summary::after { content: "−"; }
 .adaptive-router-demo .router-demo-mcp-step > summary > span {
   grid-column: 1;
   grid-row: 1;
   margin: 0 !important;
-  color: #697060;
+  color: var(--router-muted);
   font-size: 0.65rem;
 }
 .adaptive-router-demo .router-demo-mcp-step > summary > code {
@@ -386,7 +386,7 @@
 }
 
 .router-demo-audit li:last-child { border-right: 1px solid #292e26; }
-.router-demo-audit li span { grid-row: 1 / 3; color: #676d61; }
+.router-demo-audit li span { grid-row: 1 / 3; color: var(--router-muted); }
 .router-demo-audit li b { overflow-wrap: anywhere; color: var(--router-paper); font-size: 0.65rem; }
 .router-demo-audit li small { grid-column: 2; color: var(--router-muted); overflow-wrap: anywhere; }
 
@@ -414,7 +414,7 @@
 
 .router-demo-evidence-grid dt,
 .router-demo-eval dt {
-  color: #73796c;
+  color: var(--router-muted);
   font-size: 0.55rem;
   letter-spacing: 0.08em;
 }

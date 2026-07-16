@@ -735,6 +735,15 @@ body:has(.wsr-landing) .pagination-links {
   display: none;
 }
 
+.wsr-floating-nav a:focus-visible,
+.wsr-floating-nav button:focus-visible,
+.wsr-button:focus-visible,
+.wsr-hero-tertiary:focus-visible,
+.wsr-text-link:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
+}
+
 .sl-markdown-content .wsr-landing .wsr-wordmark,
 .sl-markdown-content .wsr-landing .wsr-nav-links a,
 .sl-markdown-content .wsr-landing .wsr-locale-switch,
@@ -799,6 +808,10 @@ body:has(.wsr-landing) .pagination-links {
   letter-spacing: 0;
   overflow-wrap: anywhere;
   text-wrap: initial;
+}
+
+.wsr-landing h1#_top.wsr-hero-title {
+  color: #f8fafc;
 }
 
 .wsr-hero-copy {
@@ -1679,12 +1692,13 @@ body:has(.wsr-landing) .pagination-links {
 
   .wsr-wordmark {
     gap: 0.45rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
   }
 
   .wsr-wordmark span:last-child {
-    max-width: 6.25rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: none;
+    overflow: visible;
     white-space: nowrap;
   }
 
@@ -1692,8 +1706,8 @@ body:has(.wsr-landing) .pagination-links {
   .wsr-theme-toggle,
   .wsr-nav-star {
     min-height: 2.4rem;
-    padding-inline: 0.58rem;
-    font-size: 0.78rem;
+    padding-inline: 0.45rem;
+    font-size: 0.72rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

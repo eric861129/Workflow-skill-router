@@ -21,9 +21,9 @@ Use these examples when explaining the project in a post, issue, or README snipp
 
 This video is a lightweight visual accent for the page, not an interactive demo or a product walkthrough. The actual route before-and-after examples are below.
 
-<video controls muted playsinline preload="metadata" poster="/Workflow-skill-router/assets/workflow-skill-router-demo-poster.png" width="1280" height="720">
-  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4" type="video/mp4" />
+<video controls muted playsinline preload="none" poster="/Workflow-skill-router/assets/workflow-skill-router-demo-poster.webp" width="1280" height="720">
   <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.webm" type="video/webm" />
+  <source src="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4" type="video/mp4" />
   <a href="/Workflow-skill-router/assets/workflow-skill-router-demo.mp4">Open the visual preview video</a>
 </video>
 

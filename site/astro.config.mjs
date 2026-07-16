@@ -1,10 +1,30 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { unlink } from 'node:fs/promises';
 
 const siteUrl = 'https://huangchiyu.com';
 const basePath = '/Workflow-skill-router';
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 const ogImage = `${siteUrl}${basePath}/og/workflow-skill-router.png`;
+
+async function unlinkGeneratedAsset(assetUrl) {
+  try {
+    await unlink(assetUrl);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+}
+
+const excludeLegacySiteAssets = {
+  name: 'exclude-legacy-site-assets',
+  hooks: {
+    'astro:build:done': async ({ dir }) => {
+      await unlinkGeneratedAsset(new URL('assets/workflow_skill_rout-GIF.gif', dir));
+      await unlinkGeneratedAsset(new URL('assets/workflow-skill-router-60s-demo.gif', dir));
+      await unlinkGeneratedAsset(new URL('assets/workflow-skill-router-demo-poster.png', dir));
+    },
+  },
+};
 
 export default defineConfig({
   site: siteUrl,
@@ -32,6 +52,7 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/DocsPageSidebar.astro',
+        PageTitle: './src/components/PageTitle.astro',
       },
       disable404Route: true,
       social: [
@@ -194,5 +215,6 @@ export default defineConfig({
         },
       ],
     }),
+    excludeLegacySiteAssets,
   ],
 });
