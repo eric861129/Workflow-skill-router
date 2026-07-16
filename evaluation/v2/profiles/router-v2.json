@@ -1,0 +1,31 @@
+{
+  "schema_version": "2.0",
+  "suite": "evaluation/v2/cases/behavior-routing.jsonl",
+  "skill_catalog": [
+    "skill:workflow-skill-router",
+    "skill:code-documenter",
+    "skill:api-designer",
+    "skill:qa-test-planner",
+    "skill:systematic-debugging",
+    "skill:playwright",
+    "skill:architecture-designer",
+    "skill:frontend-design"
+  ],
+  "execution": {
+    "ignore_user_config": true,
+    "sandbox": "read-only",
+    "output_schema": "evaluation/v2/schemas/codex-route-output.schema.json",
+    "model": null,
+    "timeout_seconds": 120,
+    "sampling_settings": null
+  },
+  "instruction_package": {
+    "digest": "sha256:3bd2d5849814a9293ee67d9568383ad4622dd1a09f0028fb7713addc6e0f17f5",
+    "files": [
+      "starter/v2/workflow-skill-router/references/evaluation-boundary.md",
+      "starter/v2/workflow-skill-router/references/goal-protocol.md",
+      "starter/v2/workflow-skill-router/references/routing-protocol.md",
+      "starter/v2/workflow-skill-router/SKILL.md"
+    ]
+  }
+}

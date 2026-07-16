@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/codex-route-output.schema.json",
+  "title": "Codex routing decision",
+  "type": "object",
+  "required": [
+    "envelope",
+    "selection_mode",
+    "primary_skill",
+    "support_skills",
+    "consent_action",
+    "goal_relation",
+    "rationale"
+  ],
+  "properties": {
+    "envelope": { "enum": ["single", "phased", "managed-goal"] },
+    "selection_mode": { "enum": ["auto", "explicit-locked"] },
+    "primary_skill": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "support_skills": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+    },
+    "consent_action": {
+      "enum": ["not-required", "proposal-required", "approved", "rejected"]
+    },
+    "goal_relation": {
+      "enum": ["none", "progress", "status", "steer", "side-question"]
+    },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
+  },
+  "additionalProperties": false
+}

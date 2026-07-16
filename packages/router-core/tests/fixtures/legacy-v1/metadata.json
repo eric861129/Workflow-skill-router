@@ -1,0 +1,10 @@
+{
+  "tier": "T0",
+  "evidence_class": "contract-only",
+  "case_count": 80,
+  "sha256": {
+    "scenarios.jsonl": "8927b90e946e532b3fddc2aec1a0e85015861faaf5326c1b7688888f565e500f",
+    "predictions.jsonl": "136d23856a8bfe6e80ef6001421de58a0504cb9066fe0b14920081ef7c1cb7dc"
+  },
+  "migration_source": "V1 Git blobs reviewed before public-surface removal"
+}

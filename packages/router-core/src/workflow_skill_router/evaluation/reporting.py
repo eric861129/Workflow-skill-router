@@ -52,6 +52,25 @@ def build_review_draft(summary: Mapping[str, Any], evidence_class: str) -> Expor
     return replace(draft, review_subject_digest=calculate_review_subject_digest(draft))
 
 
+def build_benchmark_review_report(
+    summary: Mapping[str, Any],
+    evidence_class: str,
+    *,
+    evidence_class_locked: bool,
+) -> dict[str, Any]:
+    """建立不含虛構綜合分數、等待人工證明的公開評測草稿。"""
+
+    report = {
+        "schema_version": "2.0",
+        "status": "review-required",
+        "evidence_class": evidence_class,
+        "evidence_class_locked": evidence_class_locked,
+        **summary,
+    }
+    report.pop("public_composite_score", None)
+    return _sanitize(report)
+
+
 def publish_sanitized(draft: ExportArtifact, authority_id: str, attestation_ref: str,
                       verifier_registry, now: datetime) -> ExportArtifact:
     verifier_registry.verify(authority_id, attestation_ref, draft.review_subject_digest, now)

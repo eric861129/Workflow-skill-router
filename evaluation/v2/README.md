@@ -25,7 +25,9 @@ The normative shape is [adapter-protocol.schema.json](adapter-protocol.schema.js
 
 ## Trusted configuration boundary
 
-The executable is configured by the CLI or MCP host as an absolute path plus separate argv items. The adapter always uses `shell=False`. Model/MCP requests cannot submit an executable, path, environment, command string, or adapter kind; they carry only an authorization reference and sealed-case reference. Environment variables are inherited from the trusted host process and are never accepted from model arguments.
+The executable is configured by the CLI or MCP host as an absolute path plus separate argv items. The adapter always uses `shell=False`. On Windows, configure a native executable rather than a PowerShell or batch wrapper. Model/MCP requests cannot submit an executable, path, environment, command string, or adapter kind; they carry only an authorization reference and sealed-case reference. Environment variables are inherited from the trusted host process and are never accepted from model arguments.
+
+The Codex driver creates a fresh `HOME`, `CODEX_HOME`, and empty workspace for every attempt. Plugins and bundled Skills are disabled, personal configuration is ignored, and authentication is copied into the isolated home only around one process invocation before being deleted in `finally`. This is required for a defensible no-router baseline.
 
 Preview a reference-driver configuration:
 

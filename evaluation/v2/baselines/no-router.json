@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "suite": "evaluation/v2/cases/behavior-routing.jsonl",
+  "skill_catalog": [
+    "skill:workflow-skill-router",
+    "skill:code-documenter",
+    "skill:api-designer",
+    "skill:qa-test-planner",
+    "skill:systematic-debugging",
+    "skill:playwright",
+    "skill:architecture-designer",
+    "skill:frontend-design"
+  ],
+  "execution": {
+    "ignore_user_config": true,
+    "sandbox": "read-only",
+    "output_schema": "evaluation/v2/schemas/codex-route-output.schema.json",
+    "model": null,
+    "timeout_seconds": 120,
+    "sampling_settings": null
+  },
+  "instruction_package": null
+}
