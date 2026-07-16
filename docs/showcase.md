@@ -1,5 +1,11 @@
 # Routing Showcase
 
+## V2 adaptive scenarios
+
+The live demo is generated from six canonical preset IDs: `small-auto`, `small-explicit-reject-support`, `medium-explicit-phase-consent`, `medium-auto`, `goal-work-graph`, and `real-model-evaluation`. Rejected support remains in the audit trail but never appears in active selections or activation events.
+
+The evaluation panel is honest: **Tier 0 Contract** is not model behavior, `manual-required` means no fresh adapter ran, and `review-required` exposes no score. Neither `skill-only-fallback` nor `hybrid-full` can treat a plain JSON file as human authority.
+
 Five shareable before/after examples for explaining why Workflow Skill Router exists.
 
 ## 60-second Demo

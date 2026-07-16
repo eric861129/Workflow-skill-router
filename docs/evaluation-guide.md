@@ -1,5 +1,9 @@
 # Evaluation Guide
 
+## V2 evidence classes
+
+The historical 80-case suite is **Tier 0 Contract**. Real Behavior/Outcome evaluation requires fresh execution, three or more attempts, answer isolation, hard-invariant scoring, and paired comparison. No adapter produces `manual-required`; no verified human review produces `review-required` without a public score. `skill-only-fallback` cannot satisfy the bound-content observability required for `hybrid-full`.
+
 Use routing evaluation when you want a workflow-skill-router to improve over time without becoming noisy.
 
 ## Design Scenarios

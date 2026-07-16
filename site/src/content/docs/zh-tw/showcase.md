@@ -3,6 +3,8 @@ title: Routing Showcase
 description: 五個適合轉貼分享的 Workflow Skill Router before/after 案例。
 ---
 
+V2 首頁提供六個由 core 產生的 Single、Phased、Managed Goal、Explicit Skill Lock、consent 與真實評測情境。**Tier 0 Contract** 不會冒充 Behavior evidence；沒有 adapter 是 `manual-required`，沒有可信任審查是 `review-required`。前端不會把 `skill-only-fallback` 升格成 `hybrid-full`。
+
 這些範例適合放在貼文、issue 或 README 片段中，快速說明為什麼 route 要小而可檢查。
 
 ## 視覺預覽

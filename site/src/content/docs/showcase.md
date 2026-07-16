@@ -3,6 +3,8 @@ title: Routing Showcase
 description: Five shareable before-and-after examples for Workflow Skill Router.
 ---
 
+The V2 homepage includes six core-derived scenarios for Single, Phased, Managed Goal, Explicit Skill Lock, consent, and real evaluation. **Tier 0 Contract** is kept separate from Behavior evidence. A missing adapter is `manual-required`; a missing trusted review is `review-required`. The UI never upgrades `skill-only-fallback` into `hybrid-full`.
+
 Use these examples when explaining the project in a post, issue, or README snippet.
 
 ## Visual preview

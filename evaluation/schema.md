@@ -1,5 +1,7 @@
 # Routing Evaluation Schema
 
+V2 separates **Tier 0 Contract** JSONL from sealed Behavior/Outcome artifacts. `manual-required` and `review-required` are valid evidence states. A `skill-only-fallback` run cannot be promoted to `hybrid-full` by adding a `trusted` field or a local receipt file.
+
 The evaluator reads newline-delimited JSON. Each non-empty line must be one JSON object.
 
 ## Scenario Record

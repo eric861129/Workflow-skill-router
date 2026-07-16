@@ -1,5 +1,7 @@
 # Routing Evaluation
 
+> V2 evidence boundary: the 80 checked-in scenarios are **Tier 0 Contract** fixtures, not real model evaluation. Fresh Behavior/Outcome runs require at least three isolated attempts, sealed scoring, and paired manifests. Missing execution returns `manual-required`; missing trusted human review returns `review-required` without a score. `skill-only-fallback` cannot claim the activation observability required by `hybrid-full`.
+
 Routing evaluation turns skill selection into something you can inspect, compare, and regress-test. Instead of relying on a few remembered examples, you keep a JSONL benchmark of tasks and expected routes, then compare a router's predictions against it.
 
 ## Concepts

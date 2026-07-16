@@ -122,6 +122,7 @@ export default defineConfig({
             { slug: 'guides/adapters' },
             { slug: 'guides/downloads' },
             { slug: 'guides/adoption' },
+            { slug: 'guides/v2-routing' },
           ],
         },
         {
@@ -147,6 +148,7 @@ export default defineConfig({
             { slug: 'reference/validator' },
             { slug: 'reference/sample-skills' },
             { slug: 'reference/source-map' },
+            { slug: 'reference/model-evaluation' },
           ],
         },
       ],
