@@ -2,7 +2,12 @@
   "name": "workflow-skill-router",
   "version": "2.0.0-alpha.1",
   "description": "依任務規模、Goal 關係、可用能力與使用者指定 SKILL，提供可驗證的工作路由與編排。",
-  "author": { "name": "ChiYu" },
+  "author": {
+    "name": "ChiYu",
+    "url": "https://github.com/eric861129"
+  },
+  "homepage": "https://eric861129.github.io/Workflow-skill-router/",
+  "repository": "https://github.com/eric861129/Workflow-skill-router",
   "license": "MIT",
   "keywords": ["codex", "skill-router", "goal", "workflow", "mcp"],
   "skills": "./skills/",
@@ -14,10 +19,11 @@
     "developerName": "ChiYu",
     "category": "Productivity",
     "capabilities": ["Routing", "Goal Orchestration", "Evaluation"],
+    "websiteURL": "https://eric861129.github.io/Workflow-skill-router/",
     "defaultPrompt": [
       "分析這個任務並選擇 Single、Phased 或 Goal 流程。",
-      "只使用我指定的 SKILL；需要支援能力時先詢問。",
-      "顯示目前 Goal 的下一個可安全執行工作。"
+      "未指定 SKILL 時自動選最小必要組合；已指定時，加入額外支援前先詢問。",
+      "執行前宣告預計使用的 SKILL，完成後列出實際使用項目。"
     ]
   }
 }
