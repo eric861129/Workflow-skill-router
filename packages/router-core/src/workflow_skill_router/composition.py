@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from workflow_skill_router.service import RouterService
+from workflow_skill_router.runtime import SystemClock, UuidFactory
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,8 +71,8 @@ def open(
     artifact_protector,
     activation_preflight,
     evaluation_ports,
-    clock,
-    id_factory,
+    clock=None,
+    id_factory=None,
 ) -> RouterService:
     """唯一 production factory；adapter 只能回傳明確的 RouterCompositionPorts。"""
 
@@ -83,8 +84,8 @@ def open(
         artifact_protector=artifact_protector,
         activation_preflight=activation_preflight,
         evaluation_ports=evaluation_ports,
-        clock=clock,
-        id_factory=id_factory,
+        clock=clock or SystemClock(),
+        id_factory=id_factory or UuidFactory(),
     )
     if not isinstance(ports, RouterCompositionPorts):
         raise TypeError("runtime adapter 必須回傳 RouterCompositionPorts")

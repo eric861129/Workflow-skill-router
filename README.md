@@ -44,6 +44,10 @@ The existing 80 cases are **Tier 0 Contract** fixtures. They prove deterministic
 
 See [V2 architecture](docs/v2-architecture.md), [V1 → V2 upgrade](docs/v1-to-v2-upgrade.md), and the [showcase](docs/showcase.md).
 
+## V1 compatibility resources
+
+The stable V1 surface remains available for existing users: [Blank Router](downloads/workflow-skill-router-blank.zip), [full template](downloads/workflow-skill-router-template.zip), [clean template](downloads/workflow-skill-router-template-clean.zip), the [tutorial catalog](examples/template-skill-catalog), and [`validate-router.py`](scripts/validate-router.py). The original [before/after routing diagram](docs/assets/demo-routing-before-after.svg) is retained for public-readiness compatibility.
+
 ## Validation
 
 ```powershell
