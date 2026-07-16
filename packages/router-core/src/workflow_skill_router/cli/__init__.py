@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import sys
 
 
@@ -29,28 +30,23 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help(); return 0
     if args.command == "serve-jsonl":
         from workflow_skill_router.bridge import serve
-        from workflow_skill_router.service_models import RouterStatusView
+        from workflow_skill_router.local_control import LocalControlPlaneService
         from workflow_skill_router.tool_dispatch import ToolDispatcher
 
-        class BootstrapControlService:
-            def get_router_status(self, query):
-                return RouterStatusView(query.goal_binding_id, query.workflow_run_id, 0, None, False)
-
-            def __getattr__(self, name):
-                def unavailable(command):
-                    del command
-                    raise RuntimeError("verified-runtime-initialization-required")
-                return unavailable
-
-        serve(sys.stdin, sys.stdout, ToolDispatcher(BootstrapControlService()))
+        service = LocalControlPlaneService(Path(args.database))
+        serve(sys.stdin, sys.stdout, ToolDispatcher(service))
         return 0
     if args.command == "doctor":
+        from workflow_skill_router.runtime_readiness import readiness_document
+
         print(json.dumps({
             "runtime_status": "core-ready",
+            "runtime_profile": "bundled-local-r0",
             "conformance_profile": None,
             "fallback_mode": "skill-only-fallback",
             "content_preflight": "unobservable",
             "telemetry_enabled": False,
+            "tools": readiness_document(),
         }, ensure_ascii=False, sort_keys=True))
         return 0
     print("此命令需要 Plugin/MCP host context；純 CLI 不會自行授予 runtime 權限。")

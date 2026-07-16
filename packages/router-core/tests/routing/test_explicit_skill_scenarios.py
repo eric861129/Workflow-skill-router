@@ -159,6 +159,25 @@ class ExplicitSkillScenarioTests(unittest.TestCase):
         self.assertFalse(result.valid)
         self.assertIn("support-forbidden", {item.code for item in result.violations})
 
+    def test_explicit_route_requires_consent_only_after_concrete_support_is_proposed(self) -> None:
+        support_selection = selection(
+            SKILL_Y,
+            origin=SelectionOrigin.ROUTER_RECOMMENDED,
+        )
+
+        result = self.validator.validate(
+            self.explicit_request(support=(support_selection,)),
+            SNAPSHOT,
+            explicit_policy(self.phase_one.scope_anchor_id),
+            context(),
+        )
+
+        self.assertFalse(result.valid)
+        self.assertIn(
+            "support-consent-missing",
+            {item.code for item in result.violations},
+        )
+
     def test_medium_auto_is_phased_and_each_phase_can_route_differently(self) -> None:
         profile = decide_request(
             GoalRelation.NONE,

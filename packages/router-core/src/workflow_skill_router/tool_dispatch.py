@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from workflow_skill_router.service_codecs import build_service_codec_registry
+from workflow_skill_router.runtime_readiness import (
+    CapabilityUnavailable,
+    RUNTIME_READINESS,
+)
 
 
 PUBLIC_TOOLS = (
@@ -19,6 +23,9 @@ class ToolDispatcher:
 
     def dispatch(self, tool: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         if tool not in PUBLIC_TOOLS: raise LookupError(tool)
+        if getattr(self._service, "runtime_profile", None) == "bundled-local-r0":
+            if RUNTIME_READINESS[tool].availability != "local-ready":
+                raise CapabilityUnavailable.for_tool(tool)
         command = self._codecs[tool].decode(arguments)
         result = getattr(self._service, tool)(command)
         return self._codecs[tool].encode(result)

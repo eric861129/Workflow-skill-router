@@ -105,6 +105,25 @@ class InstallationSmokeTests(unittest.TestCase):
         self.assertEqual(10, result["tool_count"])
         self.assertEqual("outside-plugin", result["state_boundary"])
 
+        doctor = subprocess.run(
+            [
+                sys.executable,
+                str(plugin_root / "runtime" / "workflow_skill_router.pyz"),
+                "doctor",
+            ],
+            cwd=plugin_root,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0, doctor.returncode, doctor.stdout + doctor.stderr)
+        readiness = json.loads(doctor.stdout)
+        self.assertEqual("bundled-local-r0", readiness["runtime_profile"])
+        self.assertEqual("local-ready", readiness["tools"]["plan_work"]["availability"])
+        self.assertEqual(
+            "verified-host-required",
+            readiness["tools"]["get_next_work"]["availability"],
+        )
+
     def test_missing_mcp_fallback_never_lowers_r2_r3(self) -> None:
         archive_path = self.output / f"workflow-skill-router-skill-v{self.version}.zip"
         with ZipFile(archive_path) as archive:

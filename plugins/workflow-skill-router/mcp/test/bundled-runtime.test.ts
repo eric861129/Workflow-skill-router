@@ -1,0 +1,135 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { mkdtemp, rmdir, unlink } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+type JsonRpcResponse = { id?: number; result?: Record<string, unknown>; error?: unknown };
+
+test("bundled MCP server resolves the runtime inside the installed plugin", async () => {
+  const parent = path.resolve(import.meta.dirname, "..");
+  const pluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
+  const stateDirectory = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-test-"));
+  const child = spawn(process.execPath, [path.join(pluginRoot, "mcp", "server.bundle.mjs")], {
+    cwd: pluginRoot,
+    env: { ...process.env, WORKFLOW_SKILL_ROUTER_DATA_DIR: stateDirectory },
+    shell: false,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  const pending = new Map<number, (response: JsonRpcResponse) => void>();
+  let buffer = "";
+  let diagnostics = "";
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk: string) => { diagnostics += chunk; });
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => {
+    buffer += chunk;
+    for (;;) {
+      const newline = buffer.indexOf("\n");
+      if (newline < 0) break;
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      const response = JSON.parse(line) as JsonRpcResponse;
+      if (response.id !== undefined) pending.get(response.id)?.(response);
+    }
+  });
+  const request = (id: number, method: string, params: Record<string, unknown>) =>
+    new Promise<JsonRpcResponse>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error(
+        `MCP request timed out: ${method}\n${diagnostics}`,
+      )), 10_000);
+      pending.set(id, (response) => {
+        clearTimeout(timeout);
+        pending.delete(id);
+        resolve(response);
+      });
+      child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
+    });
+
+  try {
+    const initialized = await request(1, "initialize", {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "bundled-runtime-test", version: "1.0.0" },
+    });
+    assert.equal(initialized.error, undefined);
+    child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
+    const response = await request(2, "tools/call", {
+      name: "get_router_status",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        goal_binding_id: null,
+        workflow_run_id: null,
+      },
+    });
+    assert.equal(response.error, undefined);
+    const result = response.result as { isError?: boolean; content?: Array<{ text?: string }> };
+    assert.equal(result.isError, undefined);
+    assert.match(String(result.content?.[0]?.text), /created_work_items/);
+
+    const planResponse = await request(3, "tools/call", {
+      name: "plan_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 0,
+        idempotency_key: "bundled-runtime-plan",
+        correlation_id: "bundled-runtime-test",
+        objective: "修正一個小型文件問題",
+        goal_binding_id: null,
+        requested_work_mode: "single",
+        explicit_skill_ids: [],
+        explicit_semantics: null,
+      },
+    });
+    assert.equal(planResponse.error, undefined);
+    const planResult = planResponse.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(planResult.isError, undefined, JSON.stringify(planResponse));
+    assert.equal(planResult.structuredContent?.selection_mode, "auto");
+    assert.equal(planResult.structuredContent?.support_consent_required, false);
+
+    const unavailableResponse = await request(4, "tools/call", {
+      name: "get_next_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        workflow_run_id: String(planResult.structuredContent?.workflow_run_id),
+      },
+    });
+    assert.equal(unavailableResponse.error, undefined);
+    const unavailableResult = unavailableResponse.result as {
+      isError?: boolean;
+      content?: Array<{ text?: string }>;
+    };
+    assert.equal(unavailableResult.isError, true);
+    assert.match(String(unavailableResult.content?.[0]?.text), /capability-unavailable/);
+    assert.match(String(unavailableResult.content?.[0]?.text), /verified-host-required/);
+  } finally {
+    child.kill();
+    await new Promise<void>((resolve) => {
+      if (child.exitCode !== null) return resolve();
+      child.once("exit", () => resolve());
+      setTimeout(resolve, 2_000);
+    });
+    for (const name of ["router-v2.sqlite3", "router-v2.sqlite3-wal", "router-v2.sqlite3-shm"]) {
+      await unlink(path.join(stateDirectory, name)).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+    }
+    await rmdir(stateDirectory);
+  }
+});

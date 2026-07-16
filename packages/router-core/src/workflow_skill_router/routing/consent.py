@@ -99,6 +99,8 @@ def validate_support_selection(
     scope_index: ScopeIndex,
     now: datetime | None = None,
 ) -> ConsentDecision:
+    if support_policy is SupportPolicy.AUTO:
+        return ConsentDecision(True, "support-auto-selected", None, False)
     if support_policy is SupportPolicy.FORBID:
         return ConsentDecision(False, "support-forbidden", None, False)
     for grant in grants:

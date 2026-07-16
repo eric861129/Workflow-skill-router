@@ -37,6 +37,7 @@ def _authority_violations(
     context: ValidationContext,
     *,
     is_support: bool,
+    requires_support_consent: bool,
 ) -> list[RouteViolation]:
     violations = []
     if selection.policy_digest != context.runtime_policy_digest:
@@ -44,7 +45,11 @@ def _authority_violations(
     if selection.selection_origin in FORCED_ORIGINS or selection.selection_origin is SelectionOrigin.USER_EXPLICIT:
         if selection.authority_ref not in context.verified_authority_refs:
             violations.append(_violation("selection-authority-unverified", selection.capability_id))
-    if is_support and selection.selection_origin is SelectionOrigin.ROUTER_RECOMMENDED:
+    if (
+        requires_support_consent
+        and is_support
+        and selection.selection_origin is SelectionOrigin.ROUTER_RECOMMENDED
+    ):
         if (
             selection.consent_grant_ref is None
             or selection.consent_grant_ref not in context.consent_grant_refs
@@ -109,6 +114,10 @@ class RouteValidator:
                 violations.append(_violation("runtime-approval-required"))
 
         selected = (request.primary_selection, *request.support_selections)
+        requires_support_consent = (
+            policy.mode is SelectionMode.EXPLICIT_LOCKED
+            and policy.support_policy is SupportPolicy.ASK
+        )
         capabilities = {item.canonical_id: item for item in snapshot.capabilities}
         bound: list[LeaseCapability] = []
         for index, selection in enumerate(selected):
@@ -121,7 +130,12 @@ class RouteValidator:
                 violations.append(_violation("capability-unavailable", selection.capability_id))
             if capability.capability_fingerprint != selection.capability_fingerprint:
                 violations.append(_violation("capability-fingerprint-mismatch", selection.capability_id))
-            violations.extend(_authority_violations(selection, context, is_support=index > 0))
+            violations.extend(_authority_violations(
+                selection,
+                context,
+                is_support=index > 0,
+                requires_support_consent=requires_support_consent,
+            ))
             activation_binding = None
             binding_violation = None
             if context.runtime_mode is RuntimeMode.HYBRID:

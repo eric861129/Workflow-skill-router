@@ -29041,8 +29041,18 @@ async function resolveState(platform, pluginRoot, env = process.env, home = os.h
 }
 
 // mcp/src/core-client.ts
+var CoreBridgeError = class extends Error {
+  constructor(code, details) {
+    super(code);
+    this.code = code;
+    this.details = details;
+    this.name = "CoreBridgeError";
+  }
+  code;
+  details;
+};
 var CoreClient = class {
-  constructor(pluginRoot = path2.resolve(import.meta.dirname, "../..")) {
+  constructor(pluginRoot = path2.resolve(import.meta.dirname, "..")) {
     this.pluginRoot = pluginRoot;
   }
   pluginRoot;
@@ -29060,7 +29070,16 @@ var CoreClient = class {
     this.child = spawn2(
       python.command,
       [...python.prefixArgs, pyz, "serve-jsonl", "--database", state.database],
-      { cwd: this.pluginRoot, shell: false, stdio: ["pipe", "pipe", "pipe"] }
+      {
+        cwd: this.pluginRoot,
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: "utf-8",
+          PYTHONUTF8: "1"
+        },
+        shell: false,
+        stdio: ["pipe", "pipe", "pipe"]
+      }
     );
     this.child.stdout.setEncoding("utf8");
     this.child.stdout.on("data", (chunk) => this.onData(chunk));
@@ -29080,7 +29099,10 @@ var CoreClient = class {
         if (!pending || !response.request_id.startsWith(`g${this.generation}:`)) continue;
         clearTimeout(pending.timer);
         this.pending.delete(response.request_id);
-        response.ok ? pending.resolve(response.result) : pending.reject(new Error(response.error?.code ?? "bridge-error"));
+        response.ok ? pending.resolve(response.result) : pending.reject(new CoreBridgeError(
+          response.error?.code ?? "bridge-error",
+          response.error ?? { code: "bridge-error" }
+        ));
       } catch {
         process.stderr.write("Workflow Skill Router\uFF1A\u5FFD\u7565\u7121\u6548 bridge \u56DE\u61C9\u3002\n");
       }
@@ -29115,21 +29137,190 @@ var CoreClient = class {
 };
 
 // mcp/src/tool-schemas.ts
-var context = external_exports3.object({ session_id: external_exports3.string().min(1), actor: external_exports3.string().min(1), runtime_policy_snapshot_id: external_exports3.string().min(1) }).strict();
-var mutation = { context, expected_state_version: external_exports3.number().int().nonnegative(), idempotency_key: external_exports3.string().min(1), correlation_id: external_exports3.string().min(1) };
+var context = external_exports3.object({
+  session_id: external_exports3.string().min(1).describe("Stable session identifier used to isolate Router state and idempotency."),
+  actor: external_exports3.string().min(1).describe("Verified user or host actor responsible for this request."),
+  runtime_policy_snapshot_id: external_exports3.string().min(1).describe("Host policy snapshot governing authority and runtime behavior.")
+}).strict().describe("Authority context supplied by the Codex host.");
+var mutation = {
+  context,
+  expected_state_version: external_exports3.number().int().nonnegative().describe("Expected aggregate state version for compare-and-swap protection."),
+  idempotency_key: external_exports3.string().min(1).describe("Caller-stable key that safely replays the same semantic command."),
+  correlation_id: external_exports3.string().min(1).describe("Public-safe correlation identifier for tracing one command flow.")
+};
 var control = { context };
-var agentSnapshot = external_exports3.object({ schema_id: external_exports3.string(), schema_version: external_exports3.string(), artifact_kind: external_exports3.string(), runtime_revision: external_exports3.string(), capabilities: external_exports3.array(external_exports3.object({ canonical_id: external_exports3.string(), kind: external_exports3.string(), display_name: external_exports3.string(), exposure: external_exports3.string(), aliases: external_exports3.array(external_exports3.string()) }).strict()) }).strict();
+var agentSnapshot = external_exports3.object({
+  schema_id: external_exports3.string().describe("Registered schema identifier for the agent runtime snapshot."),
+  schema_version: external_exports3.string().describe("Version of the registered runtime snapshot schema."),
+  artifact_kind: external_exports3.string().describe("Artifact discriminator for the runtime snapshot."),
+  runtime_revision: external_exports3.string().describe("Host-observed revision of the available runtime surface."),
+  capabilities: external_exports3.array(external_exports3.object({
+    canonical_id: external_exports3.string().describe("Canonical capability identifier."),
+    kind: external_exports3.string().describe("Capability kind such as Skill, Plugin, MCP tool, or app."),
+    display_name: external_exports3.string().describe("Human-readable capability name."),
+    exposure: external_exports3.string().describe("How the capability is exposed to the current agent runtime."),
+    aliases: external_exports3.array(external_exports3.string()).describe("Alternative identifiers observed for this capability.")
+  }).strict()).describe("Capabilities directly observable from the current agent runtime.")
+}).strict();
 var TOOL_INPUT_SHAPES = {
-  sync_runtime_context: external_exports3.object({ ...mutation, intent: external_exports3.object({ host_snapshot_ref: external_exports3.string().nullable(), plugin_handshake_ref: external_exports3.string().nullable(), agent_runtime_snapshot: agentSnapshot }).strict() }).strict().shape,
-  plan_work: external_exports3.object({ ...mutation, objective: external_exports3.string(), goal_binding_id: external_exports3.string().nullable(), requested_work_mode: external_exports3.string().nullable(), explicit_skill_ids: external_exports3.array(external_exports3.string()), explicit_semantics: external_exports3.string().nullable() }).strict().shape,
-  get_next_work: external_exports3.object({ ...control, workflow_run_id: external_exports3.string() }).strict().shape,
-  validate_route: external_exports3.object({ ...mutation, route_proposal: external_exports3.record(external_exports3.string(), external_exports3.unknown()), capability_snapshot_id: external_exports3.string(), policy_revision: external_exports3.number().int() }).strict().shape,
-  record_work_event: external_exports3.object({ ...mutation, workflow_run_id: external_exports3.string(), phase_id: external_exports3.string(), observation: external_exports3.record(external_exports3.string(), external_exports3.unknown()), activation_receipt_ref: external_exports3.string().nullable() }).strict().shape,
-  evaluate_gate: external_exports3.object({ ...mutation, workflow_run_id: external_exports3.string(), phase_id: external_exports3.string(), expected_plan_revision: external_exports3.number().int(), expected_evidence_digest: external_exports3.string(), evidence_refs: external_exports3.array(external_exports3.string()) }).strict().shape,
-  get_router_status: external_exports3.object({ ...control, goal_binding_id: external_exports3.string().nullable(), workflow_run_id: external_exports3.string().nullable() }).strict().shape,
-  run_model_evaluation: external_exports3.object({ ...control, authorization_ref: external_exports3.string(), sealed_case_ref: external_exports3.string(), repeats: external_exports3.number().int().min(1), idempotency_key: external_exports3.string(), correlation_id: external_exports3.string() }).strict().shape,
-  compare_evaluations: external_exports3.object({ ...control, authorization_ref: external_exports3.string(), baseline_run_id: external_exports3.string(), candidate_run_id: external_exports3.string(), idempotency_key: external_exports3.string(), correlation_id: external_exports3.string() }).strict().shape,
-  export_router_artifact: external_exports3.object({ ...control, authorization_ref: external_exports3.string(), comparison_ref: external_exports3.string(), export_kind: external_exports3.string(), attestation_ref: external_exports3.string().nullable(), idempotency_key: external_exports3.string(), correlation_id: external_exports3.string() }).strict().shape
+  sync_runtime_context: external_exports3.object({
+    ...mutation,
+    intent: external_exports3.object({
+      host_snapshot_ref: external_exports3.string().nullable().describe("Verified host snapshot reference, or null when unavailable."),
+      plugin_handshake_ref: external_exports3.string().nullable().describe("Verified Plugin handshake reference, or null when unavailable."),
+      agent_runtime_snapshot: agentSnapshot.describe("Runtime capabilities directly observed by the active agent.")
+    }).strict().describe("Inputs to verified runtime capability discovery.")
+  }).strict().shape,
+  plan_work: external_exports3.object({
+    ...mutation,
+    objective: external_exports3.string().min(1).describe("The user-visible outcome this workflow must achieve."),
+    goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
+    requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
+    explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
+    explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists.")
+  }).strict().shape,
+  get_next_work: external_exports3.object({
+    ...control,
+    workflow_run_id: external_exports3.string().min(1).describe("Workflow run whose next host-scheduled work item is requested.")
+  }).strict().shape,
+  validate_route: external_exports3.object({
+    ...mutation,
+    route_proposal: external_exports3.record(external_exports3.string(), external_exports3.unknown()).describe("Complete route proposal evaluated against current policy and capability state."),
+    capability_snapshot_id: external_exports3.string().min(1).describe("Verified capability snapshot used for route validation."),
+    policy_revision: external_exports3.number().int().nonnegative().describe("Immutable routing policy revision expected by the caller.")
+  }).strict().shape,
+  record_work_event: external_exports3.object({
+    ...mutation,
+    workflow_run_id: external_exports3.string().min(1).describe("Workflow run receiving the semantic observation."),
+    phase_id: external_exports3.string().min(1).describe("Phase receiving the semantic observation."),
+    observation: external_exports3.record(external_exports3.string(), external_exports3.unknown()).describe("Versioned work observation validated by the core codec."),
+    activation_receipt_ref: external_exports3.string().nullable().describe("Single-use activation receipt when the observation reports execution.")
+  }).strict().shape,
+  evaluate_gate: external_exports3.object({
+    ...mutation,
+    workflow_run_id: external_exports3.string().min(1).describe("Workflow run whose phase gate is evaluated."),
+    phase_id: external_exports3.string().min(1).describe("Phase whose exit gate is evaluated."),
+    expected_plan_revision: external_exports3.number().int().nonnegative().describe("Plan revision bound to this gate decision."),
+    expected_evidence_digest: external_exports3.string().min(1).describe("Evidence digest expected before evaluating mandatory checks."),
+    evidence_refs: external_exports3.array(external_exports3.string()).describe("Content-addressed evidence references considered by the gate.")
+  }).strict().shape,
+  get_router_status: external_exports3.object({
+    ...control,
+    goal_binding_id: external_exports3.string().nullable().describe("Native Goal binding to filter, or null for session scope."),
+    workflow_run_id: external_exports3.string().nullable().describe("Workflow run to filter, or null for session scope.")
+  }).strict().shape,
+  run_model_evaluation: external_exports3.object({
+    ...control,
+    authorization_ref: external_exports3.string().min(1).describe("Trusted server-side authorization selecting a configured evaluation adapter."),
+    sealed_case_ref: external_exports3.string().min(1).describe("Reference to a sealed evaluation package with isolated scoring data."),
+    repeats: external_exports3.number().int().min(1).describe("Fresh attempt count requested for each selected evaluation case."),
+    idempotency_key: external_exports3.string().min(1).describe("Caller-stable key for this authorized evaluation request."),
+    correlation_id: external_exports3.string().min(1).describe("Public-safe evaluation correlation identifier.")
+  }).strict().shape,
+  compare_evaluations: external_exports3.object({
+    ...control,
+    authorization_ref: external_exports3.string().min(1).describe("Trusted authorization permitting comparison of the selected runs."),
+    baseline_run_id: external_exports3.string().min(1).describe("Completed baseline evaluation run identifier."),
+    candidate_run_id: external_exports3.string().min(1).describe("Completed candidate evaluation run identifier."),
+    idempotency_key: external_exports3.string().min(1).describe("Caller-stable key for the comparison request."),
+    correlation_id: external_exports3.string().min(1).describe("Public-safe comparison correlation identifier.")
+  }).strict().shape,
+  export_router_artifact: external_exports3.object({
+    ...control,
+    authorization_ref: external_exports3.string().min(1).describe("Trusted authorization permitting sanitized artifact export."),
+    comparison_ref: external_exports3.string().min(1).describe("Validated evaluation comparison used to build the artifact."),
+    export_kind: external_exports3.string().min(1).describe("Supported sanitized export format requested by the caller."),
+    attestation_ref: external_exports3.string().nullable().describe("Human or trusted verifier attestation, or null for review-required output."),
+    idempotency_key: external_exports3.string().min(1).describe("Caller-stable key for the export request."),
+    correlation_id: external_exports3.string().min(1).describe("Public-safe export correlation identifier.")
+  }).strict().shape
+};
+
+// mcp/src/tool-output-schemas.ts
+var nullableIdentifier = external_exports3.string().nullable();
+var unknownObject = external_exports3.record(external_exports3.string(), external_exports3.unknown());
+var TOOL_OUTPUT_SCHEMAS = {
+  sync_runtime_context: external_exports3.object({
+    snapshot: unknownObject,
+    drift: external_exports3.array(unknownObject),
+    provider_failures: external_exports3.array(unknownObject),
+    cache_used: external_exports3.boolean(),
+    degraded: external_exports3.boolean()
+  }).strict(),
+  plan_work: external_exports3.object({
+    status: external_exports3.string(),
+    workflow_run_id: nullableIdentifier,
+    work_graph_id: nullableIdentifier,
+    created_work_items: external_exports3.number().int().nonnegative(),
+    routing_envelope: external_exports3.string(),
+    selection_mode: external_exports3.string(),
+    support_consent_required: external_exports3.boolean(),
+    planned_skill_ids: external_exports3.array(external_exports3.string()),
+    runtime_mode: external_exports3.string()
+  }).strict(),
+  get_next_work: external_exports3.object({
+    status: external_exports3.string(),
+    refresh_requirements: external_exports3.array(external_exports3.string()),
+    work_item: external_exports3.unknown().nullable()
+  }).strict(),
+  validate_route: external_exports3.object({
+    valid: external_exports3.boolean(),
+    violations: external_exports3.array(unknownObject),
+    requires_runtime_approval: external_exports3.boolean(),
+    route: external_exports3.unknown().nullable(),
+    lease: external_exports3.unknown().nullable(),
+    outcome_mode: external_exports3.string(),
+    exit_gate: external_exports3.string().nullable()
+  }).strict(),
+  record_work_event: external_exports3.object({
+    event_ids: external_exports3.array(external_exports3.string()),
+    resulting_state_version: external_exports3.number().int().nonnegative(),
+    replayed: external_exports3.boolean()
+  }).strict(),
+  evaluate_gate: external_exports3.object({
+    status: external_exports3.string(),
+    passed: external_exports3.boolean(),
+    mandatory_failures: external_exports3.array(external_exports3.string()),
+    evidence_digest: external_exports3.string()
+  }).strict(),
+  get_router_status: external_exports3.object({
+    goal_binding_id: nullableIdentifier,
+    workflow_run_id: nullableIdentifier,
+    created_work_items: external_exports3.number().int().nonnegative(),
+    goal_status_candidate: external_exports3.object({
+      candidate_id: external_exports3.string(),
+      candidate_type: external_exports3.string(),
+      evidence_digest: external_exports3.string()
+    }).strict().nullable(),
+    host_goal_mutated: external_exports3.boolean()
+  }).strict(),
+  run_model_evaluation: external_exports3.object({
+    run_id: external_exports3.string(),
+    status: external_exports3.string(),
+    profile: external_exports3.string(),
+    adapter_kind: external_exports3.string(),
+    attempts: external_exports3.array(unknownObject),
+    manifest_digest: external_exports3.string(),
+    evidence_class: external_exports3.string()
+  }).strict(),
+  compare_evaluations: external_exports3.object({
+    baseline_run_id: external_exports3.string(),
+    candidate_run_id: external_exports3.string(),
+    paired_count: external_exports3.number().int().nonnegative(),
+    pass_rate_difference: external_exports3.number(),
+    hard_violation_difference: external_exports3.number().int(),
+    candidate_release_eligible: external_exports3.boolean()
+  }).strict(),
+  export_router_artifact: external_exports3.object({
+    schema_version: external_exports3.string(),
+    status: external_exports3.string(),
+    evidence_class: external_exports3.string(),
+    summary: unknownObject,
+    review_subject_digest: external_exports3.string(),
+    review_authority: external_exports3.string().nullable(),
+    reviewed_at: external_exports3.string().nullable(),
+    artifact_digest: external_exports3.string().nullable()
+  }).strict()
 };
 
 // mcp/src/tool-definitions.ts
@@ -29145,10 +29336,60 @@ var PUBLIC_TOOL_NAMES = [
   "compare_evaluations",
   "export_router_artifact"
 ];
+var TITLES = {
+  sync_runtime_context: "Sync Runtime Capabilities",
+  plan_work: "Plan Routed Work",
+  get_next_work: "Get Next Work Item",
+  validate_route: "Validate Proposed Route",
+  record_work_event: "Record Work Observation",
+  evaluate_gate: "Evaluate Phase Gate",
+  get_router_status: "Get Router Status",
+  run_model_evaluation: "Run Sealed Model Evaluation",
+  compare_evaluations: "Compare Evaluation Runs",
+  export_router_artifact: "Export Reviewed Router Artifact"
+};
+var DESCRIPTIONS = {
+  sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime supports this idempotent mutation and preserves explicit Skill locks without speculative consent prompts.",
+  get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",
+  validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
+  record_work_event: "Append a semantic work observation after validating activation receipts and reporting authority. This idempotent mutation requires the verified-host event store and fails closed locally.",
+  evaluate_gate: "Evaluate and persist a phase gate against current state, plan revision, and evidence digest. This idempotent mutation requires verified-host evidence and gate authority.",
+  get_router_status: "Read durable Router plan counts and native Goal status candidates without mutating the host Goal. This read is available from the bundled local R0 control plane.",
+  run_model_evaluation: "Run fresh attempts from a sealed case through a server-configured evaluation adapter. This quota-consuming operation requires configured-adapter authority and never accepts executable paths from model input.",
+  compare_evaluations: "Compare authorized baseline and candidate evaluation runs without fabricating unavailable metrics. This read requires configured evaluation evidence and remains review-required until attested.",
+  export_router_artifact: "Export a sanitized evaluation artifact from a validated comparison and optional trusted attestation. This operation requires configured-adapter evidence and cannot self-approve publication."
+};
+var RUNTIME_REQUIREMENTS = {
+  sync_runtime_context: "verified-host",
+  plan_work: "local-r0",
+  get_next_work: "verified-host",
+  validate_route: "verified-host",
+  record_work_event: "verified-host",
+  evaluate_gate: "verified-host",
+  get_router_status: "local-r0",
+  run_model_evaluation: "configured-adapter",
+  compare_evaluations: "configured-adapter",
+  export_router_artifact: "configured-adapter"
+};
+var READ_ONLY = /* @__PURE__ */ new Set([
+  "get_next_work",
+  "get_router_status",
+  "compare_evaluations"
+]);
 var TOOL_DEFINITIONS = PUBLIC_TOOL_NAMES.map((name) => ({
   name,
-  description: `Workflow Skill Router V2\uFF1A${name}`,
-  inputSchema: TOOL_INPUT_SHAPES[name]
+  title: TITLES[name],
+  description: DESCRIPTIONS[name],
+  inputSchema: TOOL_INPUT_SHAPES[name],
+  outputSchema: TOOL_OUTPUT_SCHEMAS[name].shape,
+  annotations: {
+    readOnlyHint: READ_ONLY.has(name),
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: name === "run_model_evaluation"
+  },
+  runtimeRequirement: RUNTIME_REQUIREMENTS[name]
 }));
 
 // mcp/src/server.ts
@@ -29163,10 +29404,29 @@ var server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-alph
 for (const definition of TOOL_DEFINITIONS) {
   server.registerTool(
     definition.name,
-    { description: definition.description, inputSchema: definition.inputSchema },
+    {
+      title: definition.title,
+      description: definition.description,
+      inputSchema: definition.inputSchema,
+      outputSchema: definition.outputSchema,
+      annotations: definition.annotations
+    },
     async (arguments_) => {
-      const result = await core.call(definition.name, arguments_);
-      return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+      try {
+        const result = await core.call(definition.name, arguments_);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+          structuredContent: result
+        };
+      } catch (error46) {
+        if (error46 instanceof CoreBridgeError && error46.code === "capability-unavailable") {
+          return {
+            isError: true,
+            content: [{ type: "text", text: JSON.stringify(error46.details) }]
+          };
+        }
+        throw error46;
+      }
     }
   );
 }

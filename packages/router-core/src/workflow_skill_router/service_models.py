@@ -55,6 +55,11 @@ class PlanWorkResult(ResultCodec):
     workflow_run_id: str | None
     work_graph_id: str | None
     created_work_items: int
+    routing_envelope: str
+    selection_mode: str
+    support_consent_required: bool
+    planned_skill_ids: tuple[str, ...]
+    runtime_mode: str
 
 
 @dataclass(frozen=True, slots=True)

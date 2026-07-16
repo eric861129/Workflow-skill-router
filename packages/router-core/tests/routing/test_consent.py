@@ -143,6 +143,20 @@ class ConsentTests(unittest.TestCase):
         self.assertEqual("support-forbidden", decision.code)
         self.assertFalse(decision.should_prompt)
 
+    def test_auto_policy_selects_support_without_prompt_or_grant(self) -> None:
+        decision = validate_support_selection(
+            self.proposal(),
+            SupportPolicy.AUTO,
+            (),
+            (),
+            self.index,
+            NOW,
+        )
+        self.assertTrue(decision.allowed)
+        self.assertEqual("support-auto-selected", decision.code)
+        self.assertIsNone(decision.grant_ref)
+        self.assertFalse(decision.should_prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

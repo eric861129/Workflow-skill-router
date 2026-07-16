@@ -47,7 +47,7 @@ def _work_mode(value: DirectiveInput) -> RoutingEnvelope | None:
 def resolve_directive(value: DirectiveInput) -> UserDirective:
     skills = tuple(dict.fromkeys(item.strip() for item in value.explicit_skill_ids if item.strip()))
     if not skills:
-        return UserDirective(_work_mode(value), (), None, SupportPolicy.ASK, value.text)
+        return UserDirective(_work_mode(value), (), None, SupportPolicy.AUTO, value.text)
 
     hint = value.skill_semantics_hint.strip().lower() if value.skill_semantics_hint else None
     if hint is None:
@@ -65,4 +65,3 @@ def resolve_directive(value: DirectiveInput) -> UserDirective:
         support_policy=support_policy,
         source_text=value.text,
     )
-

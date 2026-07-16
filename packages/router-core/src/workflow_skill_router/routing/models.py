@@ -48,6 +48,7 @@ class ExplicitSemantics(StrEnum):
 
 
 class SupportPolicy(StrEnum):
+    AUTO = "auto"
     ASK = "ask"
     FORBID = "forbid"
 
@@ -105,7 +106,7 @@ class UserDirective:
 
     @classmethod
     def auto(cls) -> "UserDirective":
-        return cls(None, (), None, SupportPolicy.ASK, "")
+        return cls(None, (), None, SupportPolicy.AUTO, "")
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,6 +190,10 @@ class SkillSelectionPolicy:
     def __post_init__(self) -> None:
         if self.plan_revision < 1:
             raise ValueError("plan_revision 必須大於等於 1")
+        if self.mode is SelectionMode.AUTO and self.support_policy is not SupportPolicy.AUTO:
+            raise ValueError("auto policy 必須使用自動輔助 Skill 政策")
+        if self.mode is SelectionMode.EXPLICIT_LOCKED and self.support_policy is SupportPolicy.AUTO:
+            raise ValueError("explicit-locked policy 不得自動加入輔助 Skill")
         if self.mode is SelectionMode.AUTO:
             if self.explicit_skill_ids or self.explicit_semantics is not None:
                 raise ValueError("auto policy 不可包含 explicit SKILL")

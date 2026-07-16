@@ -3,9 +3,11 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 import sys
+import traceback
 from typing import TextIO
 
 from workflow_skill_router.service_codecs import ServiceCodecError
+from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 from workflow_skill_router.tool_dispatch import PUBLIC_TOOLS
 
 
@@ -35,9 +37,16 @@ def serve(source: TextIO, output: TextIO, dispatcher, diagnostics: TextIO | None
         except ServiceCodecError:
             response = {"request_id": request_id, "ok": False,
                         "error": {"code": "invalid-arguments", "message": "Invalid request arguments"}}
+        except CapabilityUnavailable as error:
+            response = {
+                "request_id": request_id,
+                "ok": False,
+                "error": error.public_payload(),
+            }
         except Exception as error:
             correlation = sha256(f"{type(error).__name__}:{request_id}".encode()).hexdigest()[:16]
             print(f"[{correlation}] {type(error).__name__}: {error}", file=diagnostics)
+            traceback.print_exception(error, file=diagnostics)
             response = {"request_id": request_id, "ok": False,
                         "error": {"code": "internal-error", "message": f"correlation:{correlation}"}}
         output.write(json.dumps(response, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")

@@ -17,7 +17,7 @@
   "engines": { "node": ">=24" },
   "scripts": {
     "build": "node ./scripts/build-mcp.mjs",
-    "test": "node ./scripts/build-mcp.mjs --tests && node --test ./.test-build/bundled-runtime.test.mjs ./.test-build/python-discovery.test.mjs ./.test-build/state-path.test.mjs ./.test-build/tool-surface.test.mjs",
+    "test": "node ./scripts/build-mcp.mjs --tests && node --test ./.test-build/*.test.mjs",
     "check": "npm run build && npm test"
   },
   "dependencies": {

@@ -3,12 +3,19 @@ import json
 import unittest
 
 from workflow_skill_router.bridge import serve
+from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 
 
 class FakeDispatcher:
     def __init__(self): self.calls = 0
     def dispatch(self, tool, arguments):
         self.calls += 1; return {"sequence": self.calls, "arguments": arguments}
+
+
+class UnavailableDispatcher:
+    def dispatch(self, tool, arguments):
+        del tool, arguments
+        raise CapabilityUnavailable.for_tool("get_next_work")
 
 
 class BridgeTests(unittest.TestCase):
@@ -24,6 +31,20 @@ class BridgeTests(unittest.TestCase):
         serve(io.StringIO('{"request_id":"r1","tool":"raw_append","arguments":{"token":"secret"}}\n'), output, FakeDispatcher())
         self.assertEqual("unknown-tool", json.loads(output.getvalue())["error"]["code"])
         self.assertNotIn("secret", output.getvalue())
+
+    def test_known_unavailable_capability_returns_public_safe_requirement(self):
+        source = io.StringIO(
+            '{"request_id":"r1","tool":"get_next_work","arguments":{}}\n'
+        )
+        output = io.StringIO()
+        diagnostics = io.StringIO()
+        serve(source, output, UnavailableDispatcher(), diagnostics)
+        response = json.loads(output.getvalue())
+        self.assertEqual("capability-unavailable", response["error"]["code"])
+        self.assertEqual(
+            "verified-host-required", response["error"]["availability"]
+        )
+        self.assertEqual("", diagnostics.getvalue())
 
 
 if __name__ == "__main__": unittest.main()

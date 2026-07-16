@@ -25,6 +25,13 @@ from workflow_skill_router.routing.profiler import decide_request
 
 
 class RequestProfilerTests(unittest.TestCase):
+    def test_automatic_selection_does_not_require_support_consent(self) -> None:
+        automatic = UserDirective.auto()
+        resolved = resolve_directive(DirectiveInput("一般任務"))
+
+        self.assertEqual("auto", automatic.support_policy.value)
+        self.assertEqual("auto", resolved.support_policy.value)
+
     def test_status_is_control_query_without_routing_payload(self) -> None:
         decision = decide_request(
             GoalRelation.STATUS,

@@ -99,7 +99,7 @@ def selection(capability=SKILL, *, origin=SelectionOrigin.USER_EXPLICIT, consent
 
 def auto_policy() -> SkillSelectionPolicy:
     return SkillSelectionPolicy(
-        SelectionMode.AUTO, (), None, SupportPolicy.ASK, (), (), ScopeKind.PHASE,
+        SelectionMode.AUTO, (), None, SupportPolicy.AUTO, (), (), ScopeKind.PHASE,
         ScopeKind.PHASE, "scope:phase-1", 1,
     )
 
@@ -181,6 +181,22 @@ class RouteValidatorTests(unittest.TestCase):
         return self.validator.validate(
             request_for(), SNAPSHOT, auto_policy(), context(include_content=True),
         )
+
+    def test_auto_router_support_does_not_require_consent_grant(self) -> None:
+        request = replace(
+            request_for(),
+            support_selections=(selection(
+                SKILL_Y,
+                origin=SelectionOrigin.ROUTER_RECOMMENDED,
+            ),),
+        )
+
+        result = self.validator.validate(request, SNAPSHOT, auto_policy(), context())
+
+        self.assertTrue(result.valid)
+        self.assertEqual(("skill:y",), tuple(
+            item.capability_id for item in result.route.support_selections
+        ))
 
     def test_unavailable_capability_never_receives_lease(self) -> None:
         result = self.validator.validate(
