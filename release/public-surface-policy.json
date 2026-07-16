@@ -1,0 +1,18 @@
+{
+  "default_product": "v2-first",
+  "distribution": {
+    "plugin_primary": "codex-git-marketplace",
+    "release_assets": "github-release-assets",
+    "skill_only": "github-release-assets"
+  },
+  "legacy": {
+    "release_channel": "latest-v1",
+    "source_tag": "v1.3.1",
+    "visible_in_primary_navigation": false
+  },
+  "primary_install_modes": [
+    "plugin-mcp",
+    "skill-only"
+  ],
+  "schema_version": "1.0"
+}

@@ -1,0 +1,1651 @@
+{
+  "directories": [
+    "docs/assets",
+    "docs/launch",
+    "downloads",
+    "evaluation/artifacts",
+    "evaluation/forward-tests",
+    "examples/template-skill-catalog",
+    "prompts",
+    "recipes",
+    "references",
+    "route-cases",
+    "sample-skills",
+    "starter/workflow-skill-router",
+    "templates"
+  ],
+  "entries": [
+    {
+      "historical_source": "v1.3.1",
+      "path": "README.en.md",
+      "reason": "Remove the redundant V1 public surface after its V2 replacement is verified.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/adoption-guide.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/adoption-guide.zh-TW.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/anti-over-routing.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/demo-routing-before-after.svg",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/fuzzy-to-route-output.gif",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/route-demo-social.svg",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow-skill-router-60s-demo.gif",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "docs/assets/workflow-skill-router-demo-manifest.json",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow-skill-router-demo-poster.png",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow-skill-router-demo.mp4",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow-skill-router-demo.webm",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow-skill-router-social-preview.png",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/assets/workflow_skill_rout-GIF.gif",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/case-studies.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/contributor-guide-route-examples.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/dependency-governance.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/evaluation-guide.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/launch/v1.3.1-launch-checklist.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/launch/v1.3.1-launch-posts.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-cadence.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.0.0.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.1.0.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.1.2.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.2.0.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.3.0.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/release-notes-v1.3.1.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/roadmap.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/routing-metrics-trends.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/routing-metrics.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/showcase.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/skill-inventory-scanner.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/system-theory.en.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/system-theory.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/system-theory.zh-TW.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "docs/v1-to-v2-upgrade.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "docs/v1-to-v2-upgrade.zh-TW.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "docs/v2-architecture.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "docs/v2-architecture.zh-TW.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/validation-checklist.en.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/validation-checklist.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "docs/validation-checklist.zh-TW.md",
+      "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "downloads/README.md",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "github-release:v1.3.1",
+      "path": "downloads/archive/workflow-skill-router-skill-v1.3.1.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the immutable V1 package from the v1.3.1 GitHub Release."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/channels/latest-v1.json",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/channels/latest-v2.json",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/channels/latest.json",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/checksums.sha256",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/release-manifest-v2.0.0-alpha.1.json",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/sbom/workflow-skill-router-v2.0.0-alpha.1.spdx.json",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "downloads/workflow-skill-router-blank.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/workflow-skill-router-plugin-v2.0.0-alpha.1.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "downloads/workflow-skill-router-skill-v2.0.0-alpha.1.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "downloads/workflow-skill-router-template-clean.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "downloads/workflow-skill-router-template-manifest.md",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "downloads/workflow-skill-router-template.zip",
+      "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "evaluation/artifacts/public/v2-demo-evaluation.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "generated-from-source",
+      "path": "evaluation/artifacts/public/v2-demo-evaluation.redaction-manifest.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Regenerate the equivalent V2 output from source into ignored dist output or immutable GitHub Release assets."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/forward-tests/README.md",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/forward-tests/public-launch-2026-06.jsonl",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/metrics-history.jsonl",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/predictions.example.jsonl",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/report.example.md",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/route-cases.generated.jsonl",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/scenarios.example.jsonl",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "evaluation/schema.md",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "examples/template-skill-catalog/README.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "examples/template-skill-catalog/SKILL.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "examples/template-skill-catalog/references/capability-catalog.example.json",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "examples/template-skill-catalog/references/routing-rules.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "examples/template-skill-catalog/references/sample-routes.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "examples/template-skill-catalog/references/skill-tree.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "prompts/agent-prompt.en.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "prompts/agent-prompt.zh-TW.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "recipes/api-contract-sync.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "recipes/connector-heavy-workflow.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "recipes/docs-diagrams.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "recipes/frontend-debugging.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "recipes/pr-ci-review.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "references/skill-index.example.json",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "references/skill-index.example.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "references/skill-scan-warnings.example.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "references/suggested-skill-tree.example.md",
+      "reason": "Retire V1 prompt, recipe, and sample inventory material from the primary V2 tree.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/README.md",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/api-contract-sync.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/architecture-decision-record.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/connector-permission-triage.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/copy-edit-boundary.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/database-performance-triage.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/dependency-update-risk.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/docs-source-map-cleanup.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/frontend-design-refresh.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/release-readiness-gate.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/security-sensitive-review.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/simple-command-boundary.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "route-cases/vue-browser-regression.json",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/api-guidelines-skill/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/api-guidelines-skill/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/references/adr-template.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/references/architecture-patterns.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/references/database-selection.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/references/nfr-checklist.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/architecture-designer/references/system-design.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/c4-architecture/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/c4-architecture/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/c4-architecture/references/advanced-patterns.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/c4-architecture/references/c4-syntax.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/c4-architecture/references/common-mistakes.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/api-docs-fastapi-django.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/api-docs-nestjs-express.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/coverage-reports.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/documentation-systems.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/interactive-api-docs.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/python-docstrings.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/typescript-jsdoc.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/code-documenter/references/user-guides-tutorials.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/commit-work/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/commit-work/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/commit-work/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/commit-work/references/commit-message-template.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/references/aspnet-core.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/references/blazor.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/references/entity-framework.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/references/modern-csharp.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/csharp-developer/references/performance.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/references/index-strategies.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/references/monitoring-analysis.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/references/mysql-tuning.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/references/postgresql-tuning.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/database-optimizer/references/query-optimization.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dependency-updater/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dependency-updater/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dependency-updater/scripts/check-tool.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dependency-updater/scripts/run-taze.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/docker-compose-local-dev-skill/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/references/authentication.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/references/clean-architecture.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/references/cloud-native.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/references/entity-framework.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/dotnet-core-expert/references/minimal-apis.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/executing-plans/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/finishing-a-development-branch/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/frontend-debugging-workflow/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/frontend-debugging-workflow/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/frontend-design/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/karpathy-guidelines/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/openapi-to-typescript/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/openapi-to-typescript/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/LICENSE.txt",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/NOTICE.txt",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/assets/playwright-small.svg",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/assets/playwright.png",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/references/cli.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/references/workflows.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/playwright/scripts/playwright_cli.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/README.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/references/bug_report_templates.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/references/figma_validation.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/references/regression_testing.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/references/test_case_templates.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/scripts/create_bug_report.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/qa-test-planner/scripts/generate_test_cases.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/receiving-code-review/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/receiving-code-review/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/requirements-clarity/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/requirements-clarity/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/spec-miner/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/spec-miner/references/analysis-checklist.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/spec-miner/references/analysis-process.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/spec-miner/references/ears-format.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/spec-miner/references/specification-template.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/condition-based-waiting-example.ts",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/condition-based-waiting.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/defense-in-depth.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/find-polluter.sh",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/systematic-debugging/root-cause-tracing.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/vue-composition-patterns-skill/SKILL.md",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "sample-skills/vue-composition-patterns-skill/agents/openai.yaml",
+      "reason": "Remove bundled third-party sample Skills from the V2 product surface.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "scripts/build-route-gallery.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "scripts/evaluate-routing.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "scripts/render-routing-metrics-trend.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "scripts/route_case_tools.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "scripts/validate-route-cases.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/public/assets/workflow-skill-router-60s-demo.gif",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/public/assets/workflow_skill_rout-GIF.gif",
+      "reason": "Remove legacy or duplicate launch media after the V2 site asset migration.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/examples/routing-gallery.mdx",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/examples/template-skill-catalog.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/guides/adapters.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/guides/blank-router-walkthrough.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/guides/v2-routing.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/reference/agent-governance-positioning.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/reference/model-evaluation.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/reference/routing-contract.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/reference/sample-skills.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/reference/source-map.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/examples/routing-gallery.mdx",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/examples/template-skill-catalog.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/guides/adapters.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/guides/blank-router-walkthrough.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/zh-tw/guides/v2-routing.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/zh-tw/reference/agent-governance-positioning.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
+      "path": "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/reference/routing-contract.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/reference/sample-skills.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/content/docs/zh-tw/reference/source-map.md",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/data/route-cases.generated.json",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "site/src/data/routing-metrics-history.generated.json",
+      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "starter/workflow-skill-router/SKILL.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "starter/workflow-skill-router/agents/openai.yaml",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "starter/workflow-skill-router/references/routing-rules.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "starter/workflow-skill-router/references/skill-tree.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "templates/SKILL.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "templates/routing-rules.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "templates/skill-tree.md",
+      "reason": "Remove the V1 template product surface after the V2 Skill-only package becomes canonical.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "tests/test_evaluate_routing.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "tests/test_metrics_history.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    },
+    {
+      "historical_source": "v1.3.1",
+      "path": "tests/test_route_cases.py",
+      "reason": "Retire the V1 public evaluator and gallery surface after regression fixtures and V2 evaluation contracts replace it.",
+      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+    }
+  ],
+  "files": [
+    "README.en.md",
+    "docs/adoption-guide.md",
+    "docs/adoption-guide.zh-TW.md",
+    "docs/anti-over-routing.md",
+    "docs/assets/demo-routing-before-after.svg",
+    "docs/assets/fuzzy-to-route-output.gif",
+    "docs/assets/route-demo-social.svg",
+    "docs/assets/workflow-skill-router-60s-demo.gif",
+    "docs/assets/workflow-skill-router-demo-manifest.json",
+    "docs/assets/workflow-skill-router-demo-poster.png",
+    "docs/assets/workflow-skill-router-demo.mp4",
+    "docs/assets/workflow-skill-router-demo.webm",
+    "docs/assets/workflow-skill-router-social-preview.png",
+    "docs/assets/workflow_skill_rout-GIF.gif",
+    "docs/case-studies.md",
+    "docs/contributor-guide-route-examples.md",
+    "docs/dependency-governance.md",
+    "docs/evaluation-guide.md",
+    "docs/launch/v1.3.1-launch-checklist.md",
+    "docs/launch/v1.3.1-launch-posts.md",
+    "docs/release-cadence.md",
+    "docs/release-notes-v1.0.0.md",
+    "docs/release-notes-v1.1.0.md",
+    "docs/release-notes-v1.1.2.md",
+    "docs/release-notes-v1.2.0.md",
+    "docs/release-notes-v1.3.0.md",
+    "docs/release-notes-v1.3.1.md",
+    "docs/roadmap.md",
+    "docs/routing-metrics-trends.md",
+    "docs/routing-metrics.md",
+    "docs/showcase.md",
+    "docs/skill-inventory-scanner.md",
+    "docs/system-theory.en.md",
+    "docs/system-theory.md",
+    "docs/system-theory.zh-TW.md",
+    "docs/v1-to-v2-upgrade.md",
+    "docs/v1-to-v2-upgrade.zh-TW.md",
+    "docs/v2-architecture.md",
+    "docs/v2-architecture.zh-TW.md",
+    "docs/validation-checklist.en.md",
+    "docs/validation-checklist.md",
+    "docs/validation-checklist.zh-TW.md",
+    "downloads/README.md",
+    "downloads/archive/workflow-skill-router-skill-v1.3.1.zip",
+    "downloads/channels/latest-v1.json",
+    "downloads/channels/latest-v2.json",
+    "downloads/channels/latest.json",
+    "downloads/checksums.sha256",
+    "downloads/release-manifest-v2.0.0-alpha.1.json",
+    "downloads/sbom/workflow-skill-router-v2.0.0-alpha.1.spdx.json",
+    "downloads/workflow-skill-router-blank.zip",
+    "downloads/workflow-skill-router-plugin-v2.0.0-alpha.1.zip",
+    "downloads/workflow-skill-router-skill-v2.0.0-alpha.1.zip",
+    "downloads/workflow-skill-router-template-clean.zip",
+    "downloads/workflow-skill-router-template-manifest.md",
+    "downloads/workflow-skill-router-template.zip",
+    "evaluation/artifacts/public/v2-demo-evaluation.json",
+    "evaluation/artifacts/public/v2-demo-evaluation.redaction-manifest.json",
+    "evaluation/forward-tests/README.md",
+    "evaluation/forward-tests/public-launch-2026-06.jsonl",
+    "evaluation/metrics-history.jsonl",
+    "evaluation/predictions.example.jsonl",
+    "evaluation/report.example.md",
+    "evaluation/route-cases.generated.jsonl",
+    "evaluation/scenarios.example.jsonl",
+    "evaluation/schema.md",
+    "examples/template-skill-catalog/README.md",
+    "examples/template-skill-catalog/SKILL.md",
+    "examples/template-skill-catalog/references/capability-catalog.example.json",
+    "examples/template-skill-catalog/references/routing-rules.md",
+    "examples/template-skill-catalog/references/sample-routes.md",
+    "examples/template-skill-catalog/references/skill-tree.md",
+    "prompts/agent-prompt.en.md",
+    "prompts/agent-prompt.zh-TW.md",
+    "recipes/api-contract-sync.md",
+    "recipes/connector-heavy-workflow.md",
+    "recipes/docs-diagrams.md",
+    "recipes/frontend-debugging.md",
+    "recipes/pr-ci-review.md",
+    "references/skill-index.example.json",
+    "references/skill-index.example.md",
+    "references/skill-scan-warnings.example.md",
+    "references/suggested-skill-tree.example.md",
+    "route-cases/README.md",
+    "route-cases/api-contract-sync.json",
+    "route-cases/architecture-decision-record.json",
+    "route-cases/connector-permission-triage.json",
+    "route-cases/copy-edit-boundary.json",
+    "route-cases/database-performance-triage.json",
+    "route-cases/dependency-update-risk.json",
+    "route-cases/docs-source-map-cleanup.json",
+    "route-cases/frontend-design-refresh.json",
+    "route-cases/release-readiness-gate.json",
+    "route-cases/security-sensitive-review.json",
+    "route-cases/simple-command-boundary.json",
+    "route-cases/vue-browser-regression.json",
+    "sample-skills/README.md",
+    "sample-skills/api-guidelines-skill/SKILL.md",
+    "sample-skills/api-guidelines-skill/agents/openai.yaml",
+    "sample-skills/architecture-designer/SKILL.md",
+    "sample-skills/architecture-designer/agents/openai.yaml",
+    "sample-skills/architecture-designer/references/adr-template.md",
+    "sample-skills/architecture-designer/references/architecture-patterns.md",
+    "sample-skills/architecture-designer/references/database-selection.md",
+    "sample-skills/architecture-designer/references/nfr-checklist.md",
+    "sample-skills/architecture-designer/references/system-design.md",
+    "sample-skills/c4-architecture/README.md",
+    "sample-skills/c4-architecture/SKILL.md",
+    "sample-skills/c4-architecture/references/advanced-patterns.md",
+    "sample-skills/c4-architecture/references/c4-syntax.md",
+    "sample-skills/c4-architecture/references/common-mistakes.md",
+    "sample-skills/code-documenter/SKILL.md",
+    "sample-skills/code-documenter/references/api-docs-fastapi-django.md",
+    "sample-skills/code-documenter/references/api-docs-nestjs-express.md",
+    "sample-skills/code-documenter/references/coverage-reports.md",
+    "sample-skills/code-documenter/references/documentation-systems.md",
+    "sample-skills/code-documenter/references/interactive-api-docs.md",
+    "sample-skills/code-documenter/references/python-docstrings.md",
+    "sample-skills/code-documenter/references/typescript-jsdoc.md",
+    "sample-skills/code-documenter/references/user-guides-tutorials.md",
+    "sample-skills/commit-work/README.md",
+    "sample-skills/commit-work/SKILL.md",
+    "sample-skills/commit-work/agents/openai.yaml",
+    "sample-skills/commit-work/references/commit-message-template.md",
+    "sample-skills/csharp-developer/SKILL.md",
+    "sample-skills/csharp-developer/references/aspnet-core.md",
+    "sample-skills/csharp-developer/references/blazor.md",
+    "sample-skills/csharp-developer/references/entity-framework.md",
+    "sample-skills/csharp-developer/references/modern-csharp.md",
+    "sample-skills/csharp-developer/references/performance.md",
+    "sample-skills/database-optimizer/SKILL.md",
+    "sample-skills/database-optimizer/agents/openai.yaml",
+    "sample-skills/database-optimizer/references/index-strategies.md",
+    "sample-skills/database-optimizer/references/monitoring-analysis.md",
+    "sample-skills/database-optimizer/references/mysql-tuning.md",
+    "sample-skills/database-optimizer/references/postgresql-tuning.md",
+    "sample-skills/database-optimizer/references/query-optimization.md",
+    "sample-skills/dependency-updater/README.md",
+    "sample-skills/dependency-updater/SKILL.md",
+    "sample-skills/dependency-updater/scripts/check-tool.sh",
+    "sample-skills/dependency-updater/scripts/run-taze.sh",
+    "sample-skills/docker-compose-local-dev-skill/SKILL.md",
+    "sample-skills/dotnet-core-expert/SKILL.md",
+    "sample-skills/dotnet-core-expert/references/authentication.md",
+    "sample-skills/dotnet-core-expert/references/clean-architecture.md",
+    "sample-skills/dotnet-core-expert/references/cloud-native.md",
+    "sample-skills/dotnet-core-expert/references/entity-framework.md",
+    "sample-skills/dotnet-core-expert/references/minimal-apis.md",
+    "sample-skills/executing-plans/SKILL.md",
+    "sample-skills/finishing-a-development-branch/SKILL.md",
+    "sample-skills/frontend-debugging-workflow/SKILL.md",
+    "sample-skills/frontend-debugging-workflow/agents/openai.yaml",
+    "sample-skills/frontend-design/SKILL.md",
+    "sample-skills/karpathy-guidelines/SKILL.md",
+    "sample-skills/openapi-to-typescript/README.md",
+    "sample-skills/openapi-to-typescript/SKILL.md",
+    "sample-skills/playwright/LICENSE.txt",
+    "sample-skills/playwright/NOTICE.txt",
+    "sample-skills/playwright/SKILL.md",
+    "sample-skills/playwright/agents/openai.yaml",
+    "sample-skills/playwright/assets/playwright-small.svg",
+    "sample-skills/playwright/assets/playwright.png",
+    "sample-skills/playwright/references/cli.md",
+    "sample-skills/playwright/references/workflows.md",
+    "sample-skills/playwright/scripts/playwright_cli.sh",
+    "sample-skills/qa-test-planner/README.md",
+    "sample-skills/qa-test-planner/SKILL.md",
+    "sample-skills/qa-test-planner/agents/openai.yaml",
+    "sample-skills/qa-test-planner/references/bug_report_templates.md",
+    "sample-skills/qa-test-planner/references/figma_validation.md",
+    "sample-skills/qa-test-planner/references/regression_testing.md",
+    "sample-skills/qa-test-planner/references/test_case_templates.md",
+    "sample-skills/qa-test-planner/scripts/create_bug_report.sh",
+    "sample-skills/qa-test-planner/scripts/generate_test_cases.sh",
+    "sample-skills/receiving-code-review/SKILL.md",
+    "sample-skills/receiving-code-review/agents/openai.yaml",
+    "sample-skills/requirements-clarity/SKILL.md",
+    "sample-skills/requirements-clarity/agents/openai.yaml",
+    "sample-skills/spec-miner/SKILL.md",
+    "sample-skills/spec-miner/references/analysis-checklist.md",
+    "sample-skills/spec-miner/references/analysis-process.md",
+    "sample-skills/spec-miner/references/ears-format.md",
+    "sample-skills/spec-miner/references/specification-template.md",
+    "sample-skills/systematic-debugging/SKILL.md",
+    "sample-skills/systematic-debugging/agents/openai.yaml",
+    "sample-skills/systematic-debugging/condition-based-waiting-example.ts",
+    "sample-skills/systematic-debugging/condition-based-waiting.md",
+    "sample-skills/systematic-debugging/defense-in-depth.md",
+    "sample-skills/systematic-debugging/find-polluter.sh",
+    "sample-skills/systematic-debugging/root-cause-tracing.md",
+    "sample-skills/vue-composition-patterns-skill/SKILL.md",
+    "sample-skills/vue-composition-patterns-skill/agents/openai.yaml",
+    "scripts/build-route-gallery.py",
+    "scripts/evaluate-routing.py",
+    "scripts/render-routing-metrics-trend.py",
+    "scripts/route_case_tools.py",
+    "scripts/validate-route-cases.py",
+    "site/public/assets/workflow-skill-router-60s-demo.gif",
+    "site/public/assets/workflow_skill_rout-GIF.gif",
+    "site/src/content/docs/examples/routing-gallery.mdx",
+    "site/src/content/docs/examples/template-skill-catalog.md",
+    "site/src/content/docs/guides/adapters.md",
+    "site/src/content/docs/guides/blank-router-walkthrough.md",
+    "site/src/content/docs/guides/v2-routing.md",
+    "site/src/content/docs/reference/agent-governance-positioning.md",
+    "site/src/content/docs/reference/model-evaluation.md",
+    "site/src/content/docs/reference/routing-contract.md",
+    "site/src/content/docs/reference/sample-skills.md",
+    "site/src/content/docs/reference/source-map.md",
+    "site/src/content/docs/zh-tw/examples/routing-gallery.mdx",
+    "site/src/content/docs/zh-tw/examples/template-skill-catalog.md",
+    "site/src/content/docs/zh-tw/guides/adapters.md",
+    "site/src/content/docs/zh-tw/guides/blank-router-walkthrough.md",
+    "site/src/content/docs/zh-tw/guides/v2-routing.md",
+    "site/src/content/docs/zh-tw/reference/agent-governance-positioning.md",
+    "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+    "site/src/content/docs/zh-tw/reference/routing-contract.md",
+    "site/src/content/docs/zh-tw/reference/sample-skills.md",
+    "site/src/content/docs/zh-tw/reference/source-map.md",
+    "site/src/data/route-cases.generated.json",
+    "site/src/data/routing-metrics-history.generated.json",
+    "starter/workflow-skill-router/SKILL.md",
+    "starter/workflow-skill-router/agents/openai.yaml",
+    "starter/workflow-skill-router/references/routing-rules.md",
+    "starter/workflow-skill-router/references/skill-tree.md",
+    "templates/SKILL.md",
+    "templates/routing-rules.md",
+    "templates/skill-tree.md",
+    "tests/test_evaluate_routing.py",
+    "tests/test_metrics_history.py",
+    "tests/test_route_cases.py"
+  ],
+  "notes": [
+    "This manifest is an exact review list only. Task 2 performs no deletion.",
+    "The immutable v1.3.1 tag is used only where the file actually exists in that tag.",
+    "Generated V2 alpha artifacts and post-v1.3.1 files use their truthful source or regeneration boundary."
+  ],
+  "recovery_sources": {
+    "generated-from-source": "Generated output is recreated by the V2 release, evaluation, or site asset pipeline.",
+    "github-release:v1.3.1": "Immutable V1 release asset hosted by the v1.3.1 GitHub Release.",
+    "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335": "Tracked predecessor at the pre-Goal starting commit.",
+    "v1.3.1": "Immutable V1 Git tag."
+  },
+  "schema_version": "1.0",
+  "selection_count": 231
+}
