@@ -34,6 +34,18 @@ from .models import (
     SideEffect,
     TrustLevel,
 )
+from .filesystem import (
+    FilesystemMetadataProvider,
+    InstallerContentClaim,
+    InstallerManifestIndex,
+)
+from .frontmatter import FrontmatterError, parse_frontmatter, read_frontmatter_stream
+from .providers import (
+    CapabilityObservation,
+    CapabilityProvider,
+    DiscoveryContext,
+    ProviderResult,
+)
 
 
 CAPABILITY_SCHEMA_REGISTRY = SchemaRegistry()
@@ -58,13 +70,19 @@ __all__ = [
     "Capability",
     "CapabilityDrift",
     "CapabilityKind",
+    "CapabilityObservation",
+    "CapabilityProvider",
     "CapabilitySnapshot",
     "Compatibility",
     "DriftKind",
     "Eligibility",
     "Exposure",
     "FieldObservation",
+    "FilesystemMetadataProvider",
     "Freshness",
+    "FrontmatterError",
+    "InstallerContentClaim",
+    "InstallerManifestIndex",
     "Presence",
     "ProvenanceRecord",
     "Requirement",
@@ -72,9 +90,13 @@ __all__ = [
     "RiskLevel",
     "SideEffect",
     "TrustLevel",
+    "DiscoveryContext",
+    "ProviderResult",
     "decode_capability",
     "decode_snapshot",
     "derive_availability",
     "encode_capability",
     "encode_snapshot",
+    "parse_frontmatter",
+    "read_frontmatter_stream",
 ]
