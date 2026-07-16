@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from concurrent.futures import Future, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable
+from time import monotonic
+from typing import Callable, Mapping
 
 from .drift import compare_snapshots
 from .models import CapabilityDrift, CapabilitySnapshot
@@ -36,6 +37,7 @@ class DiscoveryService:
         *,
         clock: Callable[[], datetime] | None = None,
         provider_timeout_seconds: float = 2.0,
+        provider_deadlines: Mapping[str, float] | None = None,
         max_workers: int = 8,
     ) -> None:
         if provider_timeout_seconds <= 0:
@@ -45,7 +47,17 @@ class DiscoveryService:
         self._providers = tuple(providers)
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._provider_timeout_seconds = provider_timeout_seconds
+        self._provider_deadlines = dict(provider_deadlines or {})
+        if any(value <= 0 for value in self._provider_deadlines.values()):
+            raise ValueError("provider deadline 必須大於 0")
         self._max_workers = max_workers
+
+    @staticmethod
+    def _invoke(
+        provider: CapabilityProvider,
+        context: DiscoveryContext,
+    ) -> tuple[ProviderResult, float]:
+        return provider.discover(context), monotonic()
 
     @staticmethod
     def _provider_id(provider: CapabilityProvider, index: int) -> str:
@@ -68,35 +80,72 @@ class DiscoveryService:
                 max_workers=min(self._max_workers, len(self._providers)),
                 thread_name_prefix="router-capability-provider",
             )
-            future_to_identity: dict[Future[ProviderResult], tuple[int, str]] = {}
+            future_to_identity: dict[
+                Future[tuple[ProviderResult, float]],
+                tuple[int, str, float],
+            ] = {}
+            submitted_at = monotonic()
             for index, provider in enumerate(self._providers):
-                future = executor.submit(provider.discover, context)
-                future_to_identity[future] = (index, self._provider_id(provider, index))
-            done, pending = wait(
-                tuple(future_to_identity),
-                timeout=self._provider_timeout_seconds,
-            )
-            for future in done:
-                _, provider_id = future_to_identity[future]
-                try:
-                    result = future.result()
-                    if not isinstance(result, ProviderResult):
-                        raise TypeError("provider did not return ProviderResult")
-                    results.append(result)
-                except Exception as error:
+                provider_id = self._provider_id(provider, index)
+                deadline = submitted_at + self._provider_deadlines.get(
+                    provider_id,
+                    self._provider_timeout_seconds,
+                )
+                future = executor.submit(self._invoke, provider, context)
+                future_to_identity[future] = (index, provider_id, deadline)
+
+            pending = set(future_to_identity)
+            while pending:
+                current = monotonic()
+                expired = {
+                    future
+                    for future in pending
+                    if current >= future_to_identity[future][2]
+                }
+                for future in expired:
+                    _, provider_id, _ = future_to_identity[future]
+                    future.cancel()
                     failures.append(ProviderFailure(
                         provider_id=provider_id,
-                        reason=f"provider-error:{error.__class__.__name__}",
-                        timed_out=False,
+                        reason="provider-timeout",
+                        timed_out=True,
                     ))
-            for future in pending:
-                _, provider_id = future_to_identity[future]
-                future.cancel()
-                failures.append(ProviderFailure(
-                    provider_id=provider_id,
-                    reason="provider-timeout",
-                    timed_out=True,
-                ))
+                pending.difference_update(expired)
+                if not pending:
+                    break
+
+                next_deadline = min(future_to_identity[item][2] for item in pending)
+                done, _ = wait(
+                    pending,
+                    timeout=max(0.0, next_deadline - monotonic()),
+                    return_when=FIRST_COMPLETED,
+                )
+                for future in done:
+                    pending.remove(future)
+                    _, provider_id, deadline = future_to_identity[future]
+                    try:
+                        result, completed_at = future.result()
+                        if completed_at > deadline:
+                            failures.append(ProviderFailure(
+                                provider_id=provider_id,
+                                reason="provider-timeout",
+                                timed_out=True,
+                            ))
+                            continue
+                        if not isinstance(result, ProviderResult):
+                            raise TypeError("provider did not return ProviderResult")
+                        results.append(result)
+                    except Exception as error:
+                        reason = getattr(error, "reason_code", None)
+                        failures.append(ProviderFailure(
+                            provider_id=provider_id,
+                            reason=(
+                                reason
+                                if isinstance(reason, str) and reason
+                                else f"provider-error:{error.__class__.__name__}"
+                            ),
+                            timed_out=False,
+                        ))
             executor.shutdown(wait=False, cancel_futures=True)
 
         ordered_results = tuple(sorted(
