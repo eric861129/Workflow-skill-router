@@ -190,19 +190,21 @@ python -m unittest discover -s tests -v`,
 const heroText = isZh
   ? {
       eyebrow: 'Codex Plugin / MCP / SKILL',
-      title: '依 runtime 真實能力，選對工作流程',
-      body: '小任務保持單一路徑，多階段逐步驗證，大型 Goal 則建立可恢復的工作圖。',
+      title: '為真實 Codex 工作提供 Runtime-aware SKILL routing',
+      body: '分類 Single、Phased 與 Managed Goal 工作，保留使用者明確指定的 SKILL 邊界，並揭露下一步可由哪個 runtime 執行。',
       primary: '安裝 Plugin + MCP',
-      secondary: '純 SKILL 安裝',
+      secondary: '只使用 SKILL',
+      tertiary: '看 Router 如何決策',
       explainerLabel: 'V2 routing outcome',
       explainerTitle: '從 request 到 envelope 與 evidence',
     }
   : {
       eyebrow: 'Codex Plugin / MCP / SKILL',
-      title: 'Route work from real runtime capabilities',
-      body: 'Keep small tasks single, verify multi-stage work phase by phase, and make large Goals resumable.',
+      title: 'Runtime-aware Skill routing for real Codex work',
+      body: 'Classify Single, Phased, and Managed Goal work; preserve explicit Skill boundaries; and expose exactly which runtime can execute the next step.',
       primary: 'Install Plugin + MCP',
-      secondary: 'Install Skill-only',
+      secondary: 'Use Skill only',
+      tertiary: 'Watch the Router decide',
       explainerLabel: 'V2 routing outcome',
       explainerTitle: 'From request to envelope and evidence',
     };
@@ -274,6 +276,7 @@ const heroPreview = isZh
         <div class="wsr-hero-actions">
           <a class="wsr-button wsr-button-primary" href={`${rootPath}/guides/install-plugin/`} data-analytics-event="site_hero_install_plugin">{heroText.primary}</a>
           <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/install-skill/`}>{heroText.secondary}</a>
+          <a class="wsr-hero-tertiary" href="#router-demo">{heroText.tertiary}</a>
         </div>
       </div>
 

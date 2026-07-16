@@ -1,16 +1,16 @@
 ---
-title: AI Agent Skill Routing Pattern | Workflow Skill Router
-description: Workflow Skill Router 處理多技能 AI Agent 的 Skill 選擇失控問題，包含範例、下載包與 validator CLI。
+title: Runtime-aware SKILL Routing | Workflow Skill Router V2
+description: 透過真實的 Codex Plugin/MCP runtime 或邊界清楚的純 SKILL fallback，routing Single、Phased 與 Managed Goal 工作。
 template: splash
 head:
   - tag: meta
     attrs:
       property: og:title
-      content: AI Agent Skill Routing Pattern | Workflow Skill Router
+      content: Runtime-aware SKILL Routing | Workflow Skill Router V2
   - tag: meta
     attrs:
       property: og:description
-      content: 在 AI Agent 開工前，先用一個小而可審查的 routing decision 處理 Skill 選擇失控。
+      content: 在 Codex 工作繼續前，先發現目前 runtime capabilities、保留使用者明確指定的 SKILL，並檢查 typed routing evidence。
   - tag: meta
     attrs:
       property: og:url
@@ -22,11 +22,11 @@ head:
   - tag: meta
     attrs:
       name: twitter:title
-      content: AI Agent Skill Routing Pattern | Workflow Skill Router
+      content: Runtime-aware SKILL Routing | Workflow Skill Router V2
   - tag: meta
     attrs:
       name: twitter:description
-      content: 給 Codex Skills 與多技能 AI Agent 使用的 skill selection layer。
+      content: 為 Single、Phased 與 Managed Goal 工作提供 Plugin + MCP runtime routing，以及誠實的純 SKILL fallback。
   - tag: script
     attrs:
       type: application/ld+json
@@ -36,17 +36,18 @@ head:
         "@graph": [
           {
             "@type": "WebSite",
-            "name": "Workflow Skill Router",
+            "name": "Workflow Skill Router V2",
             "url": "https://huangchiyu.com/Workflow-skill-router/zh-tw/",
-            "description": "給 Codex Skills 與多技能 AI Agent 使用，處理 Skill 選擇失控的 skill routing pattern。"
+            "description": "為 Single、Phased 與 Managed Goal Codex 工作提供 Runtime-aware SKILL routing。"
           },
           {
             "@type": "SoftwareSourceCode",
-            "name": "Workflow Skill Router",
+            "name": "Workflow Skill Router V2",
             "codeRepository": "https://github.com/eric861129/Workflow-skill-router",
-            "programmingLanguage": ["Markdown", "Python", "Astro"],
+            "programmingLanguage": ["Python", "TypeScript", "Astro"],
+            "runtimePlatform": "Codex Plugin、MCP 與純 SKILL fallback",
             "license": "https://github.com/eric861129/Workflow-skill-router/blob/main/LICENSE",
-            "description": "提供 Codex-ready starter、公開範本、下載包與 validator CLI，用於處理多技能 AI Agent 的 Skill 選擇失控問題。"
+            "description": "具備 typed MCP contracts、durable local R0 planning、Explicit Skill Lock 與 evidence boundaries 的 runtime-aware planning and Skill routing layer。"
           }
         ]
       }

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 const pages = [
   { path: './', text: 'Workflow Skill Router' },
   { path: 'guides/quickstart/', text: 'V2 Quickstart' },
+  { path: 'guides/downloads/', text: 'Choose your V2 install mode' },
   { path: 'guides/install-plugin/', text: 'Install the Plugin + MCP runtime' },
   { path: 'concepts/runtime-capability-discovery/', text: 'Runtime Capability Discovery' },
   { path: 'reference/mcp-tools/', text: 'MCP Tools' },
@@ -13,6 +14,22 @@ const pages = [
   { path: 'zh-tw/reference/mcp-tools/', text: 'MCP Tools' },
   { path: 'zh-tw/examples/routing-gallery/', text: '路由案例 Gallery' },
 ];
+
+test('homepage presents the V2 product and install choices first', async ({ page }) => {
+  await page.goto('./');
+  const hero = page.locator('.wsr-hero');
+  await expect(hero.getByRole('heading', { name: /runtime-aware skill routing for real codex work/i })).toBeVisible();
+  await expect(hero.getByRole('link', { name: /install plugin \+ mcp/i })).toBeVisible();
+  await expect(hero.getByRole('link', { name: /use skill only/i })).toBeVisible();
+  await expect(page.getByText('Download Blank Router')).toHaveCount(0);
+});
+
+test('mobile navigation exposes the full brand and named theme control', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+  await expect(page.getByRole('link', { name: 'Workflow Skill Router', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /toggle color theme/i })).toBeVisible();
+});
 
 for (const pageCase of pages) {
   test(`loads ${pageCase.path}`, async ({ page }) => {

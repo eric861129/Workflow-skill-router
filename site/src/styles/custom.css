@@ -985,6 +985,19 @@ body:has(.wsr-landing) .pagination-links {
   color: #f8fafc;
 }
 
+.wsr-hero-tertiary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  color: #bae6fd;
+  font-weight: 750;
+  text-underline-offset: 0.24em;
+}
+
+.wsr-hero-tertiary:hover {
+  color: #f8fafc;
+}
+
 .wsr-button-secondary-dark {
   border: 1px solid rgb(255 255 255 / 0.22);
   background: rgb(255 255 255 / 0.1);
@@ -1727,6 +1740,11 @@ body:has(.wsr-landing) .pagination-links {
   }
 
   .wsr-hero-actions .wsr-button {
+    width: 100%;
+  }
+
+  .wsr-hero-tertiary {
+    justify-content: center;
     width: 100%;
   }
 

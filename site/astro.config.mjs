@@ -110,18 +110,14 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Start Here',
+          label: 'Start',
           translations: {
-            'zh-TW': '開始使用',
+            'zh-TW': '開始',
           },
           items: [
             { slug: '' },
             { slug: 'guides/quickstart' },
-            { slug: 'guides/install-plugin' },
-            { slug: 'guides/install-skill' },
-            { slug: 'guides/adoption' },
-            { slug: 'guides/troubleshooting' },
-            { slug: 'guides/migrate-v1-to-v2' },
+            { slug: 'guides/downloads' },
           ],
         },
         {
@@ -135,18 +131,28 @@ export default defineConfig({
             { slug: 'concepts/explicit-skill-lock' },
             { slug: 'concepts/phase-state-machine' },
             { slug: 'concepts/managed-goals' },
-            { slug: 'concepts/evaluation-evidence' },
           ],
         },
         {
-          label: 'Examples',
+          label: 'Guides',
           translations: {
-            'zh-TW': '實例',
+            'zh-TW': '指南',
           },
           items: [
+            { slug: 'guides/install-plugin' },
+            { slug: 'guides/install-skill' },
+            { slug: 'guides/adoption' },
+            { slug: 'guides/troubleshooting' },
+          ],
+        },
+        {
+          label: 'Evaluation',
+          translations: {
+            'zh-TW': '評測與證據',
+          },
+          items: [
+            { slug: 'concepts/evaluation-evidence' },
             { slug: 'showcase' },
-            { slug: 'examples/routing-gallery' },
-            { slug: 'examples/case-studies' },
           ],
         },
         {
@@ -171,6 +177,19 @@ export default defineConfig({
           items: [
             { slug: 'contributing/release-process' },
             { slug: 'contributing/roadmap' },
+          ],
+        },
+        {
+          label: 'Legacy V1',
+          translations: {
+            'zh-TW': 'V1 歷史版本',
+          },
+          items: [
+            { slug: 'guides/migrate-v1-to-v2' },
+            {
+              label: 'V1.3.1 Release',
+              link: 'https://github.com/eric861129/Workflow-skill-router/releases/tag/v1.3.1',
+            },
           ],
         },
       ],

@@ -1,214 +1,116 @@
 ---
-title: 下載
-description: 下載空白 router skill，或先參考一套範例再設計自己的 router。
+title: 安裝模式與 Release Assets
+description: 選擇符合 Codex Host 真實能力邊界的 V2 runtime，再安裝或檢查正確 package。
 ---
 
-## 下載套件
+## 選擇你的 V2 安裝模式
 
-大多數人先下載 **Blank Router** 就好。它提供乾淨的 router 結構，讓你填入自己的 skills、命名習慣、觸發條件、排除條件與 routing rules。**Reference Template** 是拿來理解結構與寫法的範例，不是要照抄成自己的最終 catalog。
+Workflow Skill Router 只有一個 policy core，但有多種 runtime boundary。應依 Host 真正能提供的 authority 選擇，而不是挑功能清單最長的模式。
 
-<div class="wsr-download-picker" aria-label="下載套件比較">
+<div class="wsr-download-picker" aria-label="V2 安裝模式比較">
   <article class="wsr-download-card wsr-download-card-featured">
     <div>
-      <span class="wsr-download-kicker">主要下載</span>
-      <h3>Blank Router</h3>
-      <p>從乾淨的 router 開始。下載後放進 Codex skills，再填入自己的 skill tree、觸發詞、排除條件與 routing rules。</p>
+      <span class="wsr-download-kicker">主要安裝方式</span>
+      <h3>Bundled Plugin + MCP</h3>
+      <p>需要 durable local R0 planning、runtime readiness、typed MCP result，以及 fail-closed Host handoff 時，使用 Codex Plugin。</p>
     </div>
     <dl class="wsr-download-specs">
-      <div>
-        <dt>最適合</dt>
-        <dd>想依照自己的開發習慣建立一套 router</dd>
-      </div>
-      <div>
-        <dt>包含</dt>
-        <dd><code>workflow-skill-router/</code> starter、routing rules、OpenAI agent metadata</dd>
-      </div>
-      <div>
-        <dt>不包含</dt>
-        <dd>Template catalog 與 sample skill folders</dd>
-      </div>
+      <div><dt>Local-ready</dt><dd><code>plan_work</code> 與 <code>get_router_status</code></dd></div>
+      <div><dt>Runtime label</dt><dd><code>bundled-local-r0</code></dd></div>
+      <div><dt>系統需求</dt><dd>Codex Plugin/MCP、Python 3.11+、Node.js 24+</dd></div>
     </dl>
-    <a class="wsr-download-button" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_download_blank_router">下載 Blank Router</a>
+    <a class="wsr-download-button" href="/Workflow-skill-router/zh-tw/guides/install-plugin/">安裝 Plugin + MCP</a>
   </article>
 
   <article class="wsr-download-card">
     <div>
-      <span class="wsr-download-kicker">參考範本</span>
-      <h3>Reference Template</h3>
-      <p>用一套 public-safe 範例理解 route、primary skill 與 supporting skills 如何組織。它適合學習與改造，不是最終成品。</p>
+      <span class="wsr-download-kicker">Host integration</span>
+      <h3>Verified-host integration</h3>
+      <p>Scheduler、compare-and-swap state、受保護 route validation、gates 與 Goal progression，只能透過 Host 驗證過的 ports 與 receipts 加入。</p>
     </div>
     <dl class="wsr-download-specs">
-      <div>
-        <dt>最適合</dt>
-        <dd>想先看完整寫法，再回去設計自己的 router</dd>
-      </div>
-      <div>
-        <dt>包含</dt>
-        <dd>Router、manifest、sample skills、root README</dd>
-      </div>
-      <div>
-        <dt>不包含</dt>
-        <dd>Private skills、sensitive lines、非必要 per-skill README files</dd>
-      </div>
+      <div><dt>最適合</dt><dd>Codex 或平台整合者</dd></div>
+      <div><dt>Authority</dt><dd>由 Host 所有，不從本機檔案推測</dd></div>
+      <div><dt>Fallback</dt><dd>Typed <code>capability-unavailable</code></dd></div>
     </dl>
-    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip" data-analytics-event="site_download_reference_template">下載 Reference Template</a>
+    <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/zh-tw/concepts/managed-goals/">檢查 Host boundary</a>
+  </article>
+
+  <article class="wsr-download-card">
+    <div>
+      <span class="wsr-download-kicker">授權後的 evaluation</span>
+      <h3>Configured evaluation adapter</h3>
+      <p>透過 server-configured executable 執行 fresh Behavior 或 Outcome attempts。Model input 無法選擇 executable、quota 或 publication status。</p>
+    </div>
+    <dl class="wsr-download-specs">
+      <div><dt>最適合</dt><dd>執行 reviewed benchmark 的 maintainers</dd></div>
+      <div><dt>需要</dt><dd>Trusted adapter configuration 與明確 quota authorization</dd></div>
+      <div><dt>發布狀態</dt><dd>取得 attestation 前維持 review-required</dd></div>
+    </dl>
+    <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/zh-tw/concepts/evaluation-evidence/">閱讀 evidence contract</a>
+  </article>
+
+  <article class="wsr-download-card">
+    <div>
+      <span class="wsr-download-kicker">Instruction-only fallback</span>
+      <h3>純 SKILL</h3>
+      <p>Host 無法執行 Plugin 或 MCP 時，載入 V2 routing instructions。Explicit Skill Lock 與使用揭露仍存在，但不提供 durable runtime guarantees。</p>
+    </div>
+    <dl class="wsr-download-specs">
+      <div><dt>Runtime label</dt><dd><code>skill-only-fallback</code></dd></div>
+      <div><dt>包含</dt><dd>Canonical <code>SKILL.md</code>、references、agent metadata</dd></div>
+      <div><dt>不包含</dt><dd>Durable resume、跨程序 CAS、sealed instrumentation</dd></div>
+    </dl>
+    <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/zh-tw/guides/install-skill/">只使用 SKILL</a>
+  </article>
+
+  <article class="wsr-download-card">
+    <div>
+      <span class="wsr-download-kicker">Contributors 與 integrators</span>
+      <h3>Source checkout</h3>
+      <p>需要修改 policy core、transport、deterministic builders、文件或 Host adapter 時使用 source。Generated release files 不可手動編輯。</p>
+    </div>
+    <dl class="wsr-download-specs">
+      <div><dt>主要來源</dt><dd>Git repository 與 pinned dependency locks</dd></div>
+      <div><dt>Build output</dt><dd>Ignored <code>dist/release/</code></dd></div>
+      <div><dt>驗證</dt><dd>Core、MCP、docs、site、install、SBOM、provenance</dd></div>
+    </dl>
+    <a class="wsr-download-button wsr-download-button-secondary" href="https://github.com/eric861129/Workflow-skill-router">在 GitHub 查看 source</a>
   </article>
 </div>
 
-<div class="wsr-download-support">
-  <a href="/Workflow-skill-router/zh-tw/examples/template-skill-catalog/">瀏覽對應的範本 Skill Catalog</a>
-  <a href="https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md">查看範本 manifest</a>
-  <a href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip" data-analytics-event="site_download_full_source">下載 Full source archive</a>
-</div>
+## Marketplace 安裝
 
-只有在需要 per-skill README、source context，或想 audit 範本來源時，才下載 **Full source archive**。
+不可變 beta tag 尚未發布前，使用 contributor checkout：
 
-## 內容包含什麼
-
-空白版包含：
-
-```text
-workflow-skill-router/
-  SKILL.md
-  agents/openai.yaml
-  references/skill-tree.md
-  references/routing-rules.md
+```powershell
+git clone https://github.com/eric861129/Workflow-skill-router.git
+Set-Location Workflow-skill-router
+codex plugin marketplace add .
+codex plugin add workflow-skill-router@workflow-skill-router
 ```
 
-Reference Template 包含：
+`v2.0.0-beta.1` 存在後，pin marketplace snapshot：
 
-```text
-workflow-skill-router-template/
-  README.md
-  MANIFEST.md
-  skills/
-    workflow-skill-router/
-    .system/
-    <public-safe skill folders>
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
 ```
 
-Reference Template 保留可安裝的 `skills/` tree，但移除非必要的 per-skill README。根目錄 README 與 manifest 仍會保留。
+## 離線檢查 assets
 
-Reference Template 是公開安全版：從真實 `.codex/skills` 產生，排除組織專用 SKILL，並移除其他公開 skill 內的敏感行。這份範本會搭配 [範本 Skill Catalog](/Workflow-skill-router/zh-tw/examples/template-skill-catalog/) 使用，把下載包內的 SKILL 整理成可理解的 routes，方便你回頭設計自己的 router。
+以下 beta assets 只有在 GitHub prerelease 發布後才會存在。它們是 release assets，不是可變動的 `raw/main/downloads` 檔案。
 
-## Reference Template 包含的 SKILL
+- [Plugin ZIP：`workflow-skill-router-plugin-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-plugin-v2.0.0-beta.1.zip)
+- [純 SKILL ZIP：`workflow-skill-router-skill-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-skill-v2.0.0-beta.1.zip)
+- [所有 Releases](https://github.com/eric861129/Workflow-skill-router/releases)
 
-### Router 與 Codex 系統工具
+ZIP 用於離線檢查與 fallback installation。使用前必須驗證發布的 checksums、SBOM 與 provenance；不可把本機 prerelease build 當成已發布 asset。
 
-這一組是安裝、建立、維護 SKILL 時最核心的工具，也包含本專案的 router 本體。
+## 安裝後驗證
 
-- `.system/imagegen`
-- `.system/openai-docs`
-- `.system/plugin-creator`
-- `.system/skill-creator`
-- `.system/skill-installer`
-- `workflow-skill-router`
-
-### 需求、規劃、執行與交接
-
-這一組用在需求釐清、任務拆解、計畫執行、收尾、handoff，以及讓 Agent 維持穩定工程節奏。
-
-- `requirements-clarity`
-- `executing-plans`
-- `session-handoff`
-- `finishing-a-development-branch`
-- `commit-work`
-- `receiving-code-review`
-- `karpathy-guidelines`
-- `writing-clearly-and-concisely`
-
-### 架構、API、後端與資料庫
-
-這一組用在系統設計、API 合約、OpenAPI/TypeScript 同步、C#/.NET、資料庫 schema、SQL 與效能調校。
-
-- `architecture-designer`
-- `c4-architecture`
-- `cloud-architect`
-- `api-designer`
-- `api-guidelines-skill`
-- `openapi-contract-generation-skill`
-- `openapi-to-typescript`
-- `csharp-developer`
-- `dotnet-core-expert`
-- `database-schema-designer`
-- `database-optimizer`
-- `sql-pro`
-
-### 前端、Vue、UI 與設計系統
-
-這一組用在前端實作、Vue Composition API、UI polish、設計系統、Storybook、Tailwind token、截圖轉程式碼與視覺重設計。
-
-- `frontend-design`
-- `vue-expert`
-- `vue-composition-patterns-skill`
-- `design-system`
-- `design-system-starter`
-- `storybook-design-system-skill`
-- `tailwind-design-token-skill`
-- `ui-styling`
-- `ui-ux-pro-max`
-- `gpt-tasteskill`
-- `minimalist-skill`
-- `soft-skill`
-- `taste-skill`
-- `redesign-skill`
-- `image-to-code-skill`
-- `imagegen-frontend-web`
-- `imagegen-frontend-mobile`
-
-### DevOps、本機開發與依賴管理
-
-這一組用在 Docker Compose、本機服務堆疊、CI/CD、雲端/部署思考與 dependency 更新。
-
-- `devops-engineer`
-- `docker-compose-local-dev-skill`
-- `dependency-updater`
-
-### 測試、除錯、瀏覽器與品質驗證
-
-這一組用在系統性除錯、Playwright、QA test plan、回歸測試與實際瀏覽器驗證。
-
-- `systematic-debugging`
-- `playwright`
-- `qa-test-planner`
-
-### 文件、圖表、檔案與規格整理
-
-這一組用在技術文件、使用者文件、Mermaid/C4 圖、PDF、規格反推、共同撰寫與檔案整理。
-
-- `code-documenter`
-- `doc-coauthoring`
-- `mermaid-diagrams`
-- `pdf`
-- `spec-miner`
-- `file-organizer`
-- `agent-md-refactor`
-
-### 產品、品牌、視覺與跨平台應用
-
-這一組用在品牌語氣、banner、視覺設計、Flutter App，以及比較偏產品化或推廣面的工作。
-
-- `brand`
-- `banner-design`
-- `design`
-- `flutter-expert`
-
-Reference Template 刻意不列出被排除的 private skill folder 名稱。你可以把這份清單當成 public-safe 的參考 catalog，再依照自己的 Agent 環境增減 SKILL。
-
-## 本機重新打包
-
-```bash
-python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
+```powershell
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-打包工具不會使用隱含的本機 skills 目錄。除非你明確加上 `--allow-no-private-filters` 並已自行檢查來源目錄，否則至少要提供一個 private filter。
-
-## Source
-
-- [在 GitHub 開啟 `downloads/`](https://github.com/eric861129/Workflow-skill-router/tree/main/downloads)
-- [查看範本 Skill Catalog source](https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog)
-- [查看 package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
-- [查看範本 manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
-- [下載 Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip)
-- [下載 Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
-- [查看 starter source](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
+預期 bundled result：`runtime_profile` 是 `bundled-local-r0`、telemetry disabled，而且只有 `plan_work` 與 `get_router_status` 是 local-ready。接著進入 [V2 快速開始](/Workflow-skill-router/zh-tw/guides/quickstart/)。
