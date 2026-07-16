@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 
-from workflow_skill_router.capabilities.models import RiskLevel
+from workflow_skill_router.capabilities.models import CapabilityKind, RiskLevel
 
 
 class GoalRelation(StrEnum):
@@ -197,3 +198,132 @@ class ExplicitSkillCoverage:
     status: CoverageStatus
     evidence_refs: tuple[str, ...]
     reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class SupportProposal:
+    proposal_id: str
+    capability_id: str
+    capability_fingerprint: str
+    capability_kind: CapabilityKind
+    purpose: str
+    role: str
+    scope: ScopeKind
+    scope_anchor_id: str
+    work_item_id: str
+    phase_id: str
+    goal_binding_id: str | None
+    goal_revision: int | None
+    plan_revision: int
+    context_fingerprint: str
+    actor: str
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class ConsentGrant:
+    grant_id: str
+    capability_id: str
+    capability_fingerprint: str
+    capability_kind: CapabilityKind
+    purpose: str
+    role: str
+    scope: ScopeKind
+    scope_anchor_id: str
+    work_item_id: str
+    phase_id: str
+    goal_binding_id: str | None
+    goal_revision: int | None
+    plan_revision: int
+    context_fingerprint: str
+    actor: str
+    granted_at: datetime
+    expires_at: datetime
+
+    @classmethod
+    def from_proposal(
+        cls,
+        proposal: SupportProposal,
+        *,
+        grant_id: str,
+        scope: ScopeKind,
+        scope_anchor_id: str,
+        actor: str,
+        granted_at: datetime,
+        expires_at: datetime,
+    ) -> "ConsentGrant":
+        return cls(
+            grant_id,
+            proposal.capability_id,
+            proposal.capability_fingerprint,
+            proposal.capability_kind,
+            proposal.purpose,
+            proposal.role,
+            scope,
+            scope_anchor_id,
+            proposal.work_item_id,
+            proposal.phase_id,
+            proposal.goal_binding_id,
+            proposal.goal_revision,
+            proposal.plan_revision,
+            proposal.context_fingerprint,
+            actor,
+            granted_at,
+            expires_at,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ConsentRejection:
+    rejection_id: str
+    capability_id: str
+    capability_fingerprint: str
+    capability_kind: CapabilityKind
+    purpose: str
+    role: str
+    scope: ScopeKind
+    scope_anchor_id: str
+    work_item_id: str
+    phase_id: str
+    goal_binding_id: str | None
+    goal_revision: int | None
+    plan_revision: int
+    context_fingerprint: str
+    actor: str
+    rejected_at: datetime
+
+    @classmethod
+    def from_proposal(
+        cls,
+        proposal: SupportProposal,
+        *,
+        rejection_id: str,
+        actor: str,
+        rejected_at: datetime,
+    ) -> "ConsentRejection":
+        return cls(
+            rejection_id,
+            proposal.capability_id,
+            proposal.capability_fingerprint,
+            proposal.capability_kind,
+            proposal.purpose,
+            proposal.role,
+            proposal.scope,
+            proposal.scope_anchor_id,
+            proposal.work_item_id,
+            proposal.phase_id,
+            proposal.goal_binding_id,
+            proposal.goal_revision,
+            proposal.plan_revision,
+            proposal.context_fingerprint,
+            actor,
+            rejected_at,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ConsentDecision:
+    allowed: bool
+    code: str
+    grant_ref: str | None
+    should_prompt: bool
