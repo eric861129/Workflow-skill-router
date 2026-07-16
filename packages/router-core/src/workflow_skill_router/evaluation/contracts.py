@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from typing import Any, Mapping, Protocol
 
 
 class EvaluationStatus(StrEnum):
@@ -92,3 +93,57 @@ class SealedCasePaths:
 
 class EvaluationIntegrityError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class ModelTurnRequest:
+    attempt_nonce: str
+    turn_index: int
+    prompt: str
+    allowed_tools: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class AdapterSelection:
+    kind: str
+    status: EvaluationStatus
+    evidence_class: str
+    reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EvalRunAuthorization:
+    authorization_ref: str
+    session_id: str
+    actor: str
+    runtime_policy_snapshot_id: str
+    profile: EvaluationProfile
+    adapter_kind: str
+    suite_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationAttempt:
+    attempt_id: str
+    fresh_context_id: str
+    status: EvaluationStatus
+    trace: tuple[Mapping[str, Any], ...]
+    raw_trace_digest: str
+    failure: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationRunResult:
+    run_id: str
+    status: EvaluationStatus
+    profile: EvaluationProfile
+    adapter_kind: str
+    attempts: tuple[EvaluationAttempt, ...]
+    manifest_digest: str
+    evidence_class: str
+
+
+class ExecutionAdapter(Protocol):
+    kind: str
+    def start_attempt(self, payload: ModelExecutionPayload, attempt_nonce: str) -> str: ...
+    def execute_turn(self, request: ModelTurnRequest) -> Mapping[str, Any]: ...
