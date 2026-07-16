@@ -1,0 +1,23 @@
+{
+  "name": "workflow-skill-router",
+  "version": "2.0.0-alpha.1",
+  "description": "依任務規模、Goal 關係、可用能力與使用者指定 SKILL，提供可驗證的工作路由與編排。",
+  "author": { "name": "ChiYu" },
+  "license": "MIT",
+  "keywords": ["codex", "skill-router", "goal", "workflow", "mcp"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Workflow Skill Router",
+    "shortDescription": "為 Single、Phased 與 Goal 工作選擇最小可驗證能力。",
+    "longDescription": "動態發現 runtime capability，尊重 Explicit Skill Lock 與 consent，並以 Phase/Goal state、evidence gate 與真實模型評測改善 Codex 開發流程。",
+    "developerName": "ChiYu",
+    "category": "Productivity",
+    "capabilities": ["Routing", "Goal Orchestration", "Evaluation"],
+    "defaultPrompt": [
+      "分析這個任務並選擇 Single、Phased 或 Goal 流程。",
+      "只使用我指定的 SKILL；需要支援能力時先詢問。",
+      "顯示目前 Goal 的下一個可安全執行工作。"
+    ]
+  }
+}

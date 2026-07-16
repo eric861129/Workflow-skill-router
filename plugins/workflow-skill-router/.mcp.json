@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "workflow-skill-router": {
+      "command": "node",
+      "args": ["./mcp/server.bundle.mjs"],
+      "cwd": "."
+    }
+  }
+}
