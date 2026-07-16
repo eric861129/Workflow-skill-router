@@ -33,7 +33,6 @@ TEMPLATE_CLEAN_ZIP = DOWNLOADS_DIR / "workflow-skill-router-template-clean.zip"
 TEMPLATE_MANIFEST = DOWNLOADS_DIR / "workflow-skill-router-template-manifest.md"
 
 DEFAULT_PRIVATE_MARKERS: list[str] = []
-BLANK_LABEL = "Blank Router"
 
 SKIP_DIRS = {
     ".git",
@@ -334,18 +333,12 @@ def validate_zip_private_markers(zip_path: Path, markers: list[str]) -> list[str
     return issues
 
 
-def build_blank_archive(starter_root: Path, output: Path) -> None:
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as zip_file:
-        for path in iter_files(starter_root):
-            rel = path.relative_to(starter_root).as_posix()
-            info = zipfile.ZipInfo(f"workflow-skill-router/{rel}", (1980, 1, 1, 0, 0, 0))
-            info.create_system = 3
-            info.external_attr = 0o100644 << 16
-            zip_file.writestr(info, path.read_bytes())
-
-
 def build_blank_zip() -> None:
-    build_blank_archive(REPO_ROOT / "starter" / "workflow-skill-router", BLANK_ZIP)
+    source = REPO_ROOT / "starter" / "workflow-skill-router"
+    with zipfile.ZipFile(BLANK_ZIP, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        for path in iter_files(source):
+            rel = path.relative_to(source).as_posix()
+            zip_file.write(path, f"workflow-skill-router/{rel}")
 
 
 def template_readme() -> str:
@@ -387,12 +380,6 @@ def manifest_text(report: PackageReport, *, clean_package: bool = False) -> str:
 
     return f"""
 # Workflow Skill Router Template Manifest
-
-Package variants:
-
-- {BLANK_LABEL}: `workflow-skill-router-blank.zip`
-- Clean Template: `workflow-skill-router-template-clean.zip`
-- Full Template: `workflow-skill-router-template.zip`
 
 Source root: local maintainer Codex skills directory
 
