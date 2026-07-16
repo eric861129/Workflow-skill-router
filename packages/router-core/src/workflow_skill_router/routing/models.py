@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from typing import Protocol, TYPE_CHECKING
 
-from workflow_skill_router.capabilities.models import CapabilityKind, RiskLevel
+from workflow_skill_router.capabilities.models import Availability, CapabilityKind, RiskLevel
+
+if TYPE_CHECKING:
+    from .authority import SelectionOrigin
 
 
 class GoalRelation(StrEnum):
@@ -69,6 +73,18 @@ class CoverageStatus(StrEnum):
     UNCOVERED = "uncovered"
     WAIVED = "waived"
     NOT_APPLICABLE = "not-applicable"
+
+
+class OutcomeMode(StrEnum):
+    COMPLETE = "complete"
+    LIMITED = "limited"
+    BLOCKED = "blocked"
+
+
+class ActivationBindingKind(StrEnum):
+    INSTRUCTION_CONTENT = "instruction-content"
+    TOOL_SCHEMA = "tool-schema"
+    RUNTIME_CONTRACT = "runtime-contract"
 
 
 @dataclass(frozen=True, slots=True)
@@ -327,3 +343,193 @@ class ConsentDecision:
     code: str
     grant_ref: str | None
     should_prompt: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilitySelection:
+    capability_id: str
+    capability_fingerprint: str
+    selection_origin: "SelectionOrigin"
+    authority_ref: str
+    policy_digest: str
+    purpose: str
+    consent_grant_ref: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class Route:
+    route_id: str
+    workflow_run_id: str
+    work_item_id: str
+    phase_id: str
+    envelope: RoutingEnvelope
+    capability_snapshot_id: str
+    primary_selection: CapabilitySelection
+    support_selections: tuple[CapabilitySelection, ...]
+    skill_policy_revision: int
+    explicit_skill_dispositions: tuple[ExplicitSkillDisposition, ...]
+    explicit_skill_coverage_ref: str | None
+    consent_grant_refs: tuple[str, ...]
+    risk: RiskLevel
+    context_cost: int
+    validation_status: str
+    validation_reasons: tuple[str, ...]
+    created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class LeaseActivationBinding:
+    kind: str
+    trusted_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class LeaseCapability:
+    capability_id: str
+    capability_kind: CapabilityKind
+    capability_fingerprint: str
+    selection_origin: "SelectionOrigin"
+    authority_ref: str
+    policy_digest: str
+    purpose: str
+    consent_grant_ref: str | None
+    activation_binding: LeaseActivationBinding
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionLease:
+    lease_id: str
+    workflow_run_id: str
+    phase_id: str
+    scope_anchor_id: str
+    route_id: str
+    capability_snapshot_id: str
+    policy_revision: int
+    state_version: int
+    runtime_policy_snapshot_id: str
+    action_digest: str
+    runtime_approval_ref: str | None
+    runtime_approval_scope_digest: str | None
+    content_preflight_policy_digest: str
+    allowed_capabilities: tuple[LeaseCapability, ...]
+    issued_at: str
+    expires_at: str
+    max_activations: int
+    activation_mode: str
+
+
+@dataclass(frozen=True, slots=True)
+class InvocationContext:
+    scope_anchor_id: str
+    purpose: str
+    actor: str
+    session_id: str
+    runtime_policy_snapshot_id: str
+    context_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class LeaseConsumptionRequest:
+    lease_id: str
+    capability_id: str
+    capability_fingerprint: str
+    scope_anchor_id: str
+    purpose: str
+    invocation_context_digest: str
+    activation_binding_kind: str
+    observed_binding_digest: str
+    action_digest: str
+    runtime_approval_ref: str | None
+    runtime_approval_scope_digest: str | None
+    state_version: int
+    invocation_nonce: str
+
+
+@dataclass(frozen=True, slots=True)
+class LeaseConsumptionReceipt:
+    lease_id: str
+    invocation_digest: str
+    reservation_digest: str
+    consumption_version: int
+    consumed_at: str
+
+
+class LeaseConsumptionPort(Protocol):
+    def compare_and_consume(
+        self,
+        request: LeaseConsumptionRequest,
+        expected_consumption_version: int = 0,
+    ) -> LeaseConsumptionReceipt: ...
+
+
+@dataclass(frozen=True, slots=True)
+class InvocationDecision:
+    allowed: bool
+    reason: str
+    receipt: LeaseConsumptionReceipt | None
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedRuntimeApproval:
+    approval_ref: str
+    scope_digest: str
+    action_digest: str
+    expires_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class RouteValidationRequest:
+    route_id: str
+    workflow_run_id: str
+    work_item_id: str
+    phase_id: str
+    scope_anchor_id: str
+    envelope: RoutingEnvelope
+    capability_snapshot_id: str
+    primary_selection: CapabilitySelection
+    support_selections: tuple[CapabilitySelection, ...]
+    explicit_skill_dispositions: tuple[ExplicitSkillDisposition, ...]
+    explicit_skill_coverage_ref: str | None
+    consent_grant_refs: tuple[str, ...]
+    risk: RiskLevel
+    action_digest: str
+    state_version: int
+    purpose: str
+    outcome_mode: OutcomeMode
+    exit_gate: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ValidationContext:
+    now: datetime
+    runtime_mode: RuntimeMode
+    runtime_policy_snapshot_id: str
+    runtime_policy_digest: str
+    actor: str
+    session_id: str
+    verified_authority_refs: tuple[str, ...]
+    consent_grant_refs: tuple[str, ...]
+    runtime_approval: VerifiedRuntimeApproval | None
+    instruction_content_bindings: tuple[tuple[str, str], ...]
+    runtime_contract_bindings: tuple[tuple[str, str, str], ...]
+    content_preflight_policy_digest: str
+    allowed_availability: tuple[Availability, ...]
+    instruction_body_opens: list[str] = field(default_factory=list, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class RouteViolation:
+    code: str
+    capability_id: str | None
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class RouteValidationResult:
+    valid: bool
+    violations: tuple[RouteViolation, ...]
+    requires_runtime_approval: bool
+    route: Route | None
+    lease: ExecutionLease | None
+    outcome_mode: OutcomeMode
+    exit_gate: str | None
