@@ -125,7 +125,7 @@ Unavailable calls return a typed `capability-unavailable` response with required
 
 ## Real Model Evaluation
 
-Contract fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication.
+**Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication.
 
 The corrected 36-attempt beta Behavior smoke is pending explicit quota authorization. The earlier superseded run is not public proof. The twelve-case suite, repeated three times per arm, remains the GA gate. Until a valid run exists the public status is `manual-required`; after execution it remains `review-required` until attested.
 

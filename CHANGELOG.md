@@ -4,7 +4,19 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-- Nothing yet.
+### Added
+
+- Rebuilt the project around the V2 hybrid architecture: deterministic Router Core, installable Plugin/MCP runtime, and a standalone SKILL-only package.
+- Added runtime capability discovery, task-size-aware phase routing, explicit user-specified SKILL consent rules, durable local state, and inspectable execution traces.
+- Added sealed model-evaluation adapters, reproducible benchmark manifests, evidence classifications, and a review gate that separates fixtures from real model behavior.
+- Added a bilingual V2-first documentation site, interactive trace demo, Plugin and SKILL-only installation guides, and automated accessibility, visual, smoke, and Lighthouse checks.
+- Added V2 community governance, focused issue forms, CodeQL, OpenSSF Scorecard, immutable Action pins, deterministic release artifacts, SBOM output, and GitHub build-provenance attestations.
+
+### Changed
+
+- CI now validates deterministic local contracts without Codex credentials or live model quota.
+- V1 remains a pinned compatibility surface; V1 gallery, evaluator, metrics, and starter-generation tooling are no longer accepted as V2 public proof.
+- Release automation accepts only full `v2.*` version tags and builds every published artifact from the tagged source revision.
 
 ## v1.3.1
 

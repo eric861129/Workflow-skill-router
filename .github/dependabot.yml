@@ -4,8 +4,22 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels: ["dependencies", "supply-chain"]
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: "npm"
+    directory: "/plugins/workflow-skill-router"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "plugin"]
+    commit-message:
+      prefix: "build(plugin)"
 
   - package-ecosystem: "npm"
     directory: "/site"
     schedule:
       interval: "weekly"
+    labels: ["dependencies", "documentation"]
+    commit-message:
+      prefix: "build(site)"

@@ -1,50 +1,61 @@
 # Security Policy
 
-Workflow Skill Router is a documentation, template, and validation-tooling project. It does not run a hosted service or collect user data.
+Workflow Skill Router V2 runs locally as a Codex Plugin, MCP server, Python router core, and optional standalone SKILL. It does not operate a hosted service, but it does process developer prompts, capability metadata, execution traces, adapter configuration, and local SQLite state. That local attack surface is part of the security model.
 
 ## Supported Versions
 
-Security fixes apply to the latest commit on `main` and the latest published GitHub release.
+| Surface | Status | Security support |
+| --- | --- | --- |
+| V2 prerelease on `main` and the latest `v2.*` release | Active | Full security fixes |
+| V1.3.1 compatibility release | Maintenance | Critical packaging or disclosure fixes only |
+| Older V1 releases and source snapshots | Unsupported | Upgrade required |
 
-## Reporting A Vulnerability
+The SKILL-only package has no MCP runtime or durable state guarantees. Security reports about its instructions and package contents are still in scope.
 
-Please do not open a public issue for sensitive reports.
+## Reporting a Vulnerability
 
-Report suspected vulnerabilities by using GitHub private vulnerability reporting if it is available for this repository. If private reporting is not available, open a minimal public issue that says you need a private security contact, without including exploit details.
+Do not disclose a vulnerability, exploit, private prompt, credential, or state database in a public issue or Discussion.
 
-Useful reports include:
+Use GitHub **private vulnerability reporting** from the repository Security tab. If that feature is unavailable, open a content-free issue asking the maintainer to enable a private contact channel; do not include technical details in that issue.
 
-- A private skill, path, organization name, credential, or deployment detail accidentally included in a public package.
-- A validator bypass that allows obvious private strings to pass.
-- A release asset or download package that does not match the documented public-safe manifest.
-- A site or workflow configuration issue that could mislead users about what they are downloading.
+Useful private reports include:
 
-## Scope
+- the affected version, installation mode, operating system, and minimal reproduction;
+- whether the issue affects the Plugin runtime, MCP server, router core, SKILL-only package, release archive, or documentation site;
+- sanitized logs with secrets, prompts, local paths, and personal data removed;
+- expected impact and any known workaround.
 
-In scope:
+## In Scope
 
-- Repository files.
-- Download packages published from this repository.
-- Validator and packaging scripts.
-- GitHub Pages documentation output.
+- MCP tool schemas, command boundaries, and capability or permission reporting.
+- Plugin runtime packaging, Node/Python bridge execution, and executable adapter activation.
+- Local SQLite state, migrations, trace export, path handling, and unintended data disclosure.
+- Evaluation adapters, bounded subprocess execution, case sealing, and evidence classification.
+- Release archives, checksums, SBOM, provenance, attestations, and GitHub Actions supply chain.
+- Public documentation, demo data, and repository privacy checks.
 
-Out of scope:
+## Out of Scope
 
-- Third-party AI agent behavior after users modify the starter.
-- User-created private overlays.
-- Vulnerabilities in unrelated local Codex skill folders outside this repository.
+- A modified fork that bypasses V2 guards or adds untrusted executable adapters.
+- General behavior of third-party models, Codex, operating systems, or tools outside this repository.
+- Social engineering, denial-of-service traffic, or testing that accesses another person's machine or data.
+- Claims based only on synthetic fixtures when no production path is affected.
 
-## Dependency Governance
+## Local Security Expectations
 
-The public release packages do not ship the documentation site's Node.js development dependency tree. Production/runtime dependency audits for the static site should pass with:
+- Treat local state and traces as sensitive developer data; do not attach them without redaction.
+- Configure adapters with explicit executable allowlists and bounded output/time limits.
+- Keep Plugin installation, SKILL selection consent, runtime permission, and production authorization as separate decisions.
+- Verify release checksums and GitHub artifact attestations before trusting downloaded runtime code.
 
-```bash
-cd site
-npm audit --omit=dev --audit-level=moderate
-```
+## Maintainer Response Timeline
 
-Development-only audit findings, including the monitored Lighthouse tooling advisory, are tracked in [docs/dependency-governance.md](docs/dependency-governance.md).
+- We aim to acknowledge a credible private report within **3 business days**.
+- We aim to provide an initial triage decision within **7 business days**.
+- For accepted issues, we will communicate remediation status at least every **14 days** until a fix, advisory, or documented risk decision is available.
 
-## Maintainer Response
+These are response targets, not a guaranteed fix deadline. Coordinated disclosure timing will be agreed with the reporter based on severity, exploitability, and release availability.
 
-The maintainer will review credible reports, remove exposed private content if needed, and publish a fix or advisory when the issue affects released assets.
+## Supply-chain Reports
+
+Dependency alerts, suspicious Action updates, checksum mismatches, missing SBOM entries, and unverifiable provenance are security-relevant. Report exploitable details privately; ordinary update requests may use a pull request.

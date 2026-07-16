@@ -1,34 +1,70 @@
-name: Routing failure
-description: Report a route that selected the wrong skills or too many skills.
+name: V2 routing failure
+description: Report a reproducible route that selected the wrong Skills, phase, or consent behavior.
 title: "[Routing failure]: "
 labels: ["routing", "needs-triage"]
 body:
+  - type: dropdown
+    id: task-size
+    attributes:
+      label: Task size
+      options:
+        - Small task
+        - Medium multi-phase task
+        - Large task / Goal mode
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Active phase
+      placeholder: discovery, planning, implementation, verification, or completion
+    validations:
+      required: true
   - type: textarea
     id: request
     attributes:
-      label: User request
-      description: Paste the prompt or task the agent received.
+      label: Public-safe user request
     validations:
       required: true
   - type: textarea
     id: skills
     attributes:
-      label: Available skills
-      description: List the relevant skills the agent could choose from.
+      label: Available Skills
+      description: List only the Skills relevant to this reproduction.
+    validations:
+      required: true
+  - type: input
+    id: user-specified-skill
+    attributes:
+      label: User-specified Skill
+      description: Enter the exact Skill or `none`.
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
       label: Actual route
-      description: Paste the route the agent selected.
+      description: Include primary, supporting, omitted, and rejected Skills.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
       label: Expected route
-      description: Describe the route you expected and why.
+      description: Explain the expected phase and Skill selection.
+    validations:
+      required: true
+  - type: dropdown
+    id: consent
+    attributes:
+      label: Consent state
+      description: Consent is required for auxiliary Skills only when the user specified a Skill.
+      options:
+        - Not applicable; user did not specify a Skill
+        - Requested and accepted
+        - Requested and declined
+        - Missing but required
+        - Requested unnecessarily
     validations:
       required: true
   - type: checkboxes
@@ -36,6 +72,5 @@ body:
     attributes:
       label: Privacy check
       options:
-        - label: I removed private repository names, customer names, hostnames, secrets, and internal paths.
+        - label: I removed secrets, private prompts, repository names, hostnames, local paths, and personal data.
           required: true
-
