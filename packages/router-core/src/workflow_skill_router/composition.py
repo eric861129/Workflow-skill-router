@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from workflow_skill_router.service import RouterService
+
+
+@dataclass(frozen=True, slots=True)
+class RouterCompositionPorts:
+    """RouterService 的明確組合邊界；所有權威資料只能由伺服器端 adapter 提供。"""
+
+    authorizer: object
+    runtime_authority: object
+    runtime_context: object
+    artifacts: object
+    snapshot_codec: object
+    runtime_sync: object
+    projections: object
+    planner: object
+    scheduler: object
+    snapshots: object
+    policies: object
+    validation_context: object
+    route_validator: object
+    activation_preflight: object
+    coordinator: object
+    gate_context: object
+    gate_evaluator: object
+    gate_coordinator: object
+    status_reader: object
+    diagnostics_reader: object
+
+
+def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
+    """以單一、可稽核的 production composition root 建立 RouterService。"""
+
+    return RouterService(
+        authorizer=ports.authorizer,
+        runtime_authority=ports.runtime_authority,
+        runtime_context=ports.runtime_context,
+        artifacts=ports.artifacts,
+        snapshot_codec=ports.snapshot_codec,
+        runtime_sync=ports.runtime_sync,
+        projections=ports.projections,
+        planner=ports.planner,
+        scheduler=ports.scheduler,
+        snapshots=ports.snapshots,
+        policies=ports.policies,
+        validation_context=ports.validation_context,
+        route_validator=ports.route_validator,
+        activation_preflight=ports.activation_preflight,
+        coordinator=ports.coordinator,
+        gate_context=ports.gate_context,
+        gate_evaluator=ports.gate_evaluator,
+        gate_coordinator=ports.gate_coordinator,
+        status_reader=ports.status_reader,
+        diagnostics_reader=ports.diagnostics_reader,
+    )
