@@ -94,6 +94,9 @@ jobs:
       - name: Check generated V2 demo data
         run: python scripts/build-v2-demo-data.py --check
 
+      - name: Check generated MCP reference data
+        run: node scripts/build-mcp-reference-data.mjs --check
+
       - name: Smoke test release assets
         run: >
           python scripts/smoke-release-assets.py

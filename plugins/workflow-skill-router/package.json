@@ -18,7 +18,9 @@
   "scripts": {
     "build": "node ./scripts/build-mcp.mjs",
     "test": "node ./scripts/build-mcp.mjs --tests && node --test ./.test-build/*.test.mjs",
-    "check": "npm run build && npm test"
+    "check": "npm run build && npm test",
+    "reference:build": "node ../../scripts/build-mcp-reference-data.mjs",
+    "reference:check": "node ../../scripts/build-mcp-reference-data.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
