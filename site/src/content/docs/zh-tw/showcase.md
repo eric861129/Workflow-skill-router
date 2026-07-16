@@ -3,7 +3,17 @@ title: Routing Showcase
 description: 五個適合轉貼分享的 Workflow Skill Router before/after 案例。
 ---
 
-V2 首頁提供六個由 core 產生的 Single、Phased、Managed Goal、Explicit Skill Lock、consent 與真實評測情境。**Tier 0 Contract** 不會冒充 Behavior evidence；沒有 adapter 是 `manual-required`，沒有可信任審查是 `review-required`。前端不會把 `skill-only-fallback` 升格成 `hybrid-full`。
+V2 首頁提供七個可檢查情境，涵蓋 Single、Phased、Managed Goal、Explicit Skill Lock、consent、verified-host 排程與模型評測。每個情境都呈現 Router bridge 產生並經清理的 JSONL request／response；瀏覽器只顯示結果，不重新計算路由。
+
+## 如何閱讀 Flight Recorder
+
+- `runtime-trace` 實際呼叫 Plugin 內建的本機 R0 control plane；`plan_work` 與 `get_router_status` 可在本機執行。
+- 本機 Managed Goal 呼叫 `get_next_work` 時會回傳 `capability-unavailable`，不會捏造本機排程結果。
+- `fixture-trace` 以 verified-host fixture ports 執行完整 Router service composition。它驗證 Host 契約，不代表已連線正式 Host。
+- Explicit Skill Lock 會在啟用建議的輔助 SKILL 前詢問。被拒絕的 SKILL 只保留於稽核軌跡，不會進入 active selections。
+- 模型評測在獲得授權並完成 fresh-model run 前維持 `manual-required`；所有公開結果仍須通過 `review-required` publication gate。
+
+**Tier 0 Contract** 不會冒充 Behavior evidence。前端也不會把本機規劃或 `skill-only-fallback` 升格成 `hybrid-full`。
 
 這些範例適合放在貼文、issue 或 README 片段中，快速說明為什麼 route 要小而可檢查。
 
