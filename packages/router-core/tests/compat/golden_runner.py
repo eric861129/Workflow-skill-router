@@ -9,7 +9,10 @@ import sys
 import tempfile
 from typing import Any
 
-from legacy_cli_cases import LegacyCliCase
+try:
+    from .legacy_cli_cases import LegacyCliCase
+except ImportError:  # pragma: no cover - 支援直接執行 compat 目錄內腳本。
+    from legacy_cli_cases import LegacyCliCase
 
 
 REPO_ROOT = Path(__file__).resolve().parents[4]

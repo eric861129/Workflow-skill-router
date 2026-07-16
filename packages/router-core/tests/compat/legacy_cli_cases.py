@@ -47,7 +47,7 @@ CASES = (
     LegacyCliCase("validate-public-readiness", ("scripts/validate-router.py", ".", "--public-readiness")),
     LegacyCliCase(
         "validate-public-readiness-env-marker-failure",
-        ("scripts/validate-router.py", ".", "--public-readiness"),
+        ("scripts/validate-router.py", "starter/workflow-skill-router", "--public-readiness"),
         env={"WORKFLOW_SKILL_ROUTER_PUBLIC_FORBIDDEN_MARKERS": "Workflow Skill Router"},
     ),
     LegacyCliCase("evaluate-help", ("scripts/evaluate-routing.py", "--help")),

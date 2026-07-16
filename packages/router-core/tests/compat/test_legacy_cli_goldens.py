@@ -4,8 +4,12 @@ import json
 from pathlib import Path
 import unittest
 
-from legacy_cli_cases import CASES
-from golden_runner import run_case
+try:
+    from .golden_runner import run_case
+    from .legacy_cli_cases import CASES
+except ImportError:  # pragma: no cover - 支援以 compat 作為 discover root。
+    from golden_runner import run_case
+    from legacy_cli_cases import CASES
 
 
 GOLDEN = Path(__file__).with_name("golden") / "legacy-cli-v1.json"

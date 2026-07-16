@@ -4,8 +4,12 @@ import argparse
 import json
 from pathlib import Path
 
-from legacy_cli_cases import CASES
-from golden_runner import run_case
+try:
+    from .golden_runner import run_case
+    from .legacy_cli_cases import CASES
+except ImportError:  # pragma: no cover - 支援直接執行 capture script。
+    from golden_runner import run_case
+    from legacy_cli_cases import CASES
 
 
 OUTPUT = Path(__file__).with_name("golden") / "legacy-cli-v1.json"
