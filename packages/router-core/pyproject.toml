@@ -9,6 +9,9 @@ description = "Workflow Skill Router V2 deterministic core"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+workflow-skill-router = "workflow_skill_router.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

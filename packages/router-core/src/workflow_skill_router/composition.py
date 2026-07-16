@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from workflow_skill_router.service import RouterService
 
@@ -58,3 +59,33 @@ def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
         diagnostics_reader=ports.diagnostics_reader,
         evaluation=ports.evaluation,
     )
+
+
+def open(
+    database: Path,
+    artifact_root: Path,
+    runtime_adapter,
+    request_authorizer,
+    instruction_content_resolver,
+    artifact_protector,
+    activation_preflight,
+    evaluation_ports,
+    clock,
+    id_factory,
+) -> RouterService:
+    """唯一 production factory；adapter 只能回傳明確的 RouterCompositionPorts。"""
+
+    ports = runtime_adapter.build_router_ports(
+        database=database,
+        artifact_root=artifact_root,
+        request_authorizer=request_authorizer,
+        instruction_content_resolver=instruction_content_resolver,
+        artifact_protector=artifact_protector,
+        activation_preflight=activation_preflight,
+        evaluation_ports=evaluation_ports,
+        clock=clock,
+        id_factory=id_factory,
+    )
+    if not isinstance(ports, RouterCompositionPorts):
+        raise TypeError("runtime adapter 必須回傳 RouterCompositionPorts")
+    return compose_router_service(ports)
