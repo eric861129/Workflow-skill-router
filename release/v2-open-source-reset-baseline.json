@@ -1,0 +1,309 @@
+{
+  "branch": "codex/workflow-skill-router-v2",
+  "inherited_changes": [
+    {
+      "owner_task": 14,
+      "path": "README.en.md",
+      "sha256": "54e47580782cd290d04ff3736c9852233992b374485cd2d8309e7e687dd75c09",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "README.md",
+      "sha256": "6f79137155aa535de2ffd0341ec8bf473f85499e4859a15e5345242b80bfec5b",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "README.zh-TW.md",
+      "sha256": "adfa15cbc303c17a4dae5a0c4978c7ec449af14d5be2509cadf7f56ed7ff2fe6",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "demo/v2-scenarios/inputs.json",
+      "sha256": "0af3d065fe3cc8f3e54cf4002e1376d85eb578364b4e6c46452a7c900b804981",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "docs/anti-over-routing.md",
+      "sha256": "88e1431b4f83e1fe89ae8af94aa36c7f3cee1648deb7d5dd70de1207fb1f5ad0",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "docs/showcase.md",
+      "sha256": "5f40fb3b046b3e755095d1700fc6d40381824525db95cb167084d7edfe3d12d0",
+      "status": " M"
+    },
+    {
+      "owner_task": 14,
+      "path": "docs/superpowers/plans/2026-07-16-workflow-skill-router-v2-open-source-reset.md",
+      "sha256": "06e76a708e478ad5720fe867e70554f76bde115e70268eaf604d6b1f31998b18",
+      "status": "??"
+    },
+    {
+      "owner_task": 14,
+      "path": "docs/superpowers/specs/2026-07-15-workflow-skill-router-v2-design.md",
+      "sha256": "402b92759f0f3faa2ad42ea093d4c5d13d308bdcda64996740495a5ae5aaf74e",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "docs/v2-architecture.md",
+      "sha256": "95942f1a33bb99a816b08f86dd3a6ad4efdd2fc032d2254e86fea3471e62f088",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "docs/v2-architecture.zh-TW.md",
+      "sha256": "11170675013e9ff219b1f28c9aa15646e7d492b798be9191b91fb651e61a6f5b",
+      "status": " M"
+    },
+    {
+      "owner_task": 14,
+      "path": "downloads/checksums.sha256",
+      "sha256": "02af204f62b50ee9307a566a161a8d8e6c885dc934bc7c85c94a253523330a6a",
+      "status": " M"
+    },
+    {
+      "owner_task": 14,
+      "path": "downloads/release-manifest-v2.0.0-alpha.1.json",
+      "sha256": "a6eca8c5d05c7e6c14b1da2ee427d43adaa2c62adde9353c56991a073ee6d611",
+      "status": " M"
+    },
+    {
+      "owner_task": 14,
+      "path": "downloads/workflow-skill-router-plugin-v2.0.0-alpha.1.zip",
+      "sha256": "869b20d07e950de2c48b1c885c3bcb4d4073bbf7963698b5416cef6c6fe2e8e3",
+      "status": " M"
+    },
+    {
+      "owner_task": 14,
+      "path": "downloads/workflow-skill-router-skill-v2.0.0-alpha.1.zip",
+      "sha256": "4eb956c637e4b2e946af758b08e1f7c1cdec5506685651fc48d45a745139e04a",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/bridge.py",
+      "sha256": "3944b951fe9642269c974855e515ad55fb4f92f1325ac38e8967b7efe05e453e",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/cli/__init__.py",
+      "sha256": "5240661ac2db2405f8549125dd195d9df009855567fa3e0367a954a0da526c00",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "packages/router-core/src/workflow_skill_router/demo_export.py",
+      "sha256": "10a3118827aa781e9c31c427281db2156a9725878812aa4b0098096838cc2ed7",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/local_control.py",
+      "sha256": "25bbec4eff89e7ae1f85e02926c1b2a9ba2a3fdd38f26ce24a1d06efc6776535",
+      "status": "??"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/persistence/migrations/0003_local_control_plane.sql",
+      "sha256": "57751b7a1a1e9c9056b1bbc74ff44d434ea9bcd4997a81ce2b3e4efc5697b3b2",
+      "status": "??"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/routing/consent.py",
+      "sha256": "325118d2880ba4bed8fae04f21d41a70f98152d80451ad896fd75ec9245d4fe4",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/routing/directives.py",
+      "sha256": "be5f5f1961c95b69cb82d91bb6961cf8e45da4564c508590442ac8a51804a9f1",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/routing/models.py",
+      "sha256": "b87c0464869dc8a26db6f3b4455fceda81edd65dee089e9488609fe017e593ea",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/routing/validator.py",
+      "sha256": "282a9704c93bad4e95f26301ab662273de6cbf64ae3e1ba61e07b921732b181c",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/src/workflow_skill_router/service_models.py",
+      "sha256": "f4f8f741444d86c2047eb41b9599612a94fc66348866300005c1028e7855c748",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/tests/integration/test_local_control_plane.py",
+      "sha256": "3c9c5b8fd509f287884b7ffef064137e3e8b458fc151f255da9e1aef891e78c7",
+      "status": "??"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/tests/routing/test_consent.py",
+      "sha256": "9a2c8446aba26ad7ff699fdf5bfdffd1651a3959bc76e1f9febe938a4601d6b2",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/tests/routing/test_profiler.py",
+      "sha256": "a83a2475459f913bce656a4651ff8345b726e6d896252dd8f9e946702c386349",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "packages/router-core/tests/routing/test_route_validator.py",
+      "sha256": "96bb72ea5c3e436dfdce297a094c4ea7e2715464dd104851186651ce6f4211ab",
+      "status": " M"
+    },
+    {
+      "owner_task": 4,
+      "path": "plugins/workflow-skill-router/.codex-plugin/plugin.json",
+      "sha256": "cdd67aca2ac43dcd0a232be5b86f28e145bfacdec99ede7a488b945e2e430ffa",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/mcp/server.bundle.mjs",
+      "sha256": "34a8e52a53146ddc0daae89f380becc45b16b1d9b9dae694a8e02a9287485a98",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/mcp/src/core-client.ts",
+      "sha256": "204cb76f1a254c0321dbe06d430d80e31a00582652dc99cf4027288e0f9fbb6f",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/mcp/test/bundled-runtime.test.ts",
+      "sha256": "6935b03fd8b7928a89a97c6ab17567317b2212be926c107e832ed1d1fc1eaf09",
+      "status": "??"
+    },
+    {
+      "owner_task": 4,
+      "path": "plugins/workflow-skill-router/package.json",
+      "sha256": "abef34e5544c87aa6c66952a7f2fd7a101218ff986f0c7c84649f3c6103e3552",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/runtime/workflow_skill_router.pyz",
+      "sha256": "12df31e68c1c8594f4927890ec2e84a84c43c9cf308a46868887d325fa9bd469",
+      "status": " M"
+    },
+    {
+      "owner_task": 3,
+      "path": "plugins/workflow-skill-router/scripts/build-mcp.mjs",
+      "sha256": "90585ef9e4242a7a72d6c07b401751f894687942bc883cec62414d19e04a3b22",
+      "status": " M"
+    },
+    {
+      "owner_task": 3,
+      "path": "plugins/workflow-skill-router/scripts/build-runtime.py",
+      "sha256": "de6d19c95e5b16da9eb92105d32085e93be62a79fe1cd6ec2623aa818d82d8f7",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/skills/workflow-skill-router/SKILL.md",
+      "sha256": "c9978d42ad5bf6ac1cb2b7eba6573ca822b08e6628c3087470223a2b6da59ea7",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "plugins/workflow-skill-router/skills/workflow-skill-router/references/routing-protocol.md",
+      "sha256": "f1dec8687a0891c07062e0f0a4b976c13828472affe83292c35423a86b8edfd1",
+      "status": " M"
+    },
+    {
+      "owner_task": 3,
+      "path": "scripts/build-release-artifacts.py",
+      "sha256": "48a35de74df5be408ff122519954493db130f429bc3e86d491c54a346ac2b6c4",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "site/src/content/docs/guides/v2-routing.md",
+      "sha256": "9993e3bfe62dcb57978fbe4ee69dd2166ee13fc22932f38e76b2edfc718948f1",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "site/src/content/docs/showcase.md",
+      "sha256": "c3aede741a74de909743dda7ea51c31b1fb269b7f7bdef46b2c8ca446325ff01",
+      "status": " M"
+    },
+    {
+      "owner_task": 10,
+      "path": "site/src/content/docs/zh-tw/guides/v2-routing.md",
+      "sha256": "0aada1a5719aca64fcd3640e6ee6f3f5230ad0af114d099b133bd0b310cd5360",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "site/src/content/docs/zh-tw/showcase.md",
+      "sha256": "b7251acff91697bcd0478ae7a9d300e7aead5b5dc75288163abb7ac513d0870d",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "site/src/data/router-demo-v2.generated.json",
+      "sha256": "557657a4ad20d5260d9ace569feb3fb32c9a4662284441233592e66a5cedadaa",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "starter/v2/workflow-skill-router/SKILL.md",
+      "sha256": "c9978d42ad5bf6ac1cb2b7eba6573ca822b08e6628c3087470223a2b6da59ea7",
+      "status": " M"
+    },
+    {
+      "owner_task": 5,
+      "path": "starter/v2/workflow-skill-router/references/routing-protocol.md",
+      "sha256": "f1dec8687a0891c07062e0f0a4b976c13828472affe83292c35423a86b8edfd1",
+      "status": " M"
+    },
+    {
+      "owner_task": 3,
+      "path": "tests/test_build_runtime.py",
+      "sha256": "916d8e5e36c43bb239905e5ec10fc7c11360ab1c5551257423fde1d37dbb754d",
+      "status": "??"
+    },
+    {
+      "owner_task": 3,
+      "path": "tests/test_release_artifacts.py",
+      "sha256": "a6e85b8e426db7c7922a4f8d3ab0af1b020778b37bc285ec4e39bec4c433bbfc",
+      "status": " M"
+    },
+    {
+      "owner_task": 9,
+      "path": "tests/test_v2_demo_data.py",
+      "sha256": "9c2b05ca67aa628cf13d013b74a290e28dc154ceec65a714fab7c70307e2639f",
+      "status": " M"
+    }
+  ],
+  "public_tree_policy_revision": "v2-first-1",
+  "required_test_suites": [
+    "packages/router-core/tests",
+    "tests",
+    "plugins/workflow-skill-router/mcp/test",
+    "site/tests"
+  ],
+  "schema_version": "2.0",
+  "starting_head": "70f3456270b4395e8d473a3f8cc592391c92b335",
+  "v2_version": "2.0.0-alpha.1"
+}
