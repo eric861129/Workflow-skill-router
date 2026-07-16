@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/capability-snapshot.schema.json",
+  "title": "Workflow Skill Router V2 Capability Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "snapshot_id", "schema_version", "created_at", "runtime_fingerprint",
+    "provider_revisions", "capabilities", "drift_from_snapshot_id", "freshness"
+  ],
+  "properties": {
+    "snapshot_id": {"type": "string", "minLength": 1},
+    "schema_version": {"const": "2.0.0-alpha.1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "runtime_fingerprint": {"type": "string", "minLength": 1},
+    "provider_revisions": {"type": "array", "items": {"type": "string"}},
+    "capabilities": {
+      "type": "array",
+      "items": {"$ref": "capability.schema.json"}
+    },
+    "drift_from_snapshot_id": {"type": ["string", "null"]},
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_at", "expires_at", "degraded_allowed", "stale"],
+      "properties": {
+        "observed_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "degraded_allowed": {"type": "boolean"},
+        "stale": {"type": "boolean"}
+      }
+    }
+  }
+}

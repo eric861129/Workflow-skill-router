@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "workflow-skill-router-core"
+version = "2.0.0a1"
+description = "Workflow Skill Router V2 deterministic core"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+workflow_skill_router = ["schemas/json/**/*.json", "persistence/migrations/*.sql"]

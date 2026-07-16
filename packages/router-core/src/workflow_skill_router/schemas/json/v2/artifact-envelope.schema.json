@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/artifact-envelope.schema.json",
+  "title": "Workflow Skill Router V2 Artifact Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "artifact_kind",
+    "artifact_id",
+    "created_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_id": {"type": "string", "minLength": 1},
+    "schema_version": {"const": "2.0.0-alpha.1"},
+    "artifact_kind": {"type": "string", "minLength": 1},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "payload": {"type": "object"}
+  }
+}
