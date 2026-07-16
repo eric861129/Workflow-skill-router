@@ -29,6 +29,7 @@ class RouterService:
         gate_coordinator,
         status_reader,
         diagnostics_reader,
+        evaluation,
     ) -> None:
         self._authorizer = authorizer
         self._runtime_authority = runtime_authority
@@ -50,6 +51,7 @@ class RouterService:
         self._gate_coordinator = gate_coordinator
         self._status_reader = status_reader
         self._diagnostics_reader = diagnostics_reader
+        self._evaluation = evaluation
 
     def sync_runtime_context(self, command):
         self._authorizer.authorize_mutation(command.context, command.expected_state_version)
@@ -128,3 +130,15 @@ class RouterService:
         if callable(self._diagnostics_reader):
             return self._diagnostics_reader()
         return self._diagnostics_reader.read()
+
+    def run_model_evaluation(self, command):
+        self._authorizer.authorize_read(command.context)
+        return self._evaluation.run(command)
+
+    def compare_evaluations(self, command):
+        self._authorizer.authorize_read(command.context)
+        return self._evaluation.compare(command)
+
+    def export_router_artifact(self, command):
+        self._authorizer.authorize_read(command.context)
+        return self._evaluation.export(command)

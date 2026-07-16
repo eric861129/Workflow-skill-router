@@ -29,6 +29,7 @@ class RouterCompositionPorts:
     gate_coordinator: object
     status_reader: object
     diagnostics_reader: object
+    evaluation: object
 
 
 def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
@@ -55,4 +56,5 @@ def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
         gate_coordinator=ports.gate_coordinator,
         status_reader=ports.status_reader,
         diagnostics_reader=ports.diagnostics_reader,
+        evaluation=ports.evaluation,
     )

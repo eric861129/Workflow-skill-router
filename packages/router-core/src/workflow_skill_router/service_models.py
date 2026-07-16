@@ -150,3 +150,33 @@ class RouterDiagnostics(ResultCodec):
     projection_checkpoint: int
     pending_activation_reservations: int
 
+
+@dataclass(frozen=True, slots=True)
+class RunModelEvaluation:
+    context: RequestContext
+    authorization_ref: str
+    sealed_case_ref: str
+    repeats: int
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class CompareEvaluations:
+    context: RequestContext
+    authorization_ref: str
+    baseline_run_id: str
+    candidate_run_id: str
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExportRouterArtifact:
+    context: RequestContext
+    authorization_ref: str
+    comparison_ref: str
+    export_kind: str
+    attestation_ref: str | None
+    idempotency_key: str
+    correlation_id: str

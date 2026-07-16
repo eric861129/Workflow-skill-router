@@ -51,6 +51,7 @@ def build_router_service():
         coordinator=Noop(), gate_context=Noop(), gate_evaluator=Noop(),
         gate_coordinator=Noop(), status_reader=status,
         diagnostics_reader=lambda: RouterDiagnostics(0, 0, 0),
+        evaluation=Noop(),
     ))
     service._test_scheduler = scheduler
     service._test_status = status

@@ -147,3 +147,39 @@ class ExecutionAdapter(Protocol):
     kind: str
     def start_attempt(self, payload: ModelExecutionPayload, attempt_nonce: str) -> str: ...
     def execute_turn(self, request: ModelTurnRequest) -> Mapping[str, Any]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ReleasePolicy:
+    require_zero_hard_violations: bool = True
+    minimum_explicit_skill_preservation: float = 1.0
+    require_support_activation_observable: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationScore:
+    run_id: str
+    score_digest: str
+    hard_violations: tuple[str, ...]
+    explicit_skill_preservation: float
+    unapproved_support_activations: int | None
+    pass_rate: float
+    variance: float
+    failure_count: int
+    release_eligible: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseDecision:
+    allowed: bool
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluationComparison:
+    baseline_run_id: str
+    candidate_run_id: str
+    paired_count: int
+    pass_rate_difference: float
+    hard_violation_difference: int
+    candidate_release_eligible: bool
