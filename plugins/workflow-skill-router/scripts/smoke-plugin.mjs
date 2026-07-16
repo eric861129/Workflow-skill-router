@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+const root = path.resolve(import.meta.dirname, "..");
+const digest = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
+const manifest = JSON.parse(readFileSync(path.join(root, ".codex-plugin", "plugin.json"), "utf8"));
+assert.equal(manifest.name, "workflow-skill-router");
+assert.ok(readFileSync(path.join(root, "skills", "workflow-skill-router", "SKILL.md")));
+const lock = JSON.parse(readFileSync(path.join(root, "package-lock.json"), "utf8"));
+assert.equal(lock.packages["node_modules/@modelcontextprotocol/sdk"].version, "1.29.0");
+assert.equal(lock.packages["node_modules/zod"].version, "4.1.12");
+assert.equal(lock.packages["node_modules/esbuild"].version, "0.28.1");
+execFileSync(process.execPath, [path.join(root, "scripts", "build-mcp.mjs")], { stdio: "ignore" });
+const first = digest(path.join(root, "mcp", "server.bundle.mjs"));
+execFileSync(process.execPath, [path.join(root, "scripts", "build-mcp.mjs")], { stdio: "ignore" });
+assert.equal(first, digest(path.join(root, "mcp", "server.bundle.mjs")));
+console.log("plugin smoke passed");
