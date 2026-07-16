@@ -17,3 +17,6 @@ site-preview.pid
 __pycache__/
 *.pyc
 
+# Local isolated worktrees
+.worktrees/
+
