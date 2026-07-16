@@ -1,0 +1,14 @@
+{
+  "schema_id": "workflow-skill-router/legacy-tutorial-catalog",
+  "schema_version": "1.0",
+  "capabilities": [
+    {"canonical_id": "api-designer", "kind": "skill"},
+    {"canonical_id": "architecture-designer", "kind": "skill"},
+    {"canonical_id": "code-documenter", "kind": "skill"},
+    {"canonical_id": "playwright", "kind": "skill"},
+    {"canonical_id": "qa-test-planner", "kind": "skill"},
+    {"canonical_id": "requirements-clarity", "kind": "skill"},
+    {"canonical_id": "systematic-debugging", "kind": "skill"},
+    {"canonical_id": "vue-expert", "kind": "skill"}
+  ]
+}

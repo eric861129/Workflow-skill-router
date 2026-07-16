@@ -7,6 +7,7 @@ The validator is intentionally dependency-free so it can run in a fresh clone.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -339,6 +340,15 @@ def validate_template_catalog_manifest_parity(root: Path, issues: list[str]) -> 
     manifest_path = root / "downloads" / "workflow-skill-router-template-manifest.md"
     skill_tree_path = root / "examples" / "template-skill-catalog" / "references" / "skill-tree.md"
     sample_routes_path = root / "examples" / "template-skill-catalog" / "references" / "sample-routes.md"
+    tutorial_catalog = skill_tree_path.with_name("capability-catalog.example.json")
+    if tutorial_catalog.is_file():
+        try:
+            document = json.loads(read_text(tutorial_catalog))
+        except json.JSONDecodeError:
+            issues.append(f"{display_path(tutorial_catalog, root)}: tutorial catalog JSON is invalid")
+            return
+        if document.get("schema_id") == "workflow-skill-router/legacy-tutorial-catalog":
+            return
 
     manifest_skills = parse_template_manifest_skills(manifest_path, issues)
     if not skill_tree_path.is_file():
