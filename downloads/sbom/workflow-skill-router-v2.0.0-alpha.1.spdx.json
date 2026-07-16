@@ -1,0 +1,1 @@
+{"SPDXID":"SPDXRef-DOCUMENT","dataLicense":"CC0-1.0","documentNamespace":"https://example.invalid/workflow-skill-router/2.0.0-alpha.1","name":"workflow-skill-router-2.0.0-alpha.1","packages":[{"SPDXID":"SPDXRef-Package","downloadLocation":"NOASSERTION","licenseConcluded":"MIT","name":"workflow-skill-router","versionInfo":"2.0.0-alpha.1"}],"spdxVersion":"SPDX-2.3"}

@@ -1,0 +1,5 @@
+{
+  "root": "plugins/workflow-skill-router",
+  "excluded_directories": ["node_modules", ".test-build"],
+  "excluded_files": [".gitignore"]
+}

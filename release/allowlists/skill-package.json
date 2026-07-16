@@ -1,0 +1,4 @@
+{
+  "root": "starter/v2/workflow-skill-router",
+  "extensions": [".md"]
+}
