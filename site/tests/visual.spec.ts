@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const pages = [
   { name: 'home', path: './' },
-  { name: 'downloads', path: 'guides/downloads/' },
+  { name: 'quickstart', path: 'guides/quickstart/' },
   { name: 'gallery', path: 'examples/routing-gallery/' },
 ];
 

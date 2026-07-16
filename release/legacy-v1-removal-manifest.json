@@ -19,25 +19,25 @@
       "historical_source": "v1.3.1",
       "path": "README.en.md",
       "reason": "Remove the redundant V1 public surface after its V2 replacement is verified.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: README.md. Recover the original legacy source from immutable Git tag v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/adoption-guide.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/guides/adoption.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/adoption-guide.zh-TW.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/zh-tw/guides/adoption.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/anti-over-routing.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/routing-envelopes.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
@@ -103,25 +103,25 @@
       "historical_source": "v1.3.1",
       "path": "docs/case-studies.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/examples/case-studies.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/contributor-guide-route-examples.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/contributing/release-process.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/dependency-governance.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/reference/security-boundaries.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/evaluation-guide.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/evaluation-evidence.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
@@ -139,7 +139,7 @@
       "historical_source": "v1.3.1",
       "path": "docs/release-cadence.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/contributing/release-process.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
@@ -181,91 +181,91 @@
       "historical_source": "v1.3.1",
       "path": "docs/roadmap.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/contributing/roadmap.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/routing-metrics-trends.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/evaluation-evidence.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/routing-metrics.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/evaluation-evidence.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/showcase.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/showcase.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/skill-inventory-scanner.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/runtime-capability-discovery.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/system-theory.en.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/routing-envelopes.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/system-theory.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/concepts/routing-envelopes.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/system-theory.zh-TW.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/zh-tw/concepts/routing-envelopes.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "docs/v1-to-v2-upgrade.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/guides/migrate-v1-to-v2.md. Recover the tracked predecessor from the recorded starting commit."
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "docs/v1-to-v2-upgrade.zh-TW.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/zh-tw/guides/migrate-v1-to-v2.md. Recover the tracked predecessor from the recorded starting commit."
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "docs/v2-architecture.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: docs/architecture/v2-overview.md. Recover the tracked predecessor from the recorded starting commit."
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "docs/v2-architecture.zh-TW.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: docs/architecture/v2-overview.md. Recover the tracked predecessor from the recorded starting commit."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/validation-checklist.en.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/guides/troubleshooting.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/validation-checklist.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/guides/troubleshooting.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",
       "path": "docs/validation-checklist.zh-TW.md",
       "reason": "Migrate durable guidance into canonical V2 architecture, concepts, guides, or the immutable V1 recovery source.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
+      "replacement_or_recovery": "Canonical V2 replacement: site/src/content/docs/zh-tw/guides/troubleshooting.md. Recover the legacy source from v1.3.1."
     },
     {
       "historical_source": "v1.3.1",

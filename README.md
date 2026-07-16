@@ -1,61 +1,172 @@
 # Workflow Skill Router V2
 
-[繁體中文](README.zh-TW.md) · [English](README.en.md) · [Live demo](https://huangchiyu.com/Workflow-skill-router/)
+[繁體中文](README.zh-TW.md) · [Documentation](https://huangchiyu.com/Workflow-skill-router/) · [Routing Flight Recorder](https://huangchiyu.com/Workflow-skill-router/#routing-flight-recorder)
 
-Workflow Skill Router is a runtime-aware routing and orchestration layer for Codex. It turns a request into the smallest verifiable execution envelope, preserves user-selected SKILL boundaries, and keeps long-running Goal work resumable and auditable.
+Workflow Skill Router is a runtime-aware planning and routing layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do.
 
-## Why V2 changes the workflow
+> Current channel: `2.0.0-alpha.1`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
 
-- **Single** routes one small intent with one minimal Primary capability.
-- **Phased** preserves every meaningful stage and reroutes each Phase independently.
-- **Managed Goal** maintains a dependency Work Graph, refreshes context on resume, and returns host-safe Goal status candidates.
-- **Explicit Skill Lock** applies to small, medium, and Goal work. Recommended support is never read or activated before consent.
-- **Runtime Capability Discovery** distinguishes installed metadata from host exposure, authentication, compatibility, policy eligibility, freshness, and risk.
-- **Real model evaluation** separates Tier 0 Contract fixtures from fresh Behavior/Outcome attempts.
+## 60-second outcome
 
-## Skill-only quickstart
+Give the Router a request. It returns an execution envelope, a capability plan, the consent boundary, and the evidence needed to continue safely. The public Flight Recorder shows the exact sanitized MCP request and response instead of recreating the decision in the browser.
 
-Install [`starter/v2/workflow-skill-router`](starter/v2/workflow-skill-router) as a Codex SKILL. This mode is deliberately reported as `skill-only-fallback`: durable resume, cross-process CAS, full drift detection, and sealed activation instrumentation are not observable. R2/R3 still require host approval.
-
-## Plugin + MCP quickstart
-
-Use the deterministic Plugin archive in [`downloads/`](downloads/) or the source under [`plugins/workflow-skill-router`](plugins/workflow-skill-router). The Plugin exposes exactly ten MCP tools covering runtime sync, planning, next work, route validation, evidence/state, Goal status, model evaluation, comparison, and sanitized export.
-
-```powershell
-python plugins/workflow-skill-router/scripts/build-runtime.py --check
-cd plugins/workflow-skill-router
-npm ci
-npm run check
+```text
+Request
+  -> classify work shape
+  -> discover usable runtime capabilities
+  -> lock explicit user choices
+  -> plan the smallest route
+  -> execute, verify, and disclose actual SKILL usage
 ```
 
-`hybrid-full` is claimed only after a verified host handshake and kind-specific bound-content preflight. Plugin installation, SKILL consent, and runtime permission are separate decisions.
+## Plugin + MCP versus Skill-only
 
-## Evaluation evidence boundary
+| Capability | Plugin + MCP | Skill-only |
+| --- | --- | --- |
+| Routing instructions | Included | Included |
+| Local durable R0 planning | `plan_work` and `get_router_status` | Not observable |
+| Verified-host scheduling and route validation | Available after host integration | Unavailable |
+| Cross-process state and compare-and-swap | Host/runtime dependent | Unavailable |
+| Sealed model evaluation | Configured adapter required | Manual workflow only |
+| Honest runtime label | `bundled-local-r0` or verified profile | `skill-only-fallback` |
 
-The existing 80 cases are **Tier 0 Contract** fixtures. They prove deterministic compatibility, not real model behavior. Behavior and Outcome require at least three fresh attempts, sealed scoring material, paired manifests, zero hard violations, and a trusted human review verifier. Without an execution adapter the result is `manual-required`; without trusted review it is `review-required` and no public score is emitted.
+Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone SKILL when you need instruction-only routing or must run in a host without Plugin support. The `hybrid-full` conformance label is unavailable to the standalone package.
+
+## Five-minute Plugin + MCP quickstart
+
+For a contributor checkout:
+
+```powershell
+git clone https://github.com/eric861129/Workflow-skill-router.git
+Set-Location Workflow-skill-router
+codex plugin marketplace add .
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
+```
+
+After the immutable `v2.0.0-beta.1` tag is published, use the tagged marketplace snapshot:
+
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
+```
+
+The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
+
+## Five-minute Skill-only quickstart
+
+From a contributor checkout on Windows:
+
+```powershell
+$Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
+Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
+Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
+```
+
+For a published release, extract `workflow-skill-router-skill-v2.0.0-beta.1.zip` into the Codex Skills directory. This package preserves routing instructions and explicit-choice policy, but it cannot prove durable resume, full drift detection, or sealed activation. See [Skill-only installation](site/src/content/docs/guides/install-skill.md).
+
+## Architecture: Runtime Capability Discovery first
+
+Runtime Capability Discovery separates five facts that agents often collapse: installed metadata, host exposure, authentication, policy eligibility, and freshness. A capability becomes routable only when its risk-specific requirements pass.
+
+```mermaid
+flowchart LR
+    U["User request"] --> R["Router core"]
+    H["Codex host observations"] --> D["Runtime Capability Discovery"]
+    P["Plugin handshake"] --> D
+    S["SKILL metadata"] --> D
+    D --> R
+    R --> E["Single / Phased / Managed Goal"]
+    E --> L["Local R0 control plane"]
+    E --> V["Verified host adapters"]
+    E --> M["Configured evaluation adapter"]
+    V --> A["State, evidence, and audit stores"]
+```
+
+Maintainers can start with [the V2 architecture overview](docs/architecture/v2-overview.md).
+
+## Single, Phased, and Managed Goal
+
+- **Single** handles one bounded intent with one minimal primary capability.
+- **Phased** preserves distinct stages and reroutes each phase from current evidence.
+- **Managed Goal** maintains a resumable work graph, respects dependencies, and treats the Codex Goal as host-owned state.
+
+The Router does not force every task into Goal orchestration. Work shape comes from the request, dependencies, risk, and current Goal relation.
+
+## Explicit Skill Lock
+
+When the user names a SKILL, that choice becomes authoritative. The Router may recommend support, but it must explain the purpose, scope, refusal consequence, and context cost before activation. Rejected support stays out of active selections.
+
+When the user names no SKILL, the Router chooses the smallest sufficient route without repeatedly asking for consent to its own recommendations. Before execution it declares planned SKILL usage; after execution it reports actual usage and any change.
+
+## MCP tool surface
+
+The Plugin exposes ten typed tools:
+
+```text
+sync_runtime_context  plan_work              get_next_work
+validate_route        record_work_event      evaluate_gate
+get_router_status     run_model_evaluation   compare_evaluations
+export_router_artifact
+```
+
+Tool schemas, risk, required capabilities, and fallback actions are generated from the same contracts used by the server. See the [generated MCP reference](site/src/content/docs/reference/mcp-tools.mdx).
+
+## Runtime readiness matrix
+
+| Availability in bundled local R0 | Tools | Meaning |
+| --- | --- | --- |
+| `local-ready` | `plan_work`, `get_router_status` | Durable local R0 planning and status |
+| `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Needs verified host authority and stores |
+| `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
+
+Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result.
+
+## Real Model Evaluation
+
+Contract fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication.
+
+The corrected 36-attempt beta Behavior smoke is pending explicit quota authorization. The earlier superseded run is not public proof. The twelve-case suite, repeated three times per arm, remains the GA gate. Until a valid run exists the public status is `manual-required`; after execution it remains `review-required` until attested.
+
+## Security boundary and local state
+
+Plugin installation, SKILL consent, runtime permission, and production authorization are separate decisions. The model cannot supply executable paths for evaluation, mint host authority, upgrade a fixture into runtime evidence, or mutate the native Codex Goal.
+
+The Plugin stores state outside its cache:
+
+| Platform | Default path |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\Codex\workflow-skill-router` |
+| macOS | `~/Library/Application Support/Codex/workflow-skill-router` |
+| Linux | `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router` |
+
+Set `WORKFLOW_SKILL_ROUTER_DATA_DIR` to choose another external directory. No telemetry is enabled by default. Read the [security boundary](site/src/content/docs/reference/security-boundaries.md) before integrating host-side R2/R3 actions.
+
+## Contributing
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), then run the focused checks for the surface you changed. Release artifacts come from allowlists and deterministic builders; generated outputs are never edited by hand.
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+python -m unittest discover -s packages/router-core/tests -v
+python -m unittest discover -s tests -v
+python scripts/build-v2-demo-data.py --check
+python scripts/build-release-artifacts.py --output-dir dist/release --provenance-mode test --check-determinism
+```
 
 ## Version channels
 
-| Channel | Target | Meaning |
-|---|---|---|
-| `latest` | V1.3.1 | Stable default until V2 GA |
-| `latest-v1` | V1.3.1 | Immutable V1 compatibility asset |
-| `latest-v2` | V2 alpha | Skill + Plugin prerelease |
+| Channel | Current role | Promotion rule |
+| --- | --- | --- |
+| `latest` | V1.3.1 compatibility until V2 GA | Moves only after the GA release gate |
+| `latest-v1` | Immutable V1 recovery | Remains pinned to V1.3.1 |
+| `latest-v2` | V2 alpha/beta prerelease | Tracks reviewed V2 prereleases |
 
-See [V2 architecture](docs/v2-architecture.md), [V1 → V2 upgrade](docs/v1-to-v2-upgrade.md), and the [showcase](docs/showcase.md).
+The repository is V2-first even while the compatibility channel remains pinned. Version metadata lives in [`release/version.json`](release/version.json).
 
-## V1 compatibility resources
+## V1 migration
 
-The stable V1 surface remains available for existing users: [Blank Router](downloads/workflow-skill-router-blank.zip), [full template](downloads/workflow-skill-router-template.zip), [clean template](downloads/workflow-skill-router-template-clean.zip), the [tutorial catalog](examples/template-skill-catalog), and [`validate-router.py`](scripts/validate-router.py). The original [before/after routing diagram](docs/assets/demo-routing-before-after.svg) is retained for public-readiness compatibility.
+Use the [V1 to V2 migration guide](site/src/content/docs/guides/migrate-v1-to-v2.md) to move from template-based routing to the runtime-aware Plugin or standalone SKILL. V1 source and packages remain recoverable from the immutable [`v1.3.1` tag](https://github.com/eric861129/Workflow-skill-router/tree/v1.3.1) and GitHub Release; they are not primary V2 navigation.
 
-## Validation
-
-```powershell
-$env:PYTHONPATH = "packages/router-core/src"
-python -m unittest discover -s packages/router-core/tests -p "test_*.py"
-python -m unittest discover -s tests -p "test_*.py"
-python scripts/build-v2-demo-data.py --check
-python scripts/build-release-artifacts.py --check
-```
-
-MIT licensed. No telemetry is enabled by default.
+MIT licensed.

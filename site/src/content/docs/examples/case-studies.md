@@ -1,150 +1,58 @@
 ---
-title: Routing Case Studies
-description: Six examples that turn fuzzy requests into small, reviewable routes.
+title: V2 Routing Case Studies
+description: See how envelope selection, Explicit Skill Lock, and runtime readiness change real routing decisions.
 ---
 
-These case studies show the pattern behind Workflow Skill Router: avoid loading every related skill, then choose one primary skill plus focused support.
+## Small documentation fix
 
-## API contract sync
+**Request:** “Document one API error response.”
 
-Fuzzy request:
+**Decision:** `single`, with one documentation-oriented primary SKILL. No consent prompt appears because the user did not name a SKILL. The Router declares expected usage, edits, verifies links, then discloses actual usage.
 
-```text
-Add a customer settings endpoint, update OpenAPI, regenerate the frontend client, and make sure the contract is tested.
-```
+**Why it matters:** The Router does not turn every request into a workflow or ask permission for ordinary automatic routing.
 
-Bad over-route:
+## Multi-stage API contract change
 
-```text
-Use SKILL: backend-developer, api-designer, openapi-contract-generation-skill, openapi-to-typescript, database-optimizer, qa-test-planner, frontend-design
-```
+**Request:** “Add an endpoint, update OpenAPI, regenerate the client, and verify the consumer.”
 
-Better route:
+**Decision:** `phased`.
 
-```text
-Route: API / Contract lifecycle > Backend-to-frontend sync
-Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner
-Reason: api-designer owns endpoint semantics; openapi-contract-generation-skill manages schema change; openapi-to-typescript updates client types; qa-test-planner defines contract coverage.
-```
+1. Contract and backend semantics.
+2. Generated client propagation.
+3. Consumer regression verification.
 
-Why smaller is better: the route keeps one owner for API shape and adds only the tools needed to propagate and verify the contract.
+Each phase selects a new minimal SKILL set and passes a verification gate before the next phase. Skills that are useful only later stay inactive until their phase begins.
 
-## Vue browser regression
+**Why it matters:** One broad route would load unrelated capabilities early and blur ownership of failures.
 
-Fuzzy request:
+## User names one SKILL
 
-```text
-A Vue form loses selected values after refresh. Reproduce it in the browser and add a regression check.
-```
+**Request:** “Use `api-designer` only to review this contract.”
 
-Bad over-route:
+**Decision:** `single` plus Explicit Skill Lock. `api-designer` remains active. If a security-sensitive detail justifies another SKILL, the Router proposes it as inactive support and asks once. Rejection leaves the original lock unchanged.
 
-```text
-Use SKILL: vue-expert, frontend-design, browser, playwright, qa-test-planner, api-designer, database-optimizer
-```
+**Why it matters:** User choice is authoritative without blocking a transparent, optional recommendation.
 
-Better route:
+## Cross-repository migration Goal
 
-```text
-Route: Frontend / Vue / UI > Browser regression > State persistence
-Use SKILL: vue-expert, systematic-debugging, playwright, qa-test-planner
-Reason: vue-expert handles component state; systematic-debugging isolates the cause; playwright captures the browser regression; qa-test-planner defines acceptance coverage.
-```
+**Request:** “Continue the API, Web, and documentation migration until the release gate is ready.”
 
-Why smaller is better: the route starts where the symptom appears, adds causal debugging, and saves the repeatable browser check for verification.
+**Decision:** `managed-goal`, with Work Items, dependencies, candidates, evidence receipts, and explicit completion criteria. In the bundled local R0 profile, planning and status work, while scheduling returns `capability-unavailable` until verified Host ports exist.
 
-## PR review plus CI repair
+**Why it matters:** The Router degrades honestly instead of pretending local files provide native Goal mutation.
 
-Fuzzy request:
+## Model evaluation request
 
-```text
-Review this auth-related PR, address review feedback, and fix the failing CI checks before merge.
-```
+**Request:** “Prove the new routing behavior is better using real model runs.”
 
-Bad over-route:
+**Decision:** A dry-run manifest can be prepared without quota. Behavior/Outcome execution stays blocked until a trusted operator supplies an executable configuration and explicitly authorizes quota. Results remain unpublished until paired review and attestation pass.
 
-```text
-Use SKILL: github, receiving-code-review, security-review, systematic-debugging, qa-test-planner, devops-engineer, commit-work, documentation-writer
-```
+**Why it matters:** A fixture proves the contract shape; it does not prove model behavior. Evaluation cost and publication are separate decisions.
 
-Better route:
+## Capability discovered but not authorized
 
-```text
-Route: Review / CI readiness > Security-sensitive change
-Use SKILL: receiving-code-review, systematic-debugging, qa-test-planner, commit-work
-Reason: receiving-code-review turns feedback into action; systematic-debugging isolates CI failures; qa-test-planner protects the auth surface; commit-work prepares a clean final commit.
-```
+**Request:** “Use the deployment connector you found to publish now.”
 
-Why smaller is better: the route focuses on pre-merge work. Connector skills can be added only when live GitHub comments or logs are the source of truth.
+**Decision:** Discovery may show that the connector is installed, but activation remains blocked if Host exposure, authorization, policy, freshness, or side-effect approval is missing.
 
-## Documentation source-map cleanup
-
-Fuzzy request:
-
-```text
-The docs source map is stale after moving guide pages. Fix the public links and make sure each page still points to the right source file.
-```
-
-Bad over-route:
-
-```text
-Use SKILL: code-documenter, spec-miner, frontend-design, devops-engineer, qa-test-planner, github
-```
-
-Better route:
-
-```text
-Route: Documentation / Source map > Link and provenance cleanup
-Use SKILL: code-documenter, spec-miner
-Reason: code-documenter owns developer-facing wording; spec-miner checks where the docs are sourced from.
-```
-
-Why smaller is better: the route stays focused on content and provenance. Site build or GitHub connector skills can be added later only if validation fails or live repo state is required.
-
-## Database migration with performance risk
-
-Fuzzy request:
-
-```text
-Add audit tables for account changes and make sure the admin activity query stays fast after the migration.
-```
-
-Bad over-route:
-
-```text
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, devops-engineer, api-designer, qa-test-planner, frontend-design
-```
-
-Better route:
-
-```text
-Route: Database / Schema and performance > Migration plus query review
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
-Reason: database-schema-designer owns table shape; sql-pro keeps SQL clear; database-optimizer checks query cost; qa-test-planner defines migration coverage.
-```
-
-Why smaller is better: the selected skills cover schema, SQL, performance, and verification without distracting the agent with unrelated API or UI work.
-
-## Release plus connector closeout
-
-Fuzzy request:
-
-```text
-Finish the release branch, check the latest GitHub run, and prepare the release note.
-```
-
-Bad over-route:
-
-```text
-Use SKILL: finishing-a-development-branch, github, receiving-code-review, systematic-debugging, devops-engineer, code-documenter, commit-work
-```
-
-Better route:
-
-```text
-Route: Release / Closeout > GitHub-backed readiness check
-Use SKILL: finishing-a-development-branch, github, code-documenter
-Reason: finishing-a-development-branch owns the local finish line; github checks live run state; code-documenter prepares the release note.
-```
-
-Why smaller is better: the connector is included because live GitHub state is the source of truth. Debugging and DevOps skills remain inactive unless the run fails.
+**Why it matters:** Installation is evidence, not authority.

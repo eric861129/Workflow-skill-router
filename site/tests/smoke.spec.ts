@@ -2,12 +2,16 @@ import { expect, test } from '@playwright/test';
 
 const pages = [
   { path: './', text: 'Workflow Skill Router' },
-  { path: 'guides/downloads/', text: 'Download packages' },
-  { path: 'guides/quickstart/', text: 'Try in 30 seconds' },
+  { path: 'guides/quickstart/', text: 'V2 Quickstart' },
+  { path: 'guides/install-plugin/', text: 'Install the Plugin + MCP runtime' },
+  { path: 'concepts/runtime-capability-discovery/', text: 'Runtime Capability Discovery' },
+  { path: 'reference/mcp-tools/', text: 'MCP Tools' },
   { path: 'examples/routing-gallery/', text: 'Routing Gallery' },
-  { path: 'reference/validator/', text: 'Validation Toolchain' },
+  { path: 'zh-tw/guides/quickstart/', text: 'V2 快速開始' },
+  { path: 'zh-tw/guides/install-plugin/', text: '安裝 Plugin + MCP Runtime' },
+  { path: 'zh-tw/concepts/runtime-capability-discovery/', text: 'Runtime Capability Discovery' },
+  { path: 'zh-tw/reference/mcp-tools/', text: 'MCP Tools' },
   { path: 'zh-tw/examples/routing-gallery/', text: '路由案例 Gallery' },
-  { path: 'zh-tw/reference/validator/', text: '驗證工具鏈' },
 ];
 
 for (const pageCase of pages) {
@@ -76,7 +80,7 @@ test('verified host fixture exposes the complete scheduler flow and fixture boun
   await expect(page.getByTestId('demo-mcp-result')).toHaveText(['OK', 'OK', 'OK']);
   await expect(page.getByTestId('demo-runtime-profile')).toContainText('verified-host-fixture');
   await expect(page.getByTestId('demo-evidence-class')).toContainText('fixture-trace');
-  await expect(page.getByText('Requires verified host capabilities')).toBeVisible();
+  await expect(page.getByText('Requires verified host capabilities', { exact: true })).toBeVisible();
 });
 
 test('real evaluation reports its evidence and review gate without reference-driver claims', async ({ page }) => {

@@ -16,242 +16,218 @@ const themeLabels = isZh
 
 const text = {
   en: {
-    nav: ['Why it works', 'Examples', 'Proof'],
+    nav: ['Runtime', 'Envelopes', 'Evidence'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: 'View on GitHub',
-    quickstart: 'Start in 30 seconds',
-    downloadBlank: 'Download blank package',
-    download: 'Downloads',
+    quickstart: 'V2 quickstart',
+    downloadBlank: 'Install Plugin + MCP',
+    download: 'Install V2',
     showcase: 'Routing showcase',
     gifAlt: 'A fuzzy request becoming a small routing output',
-    heroTitle: 'Skill selection governance before the work begins',
+    heroTitle: 'Runtime-aware routing before the work begins',
     heroCopy:
-      'Workflow Skill Router addresses one layer of agent sprawl: skill selection sprawl. It gives agents a small, reviewable routing decision before work starts.',
+      'Workflow Skill Router V2 chooses a Single, Phased, or Managed Goal envelope from current runtime evidence before work starts.',
     positioningLabel: 'Positioning',
-    positioningTitle: 'A skill selection layer, not a permission system',
+    positioningTitle: 'A routing control plane, not a permission system',
     positioningCopy:
-      'It does not replace scope contracts, runtime permissions, approval policies, or tool access controls. It only selects the smallest useful skill set from skills that already exist and are already allowed.',
+      'It does not replace Host permissions, approval policies, native Goal state, or tool controls. It plans only from capabilities that current evidence can justify.',
     routeLabel: 'Routing output',
     route:
       'Route: Frontend / Vue / UI > Browser regression > Rendered behavior\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.',
-    introTitle: 'A sharper operating layer for multi-skill agents',
+    introTitle: 'Discover what can actually run before routing',
     introCopy:
-      'Most agents do not fail because they lack tools. They fail because every related workflow competes for attention. This router turns task intent into a small, reviewable skill set before execution starts, then leaves authorization and approval to your existing governance layers.',
-    introLink: 'Read the customization guide',
-    processLabel: 'How the router thinks',
+      'V2 separates installed metadata, Host exposure, authorization, policy eligibility, freshness, and risk. A local file or cached observation never becomes runtime authority by itself.',
+    introLink: 'Read Runtime Capability Discovery',
+    processLabel: 'How V2 routes work',
     processSteps: [
       [
-        'Task shape',
-        'Classify the work before choosing tools',
-        'The router first separates task nature, work stage, and technical domain so the agent does not treat every request as generic implementation work.',
+        'Work envelope',
+        'Choose Single, Phased, or Managed Goal',
+        'The Router classifies dependencies, verification boundaries, resume needs, and Goal relation before selecting capabilities.',
       ],
       [
-        'Primary owner',
-        'Choose exactly one skill to lead',
-        'A Primary skill owns the main reasoning path. Supporting skills can help, but they should not compete for control of the task.',
+        'User authority',
+        'Preserve Explicit Skill Lock',
+        'Named SKILLs remain authoritative. Support outside the lock stays inactive until the user accepts it.',
       ],
       [
-        'Focused support',
-        'Add only the skills that reduce risk',
-        'Routes stay small: usually one Primary skill plus one to three Supporting skills for APIs, databases, browser checks, docs, CI, or release work.',
+        'Runtime evidence',
+        'Activate only what current proof allows',
+        'Every selected capability keeps its exposure, authorization, policy, freshness, and risk boundary visible.',
       ],
     ],
-    processNoteTitle: 'The result is easier to review before execution',
+    processNoteTitle: 'The result is inspectable before and after execution',
     processNote:
-      'Instead of asking the agent to remember every workflow at once, the user sees a short routing contract and can correct it before files are edited.',
+      'The Router declares planned SKILL usage before work, records typed runtime results, and discloses actual usage at completion.',
     contractLink: 'View routing contract',
-    templateLink: 'Explore Reference Template',
-    examplesTitle: 'A reference template for designing your own router',
+    templateLink: 'Compare routing envelopes',
+    examplesTitle: 'One Router, three work envelopes',
     examplesCopy:
-      'The example is no longer a second product to choose. It shows one public-safe catalog so readers can learn the structure, then adapt Blank Router to their own skills.',
+      'Small work stays small, multi-stage work reroutes at phase gates, and durable dependency graphs bind to a Host-owned Goal without pretending local authority.',
     templateHighlights: [
-      ['Public-safe skills', 'System, planning, architecture, API, backend, database, frontend, docs, DevOps, brand, and product skills.'],
-      ['Practical route catalog', 'Routes are grouped by real engineering categories with one Primary skill and focused Supporting skills.'],
-      ['Source-first proof', 'Every section links back to the GitHub folder and the exact sample route files behind the site.'],
+      ['Single', 'One bounded outcome, one verification path, and the smallest justified SKILL set.'],
+      ['Phased', 'Each phase selects from fresh evidence and must pass its own verification gate.'],
+      ['Managed Goal', 'Durable Work Items and dependencies, while native Goal mutation remains Host-owned.'],
     ],
     templateCode:
-      'Database / Performance / Slow query\nPrimary: database-optimizer\nSupporting: sql-pro, systematic-debugging',
-    outcomesTitle: 'Designed for visible outcomes',
+      'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
+    outcomesTitle: 'Designed for trustworthy outcomes',
     outcomes: [
-      ['Less context noise', 'A route is narrow enough for the user to correct before the agent edits files.'],
-      ['Faster onboarding', 'A new user can download the template, inspect the catalog, and adapt routes to their own agent environment.'],
-      ['Safer sharing', 'Public examples stay generic while private overlays can keep organization-specific rules local.'],
+      ['Less context noise', 'Automatic routing stays minimal and does not add a consent ceremony when no SKILL was named.'],
+      ['Honest degradation', 'Unavailable Host or adapter capabilities return typed fallbacks instead of simulated success.'],
+      ['Auditable execution', 'Sanitized traces show what was planned, called, rejected, and actually used.'],
     ],
-    validatorTitle: 'Proof before publish',
+    validatorTitle: 'Evidence before claims',
     validatorCopy:
-      'The proof flow checks router structure, scans the sample skill catalog, validates public route cases, evaluates route quality, and runs the unit tests before the repo is shared.',
+      'Contract fixtures prove compatibility. Runtime traces prove bundled execution. Real Model Evaluation requires fresh paired attempts, explicit quota authorization, review, and attestation.',
     proofStats: [
-      ['80', 'routing scenarios'],
-      ['12', 'route cases'],
-      ['0%', 'violation rate'],
+      ['10', 'typed MCP tools'],
+      ['2', 'local-ready tools'],
+      ['72', 'GA behavior attempts'],
     ],
-    validatorCommand: `# 1. Validate router structure
-python scripts/validate-router.py starter/workflow-skill-router
-python scripts/validate-router.py examples/template-skill-catalog
+    validatorCommand: `# Inspect truthful runtime readiness
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
-# 2. Scan skill catalog
-python scripts/scan-skills.py ./sample-skills \\
-  --out /tmp/skill-index.json \\
-  --markdown /tmp/skill-index.md \\
-  --warnings /tmp/skill-warnings.md \\
-  --suggest-tree /tmp/suggested-skill-tree.md \\
-  --fail-on-private \\
-  --fail-on-duplicates
+# Verify generated MCP contracts and V2 docs
+node scripts/build-mcp-reference-data.mjs --check
+python scripts/check-doc-parity.py
 
-# 3. Evaluate routing quality
-python scripts/evaluate-routing.py \\
-  --scenarios evaluation/scenarios.example.jsonl \\
-  --predictions evaluation/predictions.example.jsonl \\
-  --report /tmp/routing-report.md \\
-  --json-report /tmp/routing-report.json \\
-  --fail-on-violations \\
-  --strict
-
-python -m unittest discover -s tests`,
-    finalTitle: 'Make skill routing a reusable open-source pattern',
+# Run repository tests
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+python -m unittest discover -s packages/router-core/tests -v
+python -m unittest discover -s tests -v`,
+    finalTitle: 'Make runtime-aware skill routing reusable',
     finalCopy:
-      'Open the repository, inspect the starter, and follow releases if the pattern fits your agent workflow.',
+      'Install the Plugin + MCP runtime, or load the standalone SKILL when your Host supports instructions only.',
   },
   'zh-tw': {
-    nav: ['為什麼有效', '範例', '驗證'],
+    nav: ['Runtime', 'Envelopes', 'Evidence'],
     navLinks: ['#why-it-works', '#examples', '#validator'],
     star: '查看 GitHub',
-    quickstart: '30 秒開始',
-    downloadBlank: '下載空白套件',
-    download: '下載套件',
+    quickstart: 'V2 快速開始',
+    downloadBlank: '安裝 Plugin + MCP',
+    download: '安裝 V2',
     showcase: '案例展示',
     gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
-    heroTitle: 'AI Agent 開工前，先治理 Skill 選擇',
+    heroTitle: '工作開始前，先用 runtime evidence 決定 route',
     heroCopy:
-      'Workflow Skill Router 處理的是 Agent sprawl 裡的「Skill 選擇失控」問題。它讓 Agent 在任務開始前，先做一個小而可審查的 routing decision。',
+      'Workflow Skill Router V2 會依目前 runtime evidence，選擇 Single、Phased 或 Managed Goal envelope。',
     positioningLabel: '專案定位',
-    positioningTitle: '它是 skill selection layer，不是權限系統',
+    positioningTitle: '它是 routing control plane，不是權限系統',
     positioningCopy:
-      '它不取代 scope contracts、runtime permissions、approval policies 或 tool access controls。它只會從已存在、已允許的 skills 中，選出最小必要組合。',
+      '它不取代 Host permissions、approval policies、native Goal state 或 tool controls，只會依目前證據規劃可被合理使用的 capabilities。',
     routeLabel: 'Routing output',
     route:
       'Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。',
-    introTitle: '讓多技能 Agent 有清楚入口',
+    introTitle: 'Routing 前先確認什麼真的能執行',
     introCopy:
-      'Agent 通常不是缺工具，而是每個相關 workflow 都在搶注意力。這個 router 會先把任務意圖整理成小而清楚、可被使用者修正的 skill set，再把授權與核准交回既有治理層。',
-    introLink: '閱讀客製化指南',
-    processLabel: 'Router 的判斷方式',
+      'V2 會分開判斷 installed metadata、Host exposure、authorization、policy eligibility、freshness 與 risk。本機檔案或 cached observation 不會自行變成 runtime authority。',
+    introLink: '閱讀 Runtime Capability Discovery',
+    processLabel: 'V2 routing 流程',
     processSteps: [
       [
-        '任務形狀',
-        '先分類工作，再選工具',
-        'Router 會先拆出任務性質、工作階段與技術領域，避免 Agent 把所有需求都當成一般實作任務處理。',
+        '工作 envelope',
+        '選擇 Single、Phased 或 Managed Goal',
+        'Router 先判斷 dependencies、verification boundaries、resume needs 與 Goal relation，再選擇 capabilities。',
       ],
       [
-        'Primary owner',
-        '只選一個主要 SKILL 負責',
-        'Primary skill 負責主要推理路徑；Supporting skills 可以協助，但不應該互相搶主導權。',
+        '使用者權威',
+        '保留 Explicit Skill Lock',
+        '使用者指定的 SKILL 維持權威；lock 外的輔助技能在取得同意前保持 inactive。',
       ],
       [
-        '聚焦支援',
-        '只加入真正降低風險的 SKILL',
-        'Route 會保持小而清楚：通常是一個 Primary skill，加上一到三個處理 API、資料庫、瀏覽器驗證、文件、CI 或 release 的 Supporting skills。',
+        'Runtime evidence',
+        '只啟用目前證據允許的能力',
+        '每個 selected capability 都保留其 exposure、authorization、policy、freshness 與 risk boundary。',
       ],
     ],
-    processNoteTitle: '重點是讓執行前就能被檢查',
+    processNoteTitle: '執行前後都能被檢查',
     processNote:
-      '使用者看到的是一份短短的 routing contract，可以在 Agent 修改檔案前先修正方向，而不是讓 Agent 一次背著所有 workflow 往前衝。',
+      'Router 在工作前宣告預計使用的 SKILL，記錄 typed runtime result，完成後揭露實際使用情況。',
     contractLink: '查看 routing contract',
-    templateLink: '查看 Reference Template',
-    examplesTitle: '用一份參考範本，設計自己的 Router',
+    templateLink: '比較 routing envelopes',
+    examplesTitle: '一個 Router，三種工作 envelope',
     examplesCopy:
-      '範例不是另一個要照抄的成品。Template Skill Catalog 只示範 public-safe skills 如何被分類與 routing，方便你回頭用 Blank Router 做自己的版本。',
+      '小型工作保持小型、多階段工作在 phase gate 重新 routing，durable dependency graph 則綁定 Host-owned Goal，不虛構本機 authority。',
     templateHighlights: [
-      ['Public-safe skills', '包含 system、規劃、架構、API、後端、資料庫、前端、文件、DevOps、品牌與產品相關 SKILL。'],
-      ['實戰 route catalog', '依常見工程分類整理，每條 route 都有一個 Primary skill 與聚焦的 Supporting skills。'],
-      ['Source-first proof', '每個區塊都能連回 GitHub folder，以及站台背後實際使用的 sample route files。'],
+      ['Single', '一個範圍明確的 outcome、一條 verification path，以及最小合理 SKILL 組合。'],
+      ['Phased', '每個 phase 都從最新 evidence 選擇，並通過自己的 verification gate。'],
+      ['Managed Goal', 'Durable Work Items 與 dependencies；native Goal mutation 仍由 Host 所有。'],
     ],
     templateCode:
-      '資料庫 / 效能 / 慢查詢\nPrimary: database-optimizer\nSupporting: sql-pro, systematic-debugging',
-    outcomesTitle: '為看得見的成果設計',
+      'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
+    outcomesTitle: '為可信任的成果設計',
     outcomes: [
-      ['降低上下文噪音', 'Route 小到使用者可以在 Agent 修改檔案前先修正方向。'],
-      ['更快導入', '新使用者可以下載範本、檢查 catalog，再把 routes 改成自己的 Agent 環境。'],
-      ['更安全分享', '公開範例保持 generic，組織內規則則可以放在 private overlay。'],
+      ['降低上下文噪音', '自動 routing 維持最小集合；未指定 SKILL 時不增加多餘 consent ceremony。'],
+      ['誠實降級', 'Host 或 adapter 能力不可用時回傳 typed fallback，不模擬成功。'],
+      ['可稽核執行', 'Sanitized traces 呈現 plan、call、reject 與實際使用結果。'],
     ],
-    validatorTitle: '發布前先驗證',
+    validatorTitle: '有證據，才提出主張',
     validatorCopy:
-      'Proof flow 會先驗證 router 結構、掃描 sample skill catalog、驗證 public route cases、評估 routing quality，並執行 unit tests，再分享 repo。',
+      'Contract fixtures 證明 compatibility，runtime traces 證明 bundled execution。Real Model Evaluation 需要 fresh paired attempts、明確 quota authorization、review 與 attestation。',
     proofStats: [
-      ['80', 'routing scenarios'],
-      ['12', 'route cases'],
-      ['0%', 'violation rate'],
+      ['10', 'typed MCP tools'],
+      ['2', 'local-ready tools'],
+      ['72', 'GA behavior attempts'],
     ],
-    validatorCommand: `# 1. 驗證 router 結構
-python scripts/validate-router.py starter/workflow-skill-router
-python scripts/validate-router.py examples/template-skill-catalog
+    validatorCommand: `# 檢查真實 runtime readiness
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
-# 2. 掃描 skill catalog
-python scripts/scan-skills.py ./sample-skills \\
-  --out /tmp/skill-index.json \\
-  --markdown /tmp/skill-index.md \\
-  --warnings /tmp/skill-warnings.md \\
-  --suggest-tree /tmp/suggested-skill-tree.md \\
-  --fail-on-private \\
-  --fail-on-duplicates
+# 驗證 generated MCP contracts 與 V2 docs
+node scripts/build-mcp-reference-data.mjs --check
+python scripts/check-doc-parity.py
 
-# 3. 評估 routing quality
-python scripts/evaluate-routing.py \\
-  --scenarios evaluation/scenarios.example.jsonl \\
-  --predictions evaluation/predictions.example.jsonl \\
-  --report /tmp/routing-report.md \\
-  --json-report /tmp/routing-report.json \\
-  --fail-on-violations \\
-  --strict
-
-python -m unittest discover -s tests`,
-    finalTitle: '把 skill routing 打磨成可重用的開源 pattern',
+# 執行 repository tests
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+python -m unittest discover -s packages/router-core/tests -v
+python -m unittest discover -s tests -v`,
+    finalTitle: '讓 runtime-aware skill routing 成為可重用能力',
     finalCopy:
-      '打開 GitHub repo，檢查 starter。如果這個 pattern 適合你的 Agent workflow，可以透過 releases 追蹤後續更新。',
+      '環境支援 runtime 時安裝 Plugin + MCP；只有 instructions 的 Host 則載入獨立 SKILL。',
   },
 }[locale];
 
 const heroText = isZh
   ? {
-      eyebrow: 'Codex SKILL / Routing Layer',
-      title: '工作開始前，先管好 SKILL 選擇',
-      body: '把每個 Codex 任務先收斂成小而可審查的 SKILL route，再開始改檔。',
-      primary: '下載 Blank Router',
-      secondary: '查看 route 範例',
-      explainerLabel: '這個 SKILL 做什麼',
-      explainerTitle: '把模糊任務轉成清楚 route',
+      eyebrow: 'Codex Plugin / MCP / SKILL',
+      title: '依 runtime 真實能力，選對工作流程',
+      body: '小任務保持單一路徑，多階段逐步驗證，大型 Goal 則建立可恢復的工作圖。',
+      primary: '安裝 Plugin + MCP',
+      secondary: '純 SKILL 安裝',
+      explainerLabel: 'V2 routing outcome',
+      explainerTitle: '從 request 到 envelope 與 evidence',
     }
   : {
-      eyebrow: 'Codex SKILL / Routing Layer',
-      title: 'Skill selection governance before the work begins',
-      body: 'Turn each Codex request into a small, reviewable SKILL route before files change.',
-      primary: 'Download Blank Router',
-      secondary: 'View routing examples',
-      explainerLabel: 'What this SKILL does',
-      explainerTitle: 'Turn a messy request into a clear route',
+      eyebrow: 'Codex Plugin / MCP / SKILL',
+      title: 'Route work from real runtime capabilities',
+      body: 'Keep small tasks single, verify multi-stage work phase by phase, and make large Goals resumable.',
+      primary: 'Install Plugin + MCP',
+      secondary: 'Install Skill-only',
+      explainerLabel: 'V2 routing outcome',
+      explainerTitle: 'From request to envelope and evidence',
     };
 
 const heroPreview = isZh
   ? {
-      requestLabel: '模糊任務',
-      request: '幫我修首頁 Hero，讓用戶一眼懂這個 SKILL。',
-      routeLabel: '選定的 SKILL route',
+      requestLabel: '大型任務',
+      request: '繼續跨 API、Web 與 docs 的 migration Goal。',
+      routeLabel: 'V2 routing decision',
       route: [
-        ['Primary', 'design-taste-frontend'],
-        ['Supporting', 'ui-ux-pro-max'],
-        ['Why', '先處理第一印象與可讀性，再檢查 RWD。'],
-        ['Boundary', '只選擇 SKILL，不授權工具。'],
+        ['Envelope', 'managed-goal'],
+        ['Runtime', 'bundled-local-r0'],
+        ['Local-ready', 'plan_work, get_router_status'],
+        ['Boundary', 'Scheduling requires verified Host capabilities.'],
       ],
     }
   : {
-      requestLabel: 'Messy request',
-      request: 'Fix the homepage Hero so first-time users understand this SKILL.',
-      routeLabel: 'Selected SKILL route',
+      requestLabel: 'Large request',
+      request: 'Continue the migration Goal across API, Web, and docs.',
+      routeLabel: 'V2 routing decision',
       route: [
-        ['Primary', 'design-taste-frontend'],
-        ['Supporting', 'ui-ux-pro-max'],
-        ['Why', 'Clarify first impression, then check responsive readability.'],
-        ['Boundary', 'Selects SKILLs only. Tool permissions stay external.'],
+        ['Envelope', 'managed-goal'],
+        ['Runtime', 'bundled-local-r0'],
+        ['Local-ready', 'plan_work, get_router_status'],
+        ['Boundary', 'Scheduling requires verified Host capabilities.'],
       ],
     };
 ---
@@ -296,8 +272,8 @@ const heroPreview = isZh
         <h1 id="wsr-hero-title" class="wsr-hero-title">{heroText.title}</h1>
         <p class="wsr-hero-copy">{heroText.body}</p>
         <div class="wsr-hero-actions">
-          <a class="wsr-button wsr-button-primary" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip" data-analytics-event="site_hero_download_blank">{heroText.primary}</a>
-          <a class="wsr-button wsr-button-secondary" href={`${rootPath}/showcase/`}>{heroText.secondary}</a>
+          <a class="wsr-button wsr-button-primary" href={`${rootPath}/guides/install-plugin/`} data-analytics-event="site_hero_install_plugin">{heroText.primary}</a>
+          <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/install-skill/`}>{heroText.secondary}</a>
         </div>
       </div>
 
@@ -337,7 +313,7 @@ const heroPreview = isZh
       <div>
         <h2>{text.introTitle}</h2>
         <p>{text.introCopy}</p>
-        <a class="wsr-text-link" href={`${rootPath}/guides/adoption/`}>{text.introLink}</a>
+        <a class="wsr-text-link" href={`${rootPath}/concepts/runtime-capability-discovery/`}>{text.introLink}</a>
       </div>
       <div class="wsr-process-panel" aria-label={text.processLabel}>
         <span class="wsr-process-kicker">{text.processLabel}</span>
@@ -359,7 +335,7 @@ const heroPreview = isZh
           <div class="wsr-process-links">
             <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
             <a class="wsr-text-link" href={`${rootPath}/showcase/`}>{text.showcase}</a>
-            <a class="wsr-text-link" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
+            <a class="wsr-text-link" href={`${rootPath}/concepts/routing-envelopes/`}>{text.templateLink}</a>
           </div>
         </div>
       </div>
@@ -371,27 +347,27 @@ const heroPreview = isZh
       <div class="wsr-proof-pin">
         <h2>{text.examplesTitle}</h2>
         <p>{text.examplesCopy}</p>
-        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/examples/template-skill-catalog/`}>{text.templateLink}</a>
+        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/concepts/routing-envelopes/`}>{text.templateLink}</a>
       </div>
       <div class="wsr-proof-stack">
         <div class="wsr-template-showcase wsr-motion-image">
           <div>
-            <span class="wsr-template-kicker">Template Skill Catalog</span>
-            <h3>{isZh ? '下載包內容，就是範例內容' : 'The download package is the example'}</h3>
-            <p>{isZh ? '讀者不需要在三個情境頁之間猜哪個才是主範本。這裡直接把 template zip 的 public-safe skills 分類成可複製 routes。' : 'Readers no longer need to choose between several scenario pages. This catalog turns the template zip skills into copyable routes.'}</p>
+            <span class="wsr-template-kicker">Single / Phased / Managed Goal</span>
+            <h3>{isZh ? '工作形狀決定 envelope' : 'Work shape decides the envelope'}</h3>
+            <p>{isZh ? 'Router 不會因為需求很長就強迫使用 Goal，而是依 dependencies、resume needs、risk 與 verification boundaries 做決策。' : 'The Router does not force a Goal because a request is long. Dependencies, resume needs, risk, and verification boundaries drive the decision.'}</p>
           </div>
           <pre><code>{text.templateCode}</code></pre>
           <div class="wsr-template-grid">
             {text.templateHighlights.map(([title, body]) => (
-              <a class="wsr-template-pill" href={`${rootPath}/examples/template-skill-catalog/`}>
+              <a class="wsr-template-pill" href={`${rootPath}/concepts/routing-envelopes/`}>
                 <span>{title}</span>
                 <p>{body}</p>
               </a>
             ))}
           </div>
           <div class="wsr-template-actions">
-            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip">{isZh ? '下載 Reference Template' : 'Download Reference Template'}</a>
-            <a class="wsr-text-link" href="https://github.com/eric861129/Workflow-skill-router/tree/main/examples/template-skill-catalog">{isZh ? '查看 GitHub source' : 'View GitHub source'}</a>
+            <a class="wsr-text-link" href={`${rootPath}/guides/install-plugin/`}>{isZh ? '安裝 Plugin + MCP' : 'Install Plugin + MCP'}</a>
+            <a class="wsr-text-link" href={`${rootPath}/guides/install-skill/`}>{isZh ? '安裝純 SKILL' : 'Install Skill-only'}</a>
           </div>
         </div>
         <div class="wsr-outcome-carousel" data-wsr-carousel>
@@ -435,7 +411,7 @@ const heroPreview = isZh
       </div>
       <div class="wsr-command-card">
         <pre><code>{text.validatorCommand}</code></pre>
-        <a class="wsr-text-link" href={`${rootPath}/reference/validator/`}>{isZh ? '查看驗證工具鏈' : 'View validation toolchain'}</a>
+        <a class="wsr-text-link" href={`${rootPath}/concepts/evaluation-evidence/`}>{isZh ? '查看 evidence contract' : 'View the evidence contract'}</a>
       </div>
     </div>
   </section>
@@ -446,7 +422,7 @@ const heroPreview = isZh
       <p>{text.finalCopy}</p>
       <div class="wsr-hero-actions">
         <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
-        <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/downloads/`}>{text.download}</a>
+        <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/quickstart/`}>{text.download}</a>
       </div>
     </div>
   </section>

@@ -13,7 +13,7 @@ export default defineConfig({
     starlight({
       title: 'Workflow Skill Router',
       description:
-        'A practical skill selection layer for Codex Skills, workflow routers, and multi-skill AI agents.',
+        'Runtime-aware skill routing for single tasks, phased work, and managed goals.',
       defaultLocale: 'root',
       locales: {
         root: {
@@ -117,38 +117,60 @@ export default defineConfig({
           items: [
             { slug: '' },
             { slug: 'guides/quickstart' },
-            { slug: 'guides/blank-router-walkthrough' },
-            { slug: 'guides/troubleshooting' },
-            { slug: 'guides/adapters' },
-            { slug: 'guides/downloads' },
+            { slug: 'guides/install-plugin' },
+            { slug: 'guides/install-skill' },
             { slug: 'guides/adoption' },
-            { slug: 'guides/v2-routing' },
+            { slug: 'guides/troubleshooting' },
+            { slug: 'guides/migrate-v1-to-v2' },
+          ],
+        },
+        {
+          label: 'Concepts',
+          translations: {
+            'zh-TW': '核心概念',
+          },
+          items: [
+            { slug: 'concepts/runtime-capability-discovery' },
+            { slug: 'concepts/routing-envelopes' },
+            { slug: 'concepts/explicit-skill-lock' },
+            { slug: 'concepts/phase-state-machine' },
+            { slug: 'concepts/managed-goals' },
+            { slug: 'concepts/evaluation-evidence' },
           ],
         },
         {
           label: 'Examples',
           translations: {
-            'zh-TW': '範例',
+            'zh-TW': '實例',
           },
           items: [
             { slug: 'showcase' },
             { slug: 'examples/routing-gallery' },
-            { slug: 'examples/template-skill-catalog' },
             { slug: 'examples/case-studies' },
           ],
         },
         {
           label: 'Reference',
           translations: {
-            'zh-TW': '參考',
+            'zh-TW': '參考資料',
           },
           items: [
+            { slug: 'reference/mcp-tools' },
+            { slug: 'reference/cli' },
+            { slug: 'reference/local-state' },
+            { slug: 'reference/security-boundaries' },
             { slug: 'reference/routing-contract' },
-            { slug: 'reference/agent-governance-positioning' },
-            { slug: 'reference/validator' },
-            { slug: 'reference/sample-skills' },
-            { slug: 'reference/source-map' },
             { slug: 'reference/model-evaluation' },
+          ],
+        },
+        {
+          label: 'Contributing',
+          translations: {
+            'zh-TW': '參與貢獻',
+          },
+          items: [
+            { slug: 'contributing/release-process' },
+            { slug: 'contributing/roadmap' },
           ],
         },
       ],

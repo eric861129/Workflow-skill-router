@@ -1,0 +1,44 @@
+---
+title: MCP Tools
+description: 由 contract 產生的 tool schema、runtime readiness、risk 與 fallback actions。
+---
+
+import toolData from '../../../../data/mcp-tools.generated.json';
+
+本頁直接呈現由 MCP server contracts 產生的 `site/src/data/mcp-tools.generated.json`，不另外手寫重複的 description 或 readiness。
+
+## Runtime profile
+
+目前產生的 profile：**{toolData.runtime_profile}**
+
+| Availability | 意義 |
+| --- | --- |
+| `local-ready` | 可在 bundled local R0 control plane 執行 |
+| `verified-host-required` | 需要已驗證的 Host authority 或 stores |
+| `configured-adapter-required` | 需要 server 端已設定的 evaluation adapter |
+
+## Tool contracts
+
+{toolData.tools.map((tool) => (
+  <details>
+    <summary><code>{tool.name}</code> — {tool.availability}</summary>
+    <p>{tool.description}</p>
+    <ul>
+      <li><strong>Risk:</strong> <code>{tool.risk_class}</code></li>
+      <li><strong>Runtime requirement:</strong> <code>{tool.runtime_requirement}</code></li>
+      <li><strong>Required capabilities:</strong> {tool.required_capabilities.join(', ') || 'none'}</li>
+      <li><strong>Fallback:</strong> {tool.fallback_action}</li>
+    </ul>
+    <h3>Input schema</h3>
+    <pre><code>{JSON.stringify(tool.inputSchema, null, 2)}</code></pre>
+    <h3>Output schema</h3>
+    <pre><code>{JSON.stringify(tool.outputSchema, null, 2)}</code></pre>
+  </details>
+))}
+
+## 重新產生
+
+```powershell
+node scripts/build-mcp-reference-data.mjs
+node scripts/build-mcp-reference-data.mjs --check
+```
