@@ -12,6 +12,17 @@ from .codecs import (
     encode_capability,
     encode_snapshot,
 )
+from .drift import (
+    CAPABILITY_DRIFT_SCHEMA_ID,
+    compare_snapshots,
+    decode_drift,
+    encode_drift,
+)
+from .discovery import (
+    DiscoveryResult,
+    DiscoveryService,
+    ProviderFailure,
+)
 from .models import (
     AuthState,
     Availability,
@@ -40,12 +51,14 @@ from .filesystem import (
     InstallerManifestIndex,
 )
 from .frontmatter import FrontmatterError, parse_frontmatter, read_frontmatter_stream
+from .merge import CapabilityMergeError, merge_observations
 from .providers import (
     CapabilityObservation,
     CapabilityProvider,
     DiscoveryContext,
     ProviderResult,
 )
+from .snapshot import build_snapshot, rebuild_snapshot_id
 
 
 CAPABILITY_SCHEMA_REGISTRY = SchemaRegistry()
@@ -61,15 +74,23 @@ CAPABILITY_SCHEMA_REGISTRY.register(
     "capability-snapshot",
     decode_snapshot,
 )
+CAPABILITY_SCHEMA_REGISTRY.register(
+    CAPABILITY_DRIFT_SCHEMA_ID,
+    SCHEMA_VERSION,
+    "capability-drift",
+    decode_drift,
+)
 
 __all__ = [
     "AuthState",
     "Availability",
     "AvailabilityResult",
     "CAPABILITY_SCHEMA_REGISTRY",
+    "CAPABILITY_DRIFT_SCHEMA_ID",
     "Capability",
     "CapabilityDrift",
     "CapabilityKind",
+    "CapabilityMergeError",
     "CapabilityObservation",
     "CapabilityProvider",
     "CapabilitySnapshot",
@@ -91,12 +112,21 @@ __all__ = [
     "SideEffect",
     "TrustLevel",
     "DiscoveryContext",
+    "DiscoveryResult",
+    "DiscoveryService",
     "ProviderResult",
+    "ProviderFailure",
     "decode_capability",
+    "decode_drift",
     "decode_snapshot",
     "derive_availability",
     "encode_capability",
+    "encode_drift",
     "encode_snapshot",
+    "compare_snapshots",
+    "build_snapshot",
     "parse_frontmatter",
+    "merge_observations",
     "read_frontmatter_stream",
+    "rebuild_snapshot_id",
 ]
