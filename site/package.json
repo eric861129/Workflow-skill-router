@@ -26,6 +26,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.0",
     "chrome-launcher": "^1.2.1",
+    "ffmpeg-static": "^5.2.0",
     "lighthouse": "^13.4.0"
   }
 }

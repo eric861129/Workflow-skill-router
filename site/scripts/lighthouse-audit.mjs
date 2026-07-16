@@ -13,10 +13,10 @@ const reportRoot = path.join(siteRoot, 'lighthouse-reports');
 const basePath = '/Workflow-skill-router/';
 
 const thresholds = {
-  performance: Number(process.env.LH_MIN_PERFORMANCE ?? 0.7),
+  performance: Number(process.env.LH_MIN_PERFORMANCE ?? 0.9),
   accessibility: Number(process.env.LH_MIN_ACCESSIBILITY ?? 0.95),
-  'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? 0.9),
-  seo: Number(process.env.LH_MIN_SEO ?? 0.9),
+  'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? 0.95),
+  seo: Number(process.env.LH_MIN_SEO ?? 0.95),
 };
 
 const routes = [

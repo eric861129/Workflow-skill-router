@@ -1,13 +1,19 @@
-import { copyFile, mkdir, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, stat, writeFile, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import ffmpegPath from 'ffmpeg-static';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(siteRoot, '..');
 const siteAssets = path.join(siteRoot, 'public', 'assets');
 const docsAssets = path.join(repoRoot, 'docs', 'assets');
+const run = promisify(execFile);
+const demoData = path.join(siteRoot, 'src', 'data', 'router-demo-v2.generated.json');
 
 const outputs = {
   sitePoster: path.join(siteAssets, 'workflow-skill-router-demo-poster.png'),
@@ -16,7 +22,11 @@ const outputs = {
   docsWebm: path.join(docsAssets, 'workflow-skill-router-demo.webm'),
   siteMp4: path.join(siteAssets, 'workflow-skill-router-demo.mp4'),
   docsMp4: path.join(docsAssets, 'workflow-skill-router-demo.mp4'),
+  siteManifest: path.join(siteAssets, 'workflow-skill-router-demo-manifest.json'),
+  docsManifest: path.join(docsAssets, 'workflow-skill-router-demo-manifest.json'),
 };
+
+const digest = (data) => createHash('sha256').update(data).digest('hex');
 
 function assetHtml() {
   return `<!doctype html>
@@ -24,20 +34,20 @@ function assetHtml() {
   <head>
     <meta charset="utf-8" />
     <style>
-      html, body { margin: 0; width: 1280px; height: 720px; background: #07111f; }
+      html, body { margin: 0; width: 1280px; height: 720px; background: #11120f; }
       .frame {
         position: relative;
         width: 1280px;
         height: 720px;
         box-sizing: border-box;
         padding: 54px 64px;
-        color: #eef6ff;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #f2f0e7;
+        font-family: "Courier New", monospace;
         background:
-          radial-gradient(circle at 14% 0%, rgba(57, 189, 248, .28), transparent 32%),
-          linear-gradient(135deg, #07111f 0%, #12213a 48%, #0d1b2f 100%);
+          radial-gradient(circle at 84% 0%, rgba(199, 255, 55, .18), transparent 32%),
+          linear-gradient(135deg, #11120f 0%, #191b17 58%, #0d0e0c 100%);
       }
-      .kicker { color: #7dd3fc; font-size: 28px; font-weight: 760; letter-spacing: 0; }
+      .kicker { color: #c7ff37; font-size: 24px; font-weight: 760; letter-spacing: .12em; }
       h1 { margin: 18px 0 16px; max-width: 940px; font-size: 78px; line-height: 1.02; letter-spacing: 0; }
       .sub { max-width: 900px; color: #c5d6ea; font-size: 30px; line-height: 1.35; }
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 36px; }
@@ -59,24 +69,24 @@ function assetHtml() {
   </head>
   <body>
     <main class="frame">
-      <div class="kicker">AI agent skill routing pattern</div>
-      <h1>Route fuzzy work into the right skills.</h1>
-      <div class="sub">Workflow Skill Router keeps complex Codex tasks focused, explainable, and small enough to review.</div>
+      <div class="kicker">V2 ROUTING FLIGHT RECORDER</div>
+      <h1>Single. Phased. Managed Goal.</h1>
+      <div class="sub">Runtime discovery, explicit SKILL consent, durable state, and evidence—visible before execution.</div>
       <section class="grid">
         <div class="panel">
-          <h2 class="before">Before: over-routed</h2>
-          <div class="line">frontend + api + db + docs + ci + security + design</div>
-          <div class="line">Too many tools, unclear owner, noisy output.</div>
+          <h2 class="before">INPUT / EXPLICIT LOCK</h2>
+          <div class="line">“Use api-designer.</div>
+          <div class="line">Ask before adding support.”</div>
         </div>
         <div class="panel">
-          <h2 class="after">After: bounded route</h2>
+          <h2 class="after">OUTPUT / AUDITABLE ROUTE</h2>
           <span class="pill">primary: api-designer</span>
-          <span class="pill">supporting: qa-test-planner</span>
-          <span class="pill">supporting: code-documenter</span>
-          <div class="line">One clear path, explicit omissions, validator-ready.</div>
+          <span class="pill">envelope: single</span>
+          <span class="pill">support: rejected</span>
+          <div class="line">Requested SKILL only · coverage satisfied.</div>
         </div>
       </section>
-      <div class="footer"><span>Blank Router + reference template</span><span>github.com/eric861129/Workflow-skill-router</span></div>
+      <div class="footer"><span>core-derived · skill-only-fallback / hybrid-full</span><span>github.com/eric861129/Workflow-skill-router</span></div>
     </main>
   </body>
 </html>`;
@@ -231,6 +241,12 @@ async function checkAssets() {
   await assertFile(outputs.docsWebm, 12_000_000);
   await assertFile(outputs.siteMp4, 15_000_000);
   await assertFile(outputs.docsMp4, 15_000_000);
+  const manifest = JSON.parse(await readFile(outputs.siteManifest, 'utf8'));
+  for (const [key, filePath] of Object.entries({ poster: outputs.sitePoster, webm: outputs.siteWebm, mp4: outputs.siteMp4 })) {
+    const actual = digest(await readFile(filePath));
+    if (manifest.outputs[key].sha256 !== actual) throw new Error(`${key} digest does not match demo manifest.`);
+  }
+  if (manifest.source.sha256 !== digest(await readFile(demoData))) throw new Error('Demo data revision is stale.');
   console.log('OK: demo media assets passed');
 }
 
@@ -249,6 +265,21 @@ async function generateAssets() {
     const bytes = await page.evaluate(() => window.recordDemo());
     await writeFile(outputs.siteWebm, Buffer.from(bytes));
     await copyFile(outputs.siteWebm, outputs.docsWebm);
+    if (!ffmpegPath) throw new Error('ffmpeg-static executable is unavailable.');
+    const revision = digest(await readFile(demoData));
+    await run(ffmpegPath, ['-y', '-i', outputs.siteWebm, '-metadata', `comment=demo-revision:${revision}`,
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputs.siteMp4]);
+    await copyFile(outputs.siteMp4, outputs.docsMp4);
+    const manifest = {
+      schema_version: '1.0', source: { path: 'site/src/data/router-demo-v2.generated.json', sha256: revision },
+      outputs: {
+        poster: { sha256: digest(await readFile(outputs.sitePoster)), width: 1280, height: 720, codec: 'png' },
+        webm: { sha256: digest(await readFile(outputs.siteWebm)), width: 1280, height: 720, codec: 'vp9' },
+        mp4: { sha256: digest(await readFile(outputs.siteMp4)), width: 1280, height: 720, codec: 'h264' },
+      },
+    };
+    await writeFile(outputs.siteManifest, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+    await copyFile(outputs.siteManifest, outputs.docsManifest);
   } finally {
     await browser.close();
   }

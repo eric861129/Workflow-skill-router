@@ -41,3 +41,21 @@ test('routing gallery filters by domain and tag', async ({ page }) => {
   await page.getByRole('button', { name: 'All tags' }).click();
   await expect(page.locator('[data-gallery-empty]')).toBeHidden();
 });
+
+test('explicit skill rejection keeps support inactive', async ({ page }) => {
+  await page.goto('zh-tw/');
+  await page.getByTestId('demo-preset-small-explicit-reject-support').click();
+  await page.getByTestId('demo-consent-reject').click();
+  await expect(page.getByTestId('demo-status')).toContainText('僅使用指定 SKILL');
+  await expect(page.getByTestId('demo-audit-proposal')).toContainText('router-recommended');
+  await expect(page.getByTestId('demo-active-support')).toHaveCount(0);
+  await expect(page.getByTestId('demo-activation-event')).toHaveCount(0);
+  await expect(page.getByTestId('demo-explicit-coverage')).toContainText('satisfied');
+});
+
+test('managed Goal renders three independently routed work items', async ({ page }) => {
+  await page.goto('./');
+  await page.getByTestId('demo-preset-goal-work-graph').click();
+  await expect(page.getByTestId('goal-work-item')).toHaveCount(3);
+  await expect(page.getByTestId('work-item-envelope')).toHaveText(['single', 'phased', 'single']);
+});
