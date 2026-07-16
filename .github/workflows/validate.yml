@@ -10,6 +10,25 @@ permissions:
   contents: read
 
 jobs:
+  release-artifacts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - run: python scripts/build-release-artifacts.py --check
+      - run: python -m unittest tests/test_installation_smoke.py -v
+
   validate:
     runs-on: ubuntu-latest
     steps:
