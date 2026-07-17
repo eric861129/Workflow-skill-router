@@ -6,6 +6,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CORE_SOURCE = ROOT / "packages" / "router-core" / "src"
+if str(CORE_SOURCE) not in sys.path:
+    sys.path.insert(0, str(CORE_SOURCE))
 OUTPUT = ROOT / "site" / "src" / "data" / "mcp-tools.generated.json"
 SCRIPT = ROOT / "scripts" / "build-mcp-reference-data.mjs"
 

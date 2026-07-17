@@ -90,6 +90,32 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("tracked downloads", result.stderr)
 
+    def test_cli_rejects_unexpected_stale_files_in_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "release"
+            output.mkdir()
+            stale = output / "workflow-skill-router-plugin-v2.0.0-alpha.1.zip"
+            stale.write_bytes(b"stale-release-asset")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILDER),
+                    "--output-dir",
+                    str(output),
+                    "--provenance-mode",
+                    "test",
+                    "--check-determinism",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("unexpected existing release output", result.stderr)
+            self.assertEqual(b"stale-release-asset", stale.read_bytes())
+
     def test_release_provenance_binds_clean_head_and_tree(self) -> None:
         head = "a" * 40
         tree = "b" * 40

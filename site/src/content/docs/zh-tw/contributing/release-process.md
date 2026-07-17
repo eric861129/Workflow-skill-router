@@ -15,10 +15,14 @@ python scripts/check-markdown-links.py .
 ## 2. 建置 deterministic assets
 
 ```powershell
-python scripts/build-release-artifacts.py --output-dir dist/release --provenance-mode test --check-determinism
+$Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
+$Output = Join-Path "dist" "release-$Version"
+python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 Builder 會讀取已排序的 allowlists、正規化 ZIP metadata、產生 checksums、SBOM、provenance 與 channel documents，並拒絕缺失或不安全的 paths。應修改 source 或 allowlists，不可直接 patch generated archives。
+
+只有當既有 entry 全部屬於本次 generated manifest 時，才可重用 output directory。任何 stale、非預期、symlink 或其他未列入 manifest 的 path 都會在寫入前阻止 build。請使用版本專屬目錄；builder 不會靜默清理混合的 release generation。
 
 ## 3. 審查證據
 

@@ -6,13 +6,54 @@ import re
 import sys
 
 
+def _public_task(prompt: str) -> str:
+    marker = "\n\nUser task:\n"
+    return prompt.rsplit(marker, 1)[-1] if marker in prompt else prompt
+
+
 def _route(prompt: str) -> dict[str, object]:
-    lowered = prompt.lower()
+    lowered = _public_task(prompt).lower()
+    if "phase transition has entered browser verification" in lowered:
+        return {
+            "envelope": "phased",
+            "selection_mode": "auto",
+            "primary_skill": "skill:playwright",
+            "support_skills": [],
+            "consent_action": "not-required",
+            "goal_relation": "none",
+            "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+        }
+    if "i approve the proposed contract-testing support" in lowered:
+        return {
+            "envelope": "phased",
+            "selection_mode": "explicit-locked",
+            "primary_skill": "skill:api-designer",
+            "support_skills": ["skill:qa-test-planner"],
+            "consent_action": "approved",
+            "goal_relation": "none",
+            "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+        }
+    if "do not use the proposed supporting skill" in lowered:
+        return {
+            "envelope": "phased",
+            "selection_mode": "explicit-locked",
+            "primary_skill": "skill:api-designer",
+            "support_skills": [],
+            "consent_action": "rejected",
+            "goal_relation": "none",
+            "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+        }
     skills = re.findall(r"skill:[a-z0-9-]+", lowered)
     explicit = "use skill:" in lowered
     if "managed goal" in lowered or "active migration goal" in lowered:
         envelope = "managed-goal"
-    elif any(term in lowered for term in ("each phase", "implement", "revalidate", "diagnose")):
+    elif "design and verify" in lowered or any(
+        term in lowered
+        for term in (
+            "each phase", "implement", "revalidate", "diagnose", "diagnosis",
+            "phased frontend repair",
+        )
+    ):
         envelope = "phased"
     else:
         envelope = "single"
@@ -20,11 +61,11 @@ def _route(prompt: str) -> dict[str, object]:
         primary = skills[0]
     elif "troubleshooting note" in lowered:
         primary = "skill:code-documenter"
-    elif "frontend regression" in lowered:
+    elif "frontend regression" in lowered or "phased frontend repair" in lowered:
         primary = "skill:systematic-debugging"
     elif "managed goal" in lowered:
         primary = "skill:architecture-designer"
-    elif "browser runtime" in lowered:
+    elif "browser runtime" in lowered or "exact canonical capability" in lowered:
         primary = "skill:playwright"
     else:
         primary = "skill:workflow-skill-router"
@@ -46,7 +87,15 @@ def _route(prompt: str) -> dict[str, object]:
         relation = "progress"
     else:
         relation = "none"
-    support = ["skill:playwright"] if "browser coverage" in lowered else []
+    support = (
+        ["skill:qa-test-planner"]
+        if explicit
+        and (
+            "propose any genuinely necessary" in lowered
+            or "ask before adding support" in lowered
+        )
+        else []
+    )
     return {
         "envelope": envelope,
         "selection_mode": "explicit-locked" if explicit else "auto",

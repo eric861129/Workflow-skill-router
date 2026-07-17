@@ -18,6 +18,10 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import EvaluationIntegrityError
+from workflow_skill_router.evaluation.local_evidence import (
+    EvidenceProtectionError,
+    LocalEvidenceProtector,
+)
 
 
 _CONTEXT_ID = re.compile(r"^[a-f0-9]{32}$")
@@ -73,6 +77,7 @@ class CodexCliDriver:
         self._timeout_seconds = timeout_seconds
         self._auth_source = (auth_source or self._default_auth_source()).resolve()
         self._model = model
+        self._evidence_protector = LocalEvidenceProtector()
         if not self._codex_executable.is_absolute() or not self._output_schema.is_absolute():
             raise ValueError("codex_driver_paths_must_be_absolute")
         if timeout_seconds <= 0:
@@ -80,7 +85,10 @@ class CodexCliDriver:
         if not self._auth_source.is_file():
             raise ValueError("codex_driver_auth_source_missing")
         self._attempt_root.mkdir(parents=True, exist_ok=True)
-        self._attempt_root.chmod(0o700)
+        try:
+            self._evidence_protector.protect_directory(self._attempt_root)
+        except EvidenceProtectionError as error:
+            raise EvaluationIntegrityError("codex_attempt_root_unprotected") from error
 
     def handle(self, request: Mapping[str, object]) -> dict[str, object]:
         message_type = request.get("type")
@@ -98,14 +106,21 @@ class CodexCliDriver:
             context_id = secrets.token_hex(16)
             directory = self._attempt_root / context_id
             try:
-                directory.mkdir(mode=0o700)
+                directory.mkdir()
+                self._evidence_protector.protect_directory(directory)
                 break
             except FileExistsError:
                 continue
+            except EvidenceProtectionError as error:
+                raise EvaluationIntegrityError("codex_attempt_directory_unprotected") from error
         transcript = directory / "transcript.json"
-        (directory / "workspace").mkdir(mode=0o700)
-        (directory / "runtime-home").mkdir(mode=0o700)
-        (directory / "codex-home").mkdir(mode=0o700)
+        for name in ("workspace", "runtime-home", "codex-home"):
+            private_directory = directory / name
+            private_directory.mkdir()
+            try:
+                self._evidence_protector.protect_directory(private_directory)
+            except EvidenceProtectionError as error:
+                raise EvaluationIntegrityError("codex_attempt_directory_unprotected") from error
         self._write_transcript(transcript, {
             "attempt_nonce": nonce,
             "opaque_run_case_id": request.get("opaque_run_case_id"),
@@ -122,6 +137,11 @@ class CodexCliDriver:
         if directory.parent != self._attempt_root or not directory.is_dir():
             raise EvaluationIntegrityError("codex_context_missing")
         transcript_path = directory / "transcript.json"
+        if (
+            not self._evidence_protector.verify_directory(directory)
+            or not self._evidence_protector.verify_file(transcript_path)
+        ):
+            raise EvaluationIntegrityError("codex_context_unprotected")
         transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
         if nonce != transcript.get("attempt_nonce"):
             raise EvaluationIntegrityError("attempt_context_mismatch")
@@ -165,7 +185,7 @@ class CodexCliDriver:
         try:
             try:
                 shutil.copyfile(self._auth_source, isolated_auth)
-                isolated_auth.chmod(0o600)
+                self._evidence_protector.protect_file(isolated_auth)
                 completed = subprocess.run(
                     command,
                     shell=False,
@@ -182,6 +202,8 @@ class CodexCliDriver:
                 isolated_auth.unlink(missing_ok=True)
         except subprocess.TimeoutExpired as error:
             raise EvaluationIntegrityError("codex_cli_timeout") from error
+        except EvidenceProtectionError as error:
+            raise EvaluationIntegrityError("codex_auth_unprotected") from error
         except OSError as error:
             raise EvaluationIntegrityError("codex_cli_start_failed") from error
         if completed.returncode != 0:
@@ -265,16 +287,18 @@ class CodexCliDriver:
         if not valid:
             raise EvaluationIntegrityError("codex_route_schema_invalid")
 
-    @staticmethod
-    def _write_transcript(path: Path, payload: Mapping[str, object]) -> None:
+    def _write_transcript(self, path: Path, payload: Mapping[str, object]) -> None:
         path.write_text(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
             encoding="utf-8",
         )
-        path.chmod(0o600)
+        self._evidence_protector.protect_file(path)
 
-    @staticmethod
-    def _write_failure_diagnostic(path: Path, completed: subprocess.CompletedProcess[str]) -> None:
+    def _write_failure_diagnostic(
+        self,
+        path: Path,
+        completed: subprocess.CompletedProcess[str],
+    ) -> None:
         def sanitize(value: str) -> str:
             bounded = value[-16_384:]
             bounded = _SENSITIVE_FRAGMENT.sub("[REDACTED]", bounded)
@@ -285,7 +309,7 @@ class CodexCliDriver:
             "stderr": sanitize(completed.stderr or ""),
             "stdout": sanitize(completed.stdout or ""),
         }, ensure_ascii=False, sort_keys=True), encoding="utf-8")
-        path.chmod(0o600)
+        self._evidence_protector.protect_file(path)
 
     @staticmethod
     def _default_auth_source() -> Path:

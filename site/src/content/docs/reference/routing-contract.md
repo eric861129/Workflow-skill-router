@@ -23,6 +23,10 @@ When there is no User-specified Skill, selection mode is `auto`: choose the smal
 
 When a User-specified Skill exists, selection mode is `explicit-locked`. The named Skill remains authoritative. Additional support requires a scoped proposal and consent; declined support remains rejected and must not be activated or repeatedly proposed in the same scope.
 
+In `auto` mode, inspect capability descriptions, domains, stages, and availability instead of guessing from names. The Primary owns the current decision bottleneck or first unfinished Phase. Supporting Skills are limited to capabilities indispensable to the current Phase and its immediate exit gate; later-Phase capabilities are deferred and rerouted when that Phase begins. A Managed Goal chooses the capability needed by the current Work Item rather than defaulting to the Router itself. Skills for future Work Items stay in the plan and are routed when that Work Item begins; they are never aggregated into the current support set. Availability gates activation after semantic selection and never silently rewrites the intended Skill.
+
+Use the deterministic shape `current route = current Phase Primary + immediate exit-gate support`. A Phase transition creates a new route. During Goal planning, future delivery Skills stay in the Work Graph. When a verified snapshot marks an intended canonical Skill unavailable, that Skill remains Primary; fallback details belong in the limitation, never in `support_skills`.
+
 ## 3. Declare the plan
 
 Before execution, disclose:

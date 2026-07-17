@@ -60,8 +60,10 @@ python scripts/run-v2-benchmark.py \
 Builds deterministic Plugin and SKILL archives, channels, checksums, SPDX SBOM, and provenance outside Git.
 
 ```bash
-python scripts/build-release-artifacts.py --output-dir dist/release --check-determinism
+python scripts/build-release-artifacts.py --output-dir dist/release-2.0.0-beta.1 --check-determinism
 ```
+
+Use a version-specific output directory. The builder fails closed before writing if any existing entry is not part of the current generated manifest; it never silently mixes or removes release generations.
 
 ## CI Usage
 

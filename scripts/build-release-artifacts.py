@@ -326,6 +326,41 @@ def validate_output_directory(output_dir: Path) -> None:
         )
 
 
+def validate_existing_output(
+    output_dir: Path,
+    generated: dict[Path, bytes],
+) -> None:
+    """拒絕混入不屬於本次 build manifest 的既有 release paths。"""
+
+    if not output_dir.exists():
+        return
+    expected_files = set(generated)
+    expected_directories = {output_dir}
+    for path in expected_files:
+        parent = path.parent
+        while parent != output_dir:
+            expected_directories.add(parent)
+            parent = parent.parent
+
+    unexpected: list[str] = []
+    for path in output_dir.rglob("*"):
+        valid_file = path in expected_files and path.is_file() and not path.is_symlink()
+        valid_directory = (
+            path in expected_directories
+            and path.is_dir()
+            and not path.is_symlink()
+        )
+        if not valid_file and not valid_directory:
+            unexpected.append(path.relative_to(output_dir).as_posix())
+
+    if unexpected:
+        ordered = sorted(unexpected)
+        preview = ", ".join(ordered[:8])
+        if len(ordered) > 8:
+            preview += f", ... (+{len(ordered) - 8} more)"
+        raise ValueError(f"unexpected existing release output: {preview}")
+
+
 def write_artifacts(generated: dict[Path, bytes]) -> None:
     for path, data in sorted(generated.items(), key=lambda pair: pair[0].as_posix()):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -366,6 +401,7 @@ def main(argv: list[str] | None = None) -> int:
         output_dir = args.output_dir.resolve()
         validate_output_directory(output_dir)
         generated = artifacts(output_dir, provenance)
+        validate_existing_output(output_dir, generated)
         if args.check_determinism:
             assert_deterministic(output_dir, provenance, generated)
         write_artifacts(generated)

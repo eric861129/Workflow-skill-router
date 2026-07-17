@@ -13,6 +13,8 @@ description: 路由前先確認能力是否真的可用。
 
 Discovery 合併 filesystem metadata、Plugin handshake、agent observations、cache hints 與 verified host evidence。每個 capability 記錄 source-qualified identity、provenance、compatibility、authentication、freshness、content identity，以及 R0–R3 的 availability。Host evidence 優先於 agent 與 cache；cache 絕不能把 unavailable 能力升格。
 
+路由先依 capability 的 description、domains 與 stages 判斷語意意圖；availability 是另一層 activation gate。能力 unavailable 時仍保留正確的 intended route，但停止啟用並回報 typed fallback，不可靜默改用語意不同的 Skill。
+
 <a id="example"></a>
 ## State、input 與 output 範例
 

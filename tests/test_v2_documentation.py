@@ -27,5 +27,19 @@ class V2DocumentationTests(unittest.TestCase):
             self.assertTrue((ROOT/"site/src/content/docs"/relative).is_file())
             self.assertTrue((ROOT/"site/src/content/docs/zh-tw"/relative).is_file())
 
+    def test_ga_evaluation_budget_matches_contract_2_1(self):
+        pages = (
+            "site/src/content/docs/concepts/evaluation-evidence.md",
+            "site/src/content/docs/contributing/roadmap.md",
+            "site/src/content/docs/zh-tw/concepts/evaluation-evidence.md",
+            "site/src/content/docs/zh-tw/contributing/roadmap.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text("utf-8")
+            self.assertIn("13", text, relative)
+            self.assertIn("78", text, relative)
+            self.assertIn("96", text, relative)
+            self.assertNotIn("72", text, relative)
+
 
 if __name__=="__main__":unittest.main()

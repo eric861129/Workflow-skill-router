@@ -47,7 +47,7 @@ Managed Goal orchestration maintains a dependency graph but never mutates the na
 
 - SQLite event storage uses append-only workflow events, idempotency keys, and compare-and-swap versions.
 - Projections rebuild derived workflow, phase, and Goal views from events.
-- Artifacts are content-addressed; restricted evidence requires a verified protector.
+- Artifacts are content-addressed; restricted evidence requires a verified protector. Evaluation raw/checkpoint artifacts use a pre-protected `restricted/` directory, while only sanitized aggregate diagnostics remain in the public output root.
 - Local R0 plans store objective digests, not plaintext objectives.
 - Plugin state lives outside the Plugin cache so upgrades do not erase audit history.
 

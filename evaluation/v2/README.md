@@ -12,6 +12,12 @@ Workflow Skill Router V2 evaluates routing behavior through a sealed subprocess 
 
 Contract or reference-driver results do **not** prove real-model routing quality. Public benchmark claims must name the model/provider configuration, run count, case digest, and evidence class.
 
+## Versioned scoring contract
+
+Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.1.0`. This revision separates the route for the current Phase from a later Phase-transition route, preserves unavailable canonical intent, and prevents future Managed Goal Work Items from leaking into current support. Cases with `expected_turns` are scored at every turn; the final `expected` value remains the final-route compatibility view. Reports expose the contract ID, revision, turn counts, and aggregate turn match rates without exposing scoring keys or route values.
+
+Historical reports keep their original case and instruction digests. Never rescore an older run against a newer contract revision. The runner recomputes the canonical path-and-SHA-256 manifest before execution and fails closed when the instruction package no longer matches its declared digest.
+
 ## Process protocol
 
 Each `start_attempt` or `execute_turn` is one process invocation:
@@ -28,6 +34,16 @@ The normative shape is [adapter-protocol.schema.json](adapter-protocol.schema.js
 The executable is configured by the CLI or MCP host as an absolute path plus separate argv items. The adapter always uses `shell=False`. On Windows, configure a native executable rather than a PowerShell or batch wrapper. Model/MCP requests cannot submit an executable, path, environment, command string, or adapter kind; they carry only an authorization reference and sealed-case reference. Environment variables are inherited from the trusted host process and are never accepted from model arguments.
 
 The Codex driver creates a fresh `HOME`, `CODEX_HOME`, and empty workspace for every attempt. Plugins and bundled Skills are disabled, personal configuration is ignored, and authentication is copied into the isolated home only around one process invocation before being deleted in `finally`. This is required for a defensible no-router baseline.
+
+The comparison arms receive the same structured Skill catalog. Each descriptor contains a canonical ID, description, domains, stages, and baseline availability. A public case may add a verified capability snapshot that changes activation readiness without changing semantic Skill intent. The Router instruction package is the only permitted difference between baseline and candidate.
+
+## Protected artifacts and safe diagnostics
+
+The runner creates and verifies `restricted/` before writing raw evidence. `restricted/checkpoint.json`, `restricted/raw-results.json`, attempt transcripts, failure diagnostics, and temporary authentication use fail-closed host permissions: POSIX mode checks or a protected Windows DACL limited to the current user and SYSTEM. An unprotected transcript is not eligible for resume.
+
+If an output root contains any existing entry, preflight stops before the first attempt. Legacy public `checkpoint.json` or `raw-results.json` receive a dedicated integrity error. Use a new empty output root; the runner never hides a stale sanitized report or raw evidence behind a new protection claim.
+
+Only `sanitized-report.json` remains in the public output root. Its `case_diagnostics` contains case IDs, counts, match rates, and candidate-minus-baseline deltas. It never includes prompts, expected or actual Skill values, rationales, or route payloads. Raw evidence remains local and restricted.
 
 Preview a reference-driver configuration:
 

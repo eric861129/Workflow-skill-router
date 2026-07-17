@@ -23,7 +23,7 @@ description: Track evidence-backed milestones from alpha to GA.
 
 ## GA — promotion gate
 
-- Pass the twelve-case, 72-attempt paired Behavior suite
+- Pass the 13-case, 78-attempt, 96-model-turn paired Behavior suite
 - Maintain zero hard violations
 - Complete security review, dependency/SBOM checks, docs parity, and release rehearsal
 - Remove reviewed V1 public clutter through the manual manifest gate

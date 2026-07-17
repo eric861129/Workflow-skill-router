@@ -69,6 +69,8 @@ class DemoDataTests(unittest.TestCase):
     def test_auto_route_selects_minimal_support_without_consent_branch(self):
         preset=next(item for item in build_demo_data(ROOT)["presets"] if item["id"]=="medium-auto")
         self.assertEqual(["default"],[branch["branch_id"] for branch in preset["branches"]])
+        self.assertIn("before diagnosis exits",preset["request"]["en"])
+        self.assertEqual(["diagnose","implement"],preset["phases"])
         branch=preset["branches"][0]
         self.assertEqual(["skill:playwright"],branch["route"]["support_selections"])
         event_types={event["event_type"] for event in branch["events"]}

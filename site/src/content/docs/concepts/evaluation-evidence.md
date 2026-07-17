@@ -15,7 +15,7 @@ A deterministic fixture can prove parser and policy compatibility while saying n
 - **Behavior**: at least three fresh isolated attempts per case, bounded output, sealed scoring, and paired baseline/candidate manifests.
 - **Outcome**: reviewed task impact and downstream evidence.
 
-The beta smoke uses six cases, three attempts, and two arms: 36 attempts. The GA gate uses twelve cases with the same repeat and arm count: 72 attempts. Both need explicit quota authorization.
+The beta smoke uses six cases, three attempts, and two arms: 36 attempts. One beta case includes a second consent turn, so the provider executes 42 model turns. The GA gate uses 13 cases with the same repeat and arm count: 78 attempts and 96 model turns. Both need explicit quota authorization for the complete turn budget.
 
 <a id="example"></a>
 ## State, input, and output example
@@ -43,7 +43,7 @@ The corrected beta Behavior run is currently pending authorization, so the publi
 <a id="security-boundary"></a>
 ## Security and authority boundary
 
-The model cannot choose an executable, widen adapter authorization, access sealed scoring material, or approve its own report. Fresh runs use isolated home/workspace state and a server-owned adapter registry. Raw traces never enter public site data.
+The model cannot choose an executable, widen adapter authorization, access sealed scoring material, or approve its own report. Fresh runs use isolated home/workspace state and a server-owned adapter registry. Raw traces and checkpoints remain under a host-permission-verified `restricted/` directory; only safe aggregate case diagnostics may enter a reviewed public report.
 
 <a id="verify"></a>
 ## Verify

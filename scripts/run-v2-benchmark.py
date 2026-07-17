@@ -23,11 +23,21 @@ from workflow_skill_router.evaluation.contracts import (
     ModelTurnRequest,
 )
 from workflow_skill_router.evaluation.reporting import build_benchmark_review_report
+from workflow_skill_router.evaluation.local_evidence import LocalEvidenceProtector
 from workflow_skill_router.evaluation.subprocess_adapter import SubprocessExecutionAdapter
 from workflow_skill_router.schemas.artifacts import canonical_json_bytes
 
 
 V2 = ROOT / "evaluation" / "v2"
+EVALUATION_CONTRACT_ID = "workflow-skill-router.behavior-routing"
+ROUTE_FIELDS = (
+    "envelope",
+    "selection_mode",
+    "primary_skill",
+    "support_skills",
+    "consent_action",
+    "goal_relation",
+)
 
 
 def digest(value: object) -> str:
@@ -40,18 +50,62 @@ def load_cases(suite: str) -> list[dict[str, Any]]:
         for line in (V2 / "cases" / "behavior-routing.jsonl").read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+    revisions = {case.get("contract_revision") for case in cases}
+    if revisions != {"2.1.0"}:
+        raise EvaluationIntegrityError("evaluation_contract_revision_mismatch")
+    if len({case["id"] for case in cases}) != len(cases):
+        raise EvaluationIntegrityError("evaluation_case_id_duplicate")
     if suite == "full":
         return cases
     selected = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
+    if (
+        selected.get("contract_id") != EVALUATION_CONTRACT_ID
+        or selected.get("contract_revision") not in revisions
+    ):
+        raise EvaluationIntegrityError("evaluation_profile_contract_mismatch")
     by_id = {case["id"]: case for case in cases}
     return [by_id[case_id] for case_id in selected["case_ids"]]
 
 
 def load_profiles() -> dict[str, dict[str, Any]]:
-    return {
+    profiles = {
         "baseline": json.loads((V2 / "baselines" / "no-router.json").read_text(encoding="utf-8")),
         "candidate": json.loads((V2 / "profiles" / "router-v2.json").read_text(encoding="utf-8")),
     }
+    validate_instruction_package(profiles["candidate"])
+    return profiles
+
+
+def validate_instruction_package(profile: Mapping[str, Any]) -> None:
+    package = profile.get("instruction_package")
+    if not isinstance(package, Mapping):
+        raise EvaluationIntegrityError("instruction_package_missing")
+    relative_paths = package.get("files")
+    declared_digest = package.get("digest")
+    if not isinstance(relative_paths, list) or not relative_paths:
+        raise EvaluationIntegrityError("instruction_package_files_invalid")
+    if not isinstance(declared_digest, str) or not declared_digest.startswith("sha256:"):
+        raise EvaluationIntegrityError("instruction_package_digest_invalid")
+
+    records = []
+    for relative in relative_paths:
+        if not isinstance(relative, str) or not relative:
+            raise EvaluationIntegrityError("instruction_package_path_invalid")
+        path = (ROOT / relative).resolve()
+        try:
+            path.relative_to(ROOT.resolve())
+        except ValueError as error:
+            raise EvaluationIntegrityError("instruction_package_path_outside_root") from error
+        if not path.is_file():
+            raise EvaluationIntegrityError("instruction_package_file_missing")
+        records.append({
+            "path": path.relative_to(ROOT.resolve()).as_posix(),
+            "sha256": sha256(path.read_bytes()).hexdigest(),
+        })
+
+    records.sort(key=lambda item: item["path"].casefold())
+    if digest(records) != declared_digest:
+        raise EvaluationIntegrityError("instruction_package_digest_mismatch")
 
 
 def instruction_text(profile: Mapping[str, Any]) -> str:
@@ -71,7 +125,17 @@ def model_prompt(case: Mapping[str, Any], profile: Mapping[str, Any]) -> str:
         "The public task and tool inventory are identical in both comparison arms."
     )
     catalog = json.dumps(profile["skill_catalog"], ensure_ascii=False)
-    public_input = f"{common}\n\nAvailable SKILL catalog:\n{catalog}\n\nUser task:\n{case['prompt']}"
+    snapshot = case.get("capability_snapshot")
+    snapshot_text = (
+        "\n\nVerified capability snapshot:\n"
+        + json.dumps(snapshot, ensure_ascii=False)
+        if isinstance(snapshot, Mapping)
+        else ""
+    )
+    public_input = (
+        f"{common}\n\nAvailable SKILL catalog:\n{catalog}"
+        f"{snapshot_text}\n\nUser task:\n{case['prompt']}"
+    )
     instructions = instruction_text(profile)
     if instructions:
         return f"Router instruction package:\n{instructions}\n\n{public_input}"
@@ -97,6 +161,45 @@ def make_attempt_nonce(
     return "attempt:" + binding.removeprefix("sha256:")
 
 
+def public_case_payload(case: Mapping[str, Any]) -> dict[str, Any]:
+    """建立不含 scoring key、可公開綁定的案例輸入。"""
+
+    payload = {
+        "id": case["id"],
+        "contract_revision": case["contract_revision"],
+        "prompt": case["prompt"],
+        "allowed_tools": case["allowed_tools"],
+        "interaction_script": case["interaction_script"],
+    }
+    snapshot = case.get("capability_snapshot")
+    if isinstance(snapshot, Mapping):
+        payload["capability_snapshot"] = snapshot
+    return payload
+
+
+def prepare_output_directory(
+    output_dir: Path,
+    protector: LocalEvidenceProtector,
+) -> Path:
+    """建立 restricted evidence root，並拒絕混用舊版公開 raw 產物。"""
+
+    if output_dir.exists() and not output_dir.is_dir():
+        raise EvaluationIntegrityError("benchmark_output_root_invalid")
+    legacy_public_artifacts = (
+        output_dir / "checkpoint.json",
+        output_dir / "raw-results.json",
+    )
+    if any(path.exists() for path in legacy_public_artifacts):
+        raise EvaluationIntegrityError("benchmark_legacy_public_evidence_present")
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise EvaluationIntegrityError("benchmark_output_not_fresh")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    restricted_dir = output_dir / "restricted"
+    restricted_dir.mkdir(parents=True, exist_ok=True)
+    protector.protect_directory(restricted_dir)
+    return restricted_dir
+
+
 def normalize_skill_id(value: object) -> object:
     if not isinstance(value, str):
         return value
@@ -112,14 +215,15 @@ def normalized_field(name: str, value: object) -> object:
     return value
 
 
-def score_route(case: Mapping[str, Any], route: Mapping[str, Any] | None) -> tuple[bool, list[str]]:
+def _score_expected(
+    expected: Mapping[str, Any],
+    route: Mapping[str, Any] | None,
+) -> tuple[bool, list[str]]:
     if route is None:
         return False, ["route-missing"]
-    expected = case["expected"]
-    compared = ("envelope", "selection_mode", "primary_skill", "support_skills", "consent_action", "goal_relation")
     violations = [
         f"{name}-mismatch"
-        for name in compared
+        for name in ROUTE_FIELDS
         if normalized_field(name, route.get(name)) != normalized_field(name, expected.get(name))
     ]
     hard = []
@@ -134,24 +238,45 @@ def score_route(case: Mapping[str, Any], route: Mapping[str, Any] | None) -> tup
     return not violations, hard
 
 
+def score_route(case: Mapping[str, Any], route: Mapping[str, Any] | None) -> tuple[bool, list[str]]:
+    return _score_expected(case["expected"], route)
+
+
+def score_attempt(
+    case: Mapping[str, Any],
+    routes: list[Mapping[str, Any] | None],
+) -> tuple[bool, list[str], list[bool]]:
+    """逐 turn 驗證多階段／同意契約；單輪案例維持 final-route 相容性。"""
+
+    declared = case.get("expected_turns")
+    if isinstance(declared, list):
+        expected_turns = declared
+        actual_turns = routes
+    else:
+        expected_turns = [case["expected"]]
+        actual_turns = [routes[-1] if routes else None]
+    turn_passes: list[bool] = []
+    hard: list[str] = []
+    for index, expected in enumerate(expected_turns):
+        route = actual_turns[index] if index < len(actual_turns) else None
+        passed, turn_hard = _score_expected(expected, route)
+        turn_passes.append(passed)
+        hard.extend(f"turn-{index + 1}:{item}" for item in turn_hard)
+    if len(actual_turns) != len(expected_turns):
+        turn_passes.append(False)
+    return all(turn_passes), hard, turn_passes
+
+
 def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> dict[str, object]:
     by_case = {case["id"]: case for case in cases}
-    fields = (
-        "envelope",
-        "selection_mode",
-        "primary_skill",
-        "support_skills",
-        "consent_action",
-        "goal_relation",
-    )
-    matches = {name: 0 for name in fields}
+    matches = {name: 0 for name in ROUTE_FIELDS}
     explicit_total = 0
     explicit_preserved = 0
     signatures: dict[str, set[str]] = {case["id"]: set() for case in cases}
     for record in records:
         expected = by_case[record["case_id"]]["expected"]
         route = record["route"]
-        for name in fields:
+        for name in ROUTE_FIELDS:
             if normalized_field(name, route.get(name)) == normalized_field(name, expected.get(name)):
                 matches[name] += 1
         if expected["selection_mode"] == "explicit-locked":
@@ -164,13 +289,19 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
                 explicit_preserved += 1
         signature = {
             name: normalized_field(name, route.get(name))
-            for name in fields
+            for name in ROUTE_FIELDS
         }
         signatures[record["case_id"]].add(json.dumps(signature, sort_keys=True, separators=(",", ":")))
     total = len(records)
+    turn_total = sum(record.get("turn_count", 1) for record in records)
+    turn_pass_total = sum(
+        record.get("turn_pass_count", 1 if record["passed"] else 0)
+        for record in records
+    )
     return {
         "attempt_count": total,
         "route_contract_match_rate": sum(1 for record in records if record["passed"]) / total,
+        "turn_contract_match_rate": turn_pass_total / turn_total if turn_total else None,
         "envelope_match_rate": matches["envelope"] / total,
         "selection_mode_match_rate": matches["selection_mode"] / total,
         "primary_skill_match_rate": matches["primary_skill"] / total,
@@ -185,6 +316,99 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
             sum(1 for values in signatures.values() if len(values) == 1) / len(signatures)
         ),
     }
+
+
+def case_diagnostics(
+    records: list[dict[str, Any]],
+    cases: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """輸出不含 prompt、expected/actual route value 的案例級聚合診斷。"""
+
+    diagnostics: list[dict[str, Any]] = []
+    for case in cases:
+        expected = case["expected"]
+        arms: dict[str, dict[str, Any]] = {}
+        for arm in ("baseline", "candidate"):
+            arm_records = [
+                record
+                for record in records
+                if record["arm"] == arm and record["case_id"] == case["id"]
+            ]
+            total = len(arm_records)
+            turn_count = sum(record.get("turn_count", 1) for record in arm_records)
+            turn_pass_count = sum(
+                record.get("turn_pass_count", 1 if record["passed"] else 0)
+                for record in arm_records
+            )
+            matches = {name: 0 for name in ROUTE_FIELDS}
+            for record in arm_records:
+                route = record.get("route")
+                route_mapping = route if isinstance(route, Mapping) else {}
+                for name in ROUTE_FIELDS:
+                    if normalized_field(name, route_mapping.get(name)) == normalized_field(
+                        name,
+                        expected.get(name),
+                    ):
+                        matches[name] += 1
+            arms[arm] = {
+                "attempt_count": total,
+                "turn_count": turn_count,
+                "turn_pass_count": turn_pass_count,
+                "pass_count": sum(1 for record in arm_records if record["passed"]),
+                "pass_rate": (
+                    sum(1 for record in arm_records if record["passed"]) / total
+                    if total
+                    else None
+                ),
+                "hard_violation_count": sum(
+                    len(record["hard_violations"])
+                    for record in arm_records
+                ),
+                "turn_pass_rate": (
+                    turn_pass_count / turn_count
+                    if turn_count
+                    else None
+                ),
+                "field_match_rates": {
+                    name: matches[name] / total if total else None
+                    for name in ROUTE_FIELDS
+                },
+            }
+        baseline = arms["baseline"]
+        candidate = arms["candidate"]
+        diagnostics.append({
+            "case_id": case["id"],
+            "arms": arms,
+            "candidate_minus_baseline": {
+                "pass_rate": (
+                    candidate["pass_rate"] - baseline["pass_rate"]
+                    if candidate["pass_rate"] is not None
+                    and baseline["pass_rate"] is not None
+                    else None
+                ),
+                "turn_pass_rate": (
+                    candidate["turn_pass_rate"] - baseline["turn_pass_rate"]
+                    if candidate["turn_pass_rate"] is not None
+                    and baseline["turn_pass_rate"] is not None
+                    else None
+                ),
+                "hard_violation_count": (
+                    candidate["hard_violation_count"]
+                    - baseline["hard_violation_count"]
+                ),
+                "field_match_rates": {
+                    name: (
+                        candidate["field_match_rates"][name]
+                        - baseline["field_match_rates"][name]
+                        if candidate["field_match_rates"][name] is not None
+                        and baseline["field_match_rates"][name] is not None
+                        else None
+                    )
+                    for name in ROUTE_FIELDS
+                },
+            },
+        })
+    return diagnostics
 
 
 def codex_version(adapter_arguments: list[str]) -> str | None:
@@ -223,7 +447,13 @@ def recover_attempt(
     if attempt_root is None or not attempt_root.is_dir():
         return None
     matches: list[tuple[float, str, list[dict[str, Any]]]] = []
+    protector = LocalEvidenceProtector()
     for transcript_path in attempt_root.glob("*/transcript.json"):
+        if (
+            not protector.verify_directory(transcript_path.parent)
+            or not protector.verify_file(transcript_path)
+        ):
+            continue
         try:
             transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -288,13 +518,15 @@ def main(argv: list[str] | None = None) -> int:
     command = (args.adapter_executable, *args.adapter_arg)
     adapter = SubprocessExecutionAdapter(command, timeout_seconds=args.timeout_seconds)
     output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+    protector = LocalEvidenceProtector()
+    restricted_dir = prepare_output_directory(output_dir, protector)
     records: list[dict[str, Any]] = []
     elapsed_values: list[float] = []
     resumed_attempt_count = 0
     expected_attempts = len(cases) * 2 * args.repeats
     resume_root = args.resume_attempt_root.resolve() if args.resume_attempt_root else None
-    checkpoint_path = output_dir / "checkpoint.json"
+    checkpoint_path = restricted_dir / "checkpoint.json"
+    checkpoint_protected = False
 
     for arm, profile in profiles.items():
         for case in cases:
@@ -339,8 +571,14 @@ def main(argv: list[str] | None = None) -> int:
                         ))))
                     elapsed_ms = (time.perf_counter() - started) * 1000
                     elapsed_values.append(elapsed_ms)
-                route = responses[-1].get("route") if responses else None
-                passed, hard_violations = score_route(case, route if isinstance(route, dict) else None)
+                routes = [
+                    response.get("route")
+                    if isinstance(response.get("route"), dict)
+                    else None
+                    for response in responses
+                ]
+                route = routes[-1] if routes else None
+                passed, hard_violations, turn_passes = score_attempt(case, routes)
                 trace_digest = digest({"responses": responses})
                 records.append({
                     "arm": arm,
@@ -349,16 +587,13 @@ def main(argv: list[str] | None = None) -> int:
                     "attempt_nonce": nonce,
                     "fresh_context_id": context_id,
                     "prompt_digest": digest({"prompt": prompt}),
-                    "public_case_digest": digest({
-                        "id": case["id"],
-                        "prompt": case["prompt"],
-                        "allowed_tools": case["allowed_tools"],
-                        "interaction_script": case["interaction_script"],
-                    }),
+                    "public_case_digest": digest(public_case_payload(case)),
                     "tool_inventory_digest": digest({"allowed_tools": case["allowed_tools"]}),
                     "trace_digest": trace_digest,
                     "elapsed_ms": elapsed_ms if args.evidence_class == "behavior" else None,
                     "route": route,
+                    "turn_count": len(routes),
+                    "turn_pass_count": sum(1 for item in turn_passes if item),
                     "passed": passed,
                     "hard_violations": hard_violations,
                 })
@@ -366,7 +601,9 @@ def main(argv: list[str] | None = None) -> int:
                     json.dumps({"records": records}, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
                     encoding="utf-8",
                 )
-                checkpoint_path.chmod(0o600)
+                if not checkpoint_protected:
+                    protector.protect_file(checkpoint_path)
+                    checkpoint_protected = True
 
     nonces = [record["attempt_nonce"] for record in records]
     contexts = [record["fresh_context_id"] for record in records]
@@ -374,6 +611,8 @@ def main(argv: list[str] | None = None) -> int:
         raise EvaluationIntegrityError("benchmark_attempt_integrity_failed")
     if any(not record["trace_digest"] for record in records):
         raise EvaluationIntegrityError("benchmark_trace_digest_missing")
+    if not protector.verify_file(checkpoint_path):
+        raise EvaluationIntegrityError("benchmark_checkpoint_unprotected")
 
     pass_values = [1.0 if record["passed"] else 0.0 for record in records]
     explicit = [record for record in records if next(
@@ -397,6 +636,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     delta_fields = (
         "route_contract_match_rate",
+        "turn_contract_match_rate",
         "envelope_match_rate",
         "selection_mode_match_rate",
         "primary_skill_match_rate",
@@ -413,12 +653,7 @@ def main(argv: list[str] | None = None) -> int:
         if metrics_by_arm["candidate"][name] is not None
         and metrics_by_arm["baseline"][name] is not None
     }
-    public_case_set_digest = digest([{
-        "id": case["id"],
-        "prompt": case["prompt"],
-        "allowed_tools": case["allowed_tools"],
-        "interaction_script": case["interaction_script"],
-    } for case in cases])
+    public_case_set_digest = digest([public_case_payload(case) for case in cases])
     skill_catalog_digest = digest(profiles["baseline"]["skill_catalog"])
     arm_manifests = {
         arm: {
@@ -454,6 +689,7 @@ def main(argv: list[str] | None = None) -> int:
             "candidate_minus_baseline": comparison_deltas,
             "interpretation_status": "review-required",
         },
+        "case_diagnostics": case_diagnostics(records, cases),
         "metrics": {
             "pass_rate": {"value": sum(pass_values) / len(pass_values), "metric_status": metric_status},
             "variance": {"value": statistics.pvariance(pass_values), "metric_status": metric_status},
@@ -480,6 +716,8 @@ def main(argv: list[str] | None = None) -> int:
             "cost": {"value": None, "metric_status": "unavailable"},
         },
         "provenance": {
+            "evaluation_contract_id": EVALUATION_CONTRACT_ID,
+            "evaluation_contract_revision": cases[0]["contract_revision"],
             "adapter": adapter_names[0] if adapter_names else None,
             "adapter_revision": adapter_revision,
             "codex_cli_version": codex_version(args.adapter_arg),
@@ -502,13 +740,19 @@ def main(argv: list[str] | None = None) -> int:
                 else resumed_attempt_count
             ),
             "report_recovered_attempt_count": resumed_attempt_count,
+            "evidence_protection": {
+                "kind": "os-permission",
+                "status": "verified",
+                "directory": restricted_dir.name,
+                "artifacts": ["checkpoint.json", "raw-results.json"],
+            },
         },
         "attempts": [{
             key: record[key]
             for key in (
                 "arm", "case_id", "opaque_run_case_id", "attempt_nonce", "fresh_context_id",
                 "prompt_digest", "public_case_digest", "tool_inventory_digest", "trace_digest", "elapsed_ms",
-                "passed", "hard_violations",
+                "turn_count", "turn_pass_count", "passed", "hard_violations",
             )
         } for record in records],
         "limitations": [
@@ -521,12 +765,12 @@ def main(argv: list[str] | None = None) -> int:
         args.evidence_class,
         evidence_class_locked=args.evidence_class == "reference-driver",
     )
-    raw_path = output_dir / "raw-results.json"
+    raw_path = restricted_dir / "raw-results.json"
     raw_path.write_text(json.dumps({
         "adapter_command": list(command),
         "records": records,
     }, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
-    raw_path.chmod(0o600)
+    protector.protect_file(raw_path)
     report_path = output_dir / "sanitized-report.json"
     report_path.write_text(
         json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",

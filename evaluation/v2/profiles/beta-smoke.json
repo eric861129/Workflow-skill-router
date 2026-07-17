@@ -1,11 +1,13 @@
 {
   "schema_version": "2.0",
+  "contract_id": "workflow-skill-router.behavior-routing",
+  "contract_revision": "2.1.0",
   "case_count": 6,
   "case_ids": [
     "small-auto",
     "small-explicit-lock",
     "phased-explicit-consent-approve",
-    "phased-auto",
+    "phased-current-boundary",
     "managed-goal",
     "capability-unavailable"
   ]

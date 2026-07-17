@@ -127,7 +127,7 @@ Unavailable calls return a typed `capability-unavailable` response with required
 
 **Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication.
 
-The corrected 36-attempt beta Behavior smoke is pending explicit quota authorization. The earlier superseded run is not public proof. The twelve-case suite, repeated three times per arm, remains the GA gate. Until a valid run exists the public status is `manual-required`; after execution it remains `review-required` until attested.
+Evaluation contract `2.1.0` separates the current-Phase oracle from a stateful Phase-transition case and scores every declared turn. Its six-case beta profile remains 36 attempts and 42 model turns; the thirteen-case full gate is 78 attempts and 96 model turns at three repeats per arm. Runs bound to earlier case or instruction digests remain diagnostic and are never rescored against the new oracle. Before a fresh authorized `2.1.0` run, public evidence remains `manual-required`; after execution it remains `review-required` until trusted attestation.
 
 ## Security boundary and local state
 
@@ -152,8 +152,12 @@ $env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
 python -m unittest discover -s packages/router-core/tests -v
 python -m unittest discover -s tests -v
 python scripts/build-v2-demo-data.py --check
-python scripts/build-release-artifacts.py --output-dir dist/release --provenance-mode test --check-determinism
+$Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
+$Output = Join-Path "dist" "release-$Version"
+python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
+
+The release builder allows repeatable overwrites only for the current manifest. It fails closed if the output directory contains a stale, unexpected, symlinked, or otherwise unmanifested path; use a version-specific directory instead of mixing release generations.
 
 ## Version channels
 

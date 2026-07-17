@@ -15,10 +15,14 @@ python scripts/check-markdown-links.py .
 ## 2. Build deterministic assets
 
 ```powershell
-python scripts/build-release-artifacts.py --output-dir dist/release --provenance-mode test --check-determinism
+$Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
+$Output = Join-Path "dist" "release-$Version"
+python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 The builder reads sorted allowlists, normalizes ZIP metadata, emits checksums, SBOM, provenance, and channel documents, and rejects missing or unsafe paths. Edit source or allowlists; never patch generated archives.
+
+The output directory may be reused only when every existing entry belongs to the current generated manifest. Any stale, unexpected, symlinked, or otherwise unmanifested path stops the build before writes. Use a version-specific directory; the builder never silently cleans mixed release generations.
 
 ## 3. Review evidence
 

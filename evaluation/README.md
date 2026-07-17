@@ -10,9 +10,9 @@ V2 separates deterministic regression fixtures from fresh-model evidence. A pass
 | `evaluation/v2/cases/` | Runnable public-safe cases | Define paired baseline/candidate inputs for V2. |
 | `evaluation/v2/reference_driver.py` | `reference-driver` | Demonstrate protocol, isolation, repeat, and artifact reproducibility without calling a model. |
 | `evaluation/v2/adapters/codex_cli_driver.py` | Fresh model transport | Run isolated Codex CLI attempts with user configuration disabled and a strict output schema. |
-| `dist/evaluation/` | Local raw and generated output | Keep provider traces, attempt directories, and reports out of Git. |
+| `dist/evaluation/` | Local evaluation output | Keep provider traces and attempt directories out of Git; raw/checkpoint files live only under a verified `restricted/` child while the output root contains the sanitized report. |
 
-The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, phased work, managed Goal work, and capability-unavailable behavior. The twelve-case `full` suite is the broader V2 gate.
+Evaluation contract `2.1.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, the current Phase boundary, managed Goal planning, and capability-unavailable behavior. The thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route.
 
 ## Deterministic reference run
 
@@ -36,22 +36,39 @@ Resolve a native Codex executable that supports the selected model, then review 
 ```powershell
 $Codex = (Resolve-Path "C:\path\to\native\codex.exe").Path
 $Python = (Get-Command python).Source
+$Driver = (Resolve-Path "evaluation/v2/adapters/codex_cli_driver.py").Path
+$Schema = (Resolve-Path "evaluation/v2/schemas/codex-route-output.schema.json").Path
+$AuthSource = Join-Path ([Environment]::GetFolderPath('UserProfile')) ".codex\auth.json"
+$RunId = "beta1-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+$AttemptRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-attempts-$RunId"
+$OutputRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-live-$RunId"
 & $Codex --version
 python scripts/run-v2-benchmark.py `
   --suite beta-smoke `
   --evidence-class behavior `
   --adapter-executable $Python `
-  --adapter-arg evaluation/v2/adapters/codex_cli_driver.py `
+  --adapter-arg $Driver `
   --adapter-arg=--codex-executable `
   --adapter-arg $Codex `
+  --adapter-arg=--output-schema `
+  --adapter-arg $Schema `
+  --adapter-arg=--attempt-root `
+  --adapter-arg $AttemptRoot `
+  --adapter-arg=--timeout-seconds `
+  --adapter-arg 150 `
+  --adapter-arg=--auth-source `
+  --adapter-arg $AuthSource `
   --adapter-arg=--model `
   --adapter-arg gpt-5.6-sol `
   --repeats 3 `
-  --output-dir dist/evaluation/v2/codex-live `
+  --timeout-seconds 180 `
+  --output-dir $OutputRoot `
   --confirm-live-run
 ```
 
-That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, explicit SKILL catalog, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. Attempt nonces bind the prompt and tool-inventory digests, so a changed case cannot resume an older transcript.
+That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. Before the first attempt, the runner recomputes the canonical path-and-SHA-256 manifest and rejects any mismatch with the declared instruction digest. Attempt nonces bind the prompt, capability snapshot, and tool-inventory digests, so a changed case cannot resume an older transcript.
+
+Use a new `RunId` for every authorized run. The runner accepts only a missing or empty output root, rejects legacy public `checkpoint.json` or `raw-results.json`, verifies the Windows DACL or POSIX modes before accepting evidence, and exposes only `sanitized-report.json` at the output root. Do not reuse a superseded output or attempt root.
 
 The driver also uses a fresh `HOME` and `CODEX_HOME`, disables plugins and bundled Skills, and copies authentication into that isolated home only for the duration of one turn. The copy is removed in `finally`, including timeout and process-start failure paths. This prevents personal Skills and configuration from contaminating either arm.
 

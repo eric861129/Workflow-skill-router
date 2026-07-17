@@ -16,6 +16,7 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import EvaluationIntegrityError
+from workflow_skill_router.evaluation.local_evidence import LocalEvidenceProtector
 
 
 DRIVER_PATH = ROOT / "evaluation" / "v2" / "adapters" / "codex_cli_driver.py"
@@ -108,6 +109,14 @@ class CodexCliDriverTests(unittest.TestCase):
         directories = [path for path in (self.root / "attempts").iterdir() if path.is_dir()]
         self.assertEqual(2, len(directories))
         self.assertTrue(all((path / "transcript.json").is_file() for path in directories))
+        protector = LocalEvidenceProtector()
+        self.assertTrue(protector.verify_directory(self.root / "attempts"))
+        for path in directories:
+            self.assertTrue(protector.verify_directory(path))
+            self.assertTrue(protector.verify_directory(path / "workspace"))
+            self.assertTrue(protector.verify_directory(path / "runtime-home"))
+            self.assertTrue(protector.verify_directory(path / "codex-home"))
+            self.assertTrue(protector.verify_file(path / "transcript.json"))
 
     def test_reconstructs_prior_turns_in_order_without_future_replies_or_scoring_data(self):
         context = self.start()
@@ -150,6 +159,9 @@ class CodexCliDriverTests(unittest.TestCase):
         diagnostic = next((self.root / "attempts").rglob("failure.json")).read_text(encoding="utf-8")
         self.assertNotIn("secret-token", diagnostic)
         self.assertIn("[REDACTED]", diagnostic)
+        self.assertTrue(LocalEvidenceProtector().verify_file(
+            next((self.root / "attempts").rglob("failure.json"))
+        ))
 
     def test_auth_copy_failure_fails_closed_without_leaving_a_partial_secret(self):
         context = self.start()

@@ -23,7 +23,7 @@ description: 以可驗證的證據，追蹤從 alpha 到 GA 的里程碑。
 
 ## GA — promotion gate
 
-- 通過十二案例、72-attempt paired Behavior suite
+- 通過 13 案例、78-attempt／96-model-turn paired Behavior suite
 - 維持零 hard violations
 - 完成 security review、dependency/SBOM checks、docs parity 與 release rehearsal
 - 透過人工 manifest gate 移除已審查的 V1 public clutter
