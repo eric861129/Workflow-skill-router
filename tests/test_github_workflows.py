@@ -64,6 +64,14 @@ class GitHubWorkflowTests(unittest.TestCase):
         ):
             self.assertIn(required, plugin)
 
+        plugin_install = validate.index("Install plugin build dependencies")
+        repository_tests = validate.index("Run repository unit tests")
+        self.assertLess(plugin_install, repository_tests)
+
+    def test_digest_bound_text_is_checked_out_with_stable_lf_bytes(self) -> None:
+        attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("* text=auto eol=lf", attributes.splitlines())
+
     def test_codeql_scans_python_and_javascript_typescript(self) -> None:
         content = workflow_text("codeql.yml")
         self.assertIn("python", content)

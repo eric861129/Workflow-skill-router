@@ -52,7 +52,9 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: site/package-lock.json
+          cache-dependency-path: |
+            site/package-lock.json
+            plugins/workflow-skill-router/package-lock.json
       - name: Validate V2 standalone SKILL
         run: python scripts/validate-router.py starter/v2/workflow-skill-router
       - name: Audit public readiness
@@ -61,6 +63,9 @@ jobs:
         run: python scripts/audit-public-readiness.py .
       - name: Check Markdown links
         run: python scripts/check-markdown-links.py .
+      - name: Install plugin build dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
       - name: Run repository unit tests
         run: python -m unittest discover -s tests
       - name: Check generated V2 demo data

@@ -1,6 +1,6 @@
 ---
 title: Routing Showcase
-description: 五個適合轉貼分享的 Workflow Skill Router before/after 案例。
+description: 七個適合轉貼分享的 Workflow Skill Router before/after 案例。
 ---
 
 V2 首頁提供七個可檢查情境，涵蓋 Single、Phased、Managed Goal、Explicit Skill Lock、consent、verified-host 排程與模型評測。每個情境都呈現 Router bridge 產生並經清理的 JSONL request／response；瀏覽器只顯示結果，不重新計算路由。

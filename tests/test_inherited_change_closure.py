@@ -13,10 +13,16 @@ ALLOWED_REMOVAL_MANIFESTS = {
     "release/legacy-v1-removal-manifest.json",
     "release/v2-residual-removal-manifest.json",
 }
+CANONICAL_TEXT_SUFFIXES = {
+    ".css", ".json", ".jsonl", ".md", ".mjs", ".py", ".sql", ".ts", ".yaml", ".yml",
+}
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    content = path.read_bytes()
+    if path.suffix.casefold() in CANONICAL_TEXT_SUFFIXES:
+        content = content.replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 class InheritedChangeClosureTests(unittest.TestCase):

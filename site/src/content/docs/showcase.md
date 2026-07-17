@@ -1,6 +1,6 @@
 ---
 title: Routing Showcase
-description: Five shareable before-and-after examples for Workflow Skill Router.
+description: Seven shareable before-and-after examples for Workflow Skill Router.
 ---
 
 The V2 homepage includes seven inspectable scenarios for Single, Phased, Managed Goal, Explicit Skill Lock, consent, verified-host scheduling, and model evaluation. Each scenario renders the sanitized JSONL request and response produced by the Router bridge. The browser displays those results; it does not recompute them.

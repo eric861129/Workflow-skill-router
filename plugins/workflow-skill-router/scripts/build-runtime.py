@@ -5,6 +5,7 @@ from hashlib import sha256
 import os
 from pathlib import Path
 import subprocess
+import sys
 import zipfile
 
 
@@ -51,7 +52,17 @@ def main() -> int:
     args = parser.parse_args()
     data = build_bytes()
     if args.check:
-        return 0 if args.output.is_file() and args.output.read_bytes() == data else 1
+        actual = args.output.read_bytes() if args.output.is_file() else None
+        if actual == data:
+            return 0
+        expected_digest = sha256(data).hexdigest()
+        actual_digest = sha256(actual).hexdigest() if actual is not None else "missing"
+        print(
+            "runtime archive mismatch: "
+            f"expected sha256:{expected_digest}, actual sha256:{actual_digest}",
+            file=sys.stderr,
+        )
+        return 1
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_name(args.output.name + ".tmp")
     try:

@@ -15,6 +15,21 @@ SPEC.loader.exec_module(module)
 
 
 class RuntimeBuilderTests(unittest.TestCase):
+    def test_check_reports_safe_digests_when_runtime_does_not_match(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            missing = Path(temporary) / "missing.pyz"
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--check", "--output", str(missing)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("runtime archive mismatch", result.stderr)
+        self.assertIn("actual sha256:missing", result.stderr)
+        self.assertNotIn(str(ROOT), result.stderr)
+
     def test_runtime_includes_new_untracked_core_sources(self) -> None:
         members = {
             path.relative_to(module.SOURCE).as_posix()
