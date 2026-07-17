@@ -4,7 +4,7 @@
 
 Workflow Skill Router is a runtime-aware planning and routing layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do.
 
-> Current channel: `2.0.0-alpha.1`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
+> Current channel: `2.0.0-beta.1`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
 
 ## 60-second outcome
 

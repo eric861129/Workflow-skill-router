@@ -5,7 +5,7 @@ const pages = [
   { name: 'downloads', path: 'guides/downloads/' },
   { name: 'showcase', path: 'showcase/' },
   { name: 'quickstart', path: 'guides/quickstart/' },
-  { name: 'gallery', path: 'examples/routing-gallery/' },
+  { name: 'mcp-tools', path: 'reference/mcp-tools/' },
 ];
 
 const viewports = [

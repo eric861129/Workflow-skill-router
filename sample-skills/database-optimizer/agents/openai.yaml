@@ -1,4 +1,0 @@
-interface:
-  display_name: "Database Optimizer"
-  short_description: "Investigates slow queries and database performance risk."
-  default_prompt: "Use database-optimizer to analyze the database performance risk."

@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Remove migrated internal plans and residual V1-only public tooling after the V2 beta gates prove their replacements.",
+  "selection_count": 27,
+  "files": [
+    ".github/ISSUE_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/example-request.yml",
+    ".github/ISSUE_TEMPLATE/general-issue.md",
+    ".github/ISSUE_TEMPLATE/route-case.yml",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-01-foundations-capability.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-02-routing-consent.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-03-state-goal-persistence.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-04-plugin-mcp-cli-fallback.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-05-model-evaluation.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-06-v1-migration-release.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-07-demo-docs-site.md",
+    "docs/superpowers/plans/2026-07-15-workflow-skill-router-v2-master.md",
+    "docs/superpowers/plans/2026-07-16-workflow-skill-router-v2-open-source-reset.md",
+    "docs/superpowers/specs/2026-07-15-workflow-skill-router-v2-design.md",
+    "packages/router-core/tests/compat/__init__.py",
+    "packages/router-core/tests/compat/capture_legacy_cli_goldens.py",
+    "packages/router-core/tests/compat/golden/legacy-cli-v1.json",
+    "packages/router-core/tests/compat/golden_runner.py",
+    "packages/router-core/tests/compat/legacy_cli_cases.py",
+    "packages/router-core/tests/compat/test_legacy_cli_goldens.py",
+    "scripts/create-demo-gif.py",
+    "scripts/package-downloads.py",
+    "scripts/scan-skills.py",
+    "scripts/smoke-release-assets.py",
+    "site/src/components/RouteGallery.astro",
+    "tests/test_package_downloads.py",
+    "tests/test_scan_skills.py"
+  ],
+  "groups": {
+    "superseded-community-forms": {
+      "count": 4,
+      "replacement": ".github/ISSUE_TEMPLATE/plugin-runtime-bug.yml, evaluation-case.yml, and routing-failure.yml"
+    },
+    "migrated-internal-plans": {
+      "count": 10,
+      "replacement": "docs/architecture/v2-overview.md, docs/adr/, and canonical bilingual site documentation"
+    },
+    "retired-v1-cli-goldens": {
+      "count": 6,
+      "replacement": "packages/router-core/tests/fixtures/legacy-v1 plus V2 core, benchmark, and migration tests"
+    },
+    "retired-v1-generators": {
+      "count": 6,
+      "replacement": "V2 runtime discovery, source-built release packaging, generated Demo/MCP contracts, and their focused tests"
+    },
+    "orphaned-v1-site-component": {
+      "count": 1,
+      "replacement": "V2 interactive Router trace Demo and MCP tools reference"
+    }
+  },
+  "approval_required": false,
+  "approval_status": "approved-and-applied",
+  "approved_at": "2026-07-17",
+  "verification": {
+    "files_still_present": 0,
+    "unexpected_tracked_deletions": 0
+  }
+}

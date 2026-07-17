@@ -1,4 +1,0 @@
-interface:
-  display_name: "Requirements Clarity"
-  short_description: "Clarifies scope, acceptance criteria, risks, and tradeoffs."
-  default_prompt: "Use requirements-clarity to clarify the request before implementation."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Commit Work"
-  short_description: "Stages clean changes and writes useful commit messages."
-  default_prompt: "Use commit-work to prepare a clean, reviewable commit."

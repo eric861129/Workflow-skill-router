@@ -12,12 +12,10 @@ const pages = [
   { path: 'guides/install-plugin/', text: 'Install the Plugin + MCP runtime' },
   { path: 'concepts/runtime-capability-discovery/', text: 'Runtime Capability Discovery' },
   { path: 'reference/mcp-tools/', text: 'MCP Tools' },
-  { path: 'examples/routing-gallery/', text: 'Routing Gallery' },
   { path: 'zh-tw/guides/quickstart/', text: 'V2 快速開始' },
   { path: 'zh-tw/guides/install-plugin/', text: '安裝 Plugin + MCP Runtime' },
   { path: 'zh-tw/concepts/runtime-capability-discovery/', text: 'Runtime Capability Discovery' },
   { path: 'zh-tw/reference/mcp-tools/', text: 'MCP Tools' },
-  { path: 'zh-tw/examples/routing-gallery/', text: '路由案例 Gallery' },
 ];
 
 test('homepage presents the V2 product and install choices first', async ({ page }) => {
@@ -110,25 +108,6 @@ for (const pageCase of pages) {
     expect(hasHorizontalOverflow).toBe(false);
   });
 }
-
-test('routing gallery filters by domain and tag', async ({ page }) => {
-  await page.goto('examples/routing-gallery/');
-
-  await page.locator('[data-gallery-domain]').selectOption('frontend');
-  await expect(page.locator('[data-gallery-card]:not([hidden])')).toHaveCount(2);
-  const frontendDomains = await page.locator('[data-gallery-card]:not([hidden])').evaluateAll((cards) =>
-    cards.map((card) => (card as HTMLElement).dataset.domain),
-  );
-  expect(frontendDomains).toEqual(['frontend', 'frontend']);
-
-  await page.locator('[data-gallery-domain]').selectOption('');
-  await page.getByRole('button', { name: 'anti-over-routing' }).click();
-  await expect(page.locator('[data-gallery-card]:not([hidden])')).toHaveCount(2);
-  await expect(page.locator('[data-gallery-card]:not([hidden])').first()).toContainText('Copy-edit boundary');
-
-  await page.getByRole('button', { name: 'All tags' }).click();
-  await expect(page.locator('[data-gallery-empty]')).toBeHidden();
-});
 
 test('explicit skill rejection keeps support inactive', async ({ page }) => {
   await page.goto('zh-tw/');

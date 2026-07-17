@@ -1,4 +1,0 @@
-interface:
-  display_name: "API Guidelines"
-  short_description: "Reviews REST API governance and compatibility rules."
-  default_prompt: "Use api-guidelines-skill to review the REST API design and routing tradeoffs."

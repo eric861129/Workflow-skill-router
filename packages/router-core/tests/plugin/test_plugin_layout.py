@@ -12,7 +12,7 @@ class PluginLayoutTests(unittest.TestCase):
     def test_manifest_and_companions_are_consistent(self) -> None:
         manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual("workflow-skill-router", manifest["name"])
-        self.assertEqual("2.0.0-alpha.1", manifest["version"])
+        self.assertEqual("2.0.0-beta.1", manifest["version"])
         self.assertEqual("./skills/", manifest["skills"])
         self.assertEqual("./.mcp.json", manifest["mcpServers"])
         self.assertNotIn("apps", manifest)

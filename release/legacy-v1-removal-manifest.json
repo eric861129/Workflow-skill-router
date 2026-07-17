@@ -274,10 +274,10 @@
       "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
     },
     {
-      "historical_source": "github-release:v1.3.1",
+      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "downloads/archive/workflow-skill-router-skill-v1.3.1.zip",
       "reason": "Move committed release downloads and generated channel metadata out of the V2 source tree.",
-      "replacement_or_recovery": "Recover the immutable V1 package from the v1.3.1 GitHub Release."
+      "replacement_or_recovery": "Recover the exact archived package from the recorded pre-Goal starting commit; the canonical V1 source remains available from immutable Git tag v1.3.1."
     },
     {
       "historical_source": "generated-from-source",
@@ -1235,27 +1235,9 @@
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
-      "path": "site/src/content/docs/guides/v2-routing.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "site/src/content/docs/reference/agent-governance-positioning.md",
       "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
       "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
-      "path": "site/src/content/docs/reference/model-evaluation.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "v1.3.1",
-      "path": "site/src/content/docs/reference/routing-contract.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
     },
     {
       "historical_source": "v1.3.1",
@@ -1295,27 +1277,9 @@
     },
     {
       "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
-      "path": "site/src/content/docs/zh-tw/guides/v2-routing.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
       "path": "site/src/content/docs/zh-tw/reference/agent-governance-positioning.md",
       "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
       "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335",
-      "path": "site/src/content/docs/zh-tw/reference/model-evaluation.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the tracked predecessor from the recorded starting commit; migrate or supersede its durable content before cleanup."
-    },
-    {
-      "historical_source": "v1.3.1",
-      "path": "site/src/content/docs/zh-tw/reference/routing-contract.md",
-      "reason": "Replace the V1-oriented public site route or generated data with the canonical V2 information architecture.",
-      "replacement_or_recovery": "Recover the original legacy source from immutable Git tag v1.3.1; migrate durable V2 guidance before cleanup."
     },
     {
       "historical_source": "v1.3.1",
@@ -1606,20 +1570,14 @@
     "site/src/content/docs/examples/template-skill-catalog.md",
     "site/src/content/docs/guides/adapters.md",
     "site/src/content/docs/guides/blank-router-walkthrough.md",
-    "site/src/content/docs/guides/v2-routing.md",
     "site/src/content/docs/reference/agent-governance-positioning.md",
-    "site/src/content/docs/reference/model-evaluation.md",
-    "site/src/content/docs/reference/routing-contract.md",
     "site/src/content/docs/reference/sample-skills.md",
     "site/src/content/docs/reference/source-map.md",
     "site/src/content/docs/zh-tw/examples/routing-gallery.mdx",
     "site/src/content/docs/zh-tw/examples/template-skill-catalog.md",
     "site/src/content/docs/zh-tw/guides/adapters.md",
     "site/src/content/docs/zh-tw/guides/blank-router-walkthrough.md",
-    "site/src/content/docs/zh-tw/guides/v2-routing.md",
     "site/src/content/docs/zh-tw/reference/agent-governance-positioning.md",
-    "site/src/content/docs/zh-tw/reference/model-evaluation.md",
-    "site/src/content/docs/zh-tw/reference/routing-contract.md",
     "site/src/content/docs/zh-tw/reference/sample-skills.md",
     "site/src/content/docs/zh-tw/reference/source-map.md",
     "site/src/data/route-cases.generated.json",
@@ -1636,16 +1594,21 @@
     "tests/test_route_cases.py"
   ],
   "notes": [
-    "This manifest is an exact review list only. Task 2 performs no deletion.",
+    "This exact review list was approved and applied on 2026-07-17.",
     "The immutable v1.3.1 tag is used only where the file actually exists in that tag.",
     "Generated V2 alpha artifacts and post-v1.3.1 files use their truthful source or regeneration boundary."
   ],
+  "approval_status": "approved-and-applied",
+  "approved_at": "2026-07-17",
   "recovery_sources": {
     "generated-from-source": "Generated output is recreated by the V2 release, evaluation, or site asset pipeline.",
-    "github-release:v1.3.1": "Immutable V1 release asset hosted by the v1.3.1 GitHub Release.",
     "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335": "Tracked predecessor at the pre-Goal starting commit.",
     "v1.3.1": "Immutable V1 Git tag."
   },
   "schema_version": "1.0",
-  "selection_count": 231
+  "selection_count": 225,
+  "verification": {
+    "files_still_present": 0,
+    "unexpected_tracked_deletions": 0
+  }
 }

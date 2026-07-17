@@ -1,13 +1,13 @@
 # Scripts
 
-All Python scripts in this repository use the standard library and can run from a fresh clone.
+The release-critical Python scripts use the standard library and run from a fresh clone. Site and MCP reference generation use the pinned Node.js workspaces documented in their package manifests.
 
 ## `validate-router.py`
 
 Validates a workflow-skill-router package structure.
 
 ```bash
-python scripts/validate-router.py starter/workflow-skill-router
+python scripts/validate-router.py starter/v2/workflow-skill-router
 ```
 
 Public-readiness audit:
@@ -16,7 +16,7 @@ Public-readiness audit:
 python scripts/validate-router.py --public-readiness .
 ```
 
-Exit code is non-zero when required files, router structure, route limits, placeholder policy, public-readiness checks, or catalog parity checks fail.
+Exit code is non-zero when the V2 SKILL contract, Plugin/MCP surface, governance files, bilingual site entrypoints, or public-tree policy fails.
 
 Private marker strings for local or private CI scans can be injected without committing them:
 
@@ -32,42 +32,36 @@ Checks rendered local links and media references in Markdown and MDX files. Fenc
 python scripts/check-markdown-links.py .
 ```
 
-## `scan-skills.py`
-
-Scans skill markdown files and writes a JSON index, Markdown summary, warnings report, and optional suggested skill tree.
+## Generated V2 contracts
 
 ```bash
-python scripts/scan-skills.py ./sample-skills \
-  --out /tmp/skill-index.json \
-  --markdown /tmp/skill-index.md \
-  --warnings /tmp/skill-warnings.md \
-  --suggest-tree /tmp/suggested-skill-tree.md
+python scripts/build-v2-demo-data.py --check
+node scripts/build-mcp-reference-data.mjs --check
 ```
 
-Useful flags:
+These checks reject hand-authored Demo decisions and MCP reference drift.
 
-- `--fail-on-private`: fail when public-safety warnings are found
-- `--fail-on-duplicates`: fail when duplicate skill ids or names are found
-- `--format json|markdown`: print an index to stdout when no output path is supplied
-- `--generated-at`: use a fixed timestamp for deterministic examples
+## `run-v2-benchmark.py`
 
-## `evaluate-routing.py`
-
-Evaluates route predictions against scenario expectations.
+Runs the V2 paired benchmark harness. Reference-driver output is deterministic contract evidence only; a Behavior run needs explicit quota authorization and trusted review.
 
 ```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report /tmp/routing-report.md \
-  --json-report /tmp/routing-report.json \
-  --fail-on-violations
+python scripts/run-v2-benchmark.py \
+  --suite full \
+  --evidence-class reference-driver \
+  --adapter-executable python \
+  --adapter-arg evaluation/v2/reference_driver.py \
+  --repeats 3 \
+  --output-dir dist/evaluation/v2/reference
 ```
 
-Useful flags:
+## `build-release-artifacts.py`
 
-- `--fail-on-violations`: fail on forbidden skills, max skill count violations, missing predictions, or unknown predictions
-- `--strict`: also fail on primary mismatches or missing expected supporting skills
+Builds deterministic Plugin and SKILL archives, channels, checksums, SPDX SBOM, and provenance outside Git.
+
+```bash
+python scripts/build-release-artifacts.py --output-dir dist/release --check-determinism
+```
 
 ## CI Usage
 
@@ -75,11 +69,12 @@ The repository validation workflow runs:
 
 ```bash
 python scripts/validate-router.py --self-test
-python scripts/validate-router.py starter/workflow-skill-router
+python scripts/validate-router.py starter/v2/workflow-skill-router
 python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
 python scripts/check-markdown-links.py .
-python scripts/scan-skills.py ./sample-skills --out /tmp/skill-index.json --markdown /tmp/skill-index.md --warnings /tmp/skill-warnings.md
-python scripts/evaluate-routing.py --scenarios evaluation/scenarios.example.jsonl --predictions evaluation/predictions.example.jsonl --report /tmp/routing-report.md --json-report /tmp/routing-report.json --fail-on-violations
+python scripts/check-doc-parity.py
+python scripts/build-v2-demo-data.py --check
+node scripts/build-mcp-reference-data.mjs --check
 python -m unittest discover -s tests
 ```

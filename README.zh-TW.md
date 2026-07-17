@@ -4,7 +4,7 @@
 
 Workflow Skill Router 是 Codex 的 runtime-aware 規劃與路由層。它讓 Agent 專注於最小且可驗證的執行路徑，保留使用者權限，並如實呈現 Runtime 真正能做的事。
 
-> 目前版本：`2.0.0-alpha.1`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
+> 目前版本：`2.0.0-beta.1`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
 
 ## 60-second outcome / 60 秒成果
 

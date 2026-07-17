@@ -1,6 +1,6 @@
 {
   "name": "workflow-skill-router",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-beta.1",
   "description": "依任務規模、Goal 關係、可用能力與使用者指定 SKILL，提供可驗證的工作路由與編排。",
   "author": {
     "name": "ChiYu",

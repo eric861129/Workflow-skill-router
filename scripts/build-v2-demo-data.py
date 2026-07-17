@@ -34,13 +34,30 @@ def _validate_public_evaluation(evaluation: object) -> dict[str, object]:
     return evaluation
 
 
+def _pending_public_evaluation() -> dict[str, object]:
+    """回傳可重現且不冒充真實模型結果的公開評測狀態。"""
+    return {
+        "schema_id": "workflow-skill-router/public-evaluation-status",
+        "schema_version": "2.0.0-alpha.1",
+        "status": "manual-required",
+        "publication_gate": "review-required",
+        "evidence_class": "behavior",
+        "provenance": (
+            "No verified fresh-task adapter was available during deterministic "
+            "site generation."
+        ),
+        "limitations": [
+            "No public score is emitted without a trusted human review attestation.",
+            "Tier 0 Contract fixtures are not real model evaluation.",
+        ],
+    }
+
+
 def build_demo_data(root: Path) -> dict[str, object]:
     source = json.loads((root / "demo/v2-scenarios/inputs.json").read_text("utf-8"))
     forbidden = {"request_decision","route","active_selections","policy_result","events"}
     if any(forbidden.intersection(item) for item in source["presets"]): raise ValueError("demo input contains policy output")
-    evaluation = _validate_public_evaluation(json.loads(
-        (root / "evaluation/artifacts/public/v2-demo-evaluation.json").read_text("utf-8")
-    ))
+    evaluation = _validate_public_evaluation(_pending_public_evaluation())
     output = build_demo_artifact(source, evaluation)
     encoded = json.dumps(output, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     if re.search(r"[A-Za-z]:\\Users\\|/Users/|/home/|sk-[A-Za-z0-9]", encoded): raise ValueError("demo output is not public safe")

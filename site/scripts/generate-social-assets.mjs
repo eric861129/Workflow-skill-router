@@ -1,4 +1,4 @@
-import { copyFile, mkdir, stat } from 'node:fs/promises';
+import { mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
@@ -7,11 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(siteRoot, '..');
 const siteOg = path.join(siteRoot, 'public', 'og');
-const docsAssets = path.join(repoRoot, 'docs', 'assets');
 
 const outputs = {
   siteOg: path.join(siteOg, 'workflow-skill-router.png'),
-  docsPreview: path.join(docsAssets, 'workflow-skill-router-social-preview.png'),
 };
 
 function socialHtml() {
@@ -55,22 +53,22 @@ function socialHtml() {
   </head>
   <body>
     <main class="card">
-      <div class="topline">Open-source Codex Skill starter</div>
-      <h1>Workflow Skill Router</h1>
-      <div class="sub">A practical pattern for choosing the right AI agent skills before complex work starts.</div>
+      <div class="topline">Codex Plugin / MCP + SKILL fallback</div>
+      <h1>Workflow Skill Router V2</h1>
+      <div class="sub">Deterministic routing, scoped consent, durable state, and inspectable evidence for real developer workflows.</div>
       <section class="flow">
         <div class="box">
           <h2 class="bad">Before</h2>
-          <div class="mono">7 loosely related skills<br />unclear owner<br />no review boundary</div>
+          <div class="mono">skill sprawl<br />generic consent<br />no runtime proof</div>
         </div>
         <div class="arrow">→</div>
         <div class="box">
           <h2 class="good">After</h2>
-          <div class="mono">1 primary skill<br />up to 3 supporting skills<br />explicit omissions</div>
+          <div class="mono">Single · Phased · Managed Goal<br />scoped consent<br />inspectable evidence</div>
         </div>
       </section>
       <div class="footer">
-        <span class="badge">Blank Router + reference template</span>
+        <span class="badge">Runtime Capability Discovery</span>
         <span>github.com/eric861129/Workflow-skill-router</span>
       </div>
     </main>
@@ -90,20 +88,17 @@ async function assertFile(filePath) {
 
 async function checkAssets() {
   await assertFile(outputs.siteOg);
-  await assertFile(outputs.docsPreview);
   console.log('OK: social preview assets passed');
 }
 
 async function generateAssets() {
   await mkdir(siteOg, { recursive: true });
-  await mkdir(docsAssets, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
     await page.setContent(socialHtml());
     await page.screenshot({ path: outputs.siteOg, clip: { x: 0, y: 0, width: 1200, height: 630 } });
-    await copyFile(outputs.siteOg, outputs.docsPreview);
   } finally {
     await browser.close();
   }

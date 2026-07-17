@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from collections import Counter
 from pathlib import Path
@@ -47,8 +48,8 @@ class PublicSurfacePolicyTests(unittest.TestCase):
             "downloads/workflow-skill-router-template.zip",
             self.removal["files"],
         )
-        self.assertEqual(231, self.removal["selection_count"])
-        self.assertEqual(231, len(self.removal["files"]))
+        self.assertEqual(225, self.removal["selection_count"])
+        self.assertEqual(225, len(self.removal["files"]))
         self.assertTrue(all("*" not in path for path in self.removal["files"]))
         self.assertEqual(
             sorted(self.removal["files"]),
@@ -68,10 +69,9 @@ class PublicSurfacePolicyTests(unittest.TestCase):
         self.assertEqual(
             Counter(
                 {
-                    "v1.3.1": 208,
+                    "v1.3.1": 206,
                     "generated-from-source": 11,
-                    "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335": 11,
-                    "github-release:v1.3.1": 1,
+                    "starting-head:70f3456270b4395e8d473a3f8cc592391c92b335": 8,
                 }
             ),
             Counter(entry["historical_source"] for entry in self.removal["entries"]),
@@ -92,6 +92,67 @@ class PublicSurfacePolicyTests(unittest.TestCase):
             "plugins/workflow-skill-router/runtime/workflow_skill_router.pyz",
         }
         self.assertTrue(retained.isdisjoint(self.removal["files"]))
+
+    def test_canonical_v2_routing_and_evaluation_pages_are_retained(self) -> None:
+        retained = {
+            "site/src/content/docs/guides/v2-routing.md",
+            "site/src/content/docs/zh-tw/guides/v2-routing.md",
+            "site/src/content/docs/reference/model-evaluation.md",
+            "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+            "site/src/content/docs/reference/routing-contract.md",
+            "site/src/content/docs/zh-tw/reference/routing-contract.md",
+        }
+        self.assertTrue(retained.isdisjoint(self.removal["files"]))
+
+        for path in (
+            "site/src/content/docs/reference/routing-contract.md",
+            "site/src/content/docs/zh-tw/reference/routing-contract.md",
+        ):
+            text = (ROOT / path).read_text(encoding="utf-8").lower()
+            for required in (
+                "single",
+                "phased",
+                "managed goal",
+                "user-specified skill",
+                "consent",
+                "planned",
+                "actual",
+            ):
+                with self.subTest(path=path, required=required):
+                    self.assertIn(required, text)
+
+        for path in (
+            "site/src/content/docs/guides/v2-routing.md",
+            "site/src/content/docs/zh-tw/guides/v2-routing.md",
+        ):
+            text = (ROOT / path).read_text(encoding="utf-8").lower()
+            for required in ("single", "phased", "managed goal", "consent"):
+                with self.subTest(path=path, required=required):
+                    self.assertIn(required, text)
+
+        for path in (
+            "site/src/content/docs/reference/model-evaluation.md",
+            "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+        ):
+            text = (ROOT / path).read_text(encoding="utf-8").lower()
+            self.assertIn("tier 0 contract", text)
+            self.assertIn("manual-required", text)
+
+    def test_primary_navigation_never_targets_a_removal_candidate(self) -> None:
+        config = (ROOT / "site" / "astro.config.mjs").read_text(encoding="utf-8")
+        slugs = set(re.findall(r"slug:\s*'([^']+)'", config))
+        removal = set(self.removal["files"])
+
+        for slug in slugs:
+            for locale_prefix in ("", "zh-tw/"):
+                candidates = {
+                    f"site/src/content/docs/{locale_prefix}{slug}.md",
+                    f"site/src/content/docs/{locale_prefix}{slug}.mdx",
+                }
+                existing = {path for path in candidates if (ROOT / path).is_file()}
+                with self.subTest(slug=slug, locale=locale_prefix or "en"):
+                    self.assertTrue(existing)
+                    self.assertTrue(existing.isdisjoint(removal))
 
 
 if __name__ == "__main__":

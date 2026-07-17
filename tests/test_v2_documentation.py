@@ -3,7 +3,14 @@ import unittest
 
 
 ROOT=Path(__file__).resolve().parents[1]
-DOCS=("README.md","README.en.md","README.zh-TW.md","docs/v2-architecture.md","docs/v2-architecture.zh-TW.md","docs/v1-to-v2-upgrade.md","docs/v1-to-v2-upgrade.zh-TW.md")
+DOCS=(
+    "README.md",
+    "README.zh-TW.md",
+    "site/src/content/docs/guides/v2-routing.md",
+    "site/src/content/docs/zh-tw/guides/v2-routing.md",
+    "site/src/content/docs/reference/model-evaluation.md",
+    "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+)
 
 
 class V2DocumentationTests(unittest.TestCase):

@@ -1,30 +1,31 @@
 ---
 title: 驗證工具鏈
-description: 發布前驗證 router 結構、public readiness、skill inventory、routing quality 與 tests。
+description: 發布前驗證 V2 SKILL、公開面、生成契約、release packages 與 tests。
 ---
 
-Workflow Skill Router 內建不依賴外部套件的 validation toolchain。發布 router repo、release 或公開 router package 前，請先執行這組檢查。
+Workflow Skill Router 內建 local-first validation toolchain。Deterministic CI 不需要 Codex credentials，也不會消耗 live-model quota。
 
 ## 1. 驗證 router 結構
 
 ```bash
-python scripts/validate-router.py starter/workflow-skill-router
-python scripts/validate-router.py examples/template-skill-catalog
+python scripts/validate-router.py starter/v2/workflow-skill-router
 ```
 
 預期輸出：
 
 ```text
 OK: workflow-skill-router passed validation
-OK: template-skill-catalog passed validation
 ```
 
-這會檢查 `SKILL.md`、必要 reference files、route `Primary:` markers、skill 數量上限、example README，以及 placeholder policy。
+這會檢查 V2 frontmatter、routing／Goal／evaluation references、routing envelopes、Explicit Skill Lock、runtime capability 用語與誠實的 Skill-only fallback 標籤。
 
 ## 2. 檢查 public readiness
 
 ```bash
+python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
+python scripts/check-markdown-links.py .
+python scripts/check-doc-parity.py
 ```
 
 預期輸出：
@@ -33,49 +34,40 @@ python scripts/audit-public-readiness.py .
 OK: public-readiness audit passed
 ```
 
-Audit 會檢查 community files、downloads、template catalog/manifest parity、site entrypoints、stale examples、亂碼、replacement characters，以及隱藏的 edit-link UI text。
+這些檢查會強制 V2 public tree、governance files、Plugin/MCP 與 SKILL-only entrypoints、英文／繁中 route parity、local links、UTF-8 safety，以及已審查的 V1 removal boundary。
 
-舊的 validator flag 仍可使用：
-
-```bash
-python scripts/validate-router.py --public-readiness .
-```
-
-## 3. 掃描 skill catalog
+## 3. 驗證生成契約
 
 ```bash
-python scripts/scan-skills.py ./sample-skills \
-  --out /tmp/skill-index.json \
-  --markdown /tmp/skill-index.md \
-  --warnings /tmp/skill-warnings.md \
-  --suggest-tree /tmp/suggested-skill-tree.md \
-  --fail-on-private \
-  --fail-on-duplicates
+python scripts/build-v2-demo-data.py --check
+node scripts/build-mcp-reference-data.mjs --check
 ```
 
-正式 release gate 可加上 `--fail-on-private` 與 `--fail-on-duplicates`。Scanner 會輸出 machine-readable index、Markdown summary、warnings report 與 suggested skill tree。
+第一個命令證明 interactive Demo 來自 Router Core inputs；第二個命令證明公開 MCP reference 與十個真實 tool contracts、readiness matrix 一致。
 
 ## 4. 評估 routing quality
 
 ```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report /tmp/routing-report.md \
-  --json-report /tmp/routing-report.json \
-  --fail-on-violations \
-  --strict
+python scripts/run-v2-benchmark.py \
+  --suite full \
+  --evidence-class reference-driver \
+  --adapter-executable python \
+  --adapter-arg evaluation/v2/reference_driver.py \
+  --repeats 3 \
+  --output-dir dist/evaluation/v2/reference
 ```
 
-若 primary mismatch 或 expected supporting skill 缺失也要讓 CI 失敗，請加上 `--strict`。
+Reference-driver 只證明 harness contract。Behavior evidence 必須另行授權 fresh-model run，並通過 36-attempt report 驗證；不存在時，公開狀態維持 `manual-required`。
 
 ## 5. 執行 unit tests
 
 ```bash
-python -m unittest discover -s tests
+$env:PYTHONPATH = "packages/router-core/src"
+python -m unittest discover -s packages/router-core/tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
-測試使用 Python standard-library `unittest`，涵蓋 evaluator 與 scanner。
+測試涵蓋 Router Core、Plugin contracts、evaluation isolation、release reproducibility、installation smoke、public governance 與 documentation policy。
 
 ## Lighthouse / Accessibility audit
 
@@ -111,6 +103,6 @@ curl -fsS -I -L http://huangchiyu.com/Workflow-skill-router/
 
 - [在 GitHub 開啟 `scripts/validate-router.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
 - [在 GitHub 開啟 `scripts/audit-public-readiness.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
-- [在 GitHub 開啟 `scripts/scan-skills.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/scan-skills.py)
-- [在 GitHub 開啟 `scripts/evaluate-routing.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/evaluate-routing.py)
-- [查看 evaluation examples](https://github.com/eric861129/Workflow-skill-router/tree/main/evaluation)
+- [在 GitHub 開啟 `scripts/run-v2-benchmark.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/run-v2-benchmark.py)
+- [在 GitHub 開啟 `scripts/build-release-artifacts.py`](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/build-release-artifacts.py)
+- [查看 V2 evaluation contracts](https://github.com/eric861129/Workflow-skill-router/tree/main/evaluation/v2)

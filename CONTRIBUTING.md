@@ -2,7 +2,7 @@
 
 Thank you for improving a router that developers can inspect, test, and trust. V2 contributions should strengthen a concrete runtime contract rather than add promotional examples or unverified model claims.
 
-Please read [GOVERNANCE.md](GOVERNANCE.md), [SECURITY.md](SECURITY.md), and the [V2 architecture](docs/v2-architecture.md) before a structural change.
+Please read [GOVERNANCE.md](GOVERNANCE.md), [SECURITY.md](SECURITY.md), and the [V2 architecture](docs/architecture/v2-overview.md) before a structural change.
 
 ## Choose a Contribution Path
 
@@ -68,7 +68,7 @@ python scripts/validate-router.py starter/v2/workflow-skill-router
 python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
 python scripts/check-markdown-links.py .
-python scripts/build-release-artifacts.py --check
+python scripts/build-release-artifacts.py --output-dir dist/release --check-determinism
 python -m unittest discover -s tests
 node scripts/build-mcp-reference-data.mjs --check
 cd site

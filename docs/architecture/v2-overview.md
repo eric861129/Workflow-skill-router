@@ -2,6 +2,11 @@
 
 This document gives maintainers one compact map of the V2 trust and execution boundaries. User-facing tutorials live under `site/src/content/docs/`; this page does not duplicate them.
 
+## Decision records
+
+- [ADR 0001: V2-first public surface](../adr/0001-v2-first-public-surface.md) defines the Plugin/MCP-first product, the supported SKILL-only fallback, and the V1 recovery boundary.
+- [ADR 0002: Release assets outside Git](../adr/0002-release-assets-outside-git.md) defines source-built packages, provenance, channel behavior, and the separation between product and persisted-schema versions.
+
 ## System context
 
 ```mermaid
@@ -49,6 +54,10 @@ Managed Goal orchestration maintains a dependency graph but never mutates the na
 ## Evaluation boundary
 
 Contract fixtures are T0 compatibility evidence. Behavior and Outcome evidence require fresh isolated attempts through a configured adapter, sealed scoring material, paired manifests, and human/trusted attestation. Reference-driver output never becomes real-model proof. See `site/src/content/docs/concepts/evaluation-evidence.md`.
+
+## Version boundaries
+
+The public Plugin and release packages use product SemVer. Persisted artifacts and runtime contracts use independent schema identifiers. Advancing the product from alpha to beta does not silently rewrite stored data or declare a schema migration; a schema version changes only with an explicit compatibility decision and migration path.
 
 ## Focused verification
 

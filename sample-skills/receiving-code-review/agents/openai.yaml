@@ -1,4 +1,0 @@
-interface:
-  display_name: "Receiving Code Review"
-  short_description: "Turns review feedback into verified engineering changes."
-  default_prompt: "Use receiving-code-review to assess and address the reviewer feedback."
