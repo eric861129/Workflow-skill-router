@@ -52,7 +52,7 @@ def load_cases(suite: str) -> list[dict[str, Any]]:
         if line.strip()
     ]
     revisions = {case.get("contract_revision") for case in cases}
-    if revisions != {"2.1.0"}:
+    if revisions != {"2.2.0"}:
         raise EvaluationIntegrityError("evaluation_contract_revision_mismatch")
     if len({case["id"] for case in cases}) != len(cases):
         raise EvaluationIntegrityError("evaluation_case_id_duplicate")

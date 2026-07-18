@@ -14,7 +14,7 @@ Contract or reference-driver results do **not** prove real-model routing quality
 
 ## Versioned scoring contract
 
-Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.1.0`. This revision separates the route for the current Phase from a later Phase-transition route, preserves unavailable canonical intent, and prevents future Managed Goal Work Items from leaking into current support. Cases with `expected_turns` are scored at every turn; the final `expected` value remains the final-route compatibility view. Reports expose the contract ID, revision, turn counts, and aggregate turn match rates without exposing scoring keys or route values.
+Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.2.0`. This revision separates the route for the current Phase from a later Phase-transition route, binds scoped support to concrete current-Phase exit evidence, preserves unavailable canonical intent, and prevents future Phases or Managed Goal Work Items from leaking into current support. Cases with `expected_turns` are scored at every turn; the final `expected` value remains the final-route compatibility view. Reports expose the contract ID, revision, turn counts, and aggregate turn match rates without exposing scoring keys or route values. Historical `2.1.0` reports retain their original case digest and diagnostic status.
 
 Historical reports keep their original case and instruction digests. Never rescore an older run against a newer contract revision. The runner recomputes the canonical path-and-SHA-256 manifest before execution and fails closed when the instruction package no longer matches its declared digest.
 

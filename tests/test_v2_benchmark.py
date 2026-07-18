@@ -82,7 +82,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "phased-current-boundary", "managed-goal", "capability-unavailable",
         }, set(smoke["case_ids"]))
 
-    def test_behavior_cases_are_bound_to_contract_revision_2_1(self):
+    def test_behavior_cases_are_bound_to_contract_revision_2_2(self):
         smoke = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
         rows = [
             json.loads(line)
@@ -93,10 +93,10 @@ class V2BenchmarkTests(unittest.TestCase):
         ]
 
         self.assertEqual("workflow-skill-router.behavior-routing", smoke["contract_id"])
-        self.assertEqual("2.1.0", smoke["contract_revision"])
-        self.assertTrue(all(row["contract_revision"] == "2.1.0" for row in rows))
+        self.assertEqual("2.2.0", smoke["contract_revision"])
+        self.assertTrue(all(row["contract_revision"] == "2.2.0" for row in rows))
         self.assertTrue(all(
-            RUNNER.public_case_payload(row)["contract_revision"] == "2.1.0"
+            RUNNER.public_case_payload(row)["contract_revision"] == "2.2.0"
             for row in rows
         ))
 
@@ -119,6 +119,25 @@ class V2BenchmarkTests(unittest.TestCase):
         )
         self.assertEqual("skill:playwright", transition["expected_turns"][1]["primary_skill"])
         self.assertEqual(transition["expected_turns"][-1], transition["expected"])
+
+    def test_consent_cases_bind_support_to_current_phase_exit_evidence(self):
+        cases = {row["id"]: row for row in RUNNER.load_cases("full")}
+
+        for case_id in (
+            "phased-explicit-consent-approve",
+            "phased-explicit-consent-reject",
+        ):
+            with self.subTest(case_id=case_id):
+                case = cases[case_id]
+                prompt = case["prompt"]
+                self.assertIn("current Phase", prompt)
+                self.assertIn("exit evidence", prompt)
+                self.assertIn("risk-based contract-test plan", prompt)
+                self.assertNotIn("implement it", prompt)
+                self.assertEqual(
+                    ["skill:qa-test-planner"],
+                    case["expected_turns"][0]["support_skills"],
+                )
 
     def test_multi_turn_contract_scores_every_turn_not_only_the_final_route(self):
         self.assertTrue(
@@ -310,7 +329,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "workflow-skill-router.behavior-routing",
             report["provenance"]["evaluation_contract_id"],
         )
-        self.assertEqual("2.1.0", report["provenance"]["evaluation_contract_revision"])
+        self.assertEqual("2.2.0", report["provenance"]["evaluation_contract_revision"])
         self.assertEqual("verified", report["provenance"]["evidence_protection"]["status"])
         self.assertEqual("restricted", report["provenance"]["evidence_protection"]["directory"])
         self.assertEqual(6, len(report["case_diagnostics"]))

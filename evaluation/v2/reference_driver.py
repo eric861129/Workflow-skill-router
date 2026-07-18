@@ -51,7 +51,7 @@ def _route(prompt: str) -> dict[str, object]:
         term in lowered
         for term in (
             "each phase", "implement", "revalidate", "diagnose", "diagnosis",
-            "phased frontend repair",
+            "phased frontend repair", "contract-test planning",
         )
     ):
         envelope = "phased"

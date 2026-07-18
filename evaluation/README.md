@@ -12,7 +12,7 @@ V2 separates deterministic regression fixtures from fresh-model evidence. A pass
 | `evaluation/v2/adapters/codex_cli_driver.py` | Fresh model transport | Run isolated Codex CLI attempts with user configuration disabled and a strict output schema. |
 | `dist/evaluation/` | Local evaluation output | Keep provider traces and attempt directories out of Git; raw/checkpoint files live only under a verified `restricted/` child while the output root contains the sanitized report. |
 
-Evaluation contract `2.1.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, the current Phase boundary, managed Goal planning, and capability-unavailable behavior. The thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route.
+Evaluation contract `2.2.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. It corrects the scoped-consent case so the proposed QA support is required by the current Phase's exit evidence instead of a future verification Phase. The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, the current Phase boundary, managed Goal planning, and capability-unavailable behavior. The thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route. Reports produced under `2.1.0` remain diagnostic and are never rescored against this oracle.
 
 ## Deterministic reference run
 
