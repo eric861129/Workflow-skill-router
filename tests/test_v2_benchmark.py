@@ -204,6 +204,8 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertIn("consent state transition，不是新的任務", instruction)
         self.assertIn("完整 support_skills 集合", instruction)
         self.assertIn("只把 consent_action 改為 `approved`", instruction)
+        self.assertIn("transition invariant 優先於所有 envelope", instruction)
+        self.assertIn("不得因 approval/rejection 重新分類任務", instruction)
 
     def test_runner_rejects_instruction_paths_outside_the_repository(self):
         candidate = json.loads(

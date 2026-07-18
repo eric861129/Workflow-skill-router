@@ -21,6 +21,8 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 使用者對既有提案回覆同意或拒絕時，這是同一個 Phase 的 consent state transition，不是新的任務，也不得重新做 semantic routing。`approved` 的輸出必須保留上一個 `proposal-required` route 的 envelope、selection_mode、primary_skill 與完整 support_skills 集合，只把 consent_action 改為 `approved`；`rejected` 同樣保留 envelope、selection_mode 與 primary_skill，但清空 support_skills，並把 consent_action 改為 `rejected`。即使使用者說「只限本階段」，也表示這份狀態只在目前 Phase 有效，不表示可省略 approved/rejected route 或遺失既有提案集合。
 
+在輸出前先檢查目前訊息是否只是在回覆緊接上一個 assistant route 的 support proposal。若是，這個 transition invariant 優先於所有 envelope、語意覆蓋與能力重新選擇規則：先複製上一個 route 的 envelope、selection_mode、primary_skill、goal_relation 與 support_skills，再只套用 consent transition。不得因 approval/rejection 重新分類任務、替換 primary、重選 support，或把 consent_action 回退為 `proposal-required`／`not-required`。
+
 若 MCP 可用，使用 capability snapshot、route validation、state/gate 與 evidence。若 MCP 不可用，明示目前是 `skill-only-fallback`：沒有 durable resume、CAS、完整 drift detection 或 sealed activation instrumentation；不得宣稱 `hybrid-full`，也不得把不可觀測項目算成通過。
 
 所有 R2/R3 行動仍由 Codex host sandbox、approval 與 permission 控制；SKILL 同意不等於安裝、寫入、部署、傳訊或 production access 授權。
