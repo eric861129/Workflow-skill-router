@@ -21,12 +21,18 @@ class EvaluationProfile(StrEnum):
     OUTCOME = "outcome"
 
 
+class EvaluationExecutionMode(StrEnum):
+    MODEL_ONLY = "model-only"
+    HYBRID_ROUTER = "hybrid-router"
+
+
 @dataclass(frozen=True, slots=True)
 class ModelExecutionPayload:
     opaque_run_case_id: str
     prompt: str
     profile: EvaluationProfile
     allowed_tools: tuple[str, ...]
+    execution_mode: EvaluationExecutionMode = EvaluationExecutionMode.MODEL_ONLY
 
 
 @dataclass(frozen=True, slots=True)

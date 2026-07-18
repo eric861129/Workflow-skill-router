@@ -60,6 +60,7 @@
     }
   ],
   "execution": {
+    "mode": "model-only",
     "ignore_user_config": true,
     "sandbox": "read-only",
     "output_schema": "evaluation/v2/schemas/codex-route-output.schema.json",

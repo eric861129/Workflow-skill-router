@@ -3,6 +3,22 @@ import { z } from "zod";
 
 const nullableIdentifier = z.string().nullable();
 const unknownObject = z.record(z.string(), z.unknown());
+const supportConsent = z.object({
+  status: z.enum(["proposal-required", "approved", "rejected"]),
+  proposal_id: z.string(),
+  workflow_run_id: z.string(),
+  phase_id: z.string(),
+  routing_envelope: z.enum(["single", "phased", "managed-goal"]),
+  selection_mode: z.literal("explicit-locked"),
+  primary_skill: z.string(),
+  support_skills: z.array(z.string()),
+  consent_action: z.enum(["proposal-required", "approved", "rejected"]),
+  goal_relation: z.enum(["none", "progress"]),
+  decision_ref: z.string().nullable(),
+  state_version: z.number().int().positive(),
+  replayed: z.boolean(),
+  runtime_mode: z.string(),
+}).strict();
 
 export const TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: z.object({
@@ -23,6 +39,8 @@ export const TOOL_OUTPUT_SCHEMAS = {
     planned_skill_ids: z.array(z.string()),
     runtime_mode: z.string(),
   }).strict(),
+  propose_support_consent: supportConsent,
+  transition_support_consent: supportConsent,
   get_next_work: z.object({
     status: z.string(),
     refresh_requirements: z.array(z.string()),

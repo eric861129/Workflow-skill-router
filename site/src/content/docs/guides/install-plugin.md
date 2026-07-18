@@ -42,7 +42,7 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, ten tool names, external state boundary, and a real MCP initialize/tools-list exchange.
+`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, twelve tool names, external state boundary, and a real MCP initialize/tools-list exchange.
 
 ## What works locally
 

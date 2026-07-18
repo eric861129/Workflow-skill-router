@@ -6,6 +6,7 @@ This document gives maintainers one compact map of the V2 trust and execution bo
 
 - [ADR 0001: V2-first public surface](../adr/0001-v2-first-public-surface.md) defines the Plugin/MCP-first product, the supported SKILL-only fallback, and the V1 recovery boundary.
 - [ADR 0002: Release assets outside Git](../adr/0002-release-assets-outside-git.md) defines source-built packages, provenance, channel behavior, and the separation between product and persisted-schema versions.
+- [ADR 0003: Deterministic support consent](../adr/0003-deterministic-support-consent-state-machine.md) moves explicit-lock support decisions from model route rewriting into a persisted fail-closed MCP state machine.
 
 ## System context
 
@@ -29,7 +30,7 @@ flowchart LR
 | SKILL fallback | Instruction-only classification, consent policy, usage disclosure | Cannot claim durable state, host exposure, or `hybrid-full` |
 | Plugin transport | Loads canonical SKILL, MCP bundle, and Python runtime | Installation does not grant runtime or production permission |
 | Router core | Capability merge, envelope policy, phase/Goal state, evidence contracts | Accepts authority only through verified ports and receipts |
-| Bundled local R0 control plane | Persists `plan_work` and serves `get_router_status` | Does not schedule next work or validate protected routes |
+| Bundled local R0 control plane | Persists plans, Phase-scoped support proposals, consent transitions, and status | Does not schedule next work or validate protected routes |
 | Verified host adapters | Supply authoritative snapshots, scheduler, stores, and activation preflight | Host-owned; model input cannot construct these ports |
 | Evaluation adapters | Run sealed fresh attempts and store evidence | Executable configuration is server-owned and quota-gated |
 
@@ -40,6 +41,8 @@ Discovery merges filesystem metadata, Plugin handshake facts, agent observations
 ## Routing and state
 
 The profiler selects `single`, `phased`, or `managed-goal`. Explicit user-selected SKILLs create a lock; Router-recommended support needs consent only when it falls outside that lock. The phase state machine derives transitions from semantic observations, state versions, plan revisions, evidence digests, and side-effect outcomes.
+
+Support consent uses a narrower local state machine: `pending -> approved | rejected`. The model may classify the user's intent, but it cannot replace the proposal's primary SKILL, support set, Phase scope, Goal revision, plan revision, or context fingerprint during transition.
 
 Managed Goal orchestration maintains a dependency graph but never mutates the native Codex Goal directly. It produces host-safe status candidates backed by evidence. See the routing, phase, and Goal concepts in `site/src/content/docs/concepts/`.
 

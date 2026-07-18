@@ -43,7 +43,7 @@ python scripts/build-v2-demo-data.py --check
 node scripts/build-mcp-reference-data.mjs --check
 ```
 
-The first command proves the interactive Demo was generated from Router Core inputs. The second proves the public MCP reference matches the ten real tool contracts and readiness matrix.
+The first command proves the interactive Demo was generated from Router Core inputs. The second proves the public MCP reference matches the twelve real tool contracts and readiness matrix.
 
 ## 4. Evaluate routing quality
 

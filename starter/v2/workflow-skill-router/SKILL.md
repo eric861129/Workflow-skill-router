@@ -19,9 +19,9 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 使用者指定 SKILL 時先鎖定指定項目。只有此情境下，Router 想加入任何額外 SKILL、Plugin 或 MCP 支援角色，才要先說明用途、scope、拒絕後限制與 context cost，取得同意後才能讀取或啟用。Consent route 採固定狀態配方：`proposal-required` 時，support_skills 必須列出具體提案集合，這些項目在 `approved` 前只是 proposed，不是 activated；`approved` 時保留相同 support_skills；`rejected` 時清空 support_skills。使用者拒絕時只能使用指定能力、限縮成果或誠實阻塞，不可靜默替代。
 
-使用者對既有提案回覆同意或拒絕時，這是同一個 Phase 的 consent state transition，不是新的任務，也不得重新做 semantic routing。`approved` 的輸出必須保留上一個 `proposal-required` route 的 envelope、selection_mode、primary_skill 與完整 support_skills 集合，只把 consent_action 改為 `approved`；`rejected` 同樣保留 envelope、selection_mode 與 primary_skill，但清空 support_skills，並把 consent_action 改為 `rejected`。即使使用者說「只限本階段」，也表示這份狀態只在目前 Phase 有效，不表示可省略 approved/rejected route 或遺失既有提案集合。
+使用者對既有提案回覆同意或拒絕時，這是同一個 Phase 的 consent state transition，不是新的任務，也不得重新做 semantic routing。若 `propose_support_consent` 與 `transition_support_consent` 可用，提出詢問前先以 `propose_support_consent` 持久化目前 Phase 的 concrete support set；收到回覆後只分類 `approved`、`rejected` 或 `unclear` intent。只有明確同意或拒絕才能呼叫 `transition_support_consent`，而且 transition request 不得帶入新的 primary、support set、envelope 或 Goal relation。使用 MCP 回傳的 bound route 作為唯一結果，不可自行重建。
 
-在輸出前先檢查目前訊息是否只是在回覆緊接上一個 assistant route 的 support proposal。若是，這個 transition invariant 優先於所有 envelope、語意覆蓋與能力重新選擇規則：先複製上一個 route 的 envelope、selection_mode、primary_skill、goal_relation 與 support_skills，再只套用 consent transition。不得因 approval/rejection 重新分類任務、替換 primary、重選 support，或把 consent_action 回退為 `proposal-required`／`not-required`。
+若 intent 為 `unclear`，保持 proposal pending 並釐清，不得推定同意。若 MCP 回報 Phase、scope、Goal revision、plan revision 或 context fingerprint 漂移，必須 fail closed 並重新評估具體提案。只有在 `skill-only-fallback` 才能依上一個 assistant route 做 instruction-level transition；此結果是 advisory，不能宣稱 durable consent enforcement、CAS 或 `hybrid-full`。
 
 若 MCP 可用，使用 capability snapshot、route validation、state/gate 與 evidence。若 MCP 不可用，明示目前是 `skill-only-fallback`：沒有 durable resume、CAS、完整 drift detection 或 sealed activation instrumentation；不得宣稱 `hybrid-full`，也不得把不可觀測項目算成通過。
 

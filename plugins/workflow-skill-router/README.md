@@ -44,11 +44,11 @@ Repository contributors can run the full extracted-package handshake from the re
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-The smoke verifies the manifest, canonical SKILL, ten MCP tool names, external state boundary, and a real stdio MCP initialize/tools-list exchange. Runtime readiness is authoritative: the bundled local R0 profile does not imply that every public tool is locally executable.
+The smoke verifies the manifest, canonical SKILL, twelve MCP tool names, external state boundary, and a real stdio MCP initialize/tools-list exchange. Runtime readiness is authoritative: the bundled local R0 profile does not imply that every public tool is locally executable.
 
 ## Skill-only fallback
 
-If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.0-beta.1.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but it has no durable resume, CAS, complete drift detection, or sealed activation instrumentation. It must not be reported as `hybrid-full`.
+If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.0-beta.1.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but scoped consent remains advisory because there is no persisted proposal or deterministic transition. It also has no durable resume, CAS, complete drift detection, or sealed activation instrumentation, and must not be reported as `hybrid-full`.
 
 ## Local state and privacy
 

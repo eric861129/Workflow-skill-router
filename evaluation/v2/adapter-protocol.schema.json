@@ -35,6 +35,7 @@
         "prompt",
         "profile",
         "allowed_tools",
+        "execution_mode",
         "attempt_nonce"
       ],
       "properties": {
@@ -43,6 +44,7 @@
         "prompt": { "type": "string", "maxLength": 1048576 },
         "profile": { "enum": ["contract", "behavior", "outcome"] },
         "allowed_tools": { "$ref": "#/$defs/allowedTools" },
+        "execution_mode": { "enum": ["model-only", "hybrid-router"] },
         "attempt_nonce": { "$ref": "#/$defs/nonce" }
       },
       "additionalProperties": false

@@ -4,7 +4,7 @@ import { TOOL_DEFINITIONS } from "../src/tool-definitions.js";
 
 
 test("all public tools expose actionable MCP metadata", () => {
-  assert.equal(TOOL_DEFINITIONS.length, 10);
+  assert.equal(TOOL_DEFINITIONS.length, 12);
   for (const definition of TOOL_DEFINITIONS) {
     assert.ok(definition.title.length >= 8, definition.name);
     assert.ok(definition.description.length >= 80, definition.name);
@@ -21,4 +21,6 @@ test("read and mutation annotations reflect real authority", () => {
   assert.equal(definitions.get_router_status.annotations.readOnlyHint, true);
   assert.equal(definitions.plan_work.annotations.readOnlyHint, false);
   assert.equal(definitions.plan_work.annotations.idempotentHint, true);
+  assert.equal(definitions.propose_support_consent.annotations.readOnlyHint, false);
+  assert.equal(definitions.transition_support_consent.annotations.readOnlyHint, false);
 });

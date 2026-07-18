@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -18,6 +20,10 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import EvaluationIntegrityError
+from workflow_skill_router.evaluation.hybrid_consent import (
+    HybridConsentBinding,
+    HybridConsentEvaluationController,
+)
 from workflow_skill_router.evaluation.local_evidence import (
     EvidenceProtectionError,
     LocalEvidenceProtector,
@@ -56,6 +62,8 @@ _ROUTE_KEYS = {
     "goal_relation",
     "rationale",
 }
+_CONSENT_INTENT_KEYS = {"action", "rationale"}
+_EXECUTION_MODES = {"model-only", "hybrid-router"}
 
 
 class CodexCliDriver:
@@ -102,6 +110,9 @@ class CodexCliDriver:
         nonce = request.get("attempt_nonce")
         if not isinstance(nonce, str) or not nonce:
             raise EvaluationIntegrityError("attempt_nonce_missing")
+        execution_mode = request.get("execution_mode")
+        if execution_mode not in _EXECUTION_MODES:
+            raise EvaluationIntegrityError("execution_mode_invalid")
         while True:
             context_id = secrets.token_hex(16)
             directory = self._attempt_root / context_id
@@ -124,6 +135,8 @@ class CodexCliDriver:
         self._write_transcript(transcript, {
             "attempt_nonce": nonce,
             "opaque_run_case_id": request.get("opaque_run_case_id"),
+            "execution_mode": execution_mode,
+            "hybrid_binding": None,
             "turns": [],
         })
         return {"attempt_nonce": nonce, "context_id": context_id}
@@ -149,7 +162,21 @@ class CodexCliDriver:
         if not isinstance(turns, list) or request.get("turn_index") != len(turns):
             raise EvaluationIntegrityError("codex_turn_order_invalid")
 
-        prompt = self._render_prompt(turns, request)
+        hybrid_binding = transcript.get("hybrid_binding")
+        consent_turn = (
+            transcript.get("execution_mode") == "hybrid-router"
+            and isinstance(hybrid_binding, dict)
+        )
+        prompt = (
+            self._render_consent_prompt(turns, request)
+            if consent_turn
+            else self._render_prompt(turns, request)
+        )
+        output_schema = (
+            ROOT / "evaluation" / "v2" / "schemas" / "codex-consent-intent.schema.json"
+            if consent_turn
+            else self._output_schema
+        )
         command = [
             str(self._codex_executable),
             "exec",
@@ -167,7 +194,7 @@ class CodexCliDriver:
             "--cd",
             str(directory / "workspace"),
             "--output-schema",
-            str(self._output_schema),
+            str(output_schema),
             "--json",
             "-",
         ]
@@ -209,15 +236,63 @@ class CodexCliDriver:
         if completed.returncode != 0:
             self._write_failure_diagnostic(directory / "failure.json", completed)
             raise EvaluationIntegrityError("codex_cli_failed")
-        route = self._extract_route(completed.stdout)
+        model_consent_intent = None
+        if consent_turn:
+            intent = self._extract_object(completed.stdout, _CONSENT_INTENT_KEYS)
+            self._validate_consent_intent(intent)
+            model_consent_intent = intent["action"]
+            if model_consent_intent in {"approved", "rejected"}:
+                binding = HybridConsentBinding(**hybrid_binding)
+                controller = HybridConsentEvaluationController(
+                    directory / "hybrid-router.sqlite3",
+                    session_id=context_id,
+                )
+                route = controller.apply_intent(binding, str(model_consent_intent))
+            else:
+                previous = turns[-1].get("assistant") if turns else None
+                if not isinstance(previous, dict):
+                    raise EvaluationIntegrityError("hybrid_consent_proposal_missing")
+                route = dict(previous)
+                route["rationale"] = str(intent["rationale"])
+        else:
+            route = self._extract_object(completed.stdout, _ROUTE_KEYS)
+            self._validate_route(route)
+            if (
+                transcript.get("execution_mode") == "hybrid-router"
+                and route.get("consent_action") == "proposal-required"
+            ):
+                fingerprint = "sha256:" + sha256(
+                    str(request.get("prompt", "")).encode("utf-8")
+                ).hexdigest()
+                controller = HybridConsentEvaluationController(
+                    directory / "hybrid-router.sqlite3",
+                    session_id=context_id,
+                )
+                try:
+                    binding, route = controller.persist_proposal(
+                        route,
+                        context_fingerprint=fingerprint,
+                    )
+                except ValueError:
+                    pass
+                else:
+                    transcript["hybrid_binding"] = asdict(binding)
         self._validate_route(route)
-        turns.append({"user": request.get("prompt"), "assistant": route})
+        turn_record = {"user": request.get("prompt"), "assistant": route}
+        if model_consent_intent is not None:
+            turn_record["model_consent_intent"] = model_consent_intent
+        turns.append(turn_record)
         self._write_transcript(transcript_path, transcript)
         return {
             "attempt_nonce": nonce,
             "context_id": context_id,
             "route": route,
             "text": json.dumps(route, ensure_ascii=False, sort_keys=True),
+            **(
+                {"model_consent_intent": model_consent_intent}
+                if model_consent_intent is not None
+                else {}
+            ),
         }
 
     @staticmethod
@@ -236,7 +311,24 @@ class CodexCliDriver:
         return "\n".join(lines)
 
     @staticmethod
-    def _extract_route(stdout: str) -> dict[str, object]:
+    def _render_consent_prompt(
+        turns: list[object],
+        request: Mapping[str, object],
+    ) -> str:
+        previous = turns[-1].get("assistant") if turns and isinstance(turns[-1], dict) else None
+        return "\n".join([
+            "Classify only the user's consent intent for the persisted support proposal.",
+            "Return approved, rejected, or unclear as JSON that conforms to the supplied schema.",
+            "Do not re-route the task. The deterministic Router will preserve the bound route and scope.",
+            "Persisted proposal: " + json.dumps(previous, ensure_ascii=False, sort_keys=True),
+            "Current user message: " + str(request.get("prompt", "")),
+        ])
+
+    @staticmethod
+    def _extract_object(
+        stdout: str,
+        required_keys: set[str],
+    ) -> dict[str, object]:
         candidates: list[object] = []
         agent_candidates: list[object] = []
         for line in stdout.splitlines():
@@ -259,11 +351,21 @@ class CodexCliDriver:
                             pass
                 candidates.append(event)
         for candidate in reversed(candidates):
-            if isinstance(candidate, dict) and _ROUTE_KEYS.issubset(candidate):
+            if isinstance(candidate, dict) and required_keys.issubset(candidate):
                 return candidate
         if agent_candidates and isinstance(agent_candidates[-1], dict):
             return agent_candidates[-1]
         raise EvaluationIntegrityError("codex_route_output_missing")
+
+    @staticmethod
+    def _validate_consent_intent(intent: Mapping[str, object]) -> None:
+        if (
+            set(intent) != _CONSENT_INTENT_KEYS
+            or intent.get("action") not in {"approved", "rejected", "unclear"}
+            or not isinstance(intent.get("rationale"), str)
+            or not intent.get("rationale")
+        ):
+            raise EvaluationIntegrityError("codex_consent_intent_schema_invalid")
 
     @staticmethod
     def _validate_route(route: Mapping[str, object]) -> None:

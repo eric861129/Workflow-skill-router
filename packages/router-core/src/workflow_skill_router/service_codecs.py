@@ -9,7 +9,8 @@ from typing import Any, Mapping, Union, get_args, get_origin, get_type_hints
 from workflow_skill_router.capabilities.agent_runtime import decode_agent_runtime_snapshot
 from workflow_skill_router.service_models import (
     CompareEvaluations, EvaluateGate, ExportRouterArtifact, NextWorkQuery, PlanWork,
-    RecordWorkEvent, RequestContext, RouterStatusQuery, RunModelEvaluation,
+    ProposeSupportConsent, RecordWorkEvent, RequestContext, RouterStatusQuery,
+    RunModelEvaluation, TransitionSupportConsent,
     RuntimeContextSyncIntent, SyncRuntimeContext, ValidateRoute,
 )
 from workflow_skill_router.workflow.observations import (
@@ -105,6 +106,8 @@ def build_service_codec_registry() -> Mapping[str, ServiceCodec]:
     return {
         "sync_runtime_context": ServiceCodec(SyncRuntimeContext, custom_decoder=_sync),
         "plan_work": ServiceCodec(PlanWork),
+        "propose_support_consent": ServiceCodec(ProposeSupportConsent),
+        "transition_support_consent": ServiceCodec(TransitionSupportConsent),
         "get_next_work": ServiceCodec(NextWorkQuery),
         "validate_route": ServiceCodec(ValidateRoute),
         "record_work_event": ServiceCodec(RecordWorkEvent),

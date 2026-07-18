@@ -23,6 +23,8 @@ Router 會針對目前的工作單元建立有邊界的決策。它不會把 Ski
 
 存在 User-specified Skill 時，selection mode 為 `explicit-locked`。使用者指定的 Skill 具有主導權；任何額外輔助都必須先提出限定範圍的用途並取得 consent。被拒絕的輔助維持 `rejected`，同一 scope 內不得啟用或重複詢問。
 
+Plugin runtime 會以 `propose_support_consent` 將 concrete support set 綁定目前 Phase、scope anchor、Goal revision、plan revision 與 context fingerprint。`transition_support_consent` 只接受 approve 或 reject intent，呼叫端不能在 transition 時替換 route 欄位。Skill-only 行為只屬 advisory，不是 durable consent gate。
+
 `auto` 模式必須讀取 capability 的 description、domains、stages 與 availability，不可只靠名稱猜測。Primary 負責目前決策瓶頸或第一個未完成 Phase；Supporting Skills 只包含目前 Phase 與 immediate exit gate 不可缺少的能力，未來 Phase 的能力必須延後到進入該 Phase 時重新路由。Managed Goal 依目前 Work Item 選擇能力，不把 Router 自己當成預設 Primary；未來 Work Item 的 Skill 只保留在計畫中，進入該 Work Item 時再路由，不得聚合進目前 support set。Availability 在語意選擇後才作為 activation gate，不得靜默改寫 intended Skill。
 
 固定輸出形狀是「目前 route = 目前 Phase Primary + immediate exit-gate support」。Phase transition 會建立新 route；Goal 規劃時，未來交付 Skill 留在 Work Graph。若 verified snapshot 將 intended canonical Skill 標為 unavailable，該 Skill 仍是 Primary；fallback 只能寫入 limitation，不得塞入 `support_skills`。
@@ -38,7 +40,7 @@ Consent: not-required | pending | granted | declined
 Fallback 或 exit gate: 能力不可用時必須明示
 ```
 
-`plan_work` 對應輸出 `routing_envelope`、`selection_mode`、`support_consent_required`、`planned_skill_ids` 與 `runtime_mode`。
+`plan_work` 對應輸出 `routing_envelope`、`selection_mode`、`support_consent_required`、`planned_skill_ids` 與 `runtime_mode`。兩個 consent tools 會回傳 bound route、`consent_action`、decision reference、state version 與 replay status。
 
 ## 4. 啟用前驗證
 

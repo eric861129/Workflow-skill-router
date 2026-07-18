@@ -29148,6 +29148,10 @@ var mutation = {
   idempotency_key: external_exports3.string().min(1).describe("Caller-stable key that safely replays the same semantic command."),
   correlation_id: external_exports3.string().min(1).describe("Public-safe correlation identifier for tracing one command flow.")
 };
+var sha256Fingerprint = external_exports3.string().regex(
+  /^sha256:[0-9a-f]{64}$/,
+  "Must be a lowercase SHA-256 fingerprint."
+);
 var control = { context };
 var agentSnapshot = external_exports3.object({
   schema_id: external_exports3.string().describe("Registered schema identifier for the agent runtime snapshot."),
@@ -29178,6 +29182,27 @@ var TOOL_INPUT_SHAPES = {
     requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
     explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
     explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists.")
+  }).strict().shape,
+  propose_support_consent: external_exports3.object({
+    ...mutation,
+    workflow_run_id: external_exports3.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),
+    phase_id: external_exports3.string().min(1).describe("Current Phase to which the proposal is strictly scoped."),
+    scope_anchor_id: external_exports3.string().min(1).describe("Stable scope anchor for the current Phase."),
+    goal_revision: external_exports3.number().int().nonnegative().nullable().describe("Current native Goal revision, or null outside Goal mode."),
+    plan_revision: external_exports3.number().int().positive().describe("Current Router plan revision bound to the proposal."),
+    primary_skill_id: external_exports3.string().min(1).describe("User-locked primary SKILL from the persisted plan."),
+    support_skill_ids: external_exports3.array(external_exports3.string().min(1)).min(1).max(3).describe("Concrete distinct supporting SKILLs proposed for this Phase."),
+    context_fingerprint: sha256Fingerprint.describe("Material context fingerprint that invalidates stale consent.")
+  }).strict().shape,
+  transition_support_consent: external_exports3.object({
+    ...mutation,
+    proposal_id: external_exports3.string().min(1).describe("Persisted support proposal receiving the user decision."),
+    action: external_exports3.enum(["approve", "reject"]).describe("User consent intent; route fields cannot be supplied here."),
+    current_phase_id: external_exports3.string().min(1).describe("Host-observed current Phase used for fail-closed scope validation."),
+    current_scope_anchor_id: external_exports3.string().min(1).describe("Host-observed current Phase scope anchor."),
+    current_goal_revision: external_exports3.number().int().nonnegative().nullable().describe("Current native Goal revision, or null outside Goal mode."),
+    current_plan_revision: external_exports3.number().int().positive().describe("Current Router plan revision."),
+    current_context_fingerprint: sha256Fingerprint.describe("Current material context fingerprint.")
   }).strict().shape,
   get_next_work: external_exports3.object({
     ...control,
@@ -29239,6 +29264,22 @@ var TOOL_INPUT_SHAPES = {
 // mcp/src/tool-output-schemas.ts
 var nullableIdentifier = external_exports3.string().nullable();
 var unknownObject = external_exports3.record(external_exports3.string(), external_exports3.unknown());
+var supportConsent = external_exports3.object({
+  status: external_exports3.enum(["proposal-required", "approved", "rejected"]),
+  proposal_id: external_exports3.string(),
+  workflow_run_id: external_exports3.string(),
+  phase_id: external_exports3.string(),
+  routing_envelope: external_exports3.enum(["single", "phased", "managed-goal"]),
+  selection_mode: external_exports3.literal("explicit-locked"),
+  primary_skill: external_exports3.string(),
+  support_skills: external_exports3.array(external_exports3.string()),
+  consent_action: external_exports3.enum(["proposal-required", "approved", "rejected"]),
+  goal_relation: external_exports3.enum(["none", "progress"]),
+  decision_ref: external_exports3.string().nullable(),
+  state_version: external_exports3.number().int().positive(),
+  replayed: external_exports3.boolean(),
+  runtime_mode: external_exports3.string()
+}).strict();
 var TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: external_exports3.object({
     snapshot: unknownObject,
@@ -29258,6 +29299,8 @@ var TOOL_OUTPUT_SCHEMAS = {
     planned_skill_ids: external_exports3.array(external_exports3.string()),
     runtime_mode: external_exports3.string()
   }).strict(),
+  propose_support_consent: supportConsent,
+  transition_support_consent: supportConsent,
   get_next_work: external_exports3.object({
     status: external_exports3.string(),
     refresh_requirements: external_exports3.array(external_exports3.string()),
@@ -29327,6 +29370,8 @@ var TOOL_OUTPUT_SCHEMAS = {
 var PUBLIC_TOOL_NAMES = [
   "sync_runtime_context",
   "plan_work",
+  "propose_support_consent",
+  "transition_support_consent",
   "get_next_work",
   "validate_route",
   "record_work_event",
@@ -29339,6 +29384,8 @@ var PUBLIC_TOOL_NAMES = [
 var TITLES = {
   sync_runtime_context: "Sync Runtime Capabilities",
   plan_work: "Plan Routed Work",
+  propose_support_consent: "Propose Scoped Support",
+  transition_support_consent: "Apply Support Consent",
   get_next_work: "Get Next Work Item",
   validate_route: "Validate Proposed Route",
   record_work_event: "Record Work Observation",
@@ -29351,6 +29398,8 @@ var TITLES = {
 var DESCRIPTIONS = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
   plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime supports this idempotent mutation and preserves explicit Skill locks without speculative consent prompts.",
+  propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
+  transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
   get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",
   validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
   record_work_event: "Append a semantic work observation after validating activation receipts and reporting authority. This idempotent mutation requires the verified-host event store and fails closed locally.",
@@ -29363,6 +29412,8 @@ var DESCRIPTIONS = {
 var RUNTIME_REQUIREMENTS = {
   sync_runtime_context: "verified-host",
   plan_work: "local-r0",
+  propose_support_consent: "local-r0",
+  transition_support_consent: "local-r0",
   get_next_work: "verified-host",
   validate_route: "verified-host",
   record_work_event: "verified-host",

@@ -42,11 +42,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、十個 tool 名稱、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
+`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、十二個 tool 名稱、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
 
 ## 本機可用範圍
 
-`plan_work` 與 `get_router_status` 是 local-ready。排程、受保護 route 驗證、work event 與 gate 都需要經 Host 驗證的能力；模型評測工具需要已設定 adapter。不可用的呼叫會回傳 `capability-unavailable`，並列出需求與 fallback。
+`plan_work`、`propose_support_consent`、`transition_support_consent` 與 `get_router_status` 是 local-ready。排程、受保護 route 驗證、work event 與 gate 都需要經 Host 驗證的能力；模型評測工具需要已設定 adapter。不可用的呼叫會回傳 `capability-unavailable`，並列出需求與 fallback。
 
 ## 移除
 

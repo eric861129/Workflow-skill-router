@@ -152,12 +152,17 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertEqual([], hard)
         self.assertEqual([False, True], turn_passes)
 
-    def test_baseline_and_candidate_differ_only_by_router_instruction_package(self):
+    def test_baseline_and_candidate_share_public_inputs_but_use_distinct_product_modes(self):
         baseline = json.loads((V2 / "baselines" / "no-router.json").read_text(encoding="utf-8"))
         candidate = json.loads((V2 / "profiles" / "router-v2.json").read_text(encoding="utf-8"))
         baseline_package = baseline.pop("instruction_package")
         candidate_package = candidate.pop("instruction_package")
+        baseline_execution = baseline.pop("execution")
+        candidate_execution = candidate.pop("execution")
         self.assertEqual(baseline, candidate)
+        self.assertEqual("model-only", baseline_execution.pop("mode"))
+        self.assertEqual("hybrid-router", candidate_execution.pop("mode"))
+        self.assertEqual(baseline_execution, candidate_execution)
         self.assertIsNone(baseline_package)
         sources = [ROOT / item for item in candidate_package["files"]]
         self.assertEqual(candidate_package["digest"], canonical_package_digest(sources))
@@ -202,10 +207,9 @@ class V2BenchmarkTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("consent state transition，不是新的任務", instruction)
-        self.assertIn("完整 support_skills 集合", instruction)
-        self.assertIn("只把 consent_action 改為 `approved`", instruction)
-        self.assertIn("transition invariant 優先於所有 envelope", instruction)
-        self.assertIn("不得因 approval/rejection 重新分類任務", instruction)
+        self.assertIn("propose_support_consent", instruction)
+        self.assertIn("transition_support_consent", instruction)
+        self.assertIn("skill-only-fallback", instruction)
 
     def test_runner_rejects_instruction_paths_outside_the_repository(self):
         candidate = json.loads(
@@ -283,13 +287,17 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertEqual(6, len(report["paired_case_ids"]))
         self.assertEqual(18, report["comparison"]["paired_attempt_count"])
         self.assertIn("candidate_minus_baseline", report["comparison"])
-        self.assertEqual(
+        self.assertNotEqual(
             report["arm_manifests"]["baseline"]["execution_config_digest"],
             report["arm_manifests"]["candidate"]["execution_config_digest"],
         )
+        self.assertEqual("model-only", report["arm_manifests"]["baseline"]["execution_mode"])
+        self.assertEqual("hybrid-router", report["arm_manifests"]["candidate"]["execution_mode"])
         self.assertIsNone(report["arm_manifests"]["baseline"]["instruction_package_digest"])
         self.assertIsNotNone(report["arm_manifests"]["candidate"]["instruction_package_digest"])
         self.assertEqual("not-observable", report["metrics"]["real_tool_activation"]["metric_status"])
+        self.assertEqual("reference-only", report["metrics"]["hybrid_consent_transition"]["metric_status"])
+        self.assertIsNone(report["metrics"]["hybrid_consent_transition"]["value"])
         self.assertEqual(0, report["metrics"]["hard_violations"]["value"])
         self.assertEqual(1.0, report["comparison"]["baseline"]["route_contract_match_rate"])
         self.assertEqual(1.0, report["comparison"]["candidate"]["route_contract_match_rate"])

@@ -17,6 +17,8 @@ A deterministic fixture can prove parser and policy compatibility while saying n
 
 The beta smoke uses six cases, three attempts, and two arms: 36 attempts. One beta case includes a second consent turn, so the provider executes 42 model turns. The GA gate uses 13 cases with the same repeat and arm count: 78 attempts and 96 model turns. Both need explicit quota authorization for the complete turn budget.
 
+The baseline arm is `model-only`; the candidate arm is `hybrid-router`. For a scoped-consent follow-up, the model is evaluated on intent classification while the final route is produced by the persisted deterministic transition. SKILL-only consent evidence remains advisory and cannot satisfy the hybrid consent-safety gate.
+
 <a id="example"></a>
 ## State, input, and output example
 
@@ -52,7 +54,7 @@ The model cannot choose an executable, widen adapter authorization, access seale
 $env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
 Set-Location packages/router-core
 $env:PYTHONPATH = (Resolve-Path src).Path
-python -m unittest tests.evaluation.test_subprocess_adapter -v
+python -m unittest tests.evaluation.test_subprocess_adapter tests.evaluation.test_hybrid_consent -v
 Set-Location ../..
 python -m unittest tests.test_v2_benchmark tests.test_codex_cli_driver -v
 ```

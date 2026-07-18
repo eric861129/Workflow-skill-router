@@ -8,6 +8,8 @@ test("tool definitions disclose bundled, host, and adapter boundaries", () => {
     TOOL_DEFINITIONS.map((definition) => [definition.name, definition.runtimeRequirement]),
   );
   assert.equal(requirements.plan_work, "local-r0");
+  assert.equal(requirements.propose_support_consent, "local-r0");
+  assert.equal(requirements.transition_support_consent, "local-r0");
   assert.equal(requirements.get_router_status, "local-r0");
   assert.equal(requirements.get_next_work, "verified-host");
   assert.equal(requirements.validate_route, "verified-host");

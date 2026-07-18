@@ -66,6 +66,32 @@ class DemoDataTests(unittest.TestCase):
         self.assertIn("SUPPORT_SKILL_PROPOSED",{event["event_type"] for event in branch["events"]})
         self.assertNotIn("CAPABILITY_ACTIVATION_OBSERVED",{event["event_type"] for event in branch["events"]})
 
+    def test_explicit_consent_demo_uses_real_persisted_mcp_transitions(self):
+        data = build_demo_data(ROOT)
+        for scenario_id in (
+            "small-explicit-reject-support",
+            "medium-explicit-phase-consent",
+        ):
+            with self.subTest(scenario_id=scenario_id):
+                preset = next(item for item in data["presets"] if item["id"] == scenario_id)
+                self.assertEqual([
+                    "plan_work",
+                    "propose_support_consent",
+                    "transition_support_consent",
+                    "plan_work",
+                    "propose_support_consent",
+                    "transition_support_consent",
+                    "get_router_status",
+                ], [call["tool"] for call in preset["mcp_calls"]])
+                self.assertTrue(all(result["ok"] for result in preset["mcp_results"]))
+                self.assertEqual(
+                    ["rejected", "approved"],
+                    [
+                        preset["mcp_results"][index]["result"]["consent_action"]
+                        for index in (2, 5)
+                    ],
+                )
+
     def test_auto_route_selects_minimal_support_without_consent_branch(self):
         preset=next(item for item in build_demo_data(ROOT)["presets"] if item["id"]=="medium-auto")
         self.assertEqual(["default"],[branch["branch_id"] for branch in preset["branches"]])

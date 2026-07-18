@@ -17,6 +17,8 @@ When no SKILL is named, selection mode is `auto`; the Router chooses minimal sup
 - `only`: the named set is the full allowed set; outside support is forbidden.
 - `all`: every named SKILL must be activated or explicitly waived before completion.
 
+In Plugin mode, consent is not a second free-form route generation. `propose_support_consent` persists the current Phase route and concrete support set before the question is shown. The follow-up model turn classifies only `approved`, `rejected`, or `unclear`; `transition_support_consent` materializes the bound route and rejects stale scope, revision, or context. Skill-only mode follows the same policy as advisory instructions but cannot claim durable enforcement.
+
 <a id="example"></a>
 ## State, input, and output example
 
@@ -48,5 +50,5 @@ SKILL consent authorizes instruction activation for a declared scope. It does no
 $env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
 Set-Location packages/router-core
 $env:PYTHONPATH = (Resolve-Path src).Path
-python -m unittest tests.routing.test_explicit_lock tests.routing.test_consent -v
+python -m unittest tests.routing.test_explicit_lock tests.routing.test_consent tests.integration.test_local_consent_control_plane -v
 ```

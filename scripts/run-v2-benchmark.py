@@ -17,6 +17,7 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import (
+    EvaluationExecutionMode,
     EvaluationIntegrityError,
     EvaluationProfile,
     ModelExecutionPayload,
@@ -73,6 +74,10 @@ def load_profiles() -> dict[str, dict[str, Any]]:
         "candidate": json.loads((V2 / "profiles" / "router-v2.json").read_text(encoding="utf-8")),
     }
     validate_instruction_package(profiles["candidate"])
+    if profiles["baseline"].get("execution", {}).get("mode") != "model-only":
+        raise EvaluationIntegrityError("baseline_execution_mode_invalid")
+    if profiles["candidate"].get("execution", {}).get("mode") != "hybrid-router":
+        raise EvaluationIntegrityError("candidate_execution_mode_invalid")
     return profiles
 
 
@@ -122,7 +127,7 @@ def instruction_text(profile: Mapping[str, Any]) -> str:
 def model_prompt(case: Mapping[str, Any], profile: Mapping[str, Any]) -> str:
     common = (
         "Return one routing decision as JSON. Do not execute the requested task. "
-        "The public task and tool inventory are identical in both comparison arms."
+        "The public task and SKILL catalog are identical in both comparison arms."
     )
     catalog = json.dumps(profile["skill_catalog"], ensure_ascii=False)
     snapshot = case.get("capability_snapshot")
@@ -536,6 +541,7 @@ def main(argv: list[str] | None = None) -> int:
                 prompt,
                 EvaluationProfile.BEHAVIOR,
                 tuple(case["allowed_tools"]),
+                EvaluationExecutionMode(profile["execution"]["mode"]),
             )
             for repeat in range(args.repeats):
                 print(
@@ -578,6 +584,11 @@ def main(argv: list[str] | None = None) -> int:
                     for response in responses
                 ]
                 route = routes[-1] if routes else None
+                model_consent_intent = next((
+                    response.get("model_consent_intent")
+                    for response in reversed(responses)
+                    if response.get("model_consent_intent") is not None
+                ), None)
                 passed, hard_violations, turn_passes = score_attempt(case, routes)
                 trace_digest = digest({"responses": responses})
                 records.append({
@@ -592,6 +603,13 @@ def main(argv: list[str] | None = None) -> int:
                     "trace_digest": trace_digest,
                     "elapsed_ms": elapsed_ms if args.evidence_class == "behavior" else None,
                     "route": route,
+                    "model_consent_intent": model_consent_intent,
+                    "hybrid_transition_applied": (
+                        profile["execution"]["mode"] == "hybrid-router"
+                        and model_consent_intent in {"approved", "rejected"}
+                        and isinstance(route, dict)
+                        and route.get("consent_action") == model_consent_intent
+                    ),
                     "turn_count": len(routes),
                     "turn_pass_count": sum(1 for item in turn_passes if item),
                     "passed": passed,
@@ -663,6 +681,7 @@ def main(argv: list[str] | None = None) -> int:
             "public_case_set_digest": public_case_set_digest,
             "skill_catalog_digest": skill_catalog_digest,
             "execution_config_digest": digest(profiles[arm]["execution"]),
+            "execution_mode": profiles[arm]["execution"]["mode"],
             "instruction_package_digest": (
                 profiles[arm]["instruction_package"]["digest"]
                 if profiles[arm]["instruction_package"] else None
@@ -702,6 +721,38 @@ def main(argv: list[str] | None = None) -> int:
                 "metric_status": metric_status if explicit else "unavailable",
             },
             "support_activation": {"value": None, "metric_status": "not-observable"},
+            "hybrid_consent_transition": {
+                "value": (
+                    None
+                    if args.evidence_class == "reference-driver"
+                    else
+                    sum(
+                        1 for record in records_by_arm["candidate"]
+                        if record["hybrid_transition_applied"]
+                    )
+                    / sum(
+                        1 for record in records_by_arm["candidate"]
+                        if next(
+                            case for case in cases if case["id"] == record["case_id"]
+                        )["expected"]["consent_action"] in {"approved", "rejected"}
+                    )
+                    if any(
+                        case["expected"]["consent_action"] in {"approved", "rejected"}
+                        for case in cases
+                    )
+                    else None
+                ),
+                "metric_status": (
+                    "reference-only"
+                    if args.evidence_class == "reference-driver"
+                    else "observed"
+                    if any(
+                        case["expected"]["consent_action"] in {"approved", "rejected"}
+                        for case in cases
+                    )
+                    else "unavailable"
+                ),
+            },
             "real_tool_activation": {"value": None, "metric_status": "not-observable"},
             "latency_ms": {
                 "value": sum(live_elapsed) / len(live_elapsed) if live_elapsed else None,
@@ -753,11 +804,17 @@ def main(argv: list[str] | None = None) -> int:
                 "arm", "case_id", "opaque_run_case_id", "attempt_nonce", "fresh_context_id",
                 "prompt_digest", "public_case_digest", "tool_inventory_digest", "trace_digest", "elapsed_ms",
                 "turn_count", "turn_pass_count", "passed", "hard_violations",
+                "model_consent_intent", "hybrid_transition_applied",
             )
         } for record in records],
         "limitations": [
-            "Routing and consent decisions are measured; real tool activation and task Outcome are not observable.",
-            "The report is review-required and cannot establish hybrid-full conformance.",
+            (
+                "The reference driver does not execute the hybrid consent state machine, so hybrid transition metrics are unavailable."
+                if args.evidence_class == "reference-driver"
+                else "The candidate consent route is materialized through the deterministic core after a fresh model classifies consent intent."
+            ),
+            "Node MCP transport and fail-closed scope behavior require matching deterministic integration evidence from the same source revision.",
+            "Real SKILL activation and task Outcome are not observable, so this report alone cannot establish hybrid-full conformance.",
         ],
     }
     report = build_benchmark_review_report(

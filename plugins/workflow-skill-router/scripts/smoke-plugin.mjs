@@ -69,8 +69,10 @@ try {
   const listed = await request(2, "tools/list", {});
   assert.equal(listed.error, undefined, JSON.stringify(listed));
   const names = listed.result.tools.map((tool) => tool.name);
-  assert.equal(new Set(names).size, 10);
-  assert.equal(names.length, 10);
+  assert.equal(new Set(names).size, 12);
+  assert.equal(names.length, 12);
+  assert.ok(names.includes("propose_support_consent"));
+  assert.ok(names.includes("transition_support_consent"));
   toolCount = names.length;
 } finally {
   child.kill();

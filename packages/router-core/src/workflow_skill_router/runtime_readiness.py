@@ -49,6 +49,20 @@ RUNTIME_READINESS: Mapping[str, ToolRuntimeReadiness] = {
         ("bundled-local-control-plane",),
         "Use the bundled durable local planner.",
     ),
+    "propose_support_consent": _entry(
+        "propose_support_consent",
+        "local-ready",
+        "R0",
+        ("bundled-local-control-plane", "explicit-skill-plan"),
+        "Persist a Phase-scoped support proposal before asking for user consent.",
+    ),
+    "transition_support_consent": _entry(
+        "transition_support_consent",
+        "local-ready",
+        "R0",
+        ("bundled-local-control-plane", "persisted-support-proposal"),
+        "Apply approve or reject intent to the bound proposal without rewriting its route.",
+    ),
     "get_next_work": _entry(
         "get_next_work",
         "verified-host-required",

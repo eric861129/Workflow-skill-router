@@ -102,7 +102,7 @@ class InstallationSmokeTests(unittest.TestCase):
         )
         self.assertEqual(0, smoke.returncode, smoke.stdout + smoke.stderr)
         result = json.loads(smoke.stdout.strip().splitlines()[-1])
-        self.assertEqual(10, result["tool_count"])
+        self.assertEqual(12, result["tool_count"])
         self.assertEqual("outside-plugin", result["state_boundary"])
 
         doctor = subprocess.run(

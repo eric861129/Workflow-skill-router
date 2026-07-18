@@ -64,13 +64,14 @@ class CodexCliDriverTests(unittest.TestCase):
             model="gpt-5.6-sol",
         )
 
-    def start(self, nonce="nonce-1"):
+    def start(self, nonce="nonce-1", execution_mode="model-only"):
         return self.driver.handle({
             "type": "start_attempt",
             "opaque_run_case_id": "opaque-case",
             "prompt": "Initial task",
             "profile": "behavior",
             "allowed_tools": [],
+            "execution_mode": execution_mode,
             "attempt_nonce": nonce,
         })
 
@@ -138,6 +139,45 @@ class CodexCliDriverTests(unittest.TestCase):
         self.assertLess(second_input.index("First"), second_input.index("Consent approved"))
         for forbidden in ("expected", "scoring", "scenario_label", "future_reply"):
             self.assertNotIn(forbidden, second_input.lower())
+
+    def test_hybrid_consent_turn_classifies_intent_then_materializes_persisted_route(self):
+        proposed = {
+            "envelope": "phased",
+            "selection_mode": "explicit-locked",
+            "primary_skill": "skill:api-designer",
+            "support_skills": ["skill:qa-test-planner"],
+            "consent_action": "proposal-required",
+            "goal_relation": "none",
+            "rationale": "Contract verification needs scoped support.",
+        }
+        intent = {"action": "approved", "rationale": "The user approved it."}
+        context = self.start(execution_mode="hybrid-router")
+        with patch.object(
+            DRIVER_MODULE.subprocess,
+            "run",
+            side_effect=[completed(proposed), completed(intent)],
+        ) as run:
+            first = self.driver.handle({
+                "type": "execute_turn", "context_id": context["context_id"],
+                "attempt_nonce": "nonce-1", "turn_index": 0,
+                "prompt": "Use api-designer and propose required support.",
+                "allowed_tools": [],
+            })
+            final = self.driver.handle({
+                "type": "execute_turn", "context_id": context["context_id"],
+                "attempt_nonce": "nonce-1", "turn_index": 1,
+                "prompt": "I approve this support for the current phase.",
+                "allowed_tools": [],
+            })
+
+        self.assertEqual("proposal-required", first["route"]["consent_action"])
+        self.assertEqual("approved", final["model_consent_intent"])
+        self.assertEqual("approved", final["route"]["consent_action"])
+        self.assertEqual("skill:api-designer", final["route"]["primary_skill"])
+        self.assertEqual(["skill:qa-test-planner"], final["route"]["support_skills"])
+        consent_schema = ROOT / "evaluation" / "v2" / "schemas" / "codex-consent-intent.schema.json"
+        self.assertIn(str(consent_schema), run.call_args_list[1].args[0])
+        self.assertIn("Classify only", run.call_args_list[1].kwargs["input"])
 
     def test_rejects_invalid_schema_timeout_and_nonzero_exit_without_leaking_stderr(self):
         context = self.start()

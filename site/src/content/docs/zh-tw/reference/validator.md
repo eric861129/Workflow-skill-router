@@ -43,7 +43,7 @@ python scripts/build-v2-demo-data.py --check
 node scripts/build-mcp-reference-data.mjs --check
 ```
 
-第一個命令證明 interactive Demo 來自 Router Core inputs；第二個命令證明公開 MCP reference 與十個真實 tool contracts、readiness matrix 一致。
+第一個命令證明 interactive Demo 來自 Router Core inputs；第二個命令證明公開 MCP reference 與十二個真實 tool contracts、readiness matrix 一致。
 
 ## 4. 評估 routing quality
 

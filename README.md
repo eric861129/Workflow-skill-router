@@ -24,7 +24,7 @@ Request
 | Capability | Plugin + MCP | Skill-only |
 | --- | --- | --- |
 | Routing instructions | Included | Included |
-| Local durable R0 planning | `plan_work` and `get_router_status` | Not observable |
+| Local durable R0 planning and scoped consent | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Not observable |
 | Verified-host scheduling and route validation | Available after host integration | Unavailable |
 | Cross-process state and compare-and-swap | Host/runtime dependent | Unavailable |
 | Sealed model evaluation | Configured adapter required | Manual workflow only |
@@ -98,17 +98,19 @@ The Router does not force every task into Goal orchestration. Work shape comes f
 
 When the user names a SKILL, that choice becomes authoritative. The Router may recommend support, but it must explain the purpose, scope, refusal consequence, and context cost before activation. Rejected support stays out of active selections.
 
+In Plugin mode, the proposal is persisted before the question is shown. A follow-up model turn classifies only `approved`, `rejected`, or `unclear`; the deterministic MCP transition preserves the bound route and fails closed if Phase, scope, revision, or material context changed. Skill-only mode keeps the same interaction policy as advisory instructions, but cannot claim durable enforcement.
+
 When the user names no SKILL, the Router chooses the smallest sufficient route without repeatedly asking for consent to its own recommendations. Before execution it declares planned SKILL usage; after execution it reports actual usage and any change.
 
 ## MCP tool surface
 
-The Plugin exposes ten typed tools:
+The Plugin exposes twelve typed tools:
 
 ```text
-sync_runtime_context  plan_work              get_next_work
-validate_route        record_work_event      evaluate_gate
-get_router_status     run_model_evaluation   compare_evaluations
-export_router_artifact
+sync_runtime_context       plan_work                  propose_support_consent
+transition_support_consent get_next_work              validate_route
+record_work_event          evaluate_gate              get_router_status
+run_model_evaluation       compare_evaluations        export_router_artifact
 ```
 
 Tool schemas, risk, required capabilities, and fallback actions are generated from the same contracts used by the server. See the [generated MCP reference](site/src/content/docs/reference/mcp-tools.mdx).
@@ -117,7 +119,7 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 
 | Availability in bundled local R0 | Tools | Meaning |
 | --- | --- | --- |
-| `local-ready` | `plan_work`, `get_router_status` | Durable local R0 planning and status |
+| `local-ready` | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Durable local R0 planning, scoped consent, and status |
 | `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Needs verified host authority and stores |
 | `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
 
@@ -125,7 +127,7 @@ Unavailable calls return a typed `capability-unavailable` response with required
 
 ## Real Model Evaluation
 
-**Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication.
+**Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication. The baseline arm is explicitly `model-only`; the candidate is `hybrid-router`. For consent follow-ups, the fresh model classifies intent and the persisted MCP state machine materializes the final route.
 
 Evaluation contract `2.1.0` separates the current-Phase oracle from a stateful Phase-transition case and scores every declared turn. Its six-case beta profile remains 36 attempts and 42 model turns; the thirteen-case full gate is 78 attempts and 96 model turns at three repeats per arm. Runs bound to earlier case or instruction digests remain diagnostic and are never rescored against the new oracle. Before a fresh authorized `2.1.0` run, public evidence remains `manual-required`; after execution it remains `review-required` until trusted attestation.
 

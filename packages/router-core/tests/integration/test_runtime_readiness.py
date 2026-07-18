@@ -20,6 +20,14 @@ class RuntimeReadinessTests(unittest.TestCase):
         self.assertEqual(set(PUBLIC_TOOLS), set(RUNTIME_READINESS))
         self.assertEqual("local-ready", RUNTIME_READINESS["plan_work"].availability)
         self.assertEqual(
+            "local-ready",
+            RUNTIME_READINESS["propose_support_consent"].availability,
+        )
+        self.assertEqual(
+            "local-ready",
+            RUNTIME_READINESS["transition_support_consent"].availability,
+        )
+        self.assertEqual(
             "local-ready", RUNTIME_READINESS["get_router_status"].availability
         )
         self.assertEqual(

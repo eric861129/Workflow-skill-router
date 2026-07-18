@@ -238,7 +238,7 @@ class DemoScenarioExporter:
                 "trace_request_id": trace["mcp_calls"][0]["request_id"],
             },
         }]
-        branches = self._branches(item, support_policy, route, events)
+        branches = self._branches(item, support_policy, route, events, trace)
         result = {
             "id": item["id"],
             "title": item["title"],
@@ -299,9 +299,89 @@ class DemoScenarioExporter:
 
         workflow_run_id = results[0]["result"]["workflow_run_id"]
         follow_up_calls: list[dict[str, Any]] = []
+        support = item.get("support")
+        explicit_semantics = item.get("explicit_semantics")
+        if support and explicit_semantics in {"preferred-primary", "required-all"}:
+            phase_id = str((item.get("phases") or ["current"])[0])
+            scope_anchor_id = f"scope:public-demo:{scenario_id}:{phase_id}"
+            context_fingerprint = "sha256:" + sha256(canonical_json_bytes({
+                "phase_id": phase_id,
+                "request": item["request"],
+                "scenario_id": scenario_id,
+                "support": support,
+            })).hexdigest()
+            for branch, action in (("reject", "reject"), ("approve", "approve")):
+                branch_context = context
+                branch_workflow_run_id = workflow_run_id
+                if branch == "approve":
+                    branch_context = {
+                        **context,
+                        "session_id": f"{context['session_id']}-approve-branch",
+                    }
+                    branch_plan_call = {
+                        **plan_call,
+                        "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                        "arguments": {
+                            **plan_call["arguments"],
+                            "context": branch_context,
+                            "idempotency_key": f"demo-plan-{scenario_id}-approve-branch",
+                            "correlation_id": f"demo-plan-{scenario_id}-approve-branch",
+                        },
+                    }
+                    branch_plan_result = _execute_bridge(
+                        dispatcher,
+                        [branch_plan_call],
+                    )[0]
+                    calls.append(branch_plan_call)
+                    results.append(branch_plan_result)
+                    if not branch_plan_result["ok"]:
+                        return self._trace_metadata(verified_host, calls, results)
+                    branch_workflow_run_id = branch_plan_result["result"]["workflow_run_id"]
+                proposal_call = {
+                    "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                    "tool": "propose_support_consent",
+                    "arguments": {
+                        "context": branch_context,
+                        "workflow_run_id": branch_workflow_run_id,
+                        "phase_id": phase_id,
+                        "scope_anchor_id": scope_anchor_id,
+                        "goal_revision": None,
+                        "plan_revision": 1,
+                        "primary_skill_id": item["primary"],
+                        "support_skill_ids": [support],
+                        "context_fingerprint": context_fingerprint,
+                        "expected_state_version": 1,
+                        "idempotency_key": f"demo-consent-proposal-{scenario_id}-{branch}",
+                        "correlation_id": f"demo-consent-proposal-{scenario_id}-{branch}",
+                    },
+                }
+                proposal_result = _execute_bridge(dispatcher, [proposal_call])[0]
+                calls.append(proposal_call)
+                results.append(proposal_result)
+                if not proposal_result["ok"]:
+                    return self._trace_metadata(verified_host, calls, results)
+                transition_call = {
+                    "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                    "tool": "transition_support_consent",
+                    "arguments": {
+                        "context": branch_context,
+                        "proposal_id": proposal_result["result"]["proposal_id"],
+                        "action": action,
+                        "current_phase_id": phase_id,
+                        "current_scope_anchor_id": scope_anchor_id,
+                        "current_goal_revision": None,
+                        "current_plan_revision": 1,
+                        "current_context_fingerprint": context_fingerprint,
+                        "expected_state_version": 1,
+                        "idempotency_key": f"demo-consent-transition-{scenario_id}-{branch}",
+                        "correlation_id": f"demo-consent-transition-{scenario_id}-{branch}",
+                    },
+                }
+                calls.append(transition_call)
+                results.extend(_execute_bridge(dispatcher, [transition_call]))
         if envelope == "managed-goal":
             follow_up_calls.append({
-                "request_id": f"{scenario_id}:02",
+                "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
                 "tool": "get_next_work",
                 "arguments": {
                     "context": context,
@@ -309,7 +389,9 @@ class DemoScenarioExporter:
                 },
             })
         follow_up_calls.append({
-            "request_id": f"{scenario_id}:{len(follow_up_calls) + 2:02d}",
+            "request_id": (
+                f"{scenario_id}:{len(calls) + len(follow_up_calls) + 1:02d}"
+            ),
             "tool": "get_router_status",
             "arguments": {
                 "context": context,
@@ -345,6 +427,7 @@ class DemoScenarioExporter:
         support_policy: SupportPolicy,
         route: Mapping[str, Any],
         events: list[dict[str, Any]],
+        trace: Mapping[str, Any],
     ) -> list[dict[str, Any]]:
         support = item.get("support")
         if support and support_policy is SupportPolicy.AUTO:
@@ -367,47 +450,77 @@ class DemoScenarioExporter:
                 "Minimal support auto-selected",
             )]
         if support and support_policy is SupportPolicy.ASK:
-            proposal = {
+            consent_results = {
+                result["result"]["consent_action"]: result["result"]
+                for result in trace["mcp_results"]
+                if result.get("ok")
+                and result.get("result", {}).get("consent_action")
+                in {"approved", "rejected"}
+            }
+            if set(consent_results) != {"approved", "rejected"}:
+                raise RuntimeError("demo consent transitions unavailable")
+            rejected = consent_results["rejected"]
+            approved = consent_results["approved"]
+            rejected_proposal = {
                 "event_type": "SUPPORT_SKILL_PROPOSED",
                 "payload": {
                     "capability_id": support,
                     "origin": "router-recommended",
+                    "proposal_id": rejected["proposal_id"],
+                },
+            }
+            approved_proposal = {
+                "event_type": "SUPPORT_SKILL_PROPOSED",
+                "payload": {
+                    "capability_id": support,
+                    "origin": "router-recommended",
+                    "proposal_id": approved["proposal_id"],
                 },
             }
             rejected_events = [
                 *events,
-                proposal,
+                rejected_proposal,
                 {
                     "event_type": "SUPPORT_SKILL_REJECTED",
-                    "payload": {"capability_id": support},
+                    "payload": {
+                        "capability_id": support,
+                        "decision_ref": rejected["decision_ref"],
+                    },
                 },
             ]
             approved_events = [
                 *events,
-                proposal,
+                approved_proposal,
                 {
                     "event_type": "SUPPORT_SKILL_APPROVED",
-                    "payload": {"capability_id": support},
-                },
-                {
-                    "event_type": "CAPABILITY_ACTIVATION_OBSERVED",
-                    "payload": {"capability_id": support},
+                    "payload": {
+                        "capability_id": support,
+                        "decision_ref": approved["decision_ref"],
+                    },
                 },
             ]
             return [
                 self._branch(
                     "support-rejected",
-                    {**route, "support_selections": []},
+                    {
+                        **route,
+                        "primary_selection": rejected["primary_skill"],
+                        "support_selections": list(rejected["support_skills"]),
+                    },
                     rejected_events,
                     "僅使用指定 SKILL",
                     "Requested SKILL only",
                 ),
                 self._branch(
                     "support-approved",
-                    {**route, "support_selections": [support]},
+                    {
+                        **route,
+                        "primary_selection": approved["primary_skill"],
+                        "support_selections": list(approved["support_skills"]),
+                    },
                     approved_events,
-                    "已核准輔助能力",
-                    "Support approved",
+                    "已核准輔助能力；啟用仍受 Host gate 控制",
+                    "Support approved; activation remains host-gated",
                 ),
             ]
         return [self._branch("default", route, events, "路由已就緒", "Route ready")]

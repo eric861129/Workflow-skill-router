@@ -60,6 +60,7 @@
     }
   ],
   "execution": {
+    "mode": "hybrid-router",
     "ignore_user_config": true,
     "sandbox": "read-only",
     "output_schema": "evaluation/v2/schemas/codex-route-output.schema.json",
@@ -68,7 +69,7 @@
     "sampling_settings": null
   },
   "instruction_package": {
-      "digest": "sha256:12dfe305929e65dbd7efcacb61e3ca82d9311df8e0f20dc707e2bf9b5e30065b",
+      "digest": "sha256:4ee944295b597bad24d5e06d63604241c47dec73e05ad6bf58f7b6349b4ccf28",
     "files": [
       "starter/v2/workflow-skill-router/references/evaluation-boundary.md",
       "starter/v2/workflow-skill-router/references/goal-protocol.md",

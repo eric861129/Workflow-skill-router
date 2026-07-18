@@ -48,6 +48,7 @@ class SubprocessExecutionAdapter:
             "prompt": payload.prompt,
             "profile": payload.profile.value,
             "allowed_tools": list(payload.allowed_tools),
+            "execution_mode": payload.execution_mode.value,
             "attempt_nonce": attempt_nonce,
         })
         self._verify_nonce(response, attempt_nonce)

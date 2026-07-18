@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from workflow_skill_router.evaluation.contracts import (
+    EvaluationExecutionMode,
     EvaluationIntegrityError,
     EvaluationProfile,
     ModelExecutionPayload,
@@ -36,6 +37,8 @@ if mode == "oversized":
     raise SystemExit(0)
 if mode == "record-argv":
     Path(sys.argv[2]).write_text(json.dumps(sys.argv[3:]), encoding="utf-8")
+if mode == "record-request":
+    Path(sys.argv[2]).write_text(json.dumps(request), encoding="utf-8")
 if request["type"] == "start_attempt":
     context_id = "fixed-context" if mode == "duplicate" else "ctx:" + request["attempt_nonce"]
     response = {"attempt_nonce": request["attempt_nonce"], "context_id": context_id}
@@ -79,6 +82,21 @@ class SubprocessAdapterTests(unittest.TestCase):
         self.assertEqual("ctx:attempt-001", context_id)
         self.assertEqual("attempt-001", result["attempt_nonce"])
         self.assertEqual(context_id, result["context_id"])
+
+    def test_start_request_declares_model_only_or_hybrid_execution_mode(self):
+        record = self.root / "request.json"
+        payload = ModelExecutionPayload(
+            "opaque-case-1",
+            "Route this task",
+            EvaluationProfile.BEHAVIOR,
+            (),
+            EvaluationExecutionMode.HYBRID_ROUTER,
+        )
+
+        self.adapter("record-request", str(record)).start_attempt(payload, "attempt-001")
+
+        request = json.loads(record.read_text(encoding="utf-8"))
+        self.assertEqual("hybrid-router", request["execution_mode"])
 
     def test_requires_a_tuple_with_an_absolute_executable(self):
         for command in ("python driver.py", (), ("",), ("python", "driver.py")):

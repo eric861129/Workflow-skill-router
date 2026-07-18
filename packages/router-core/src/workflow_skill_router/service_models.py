@@ -63,6 +63,55 @@ class PlanWorkResult(ResultCodec):
 
 
 @dataclass(frozen=True, slots=True)
+class ProposeSupportConsent:
+    context: RequestContext
+    workflow_run_id: str
+    phase_id: str
+    scope_anchor_id: str
+    goal_revision: int | None
+    plan_revision: int
+    primary_skill_id: str
+    support_skill_ids: tuple[str, ...]
+    context_fingerprint: str
+    expected_state_version: int
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class TransitionSupportConsent:
+    context: RequestContext
+    proposal_id: str
+    action: str
+    current_phase_id: str
+    current_scope_anchor_id: str
+    current_goal_revision: int | None
+    current_plan_revision: int
+    current_context_fingerprint: str
+    expected_state_version: int
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class SupportConsentResult(ResultCodec):
+    status: str
+    proposal_id: str
+    workflow_run_id: str
+    phase_id: str
+    routing_envelope: str
+    selection_mode: str
+    primary_skill: str
+    support_skills: tuple[str, ...]
+    consent_action: str
+    goal_relation: str
+    decision_ref: str | None
+    state_version: int
+    replayed: bool
+    runtime_mode: str
+
+
+@dataclass(frozen=True, slots=True)
 class NextWorkQuery:
     context: RequestContext
     workflow_run_id: str

@@ -99,7 +99,89 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
     assert.equal(planResult.structuredContent?.selection_mode, "auto");
     assert.equal(planResult.structuredContent?.support_consent_required, false);
 
-    const unavailableResponse = await request(4, "tools/call", {
+    const explicitPlanResponse = await request(4, "tools/call", {
+      name: "plan_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 0,
+        idempotency_key: "bundled-runtime-explicit-plan",
+        correlation_id: "bundled-runtime-explicit-plan",
+        objective: "使用指定 API SKILL，並在目前 Phase 提案必要支援",
+        goal_binding_id: null,
+        requested_work_mode: "phased",
+        explicit_skill_ids: ["skill:api-designer"],
+        explicit_semantics: "use",
+      },
+    });
+    const explicitPlan = explicitPlanResponse.result as {
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(explicitPlan.structuredContent?.selection_mode, "explicit-locked");
+
+    const proposalResponse = await request(5, "tools/call", {
+      name: "propose_support_consent",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 1,
+        idempotency_key: "bundled-runtime-proposal",
+        correlation_id: "bundled-runtime-proposal",
+        workflow_run_id: String(explicitPlan.structuredContent?.workflow_run_id),
+        phase_id: "phase-contract-verification",
+        scope_anchor_id: "scope:phase-contract-verification",
+        goal_revision: null,
+        plan_revision: 1,
+        primary_skill_id: "skill:api-designer",
+        support_skill_ids: ["skill:qa-test-planner"],
+        context_fingerprint: `sha256:${"a".repeat(64)}`,
+      },
+    });
+    assert.equal(proposalResponse.error, undefined, JSON.stringify(proposalResponse));
+    const proposal = proposalResponse.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(proposal.isError, undefined, JSON.stringify(proposalResponse));
+    assert.equal(proposal.structuredContent?.consent_action, "proposal-required");
+
+    const transitionResponse = await request(6, "tools/call", {
+      name: "transition_support_consent",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 1,
+        idempotency_key: "bundled-runtime-approval",
+        correlation_id: "bundled-runtime-approval",
+        proposal_id: String(proposal.structuredContent?.proposal_id),
+        action: "approve",
+        current_phase_id: "phase-contract-verification",
+        current_scope_anchor_id: "scope:phase-contract-verification",
+        current_goal_revision: null,
+        current_plan_revision: 1,
+        current_context_fingerprint: `sha256:${"a".repeat(64)}`,
+      },
+    });
+    const transition = transitionResponse.result as {
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(transition.structuredContent?.consent_action, "approved");
+    assert.equal(transition.structuredContent?.primary_skill, "skill:api-designer");
+    assert.deepEqual(
+      transition.structuredContent?.support_skills,
+      ["skill:qa-test-planner"],
+    );
+
+    const unavailableResponse = await request(7, "tools/call", {
       name: "get_next_work",
       arguments: {
         context: {

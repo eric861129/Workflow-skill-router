@@ -13,6 +13,10 @@ const mutation = {
   idempotency_key: z.string().min(1).describe("Caller-stable key that safely replays the same semantic command."),
   correlation_id: z.string().min(1).describe("Public-safe correlation identifier for tracing one command flow."),
 };
+const sha256Fingerprint = z.string().regex(
+  /^sha256:[0-9a-f]{64}$/,
+  "Must be a lowercase SHA-256 fingerprint.",
+);
 const control = { context };
 const agentSnapshot = z.object({
   schema_id: z.string().describe("Registered schema identifier for the agent runtime snapshot."),
@@ -44,6 +48,27 @@ export const TOOL_INPUT_SHAPES = {
     requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
     explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
     explicit_semantics: z.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+  }).strict().shape,
+  propose_support_consent: z.object({
+    ...mutation,
+    workflow_run_id: z.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),
+    phase_id: z.string().min(1).describe("Current Phase to which the proposal is strictly scoped."),
+    scope_anchor_id: z.string().min(1).describe("Stable scope anchor for the current Phase."),
+    goal_revision: z.number().int().nonnegative().nullable().describe("Current native Goal revision, or null outside Goal mode."),
+    plan_revision: z.number().int().positive().describe("Current Router plan revision bound to the proposal."),
+    primary_skill_id: z.string().min(1).describe("User-locked primary SKILL from the persisted plan."),
+    support_skill_ids: z.array(z.string().min(1)).min(1).max(3).describe("Concrete distinct supporting SKILLs proposed for this Phase."),
+    context_fingerprint: sha256Fingerprint.describe("Material context fingerprint that invalidates stale consent."),
+  }).strict().shape,
+  transition_support_consent: z.object({
+    ...mutation,
+    proposal_id: z.string().min(1).describe("Persisted support proposal receiving the user decision."),
+    action: z.enum(["approve", "reject"]).describe("User consent intent; route fields cannot be supplied here."),
+    current_phase_id: z.string().min(1).describe("Host-observed current Phase used for fail-closed scope validation."),
+    current_scope_anchor_id: z.string().min(1).describe("Host-observed current Phase scope anchor."),
+    current_goal_revision: z.number().int().nonnegative().nullable().describe("Current native Goal revision, or null outside Goal mode."),
+    current_plan_revision: z.number().int().positive().describe("Current Router plan revision."),
+    current_context_fingerprint: sha256Fingerprint.describe("Current material context fingerprint."),
   }).strict().shape,
   get_next_work: z.object({
     ...control,
