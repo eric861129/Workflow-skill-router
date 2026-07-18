@@ -19,6 +19,8 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 使用者指定 SKILL 時先鎖定指定項目。只有此情境下，Router 想加入任何額外 SKILL、Plugin 或 MCP 支援角色，才要先說明用途、scope、拒絕後限制與 context cost，取得同意後才能讀取或啟用。Consent route 採固定狀態配方：`proposal-required` 時，support_skills 必須列出具體提案集合，這些項目在 `approved` 前只是 proposed，不是 activated；`approved` 時保留相同 support_skills；`rejected` 時清空 support_skills。使用者拒絕時只能使用指定能力、限縮成果或誠實阻塞，不可靜默替代。
 
+使用者對既有提案回覆同意或拒絕時，這是同一個 Phase 的 consent state transition，不是新的任務，也不得重新做 semantic routing。`approved` 的輸出必須保留上一個 `proposal-required` route 的 envelope、selection_mode、primary_skill 與完整 support_skills 集合，只把 consent_action 改為 `approved`；`rejected` 同樣保留 envelope、selection_mode 與 primary_skill，但清空 support_skills，並把 consent_action 改為 `rejected`。即使使用者說「只限本階段」，也表示這份狀態只在目前 Phase 有效，不表示可省略 approved/rejected route 或遺失既有提案集合。
+
 若 MCP 可用，使用 capability snapshot、route validation、state/gate 與 evidence。若 MCP 不可用，明示目前是 `skill-only-fallback`：沒有 durable resume、CAS、完整 drift detection 或 sealed activation instrumentation；不得宣稱 `hybrid-full`，也不得把不可觀測項目算成通過。
 
 所有 R2/R3 行動仍由 Codex host sandbox、approval 與 permission 控制；SKILL 同意不等於安裝、寫入、部署、傳訊或 production access 授權。

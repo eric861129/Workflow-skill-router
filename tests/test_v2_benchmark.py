@@ -197,6 +197,14 @@ class V2BenchmarkTests(unittest.TestCase):
         ):
             RUNNER.validate_instruction_package(drifted)
 
+    def test_router_instruction_treats_scoped_consent_reply_as_a_state_transition(self):
+        instruction = (ROOT / "starter" / "v2" / "workflow-skill-router" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("consent state transition，不是新的任務", instruction)
+        self.assertIn("完整 support_skills 集合", instruction)
+        self.assertIn("只把 consent_action 改為 `approved`", instruction)
+
     def test_runner_rejects_instruction_paths_outside_the_repository(self):
         candidate = json.loads(
             (V2 / "profiles" / "router-v2.json").read_text(encoding="utf-8")

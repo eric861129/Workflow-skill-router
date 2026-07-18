@@ -68,7 +68,7 @@
     "sampling_settings": null
   },
   "instruction_package": {
-      "digest": "sha256:128f61c74a49298e53e29a0c114affa312329df5037d4a3cbe1b48c90b7116e3",
+      "digest": "sha256:fe8f9fcf62dabf0cdd28703ddb9e0af66c7562bbb1d74f296313e4f2a1f7f2b5",
     "files": [
       "starter/v2/workflow-skill-router/references/evaluation-boundary.md",
       "starter/v2/workflow-skill-router/references/goal-protocol.md",
