@@ -91,13 +91,18 @@ class GitHubWorkflowTests(unittest.TestCase):
         ):
             self.assertIn(required, content)
 
-    def test_release_only_accepts_v2_tags_and_attests_source_built_assets(self) -> None:
+    def test_release_only_accepts_v2_tags_and_supports_safe_tag_retries(self) -> None:
         content = workflow_text("release-v2.yml")
         for required in (
             "tags:",
             '"v2.*"',
+            "workflow_dispatch:",
+            "release_tag:",
+            "RELEASE_TAG:",
+            "ref: ${{ env.RELEASE_TAG }}",
+            'git rev-list -n 1 "$RELEASE_TAG"',
             "--provenance-mode release",
-            "--source-revision",
+            '--source-revision "$SOURCE_REVISION"',
             "--require-clean",
             "--check-determinism",
             "sbom/",
@@ -106,7 +111,11 @@ class GitHubWorkflowTests(unittest.TestCase):
             "id-token: write",
         ):
             self.assertIn(required, content)
-        self.assertIn(r"refs/tags/v2\.[0-9]+\.[0-9]+", content)
+        self.assertIn(r"^v2\.[0-9]+\.[0-9]+", content)
+        self.assertLess(
+            content.index("- name: Install Plugin/MCP dependencies"),
+            content.index("- name: Test repository contracts"),
+        )
         self.assertNotIn("downloads/", content)
 
     def test_dependabot_covers_both_node_projects_and_actions(self) -> None:
