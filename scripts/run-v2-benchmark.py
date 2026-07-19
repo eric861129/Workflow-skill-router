@@ -476,12 +476,19 @@ def recover_attempt(
             if not isinstance(route, dict):
                 valid = False
                 break
-            responses.append({
+            response = {
                 "attempt_nonce": attempt_nonce,
                 "context_id": context_id,
                 "route": route,
                 "text": json.dumps(route, ensure_ascii=False, sort_keys=True),
-            })
+            }
+            model_consent_intent = turn.get("model_consent_intent")
+            if model_consent_intent is not None:
+                if model_consent_intent not in {"approved", "rejected", "unclear"}:
+                    valid = False
+                    break
+                response["model_consent_intent"] = model_consent_intent
+            responses.append(response)
         if valid:
             matches.append((transcript_path.stat().st_mtime, context_id, responses))
     if not matches:

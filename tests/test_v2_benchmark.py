@@ -450,6 +450,60 @@ class V2BenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(EvaluationIntegrityError, "resume_nonce_ambiguous"):
                 RUNNER.recover_attempt(root, "nonce-1", 1)
 
+    def test_resume_preserves_valid_hybrid_consent_intent(self):
+        self.assertIsNotNone(RUNNER)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context = root / "hybrid-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text(json.dumps({
+                "attempt_nonce": "nonce-hybrid",
+                "turns": [
+                    {
+                        "user": "proposal",
+                        "assistant": {"consent_action": "proposal-required"},
+                    },
+                    {
+                        "user": "approved",
+                        "assistant": {"consent_action": "approved"},
+                        "model_consent_intent": "approved",
+                    },
+                ],
+            }), encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            recovered = RUNNER.recover_attempt(root, "nonce-hybrid", 2)
+
+        self.assertIsNotNone(recovered)
+        self.assertNotIn("model_consent_intent", recovered[1][0])
+        self.assertEqual("approved", recovered[1][1]["model_consent_intent"])
+
+    def test_resume_rejects_invalid_hybrid_consent_intent(self):
+        self.assertIsNotNone(RUNNER)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context = root / "hybrid-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text(json.dumps({
+                "attempt_nonce": "nonce-hybrid",
+                "turns": [{
+                    "user": "tampered",
+                    "assistant": {"consent_action": "approved"},
+                    "model_consent_intent": "replace-route",
+                }],
+            }), encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            recovered = RUNNER.recover_attempt(root, "nonce-hybrid", 1)
+
+        self.assertIsNone(recovered)
+
     def test_resume_rejects_unprotected_transcript(self):
         with tempfile.TemporaryDirectory() as directory:
             context = Path(directory) / "legacy-context"
