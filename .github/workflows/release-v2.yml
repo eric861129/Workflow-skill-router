@@ -4,12 +4,21 @@ on:
   push:
     tags:
       - "v2.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing V2 tag to build, attest, and publish
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -24,15 +33,25 @@ jobs:
       - name: Validate V2 release tag
         shell: bash
         run: |
-          if [[ ! "$GITHUB_REF" =~ ^refs/tags/v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+          if [[ ! "$RELEASE_TAG" =~ ^v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
             echo "Release tags must use v2.x.y or v2.x.y-(alpha|beta|rc).n."
             exit 1
           fi
       - name: Checkout tagged source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve tagged source revision
+        shell: bash
+        run: |
+          source_revision="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if [[ "$(git rev-parse HEAD)" != "$source_revision" ]]; then
+            echo "Checked out source does not match $RELEASE_TAG."
+            exit 1
+          fi
+          echo "SOURCE_REVISION=$source_revision" >> "$GITHUB_ENV"
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -54,18 +73,21 @@ jobs:
 
           metadata = json.loads(Path("release/version.json").read_text(encoding="utf-8"))
           expected = f"v{metadata['v2_version']}"
-          actual = os.environ["GITHUB_REF_NAME"]
+          actual = os.environ["RELEASE_TAG"]
           if actual != expected:
               raise SystemExit(f"tag {actual!r} does not match release metadata {expected!r}")
       - name: Test Router Core
         env:
           PYTHONPATH: packages/router-core/src
         run: python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+      - name: Install Plugin/MCP dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
       - name: Test repository contracts
         run: python -m unittest discover -s tests
       - name: Build and test Plugin/MCP
         working-directory: plugins/workflow-skill-router
-        run: npm ci && npm run check && node ./scripts/smoke-plugin.mjs
+        run: npm run check && node ./scripts/smoke-plugin.mjs
       - name: Build documentation
         working-directory: site
         run: npm ci && npm run assets:demo:check && npm run assets:social:check && npm run build
@@ -74,13 +96,13 @@ jobs:
           python scripts/build-release-artifacts.py
           --output-dir dist/release
           --provenance-mode release
-          --source-revision "$GITHUB_SHA"
+          --source-revision "$SOURCE_REVISION"
           --require-clean
           --check-determinism
       - name: Verify generated checksums and SBOM
         shell: bash
         run: |
-          test -s "dist/release/sbom/workflow-skill-router-v${GITHUB_REF_NAME#v}.spdx.json"
+          test -s "dist/release/sbom/workflow-skill-router-v${RELEASE_TAG#v}.spdx.json"
           (cd dist/release && sha256sum --check checksums.sha256)
       - name: Attest release assets from checksums
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
@@ -89,7 +111,7 @@ jobs:
       - name: Upload release bundle for workflow review
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: workflow-skill-router-${{ github.ref_name }}
+          name: workflow-skill-router-${{ env.RELEASE_TAG }}
           path: dist/release/
           if-no-files-found: error
       - name: Publish GitHub release
@@ -99,11 +121,11 @@ jobs:
         run: |
           mapfile -t release_files < <(find dist/release -type f -print | sort)
           release_flags=()
-          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+          if [[ "$RELEASE_TAG" == *-* ]]; then
             release_flags+=(--prerelease)
           fi
-          gh release create "$GITHUB_REF_NAME" "${release_files[@]}" \
+          gh release create "$RELEASE_TAG" "${release_files[@]}" \
             --verify-tag \
-            --title "Workflow Skill Router $GITHUB_REF_NAME" \
+            --title "Workflow Skill Router $RELEASE_TAG" \
             --generate-notes \
             "${release_flags[@]}"
