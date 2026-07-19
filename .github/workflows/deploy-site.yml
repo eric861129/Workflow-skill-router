@@ -1,11 +1,10 @@
 name: Deploy Starlight site to GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Validate V2 contracts"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'site/**'
-      - '.github/workflows/deploy-site.yml'
   workflow_dispatch:
 
 permissions:
@@ -19,16 +18,20 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Checkout validated revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Install, build, and upload site
-        uses: withastro/action@v6
+        uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6.1.2
         with:
           path: site
           node-version: 24
-          package-manager: npm@latest
+          package-manager: npm@11.6.2
 
   deploy:
     needs: build
@@ -39,8 +42,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
-
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
       - name: Smoke test public HTTPS URL
         run: |
           curl -fsS --head --max-time 20 https://huangchiyu.com/Workflow-skill-router/
@@ -52,4 +54,3 @@ jobs:
               exit 1
               ;;
           esac
-

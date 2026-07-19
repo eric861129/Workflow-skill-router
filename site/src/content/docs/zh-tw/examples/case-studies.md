@@ -1,150 +1,58 @@
 ---
-title: Routing Case Studies
-description: 六個把模糊需求轉成小而可檢查 route 的例子。
+title: V2 Routing 案例
+description: 了解 envelope 選擇、Explicit Skill Lock 與 runtime readiness 如何改變真實 routing decision。
 ---
 
-這些 case studies 展示 Workflow Skill Router 的核心：不要載入所有相關 skill，而是選一個 primary skill，再補上真正必要的 supporting skills。
+## 小型文件修正
 
-## API 合約同步
+**需求：**「替一個 API error response 補上文件。」
 
-模糊需求：
+**決策：**使用 `single`，只選一個文件導向的 primary SKILL。使用者沒有指定 SKILL，因此不出現 consent prompt。Router 先宣告預計使用方式，再編輯、驗證連結，最後揭露實際用到的技能。
 
-```text
-新增 customer settings endpoint，更新 OpenAPI，重新產生前端 client，並確認合約有被測試。
-```
+**重要性：**Router 不會把每個需求都升級成 workflow，也不會為一般自動 routing 多問一次同意。
 
-錯誤 over-route：
+## 多階段 API contract 變更
 
-```text
-Use SKILL: backend-developer, api-designer, openapi-contract-generation-skill, openapi-to-typescript, database-optimizer, qa-test-planner, frontend-design
-```
+**需求：**「新增 endpoint、更新 OpenAPI、重新產生 client，再驗證 consumer。」
 
-較好的 route：
+**決策：**使用 `phased`。
 
-```text
-Route: API / Contract lifecycle > Backend-to-frontend sync
-Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner
-Reason: api-designer 負責 endpoint 語意；openapi-contract-generation-skill 管理 schema change；openapi-to-typescript 更新 client types；qa-test-planner 定義合約覆蓋。
-```
+1. Contract 與 backend semantics。
+2. Generated client propagation。
+3. Consumer regression verification。
 
-為什麼較小更好：這組 route 保留 API shape 的單一 owner，只加入傳遞與驗證合約真正需要的工具。
+每個 phase 都重新選擇最小 SKILL 集合，通過 verification gate 後才進入下一階段。只在後面有用的技能，在對應 phase 開始前維持 inactive。
 
-## Vue 瀏覽器回歸
+**重要性：**單一寬鬆 route 會太早載入不相關能力，也會模糊 failure ownership。
 
-模糊需求：
+## 使用者指定一個 SKILL
 
-```text
-Vue 表單在 refresh 後會遺失已選值。請用瀏覽器重現，並補上 regression check。
-```
+**需求：**「只使用 `api-designer` review 這份 contract。」
 
-錯誤 over-route：
+**決策：**`single` 加 Explicit Skill Lock。`api-designer` 維持 active；若 security-sensitive 細節確實需要另一個 SKILL，Router 會把它列為 inactive support 並只詢問一次。拒絕後原始 lock 不變。
 
-```text
-Use SKILL: vue-expert, frontend-design, browser, playwright, qa-test-planner, api-designer, database-optimizer
-```
+**重要性：**使用者選擇保持權威，同時仍可收到透明、可拒絕的輔助建議。
 
-較好的 route：
+## 跨 repository migration Goal
 
-```text
-Route: Frontend / Vue / UI > Browser regression > State persistence
-Use SKILL: vue-expert, systematic-debugging, playwright, qa-test-planner
-Reason: vue-expert 處理 component state；systematic-debugging 找出真正原因；playwright 固化瀏覽器回歸；qa-test-planner 定義驗收覆蓋。
-```
+**需求：**「繼續 API、Web 與文件 migration，直到 release gate 準備完成。」
 
-為什麼較小更好：route 從症狀出現的位置開始，加入因果式除錯，最後才用可重複的瀏覽器檢查驗證。
+**決策：**使用 `managed-goal`，建立 Work Items、dependencies、candidates、evidence receipts 與明確 completion criteria。在 bundled local R0 profile 中，planning 與 status 可用；verified Host ports 尚未存在時，scheduling 回傳 `capability-unavailable`。
 
-## PR Review 與 CI 修復
+**重要性：**Router 會如實 degradation，不會假裝本機檔案提供 native Goal mutation。
 
-模糊需求：
+## 真實模型評測
 
-```text
-Review 這個 auth 相關 PR，處理 review feedback，並在 merge 前修好失敗的 CI checks。
-```
+**需求：**「用真實 model runs 證明新的 routing behavior 更好。」
 
-錯誤 over-route：
+**決策：**可先產生不消耗 quota 的 dry-run manifest。只有 trusted operator 提供 executable configuration 並明確授權 quota 後，才允許 Behavior/Outcome execution。Paired review 與 attestation 未通過前，結果不發布。
 
-```text
-Use SKILL: github, receiving-code-review, security-review, systematic-debugging, qa-test-planner, devops-engineer, commit-work, documentation-writer
-```
+**重要性：**Fixture 只能證明 contract shape，不能證明 model behavior；evaluation cost 與 publication 是不同決策。
 
-較好的 route：
+## 已發現但未授權的 capability
 
-```text
-Route: Review / CI readiness > Security-sensitive change
-Use SKILL: receiving-code-review, systematic-debugging, qa-test-planner, commit-work
-Reason: receiving-code-review 把 feedback 轉成行動；systematic-debugging 隔離 CI 失敗；qa-test-planner 保護 auth 表面；commit-work 準備乾淨 commit。
-```
+**需求：**「使用剛發現的 deployment connector 立即發布。」
 
-為什麼較小更好：route 專注在 merge 前必須完成的工作。只有當 live GitHub comments 或 logs 是 source of truth 時，才需要加 connector skills。
+**決策：**Discovery 可以顯示 connector 已安裝，但只要 Host exposure、authorization、policy、freshness 或 side-effect approval 任一缺失，activation 仍會被阻擋。
 
-## 文件 source map 清理
-
-模糊需求：
-
-```text
-搬移 guide 頁面後，docs source map 已經過期。修正公開連結，並確認每個頁面仍指到正確 source file。
-```
-
-錯誤 over-route：
-
-```text
-Use SKILL: code-documenter, spec-miner, frontend-design, devops-engineer, qa-test-planner, github
-```
-
-正確 route：
-
-```text
-Route: Documentation / Source map > Link and provenance cleanup
-Use SKILL: code-documenter, spec-miner
-Reason: code-documenter 負責開發者文件文字；spec-miner 確認文件來源與 provenance。
-```
-
-為什麼較小更好：route 保持在內容與來源追蹤。只有 validation 失敗或需要 live repo state 時，才加 site build 或 GitHub connector skill。
-
-## Database migration 與效能風險
-
-模糊需求：
-
-```text
-新增 account changes 的 audit tables，並確認 migration 後 admin activity query 仍然夠快。
-```
-
-錯誤 over-route：
-
-```text
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, devops-engineer, api-designer, qa-test-planner, frontend-design
-```
-
-正確 route：
-
-```text
-Route: Database / Schema and performance > Migration plus query review
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
-Reason: database-schema-designer 負責 table shape；sql-pro 保持 SQL 清楚；database-optimizer 檢查 query cost；qa-test-planner 定義 migration coverage。
-```
-
-為什麼較小更好：選到的 skills 已覆蓋 schema、SQL、performance 與 verification，不需要讓 API 或 UI 工作干擾 agent。
-
-## Release 與 connector closeout
-
-模糊需求：
-
-```text
-完成 release branch，檢查最新 GitHub run，並準備 release note。
-```
-
-錯誤 over-route：
-
-```text
-Use SKILL: finishing-a-development-branch, github, receiving-code-review, systematic-debugging, devops-engineer, code-documenter, commit-work
-```
-
-正確 route：
-
-```text
-Route: Release / Closeout > GitHub-backed readiness check
-Use SKILL: finishing-a-development-branch, github, code-documenter
-Reason: finishing-a-development-branch 負責本機收尾；github 檢查 live run state；code-documenter 準備 release note。
-```
-
-為什麼較小更好：connector 被加入是因為 live GitHub state 是 source of truth。除非 run 失敗，否則 debugging 與 DevOps skills 先保持不啟用。
+**重要性：**Installation 是證據，不是 authority。

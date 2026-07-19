@@ -1,0 +1,68 @@
+name: Model evaluation case
+description: Propose a public-safe V2 case or report a reproducibility problem in evaluation evidence.
+title: "[Evaluation]: "
+labels: ["evaluation", "needs-triage"]
+body:
+  - type: input
+    id: evaluation-profile
+    attributes:
+      label: Evaluation profile
+      placeholder: Profile name and revision
+    validations:
+      required: true
+  - type: dropdown
+    id: adapter-kind
+    attributes:
+      label: Adapter kind
+      options:
+        - Deterministic fixture
+        - Sealed subprocess
+        - Codex CLI
+        - Other bounded adapter
+    validations:
+      required: true
+  - type: input
+    id: attempt-count
+    attributes:
+      label: Attempt count
+      placeholder: Total attempts and attempts per case
+    validations:
+      required: true
+  - type: textarea
+    id: manifest-digests
+    attributes:
+      label: Manifest digests
+      description: Provide case, profile, adapter, baseline, and candidate SHA-256 digests.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence-status
+    attributes:
+      label: Evidence status
+      options:
+        - fixture
+        - manual-required
+        - review-required
+        - attested
+        - superseded
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Observation and expected result
+      description: Explain the reproducibility gap, routing expectation, or proposed public-safe case.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Evidence safety
+      options:
+        - label: I included no secrets, credentials, private prompts, internal paths, or regulated data.
+          required: true
+        - label: I did not present fixture output as real model behavior.
+          required: true
+        - label: Any live model attempts had explicit quota authorization.
+          required: true

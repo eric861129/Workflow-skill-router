@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/adapter-protocol.schema.json",
+  "title": "Workflow Skill Router V2 subprocess adapter protocol",
+  "description": "One JSON request on stdin and one bounded JSON object on stdout per process invocation.",
+  "oneOf": [
+    { "$ref": "#/$defs/startAttemptRequest" },
+    { "$ref": "#/$defs/startAttemptResponse" },
+    { "$ref": "#/$defs/executeTurnRequest" },
+    { "$ref": "#/$defs/executeTurnResponse" }
+  ],
+  "$defs": {
+    "nonce": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "contextId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "description": "Opaque provider context. It must be fresh for every attempt."
+    },
+    "allowedTools": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 },
+      "uniqueItems": true
+    },
+    "startAttemptRequest": {
+      "type": "object",
+      "required": [
+        "type",
+        "opaque_run_case_id",
+        "prompt",
+        "profile",
+        "allowed_tools",
+        "execution_mode",
+        "attempt_nonce"
+      ],
+      "properties": {
+        "type": { "const": "start_attempt" },
+        "opaque_run_case_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "prompt": { "type": "string", "maxLength": 1048576 },
+        "profile": { "enum": ["contract", "behavior", "outcome"] },
+        "allowed_tools": { "$ref": "#/$defs/allowedTools" },
+        "execution_mode": { "enum": ["model-only", "hybrid-router"] },
+        "attempt_nonce": { "$ref": "#/$defs/nonce" }
+      },
+      "additionalProperties": false
+    },
+    "startAttemptResponse": {
+      "type": "object",
+      "required": ["attempt_nonce", "context_id"],
+      "properties": {
+        "attempt_nonce": { "$ref": "#/$defs/nonce" },
+        "context_id": { "$ref": "#/$defs/contextId" }
+      },
+      "additionalProperties": true
+    },
+    "executeTurnRequest": {
+      "type": "object",
+      "required": [
+        "type",
+        "context_id",
+        "attempt_nonce",
+        "turn_index",
+        "prompt",
+        "allowed_tools"
+      ],
+      "properties": {
+        "type": { "const": "execute_turn" },
+        "context_id": { "$ref": "#/$defs/contextId" },
+        "attempt_nonce": { "$ref": "#/$defs/nonce" },
+        "turn_index": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "prompt": { "type": "string", "maxLength": 1048576 },
+        "allowed_tools": { "$ref": "#/$defs/allowedTools" }
+      },
+      "additionalProperties": false
+    },
+    "executeTurnResponse": {
+      "type": "object",
+      "required": ["attempt_nonce", "context_id"],
+      "properties": {
+        "attempt_nonce": { "$ref": "#/$defs/nonce" },
+        "context_id": { "$ref": "#/$defs/contextId" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

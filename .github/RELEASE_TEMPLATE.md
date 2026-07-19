@@ -1,38 +1,48 @@
-# Release Notes
+# Workflow Skill Router V2 Release
 
 ## Highlights
 
 -
 
-## Validation
+## Compatibility
+
+- V2 tag: `v2.*`
+- Plugin/MCP runtime:
+- SKILL-only package:
+- V1 compatibility impact:
+
+## Verified Evidence
+
+- Router Core and Plugin/MCP tests:
+- Documentation site smoke, visual, accessibility, and Lighthouse gates:
+- Model evaluation evidence status (`manual-required`, `review-required`, or `attested`):
+- Authorized model quota and attempt budget, if behavior evidence was produced:
+
+## Supply Chain
+
+- [ ] Artifacts were built from the clean tagged source revision.
+- [ ] Deterministic build comparison passed.
+- [ ] `checksums.sha256` covers every release asset.
+- [ ] SPDX SBOM is attached.
+- [ ] Source provenance is marked publishable and names the tagged revision.
+- [ ] GitHub artifact attestation was generated and verification instructions were tested.
+- [ ] No tracked `downloads/` artifact was used as a release source.
+
+Verification:
 
 ```bash
-python scripts/validate-router.py starter/workflow-skill-router
-python scripts/validate-router.py examples/template-skill-catalog
-python scripts/audit-public-readiness.py .
-python -m unittest discover -s tests
+gh attestation verify <downloaded-asset> --repo eric861129/Workflow-skill-router
 ```
 
-Site:
+## Security and Limitations
 
-```bash
-cd site
-npm run build
-npm run audit:lighthouse
-```
+- Security changes:
+- Known limitations:
+- Migration notes:
 
-## Breaking Changes
+## Publication Approvals
 
-- None expected.
-
-## Download Links
-
-- Blank SKILL package: https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip
-- Full template package: https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip
-- Clean template package: https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip
-
-## Contributor Notes
-
-- Keep examples public-safe.
-- Keep routes bounded to one primary skill plus focused support.
-- Run the scanner and routing evaluator before publishing.
+- [ ] Release authority approved this tag.
+- [ ] Security-sensitive changes were cleared for disclosure.
+- [ ] Behavior evidence promotion was independently reviewed.
+- [ ] Stable-channel movement and Pages deployment were separately authorized when applicable.

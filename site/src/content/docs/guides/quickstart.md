@@ -1,324 +1,55 @@
 ---
-title: Quickstart
-description: Install the starter router, fill your skill tree, and validate it.
+title: V2 Quickstart
+description: Choose Plugin + MCP or Skill-only, verify the runtime label, and inspect one route.
 ---
 
-## Choose your path
+## 1. Choose the runtime
 
-If you only want to try the framework, clone the repo and validate the starter router.
+Install [Plugin + MCP](/Workflow-skill-router/guides/install-plugin/) when Codex supports it. Install [Skill-only](/Workflow-skill-router/guides/install-skill/) for instruction-only fallback. Do not install both under the same identity unless you are deliberately testing precedence.
 
-If you want to build your own router, install the blank package into your agent's skill directory, then ask your agent to inventory your actual skills and fill the starter references.
+## 2. Verify the label
 
-## 1. Try in 30 seconds
-
-This path does not install a skill. It only proves that the framework and starter validate correctly.
-
-```bash
-git clone https://github.com/eric861129/Workflow-skill-router.git
-cd Workflow-skill-router
-python scripts/validate-router.py starter/workflow-skill-router
-```
-
-Expected:
-
-```text
-OK: workflow-skill-router passed validation
-```
-
-## 2. Install the blank skill
-
-Use this path when you want Codex or another skill-aware agent to load `workflow-skill-router` as an installed skill.
-
-- [Blank SKILL package](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip)
-- [View starter source folder](https://github.com/eric861129/Workflow-skill-router/tree/main/starter/workflow-skill-router)
-
-For Codex on Windows PowerShell:
+Plugin checkout:
 
 ```powershell
-$Repo = "https://github.com/eric861129/Workflow-skill-router"
-$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
-$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
-$Skills = Join-Path $env:USERPROFILE ".codex\skills"
-Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
-Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
-New-Item -ItemType Directory -Force -Path $Skills | Out-Null
-Expand-Archive -Force -Path $Zip -DestinationPath $Skills
-python $Validator (Join-Path $Skills "workflow-skill-router")
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-For macOS or Linux:
+Expected: `runtime_profile` is `bundled-local-r0`; only `plan_work` and `get_router_status` are local-ready. Skill-only tasks must state `skill-only-fallback`.
 
-```bash
-curl -L -o /tmp/workflow-skill-router-blank.zip https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip
-curl -L -o /tmp/workflow-skill-router-validate-router.py https://github.com/eric861129/Workflow-skill-router/raw/main/scripts/validate-router.py
-mkdir -p "$HOME/.codex/skills"
-unzip -o /tmp/workflow-skill-router-blank.zip -d "$HOME/.codex/skills"
-python /tmp/workflow-skill-router-validate-router.py "$HOME/.codex/skills/workflow-skill-router"
-```
+## 3. Try three requests
 
-Both install commands validate the installed skill path after extraction.
-
-## 3. Ask your agent to fill the router
-
-Use the English prompt below, or open the source file:
-
-- [View `prompts/agent-prompt.en.md` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/prompts/agent-prompt.en.md)
-
-If you want a complete copyable setup from blank install to validated router, use the [Blank Router walkthrough](/Workflow-skill-router/guides/blank-router-walkthrough/). If an install or validator command fails, open [Troubleshooting](/Workflow-skill-router/guides/troubleshooting/).
-
-### Initial Setup Prompt
+Small auto route:
 
 ```text
-You are helping me build a workflow-skill-router for my current multi-skill AI agent environment.
-
-First, read this repository's method documents:
-- README.en.md
-- docs/system-theory.en.md
-- docs/validation-checklist.en.md
-- starter/workflow-skill-router/SKILL.md
-- starter/workflow-skill-router/references/skill-tree.md
-- starter/workflow-skill-router/references/routing-rules.md
-
-Your goal is not to add many new skills, and it is not to reuse the example skill list. Your goal is to inspect my currently installed, enabled, or agent-readable skills, then fill the blank starter template into a vertical routing system for my environment.
-
-Follow these steps:
-
-1. Inventory currently available skills
-   - Find every skill this agent can use.
-   - For each skill, capture: name, source, purpose, suitable tasks, whether it is a connector/plugin, and whether it is a meta workflow.
-   - If the environment cannot automatically read the skill list, ask me for the skill directory or ask me to paste the list.
-
-2. Build functional classification
-   Do not use only flat categories. Use this structure:
-
-   Task nature
-     -> Work stage
-       -> Technical domain
-         -> The actual 1-4 skills to use
-
-   Each leaf route may contain at most 4 skills.
-   Each leaf route must have 1 primary skill; the others are supporting skills.
-   If a category needs more than 4 skills, split it into multiple work stages.
-
-3. Create conflict rules
-   Identify skills that overlap or tend to trigger too broadly, then write selection rules.
-
-   Examples:
-   - local custom skill vs plugin connector skill
-   - browser automation skill vs scripted Playwright skill
-   - code review skill vs GitHub PR comment skill
-   - broad meta workflow skill vs narrow task skill
-   - docs/writing skill vs file-format connector skill
-
-4. Produce the workflow-skill-router design and fill the starter template
-   Output the following:
-
-   A. Skill Inventory Summary
-   - Group by source: custom / system / plugin / connector / unknown
-   - Mark high-value skills, low-frequency skills, and skills likely to over-trigger
-
-   B. Workflow Skill Tree
-   - Use: task nature -> work stage -> technical domain -> skills
-   - Keep each route to at most 4 skills
-
-   C. Routing Rules
-   - Priority order
-   - Conflict handling
-   - When not to use the router
-   - When connector/plugin skills must come first
-
-   D. Recommended workflow-skill-router Files
-   - Actual SKILL.md based on starter/workflow-skill-router/SKILL.md
-   - Filled references/skill-tree.md based on the inventory
-   - Filled references/routing-rules.md based on conflicts and priority rules
-   - If the platform supports UI metadata, filled agents/openai.yaml or the equivalent configuration
-
-5. Validate
-   Test the classification with at least 6 realistic task scenarios:
-   - Backend API task
-   - Frontend UI or browser debugging task
-   - Documentation or architecture diagram task
-   - GitHub PR / CI task
-   - External connector task
-   - A simple task that should not over-trigger the router
-
-Important constraints:
-- Do not design the router as a super skill.
-- Do not suggest disabling every other skill and keeping only the router.
-- Do not select more than 4 skills for a single route.
-- Do not include a skill merely because it is related; include only what the task truly needs.
-- Do not treat this repository's example skill list as my actual skill list; use my current environment as the source of truth.
-- If file edits are needed, explain which files will be created or changed before making changes.
-
-Reply in clear Markdown with tables where useful.
+Document one API error response.
 ```
 
-### Maintenance Prompt: Add Specified New Skills To An Existing Router
+Expected envelope: `single`. No support-consent prompt appears because the user named no SKILL.
+
+Explicit Skill Lock:
 
 ```text
-I have already configured workflow-skill-router once. I have now added the following skills. Please help me integrate them into the existing workflow-skill-router.
-
-New skills:
-- <paste the skill name, path, or description>
-- <paste the skill name, path, or description>
-
-First, read my currently installed workflow-skill-router:
-- SKILL.md
-- references/skill-tree.md
-- references/routing-rules.md
-- agents/openai.yaml or equivalent metadata file, if present
-
-Your goal is not to rebuild the whole router, and it is not to insert the new skills into every related category.
-Your goal is to decide what role these new skills should play in the existing routing system, then make the smallest necessary update.
-
-Follow these steps:
-
-1. Read the specified new skills
-   - Confirm each skill's name, source, purpose, and suitable tasks.
-   - Decide whether it is a connector/plugin, system skill, custom skill, or meta workflow.
-   - If you cannot read the skill content, clearly tell me what information is missing.
-
-2. Compare against the existing workflow-skill-router
-   - Check whether references/skill-tree.md already contains the same or highly overlapping skills.
-   - Check whether references/routing-rules.md already contains related conflict rules.
-   - Decide whether each new skill should add a route, replace an existing supporting skill, or only appear in conflict rules.
-
-3. Update the skill tree
-   - Each route must still contain at most 4 skills.
-   - Each route must still have 1 Primary skill; the others are Supporting skills.
-   - Do not add a new skill merely because it is related. Add it only when it is better suited than the existing skills for a specific task stage.
-   - If adding it would make a route exceed 4 skills, split the route into a more precise work stage.
-
-4. Update conflict rules
-   - If a new skill overlaps with existing skills, add a selection rule.
-   - If a new skill is a connector/plugin, state when it should be preferred.
-   - If a new skill is a meta workflow, state when it should not be enabled by default.
-
-5. Validate
-   - List which files were changed.
-   - List which routes now include the new skills.
-   - Test the new routing with 2-3 realistic task scenarios.
-   - Confirm that no route contains more than 4 skills.
-
-Important constraints:
-- Do not rebuild the whole workflow-skill-router.
-- Do not remove existing skills unless a new skill truly replaces one, and explain why.
-- Do not add new skills to every place that looks related.
-- If file edits are needed, explain which files will be changed before making changes.
-
-Reply with a table covering: new skill, recommended category, Primary/Supporting role, edit location, and reason.
+Use api-designer only. Do not add support without asking.
 ```
 
-### Maintenance Prompt: Detect Newly Added Skills Missing From The Router
+Expected: the named SKILL remains active; proposed outside support requires consent and stays inactive after rejection.
+
+Managed Goal:
 
 ```text
-I have already configured workflow-skill-router once, but I may have added more skills afterward.
-Please inspect the current environment, find skills that are installed or agent-readable but missing from workflow-skill-router, and decide whether they should be added.
-
-First, read my currently installed workflow-skill-router:
-- SKILL.md
-- references/skill-tree.md
-- references/routing-rules.md
-- agents/openai.yaml or equivalent metadata file, if present
-
-Then inventory currently available skills:
-- Find every skill the current agent can use, has installed, has enabled, or can read.
-- Group them by source: custom / system / plugin / connector / meta workflow / unknown.
-- Compare them against references/skill-tree.md and references/routing-rules.md to find skills that are missing or only partially recorded.
-
-Follow these steps:
-
-1. Produce a diff list
-   - Skills fully recorded in the router.
-   - Skills not recorded but recommended for inclusion.
-   - Skills not recorded and not recommended for inclusion.
-   - Skills that only need routing-rules coverage, not skill-tree routes.
-
-2. Decide whether each missing skill should be added
-   Use these criteria:
-   - Does it cover a task type the current router does not handle?
-   - Is it better than an existing skill as the Primary skill for a route?
-   - Is it only useful as a Supporting skill?
-   - Is it a connector/plugin that must be preferred for external data or a specific runtime?
-   - Is it a broad meta workflow that should avoid default activation?
-
-3. Update workflow-skill-router
-   - Update references/skill-tree.md when necessary.
-   - Update references/routing-rules.md when necessary.
-   - Update the Skill Inventory Summary when necessary.
-   - Keep every route to at most 4 skills.
-   - Mark Primary and Supporting skills explicitly for every route.
-
-4. Validate
-   - Test the updated routing with at least 3 scenarios.
-   - Confirm simple tasks do not over-trigger the router.
-   - Confirm connector/plugin tasks still prefer the matching connector/plugin skill.
-   - Confirm meta workflows were not over-added to normal routes.
-
-Important constraints:
-- Do not add every missing skill to skill-tree.
-- Do not assume a skill belongs in the router merely because it exists.
-- Do not rebuild the whole router; prefer diff-based updates.
-- Do not let any single route exceed 4 skills.
-- If file edits are needed, explain which files will be changed before making changes.
-
-Reply with:
-
-1. Missing Skill Diff Summary
-2. Recommended Additions
-3. Skills Not Added And Why
-4. Updated Routes
-5. Validation Results
+Continue the migration Goal across API, Web, and docs.
 ```
 
-The agent should inventory available skills and fill:
+Expected local behavior: `plan_work` succeeds, `get_next_work` returns typed `capability-unavailable`, and `get_router_status` remains readable. A verified Host integration is required for actual scheduling.
 
-```text
-workflow-skill-router/
-  SKILL.md
-  references/
-    skill-tree.md
-    routing-rules.md
-```
+## 4. Inspect the evidence
 
-## 4. Validate
+Open the homepage Flight Recorder. Expand each MCP step to inspect sanitized request/response JSON. `runtime-trace` is bundled local evidence; `fixture-trace` proves the Host contract through test ports and is not a live Host connection.
 
-Run this from a cloned repo when you are validating the starter or a customized router folder:
+## Next steps
 
-```bash
-python scripts/validate-router.py starter/workflow-skill-router
-```
-
-Expected:
-
-```text
-OK: workflow-skill-router passed validation
-```
-
-If you want to study a working example, download the [Reference Template](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip). Treat it as a model for structure and route writing, then adapt the blank router to your own skill set.
-
-Source:
-
-- [Template Skill Catalog](/Workflow-skill-router/examples/template-skill-catalog/)
-- [Template manifest](https://github.com/eric861129/Workflow-skill-router/blob/main/downloads/workflow-skill-router-template-manifest.md)
-- [Full source archive](https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip)
-- [Package builder script](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/package-downloads.py)
-
-The install commands above already validate the installed path under your skill directory.
-
-## 5. Try a route
-
-Ask a complex task:
-
-```text
-Debug a Vue-only rendering bug and add a Playwright regression check.
-```
-
-Expected shape:
-
-```text
-Route: Frontend / Vue / UI > Browser regression > Rendered behavior
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.
-```
-
+- [Runtime Capability Discovery](/Workflow-skill-router/concepts/runtime-capability-discovery/)
+- [Routing Envelopes](/Workflow-skill-router/concepts/routing-envelopes/)
+- [MCP tool reference](/Workflow-skill-router/reference/mcp-tools/)
+- [Troubleshooting](/Workflow-skill-router/guides/troubleshooting/)

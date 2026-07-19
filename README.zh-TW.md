@@ -1,344 +1,178 @@
-# Workflow Skill Router
+# Workflow Skill Router V2
 
-[![Validate router tools](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml/badge.svg)](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml)
-[![Release](https://img.shields.io/github/v/release/eric861129/Workflow-skill-router)](https://github.com/eric861129/Workflow-skill-router/releases)
-[![Downloads](https://img.shields.io/github/downloads/eric861129/Workflow-skill-router/total)](https://github.com/eric861129/Workflow-skill-router/releases)
-[![Stars](https://img.shields.io/github/stars/eric861129/Workflow-skill-router?style=social)](https://github.com/eric861129/Workflow-skill-router/stargazers)
-[![Site](https://img.shields.io/website?url=https%3A%2F%2Fhuangchiyu.com%2FWorkflow-skill-router%2F&label=site)](https://huangchiyu.com/Workflow-skill-router/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.en.md)
+[English](README.md) · [線上文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [Routing Flight Recorder](https://huangchiyu.com/Workflow-skill-router/zh-tw/#routing-flight-recorder)
 
-> 一個 Codex-ready 的 routing layer，處理 Agent sprawl 裡的「Skill 選擇失控」問題。
+Workflow Skill Router 是 Codex 的 runtime-aware 規劃與路由層。它讓 Agent 專注於最小且可驗證的執行路徑，保留使用者權限，並如實呈現 Runtime 真正能做的事。
 
-**Not another prompt collection. A routing layer for multi-skill AI agents.**
+> 目前版本：`2.0.0-beta.1`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
 
-這不是把 prompt 堆在一起的資料夾，而是讓 Agent 在工作前先做出一個可檢查、可修正的技能選擇。
+## 60-second outcome / 60 秒成果
 
-Workflow Skill Router 處理的是 Agent sprawl 裡的「Skill 選擇失控」問題。它不是權限邊界，也不取代 scope contract、runtime permission 或 approval policy。它的角色是在任務開始前，讓 Agent 從已存在、已允許的 skills 中，選出最小必要組合，並說明選擇理由。
-
-## 專案定位
-
-Workflow Skill Router 是一層執行前的 skill selection layer。它幫助 Agent 判斷：
-
-- 哪一個 skill 應該作為 Primary 負責本次任務。
-- 哪些 supporting skills 真的必要。
-- 哪些看似相關、但本次不該載入的 skills 應該排除。
-- 為什麼這條 route 是最小可用組合。
-
-它不是安全邊界。請搭配既有的 scope contracts、runtime permissions、approval policies 與 tool access controls 使用。
-
-## 前後對比
-
-沒有 routing 時，一個前端 bug 很容易觸發所有看起來相關的 skills：
+把需求交給 Router，它會回傳 execution envelope、能力計畫、同意邊界，以及安全繼續工作所需的證據。公開 Flight Recorder 顯示真正經清理的 MCP request／response，不在瀏覽器重算決策。
 
 ```text
-frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
+需求
+  -> 判斷工作形狀
+  -> 探索可用的 Runtime 能力
+  -> 鎖定使用者明確指定
+  -> 規劃最小路由
+  -> 執行、驗證並揭露實際 SKILL 使用情形
 ```
 
-有 routing 後，Agent 會先選出小而聚焦的工作組合：
+## Plugin + MCP 與 Skill-only
 
-```text
-Route: Frontend / Debugging > Browser reproduction > Single-page app
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert 處理 component 行為；systematic-debugging 維持因果式排查；playwright 固化回歸驗證。
-```
-
-Demo 預覽：
-
-[![Workflow Skill Router demo poster](docs/assets/workflow-skill-router-demo-poster.png)](https://huangchiyu.com/Workflow-skill-router/zh-tw/showcase/)
-
-觀看精修 demo：[MP4](docs/assets/workflow-skill-router-demo.mp4)、[WebM](docs/assets/workflow-skill-router-demo.webm)，或 [站台 Showcase](https://huangchiyu.com/Workflow-skill-router/zh-tw/showcase/)。
-GIF fallback：[高畫質 demo GIF](docs/assets/workflow_skill_rout-GIF.gif) 或 [輕量 60 秒 GIF](docs/assets/workflow-skill-router-60s-demo.gif)
-短版 route output demo：[模糊需求到 route output GIF](docs/assets/fuzzy-to-route-output.gif)
-靜態預覽：[before/after routing SVG](docs/assets/demo-routing-before-after.svg)
-
-## 30 秒快速開始
-
-英文站台：`https://huangchiyu.com/Workflow-skill-router/`
-繁中站台：`https://huangchiyu.com/Workflow-skill-router/zh-tw/`
-
-我該下載哪個套件？
-
-| 套件 | 適合情境 | 下載 |
+| 能力 | Plugin + MCP | Skill-only |
 | --- | --- | --- |
-| Blank Router | 想依照自己的 skills、triggers、exclusions 與 routing rules 建立自己的 router。 | [workflow-skill-router-blank.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/) |
-| Reference Template | 想先研究一份 public-safe 範例，再回頭改造 blank router 成自己的 workflow。 | [workflow-skill-router-template-clean.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/) |
-| Full source archive | 需要 per-skill README、source context，或想 audit Reference Template 來源。 | [workflow-skill-router-template.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/) |
+| 路由指令 | 內建 | 內建 |
+| 本機 durable R0 規劃與 scoped consent | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | 無法觀測 |
+| verified-host 排程與 route validation | 完成 Host 整合後可用 | 不可用 |
+| 跨程序狀態與 compare-and-swap | 取決於 Host／Runtime | 不可用 |
+| sealed model evaluation | 需要 configured adapter | 只能人工執行 |
+| 誠實的 Runtime 標籤 | `bundled-local-r0` 或 verified profile | `skill-only-fallback` |
 
-只想試用，不安裝任何 SKILL：
+Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或只需要 instruction-only routing，再使用獨立 SKILL。Skill-only 絕不等於 `hybrid-full`。
 
-```bash
-git clone https://github.com/eric861129/Workflow-skill-router.git
-cd Workflow-skill-router
-python scripts/validate-router.py starter/workflow-skill-router
-```
+## 五分鐘 Plugin + MCP quickstart
 
-在 Windows PowerShell 將空白 SKILL 安裝到 Codex：
+Contributor checkout：
 
 ```powershell
-$Repo = "https://github.com/eric861129/Workflow-skill-router"
-$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
-$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
-$Skills = Join-Path $env:USERPROFILE ".codex\skills"
-Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
-Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
-New-Item -ItemType Directory -Force -Path $Skills | Out-Null
-Expand-Archive -Force -Path $Zip -DestinationPath $Skills
-python $Validator (Join-Path $Skills "workflow-skill-router")
-```
-
-macOS 與 Linux 安裝指令請看 [Quickstart guide](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/quickstart/)。
-
-完整空白 router 設定流程請看 [Blank Router 端到端教學](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/blank-router-walkthrough/)。如果安裝或驗證失敗，請看 [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/troubleshooting/)。
-
-預期結果：
-
-```text
-OK: workflow-skill-router passed validation
-```
-
-## Proof
-
-- `80` 個 routing benchmark scenarios。
-- 從 `v1.2.0` 到 `v1.3.0` 的公開 routing metrics trend。
-- 由 root-level route cases 產生的 public-safe Routing Gallery。
-- Scanner、evaluator、route cases 與 metrics 行為都有 unit tests。
-- Public-readiness audit 會檢查 community files、downloads、manifest、examples、site entrypoints 與 mojibake。
-- Lighthouse gate 覆蓋英文與繁中主要頁面；最近本機驗證 accessibility、best-practices、SEO 都是 100。
-- Strict CI 檢查 private warnings、duplicate skill ids、route violations 與 strict routing expectations。
-
-## 下載 SKILL 套件
-
-- [Blank Router 套件](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/)：主要下載入口，適合依照自己的 skills、命名習慣、觸發條件、排除條件與 routing rules 建立自己的 router。
-- [Reference Template 套件](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/)：公開安全版參考範例，用來理解結構與寫法，再回頭改造成自己的 workflow。
-- [Full source archive](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/)：保留 per-skill README 的完整 source archive，只有需要 source context 或 audit 範本來源時才下載。
-- [Template Skill Catalog](examples/template-skill-catalog)：對應 Reference Template 的 routing catalog。
-- [Template manifest](downloads/workflow-skill-router-template-manifest.md)：列出包含的 skill folders、排除的 private skill 數量與 sanitization summary。
-
-供 audit 與離線使用的 repository 直接路徑：[Blank Router](downloads/workflow-skill-router-blank.zip)、[Reference Template](downloads/workflow-skill-router-template-clean.zip)、[Full source archive](downloads/workflow-skill-router-template.zip)。
-
-## 專案 Roadmap 與社群方向
-
-你可以透過 release 或 watch 追蹤以下方向：
-
-- 讓多技能 Agent 避免 context overload。
-- 用 benchmark scenarios 評估 routing 決策。
-- 分享 public-safe skill catalog，同時保留私有規則在本機。
-- 從本機 skill folders 產生 public-safe reference package。
-
-## 這個專案可以幫你做什麼
-
-- 將可用 skills 盤點成 machine-readable catalog。
-- 依工作階段、技術領域、triggers、exclusions 整理 skills。
-- 將任務 routing 到 1 個 Primary skill 與少量 Supporting skills。
-- 驗證 routes 是否可解釋、有數量邊界，且適合公開。
-- 用 scenarios 與 predictions 量化 routing quality。
-
-## Framework 快速開始
-
-```bash
 git clone https://github.com/eric861129/Workflow-skill-router.git
-cd Workflow-skill-router
-
-python scripts/validate-router.py starter/workflow-skill-router
-
-python scripts/scan-skills.py ./sample-skills \
-  --out references/skill-index.example.json \
-  --markdown references/skill-index.example.md \
-  --warnings references/skill-scan-warnings.example.md \
-  --suggest-tree references/suggested-skill-tree.example.md
-
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report evaluation/report.example.md
+Set-Location Workflow-skill-router
+codex plugin marketplace add .
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-## 建議工作流
+immutable `v2.0.0-beta.1` tag 發布後，改用 tagged marketplace snapshot：
 
-1. 複製 starter。
-2. 盤點可用 skills。
-3. 定義 skill tree。
-4. 定義 routing rules。
-5. 新增 routing scenarios。
-6. 產生 predictions。
-7. 評估 routing quality。
-8. 發布前執行 validation。
-
-## Quality gates
-
-- 除非明確拆階段，單一路由最多 4 個 skills。
-- Primary skill 必須清楚。
-- Supporting skills 應保持最小且職責不同。
-- Route explanation 應存在。
-- Forbidden skills 不應被選到。
-- Public packages 與 examples 不應包含 private markers。
-- Scenario coverage 應隨 routing mistake 持續累積。
-
-如果你準備發布自己的 router package 或公開 examples，請再跑完整 repo audit：
-
-```bash
-python scripts/audit-public-readiness.py .
-python scripts/check-markdown-links.py .
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
 ```
 
-預期結果：
+正式 Plugin 已包含 MCP bundle 與 Python runtime。執行需要 Node.js 24+ 與 Python 3.11+；只有從原始碼重建時需要 npm。完整說明請看 [Plugin 安裝](site/src/content/docs/zh-tw/guides/install-plugin.md)。
+
+## 五分鐘 Skill-only quickstart
+
+在 Windows contributor checkout 中執行：
+
+```powershell
+$Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
+Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
+Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
+```
+
+正式 Release 則將 `workflow-skill-router-skill-v2.0.0-beta.1.zip` 解壓至 Codex Skills 目錄。此套件保留路由指令與 explicit-choice policy，但無法證明 durable resume、完整 drift detection 或 sealed activation。完整說明請看 [Skill-only 安裝](site/src/content/docs/zh-tw/guides/install-skill.md)。
+
+## 架構：先做 Runtime Capability Discovery
+
+Runtime Capability Discovery 把常被混為一談的五個事實分開：已安裝 metadata、Host exposure、驗證狀態、policy eligibility 與 freshness。只有通過對應風險條件的能力才能進入路由。
+
+```mermaid
+flowchart LR
+    U["使用者需求"] --> R["Router core"]
+    H["Codex Host observations"] --> D["Runtime Capability Discovery"]
+    P["Plugin handshake"] --> D
+    S["SKILL metadata"] --> D
+    D --> R
+    R --> E["Single / Phased / Managed Goal"]
+    E --> L["Local R0 control plane"]
+    E --> V["Verified host adapters"]
+    E --> M["Configured evaluation adapter"]
+    V --> A["State、evidence 與 audit stores"]
+```
+
+Maintainer 可先閱讀 [V2 架構總覽](docs/architecture/v2-overview.md)。
+
+## Single、Phased 與 Managed Goal
+
+- **Single**：處理一個有明確邊界的意圖，只選最小 Primary capability。
+- **Phased**：保留不同階段，並依當下證據為每個 Phase 重新路由。
+- **Managed Goal**：維護可恢復的 Work Graph、尊重依賴關係，並把 Codex Goal 視為 Host-owned state。
+
+Router 不會把每個任務都塞進 Goal 流程。工作形狀由需求、依賴、風險與目前 Goal relation 共同決定。
+
+## Explicit Skill Lock
+
+使用者指定 SKILL 時，該選擇具有權威性。Router 可以建議支援能力，但啟用前必須說明用途、scope、拒絕後果與 context cost。被拒絕的支援不得進入 active selections。
+
+Plugin 模式會在詢問前先持久化 proposal。後續 model turn 只分類 `approved`、`rejected` 或 `unclear`；deterministic MCP transition 會保留 bound route，Phase、scope、revision 或 material context 改變時則 fail closed。Skill-only 仍保留相同互動政策，但只能宣稱 advisory instructions，不能宣稱 durable enforcement。
+
+使用者未指定 SKILL 時，Router 直接選擇最小充分路由，不會為自己推薦的支援能力反覆詢問。執行前宣告預計使用的 SKILL，完成後回報實際使用項目與差異。
+
+## MCP tool surface
+
+Plugin 提供十二個 typed tools：
 
 ```text
-OK: public-readiness audit passed
+sync_runtime_context       plan_work                  propose_support_consent
+transition_support_consent get_next_work              validate_route
+record_work_event          evaluate_gate              get_router_status
+run_model_evaluation       compare_evaluations        export_router_artifact
 ```
 
-公開站台前，請跑正式 Lighthouse / accessibility 品質 gate：
+Tool schema、risk、required capabilities 與 fallback actions 都從 Server 使用的相同 contract 產生。請看 [generated MCP reference](site/src/content/docs/zh-tw/reference/mcp-tools.mdx)。
 
-```bash
-cd site
-npm ci
-npm run assets:demo:check
-npm run assets:social:check
-npm run audit:lighthouse
-npm audit --omit=dev --audit-level=moderate
-```
+## Runtime readiness matrix
 
-這會 build Starlight 站台，對英文與繁中主要頁面跑 Lighthouse，並把本機報告輸出到 `site/lighthouse-reports/`。
+| bundled local R0 可用性 | Tools | 意義 |
+| --- | --- | --- |
+| `local-ready` | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | durable local R0 planning、scoped consent 與 status |
+| `verified-host-required` | `sync_runtime_context`、`get_next_work`、`validate_route`、`record_work_event`、`evaluate_gate` | 需要 verified host authority 與 stores |
+| `configured-adapter-required` | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | 需要授權的 evaluation adapter 與 evidence |
 
-在本機重新產生三個 zip：
+不可用的呼叫會回傳 typed `capability-unavailable`、required capabilities 與 fallback action。Router 不會捏造 scheduler 或 evaluation 成功結果。
 
-```bash
-python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
-```
+## Real Model Evaluation
 
-Package builder 不會偷偷使用預設本機 skills 目錄。除非你明確傳入 `--allow-no-private-filters` 並已自行檢查來源目錄，否則至少需要一個 private filter。
+**Tier 0 Contract** fixtures 只證明 deterministic compatibility，不是模型行為。Behavior evidence 需要 fresh isolated attempts、sealed case package、paired baseline/candidate manifests、bounded output、零 hard violation，以及公開前的可信任審查。Baseline arm 明確採 `model-only`，candidate 採 `hybrid-router`；consent follow-up 由 fresh model 分類 intent，再由持久化 MCP state machine 產生最終 route。
 
-Reference Template 來自真實 `.codex/skills` 目錄，但已排除組織專屬 skills，並移除 public skills 中可能含有敏感內容的行。請把它當成設計模式參考，再用 Blank Router 改成自己的 skill set。
+Evaluation contract `2.2.0` 已將目前 Phase oracle 與有狀態的 Phase-transition case 分開，將 scoped consent support 綁定到目前 Phase 的具體 exit evidence，並逐 turn 評分。六案例 beta profile 維持 36 attempts／42 model turns；十三案例 full gate 在每個 arm 重複三次時是 78 attempts／96 model turns。任何 `2.1.0` report 都只屬診斷證據，綁定舊 case 或 instruction digest 的 run 不得用新 oracle 事後重算。新的 `2.2.0` Behavior run 在授權執行前維持 `manual-required`，執行後則在可信 attestation 前維持 `review-required`。
 
-## 實用 Routing 範例
+## Security boundary 與 local state
 
-### API 合約同步
+Plugin 安裝、SKILL 同意、Runtime 權限與 production authorization 是不同決策。Model 不能提供 evaluation executable path、偽造 Host authority、把 fixture 升格成 runtime evidence，或直接修改 native Codex Goal。
 
-```text
-使用者：新增 customer settings endpoint，更新 OpenAPI，並讓前端 client 跟上新合約。
+Plugin 將 state 存在 cache 外：
 
-Route: API / Contract lifecycle > Backend-to-frontend sync
-Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner
-Reason: api-designer 穩定 endpoint 設計；openapi-contract-generation-skill 管理 schema diff 與 contract generation；openapi-to-typescript 更新 client types；qa-test-planner 定義合約測試覆蓋。
-```
-
-### 資料庫 Migration 與效能風險
-
-```text
-使用者：替 account changes 新增 audit tables，並確認 admin query 不會變慢。
-
-Route: Database / Schema and performance > Migration plus query review
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
-Reason: database-schema-designer 負責 migration shape；sql-pro 檢查 SQL 正確性；database-optimizer 檢查 query plans；qa-test-planner 定義回歸覆蓋。
-```
-
-### 只在瀏覽器出現的前端 Bug
-
-```text
-使用者：customer portal 表單只有在 browser refresh 後會失敗，請重現並補上 regression check。
-
-Route: Frontend / Vue / UI > Browser regression
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert 處理 component 行為；systematic-debugging 維持因果式排查；playwright 固化回歸驗證。
-```
-
-### PR Review 與 CI 修復
-
-```text
-使用者：Review 這個 auth PR，處理 comments，並修好 failing checks。
-
-Route: Review / CI readiness > Security-sensitive change
-Use SKILL: receiving-code-review, systematic-debugging, qa-test-planner, commit-work
-Reason: receiving-code-review 處理 review feedback；systematic-debugging 隔離 failing checks；qa-test-planner 定義驗證範圍；commit-work 保持最後提交乾淨。
-```
-
-### 本機開發環境
-
-```text
-使用者：建立 Docker Compose setup，包含 PostgreSQL、Redis 與 MailDev，讓本機開發可以重複啟動。
-
-Route: DevOps / Local development > Repeatable service stack
-Use SKILL: docker-compose-local-dev-skill, devops-engineer, systematic-debugging
-Reason: docker-compose-local-dev-skill 負責本機服務體驗；devops-engineer 檢查基礎設施取捨；systematic-debugging 協助處理啟動順序與 health checks。
-```
-
-## Repo 內容
-
-- `starter/workflow-skill-router/`：Codex-ready starter skill，保留 agent-agnostic routing contract。
-- `examples/template-skill-catalog/`：單一公開範例 catalog，對齊 template download package。
-- `sample-skills/`：可複製參考的 public `SKILL.md` 範例，搭配 template catalog 使用。
-- `downloads/`：產生好的空白與範本 SKILL zip 套件。
-- `recipes/`：API 合約同步、前端除錯、PR/CI、文件、connector-heavy workflow 等短指南。
-- `scripts/validate-router.py`：無外部依賴的 validator，除了檢查 router 結構，也提供 public-readiness audit，確認 community files、downloads、template catalog/manifest parity、site assets 與舊 examples。
-- `scripts/audit-public-readiness.py`：公開前專用的 release gate，使用與 `validate-router.py --public-readiness` 相同的檢查邏輯。
-- `scripts/check-markdown-links.py`：無外部依賴的 Markdown/MDX local link checker，涵蓋 docs、README 與 examples。
-- `scripts/scan-skills.py`：無外部依賴的 skill inventory scanner，可輸出 JSON、Markdown、warnings 與 suggested tree。
-- `scripts/evaluate-routing.py`：無外部依賴的 routing benchmark evaluator，可比對 scenarios 與 predictions。
-- `scripts/validate-route-cases.py`：public route case schema 與 public-safety validator。
-- `scripts/build-route-gallery.py`：產生站台 gallery data 與 route-case evaluator scenarios。
-- `scripts/render-routing-metrics-trend.py`：產生 release-level metrics trend 文件與站台資料。
-- `route-cases/`：maintainers 與 contributors 可提交的 canonical public-safe route cases。
-- `evaluation/`：benchmark scenarios、predictions、schema 文件、generated route-case scenarios、metrics history 與產生的 report。
-- `references/`：scanner 產出的範例索引與報告。
-- `tests/`：使用 Python standard library unittest 的 scanner、evaluator、route case 與 metrics 測試。
-- `scripts/package-downloads.py`：無外部依賴的 SKILL zip packaging 工具。
-- `site/`：部署到 GitHub Pages 的 Astro Starlight 站台，包含 Playwright smoke 與 visual tests。
-- `site/scripts/lighthouse-audit.mjs`：公開站台的 Lighthouse 與 accessibility 正式分數 gate。
-- `site/scripts/generate-demo-assets.mjs`：可重產 demo poster 與 WebM 的 asset generator。
-- `site/scripts/generate-social-assets.mjs`：可重產 Open Graph / social preview 的 asset generator。
-- `prompts/`：建立或維護個人 router 時可直接複製的 prompts。
-- `docs/`：概念文件、自訂指南與驗證 checklist。
-
-## 範例 Routers
-
-| Example | 適用情境 |
+| 平台 | 預設路徑 |
 | --- | --- |
-| `examples/template-skill-catalog` | 將 Reference Template 整理成實用且 public-safe 的 route categories |
+| Windows | `%LOCALAPPDATA%\Codex\workflow-skill-router` |
+| macOS | `~/Library/Application Support/Codex/workflow-skill-router` |
+| Linux | `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router` |
 
-## 常見問題
+可用 `WORKFLOW_SKILL_ROUTER_DATA_DIR` 指定其他外部目錄。預設不啟用 telemetry。整合 Host-side R2/R3 行動前，先讀 [security boundary](site/src/content/docs/zh-tw/reference/security-boundaries.md)。
 
-### 這和一般 system prompt 差在哪？
+## Contributing
 
-System prompt 定義 Agent 的整體行為；Workflow Skill Router 先判斷這個任務該載入哪些 skill instructions。它站在執行前：分類任務、選 1 個 Primary SKILL、最多 3 個 Supporting SKILL，並用一句話說明原因。
+先讀 [CONTRIBUTING.md](CONTRIBUTING.md)，再針對修改範圍執行檢查。Release artifacts 由 allowlist 與 deterministic builder 產生，不手動修改 generated outputs。
 
-### 這是 Agent 權限或 sandbox layer 嗎？
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+python -m unittest discover -s packages/router-core/tests -v
+python -m unittest discover -s tests -v
+python scripts/build-v2-demo-data.py --check
+$Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
+$Output = Join-Path "dist" "release-$Version"
+python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+```
 
-不是。Workflow Skill Router 只在任務開始前收斂 skill selection。它不授權、不執行 sandbox rules、不核准 tool calls，也不取代你的 scope contract。請把它和既有治理控制一起使用。
+Release builder 只允許覆寫目前 manifest 內的既有產物。如果 output directory 含有 stale、非預期、symlink 或其他未列入 manifest 的 path，會直接 fail closed；請使用版本專屬目錄，不要混放不同 release generation。
 
-### 為什麼限制 1-4 個 skills？
+## Version channels
 
-限制讓 context 保持集中。一個 Primary SKILL 負責主軸；Supporting SKILL 只補足領域、驗證或工具。若任務真的需要超過 4 個 skills，應拆成多個階段，各階段分別 routing。
+| Channel | 目前用途 | Promotion rule |
+| --- | --- | --- |
+| `latest` | V2 GA 前維持 V1.3.1 compatibility | 通過 GA release gate 後才移動 |
+| `latest-v1` | immutable V1 recovery | 固定 V1.3.1 |
+| `latest-v2` | V2 alpha/beta prerelease | 追蹤已審查的 V2 prerelease |
 
-### 可以用在 Claude / Cursor / Gemini 嗎？
+即使 compatibility channel 尚未移動，Repository 的產品方向仍是 V2-first。版本 metadata 位於 [`release/version.json`](release/version.json)。
 
-可以。這個 pattern 是 agent-agnostic。starter 對 Codex 友善，但核心契約只是文字：skill inventory、routing rules、sample routes 與 validator。只要 Agent 能讀專案規則或自訂 instructions，就能改成自己的版本。請看 [Claude、Cursor、Gemini Adapter Notes](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/adapters/)。
+## V1 migration
 
-### 安裝 command 失敗時該看哪裡？
+使用 [V1 到 V2 遷移指南](site/src/content/docs/zh-tw/guides/migrate-v1-to-v2.md)，從 template-based routing 遷移至 runtime-aware Plugin 或獨立 SKILL。V1 原始碼與套件仍可從 immutable [`v1.3.1` tag](https://github.com/eric861129/Workflow-skill-router/tree/v1.3.1) 與 GitHub Release 復原，但不再放在 V2 primary navigation。
 
-請看 [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/troubleshooting/)。內容包含安裝路徑、PowerShell、Python、zip 解壓、validator 常見錯誤與 public-readiness checks。
-
-## 延伸閱讀
-
-- [English guide](README.en.md)
-- [Website](https://huangchiyu.com/Workflow-skill-router/)
-- [繁中站台](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
-- [Blank Router 端到端教學](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/blank-router-walkthrough/)
-- [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/troubleshooting/)
-- [Claude、Cursor、Gemini Adapter Notes](https://huangchiyu.com/Workflow-skill-router/zh-tw/guides/adapters/)
-- [Agent governance 定位說明](https://huangchiyu.com/Workflow-skill-router/zh-tw/reference/agent-governance-positioning/)
-- [自訂指南](docs/adoption-guide.zh-TW.md)
-- [系統理論](docs/system-theory.zh-TW.md)
-- [驗證 checklist](docs/validation-checklist.zh-TW.md)
-- [依賴治理](docs/dependency-governance.md)
-- [Roadmap](docs/roadmap.md)
-- [Case studies](docs/case-studies.md)
-- [Showcase](docs/showcase.md)
-- [Anti-over-routing guide](docs/anti-over-routing.md)
-- [Forward tests](evaluation/forward-tests/)
-- [分享用 demo asset](docs/assets/route-demo-social.svg)
-- [社群預覽 PNG](docs/assets/workflow-skill-router-social-preview.png)
-
-## 授權
-
-MIT。請見 [LICENSE](LICENSE)。
+MIT License。

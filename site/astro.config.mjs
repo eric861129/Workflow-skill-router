@@ -1,10 +1,30 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { unlink } from 'node:fs/promises';
 
 const siteUrl = 'https://huangchiyu.com';
 const basePath = '/Workflow-skill-router';
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 const ogImage = `${siteUrl}${basePath}/og/workflow-skill-router.png`;
+
+async function unlinkGeneratedAsset(assetUrl) {
+  try {
+    await unlink(assetUrl);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+}
+
+const excludeLegacySiteAssets = {
+  name: 'exclude-legacy-site-assets',
+  hooks: {
+    'astro:build:done': async ({ dir }) => {
+      await unlinkGeneratedAsset(new URL('assets/workflow_skill_rout-GIF.gif', dir));
+      await unlinkGeneratedAsset(new URL('assets/workflow-skill-router-60s-demo.gif', dir));
+      await unlinkGeneratedAsset(new URL('assets/workflow-skill-router-demo-poster.png', dir));
+    },
+  },
+};
 
 export default defineConfig({
   site: siteUrl,
@@ -13,7 +33,7 @@ export default defineConfig({
     starlight({
       title: 'Workflow Skill Router',
       description:
-        'A practical skill selection layer for Codex Skills, workflow routers, and multi-skill AI agents.',
+        'Runtime-aware skill routing for single tasks, phased work, and managed goals.',
       defaultLocale: 'root',
       locales: {
         root: {
@@ -32,6 +52,7 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/DocsPageSidebar.astro',
+        PageTitle: './src/components/PageTitle.astro',
       },
       disable404Route: true,
       social: [
@@ -110,46 +131,90 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Start Here',
+          label: 'Start',
           translations: {
-            'zh-TW': '開始使用',
+            'zh-TW': '開始',
           },
           items: [
             { slug: '' },
             { slug: 'guides/quickstart' },
-            { slug: 'guides/blank-router-walkthrough' },
-            { slug: 'guides/troubleshooting' },
-            { slug: 'guides/adapters' },
             { slug: 'guides/downloads' },
-            { slug: 'guides/adoption' },
           ],
         },
         {
-          label: 'Examples',
+          label: 'Concepts',
           translations: {
-            'zh-TW': '範例',
+            'zh-TW': '核心概念',
           },
           items: [
+            { slug: 'concepts/runtime-capability-discovery' },
+            { slug: 'concepts/routing-envelopes' },
+            { slug: 'concepts/explicit-skill-lock' },
+            { slug: 'concepts/phase-state-machine' },
+            { slug: 'concepts/managed-goals' },
+          ],
+        },
+        {
+          label: 'Guides',
+          translations: {
+            'zh-TW': '指南',
+          },
+          items: [
+            { slug: 'guides/install-plugin' },
+            { slug: 'guides/install-skill' },
+            { slug: 'guides/adoption' },
+            { slug: 'guides/troubleshooting' },
+          ],
+        },
+        {
+          label: 'Evaluation',
+          translations: {
+            'zh-TW': '評測與證據',
+          },
+          items: [
+            { slug: 'concepts/evaluation-evidence' },
             { slug: 'showcase' },
-            { slug: 'examples/routing-gallery' },
-            { slug: 'examples/template-skill-catalog' },
-            { slug: 'examples/case-studies' },
           ],
         },
         {
           label: 'Reference',
           translations: {
-            'zh-TW': '參考',
+            'zh-TW': '參考資料',
           },
           items: [
+            { slug: 'reference/mcp-tools' },
+            { slug: 'reference/cli' },
+            { slug: 'reference/local-state' },
+            { slug: 'reference/security-boundaries' },
             { slug: 'reference/routing-contract' },
-            { slug: 'reference/agent-governance-positioning' },
-            { slug: 'reference/validator' },
-            { slug: 'reference/sample-skills' },
-            { slug: 'reference/source-map' },
+            { slug: 'reference/model-evaluation' },
+          ],
+        },
+        {
+          label: 'Contributing',
+          translations: {
+            'zh-TW': '參與貢獻',
+          },
+          items: [
+            { slug: 'contributing/release-process' },
+            { slug: 'contributing/roadmap' },
+          ],
+        },
+        {
+          label: 'Legacy V1',
+          translations: {
+            'zh-TW': 'V1 歷史版本',
+          },
+          items: [
+            { slug: 'guides/migrate-v1-to-v2' },
+            {
+              label: 'V1.3.1 Release',
+              link: 'https://github.com/eric861129/Workflow-skill-router/releases/tag/v1.3.1',
+            },
           ],
         },
       ],
     }),
+    excludeLegacySiteAssets,
   ],
 });

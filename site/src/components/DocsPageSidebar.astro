@@ -9,18 +9,18 @@ const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 
 const copy = isZh
   ? {
-      eyebrow: '開源分享',
-      title: '查看開源專案',
-      body: '打開 repo、下載 Blank Router，或參考一套 routing 範例。',
+      eyebrow: 'V2 開源專案',
+      title: '選擇你的安裝模式',
+      body: '需要 runtime 能力時安裝 Plugin + MCP；只有 instructions 的環境使用純 SKILL。',
       star: '查看 GitHub',
-      download: '下載套件',
+      install: '查看安裝方式',
     }
   : {
-      eyebrow: 'Open source',
-      title: 'Explore the project',
-      body: 'Open the repo, download Blank Router, or study a routing reference.',
+      eyebrow: 'V2 open source',
+      title: 'Choose an install mode',
+      body: 'Use Plugin + MCP for runtime capabilities or Skill-only for instruction-only hosts.',
       star: 'View on GitHub',
-      download: 'Downloads',
+      install: 'Compare installs',
     };
 ---
 
@@ -40,8 +40,8 @@ const copy = isZh
             <a class="wsr-doc-cta-primary" href={repoUrl} target="_blank" rel="noreferrer">
               {copy.star}
             </a>
-            <a class="wsr-doc-cta-secondary" href={`${basePath}/guides/downloads/`}>
-              {copy.download}
+            <a class="wsr-doc-cta-secondary" href={`${basePath}/guides/quickstart/`}>
+              {copy.install}
             </a>
           </aside>
         </div>

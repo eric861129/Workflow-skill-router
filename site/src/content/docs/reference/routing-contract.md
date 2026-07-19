@@ -1,49 +1,66 @@
 ---
-title: Routing Contract
-description: The stable output format every workflow skill router should use.
+title: V2 routing contract
+description: The inspectable decision and disclosure contract for every routed unit of work.
 ---
 
-## Complex work
+# V2 routing contract
+
+The Router creates a bounded decision for the current unit of work. It does not turn Skill selection into permission, silently mutate a native Codex Goal, or claim runtime capabilities that the host did not verify.
+
+## 1. Profile the request
+
+Resolve the Goal relation first, then select exactly one envelope:
+
+- **Single** — one bounded intent with one minimal Primary capability.
+- **Phased** — two or more distinct stages; each Phase receives a fresh route from current evidence.
+- **Managed Goal** — resumable work with milestones or dependencies; every Work Item is routed as Single or Phased.
+
+The result records the envelope, runtime mode, risk, scope anchor, and current capability snapshot.
+
+## 2. Lock user authority
+
+When there is no User-specified Skill, selection mode is `auto`: choose the smallest sufficient Primary and Supporting set without asking for consent to the Router's own recommendation.
+
+When a User-specified Skill exists, selection mode is `explicit-locked`. The named Skill remains authoritative. Additional support requires a scoped proposal and consent; declined support remains rejected and must not be activated or repeatedly proposed in the same scope.
+
+With the Plugin runtime, `propose_support_consent` binds the concrete support set to the current Phase, scope anchor, Goal revision, plan revision, and context fingerprint. `transition_support_consent` accepts only approve or reject intent; callers cannot replace route fields during the transition. Skill-only behavior is advisory and is not a durable consent gate.
+
+In `auto` mode, inspect capability descriptions, domains, stages, and availability instead of guessing from names. The Primary owns the current decision bottleneck or first unfinished Phase. Supporting Skills are limited to capabilities indispensable to the current Phase and its immediate exit gate; later-Phase capabilities are deferred and rerouted when that Phase begins. A Managed Goal chooses the capability needed by the current Work Item rather than defaulting to the Router itself. Skills for future Work Items stay in the plan and are routed when that Work Item begins; they are never aggregated into the current support set. Availability gates activation after semantic selection and never silently rewrites the intended Skill.
+
+Use the deterministic shape `current route = current Phase Primary + immediate exit-gate support`. A Phase transition creates a new route. During Goal planning, future delivery Skills stay in the Work Graph. When a verified snapshot marks an intended canonical Skill unavailable, that Skill remains Primary; fallback details belong in the limitation, never in `support_skills`.
+
+## 3. Declare the plan
+
+Before execution, disclose:
 
 ```text
-Route: task nature > work stage > technical domain
-Use SKILL: primary-skill, supporting-skill, supporting-skill
-Reason: one short sentence per SKILL
+Envelope: single | phased | managed-goal
+Phase or Work Item: current bounded scope
+Runtime mode: hybrid | skill-only
+Planned Skills: Primary plus approved Supporting Skills
+Consent: not-required | pending | granted | declined
+Fallback or exit gate: explicit when capability is unavailable
 ```
 
-## Simple work
+`plan_work` exposes the corresponding `routing_envelope`, `selection_mode`, `support_consent_required`, `planned_skill_ids`, and `runtime_mode` fields. The two consent tools return the bound route, `consent_action`, decision reference, state version, and replay status.
+
+## 4. Validate before activation
+
+A route is executable only when capability identity, freshness, authority, policy revision, consent grants, risk requirements, and activation bindings pass. Runtime permission and production authorization remain separate from Skill consent.
+
+Unavailable capabilities return a typed limitation and fallback. They are never represented as successful execution.
+
+## 5. Report actual use
+
+After the unit completes or stops, disclose:
 
 ```text
-No extra routing needed: reason
+Actual Skills: capabilities whose instructions or runtime bindings were opened
+Changed from plan: additions, omissions, and why
+Outcome: complete | limited | blocked
+Evidence: route, activation, gate, or fallback references
 ```
 
-## Route rules
+The Actual list must not include a Skill merely because it was discovered, recommended, or present in metadata.
 
-- Select at most four skills.
-- Select exactly one primary skill.
-- Add supporting skills only when they cover distinct jobs.
-- Prefer connectors when live external state is the source of truth.
-- Split work into stages when more than four skills seem useful.
-- Treat the route as instruction selection, not authorization. Runtime permissions and approval policies still decide what the agent may do.
-
-## Good route
-
-```text
-Route: GitHub / PR comments > Address feedback > Remote review
-Use SKILL: github-review-comments, code-review, local-editing, test-runner
-Reason: github-review-comments fetches unresolved feedback; code-review evaluates it; local-editing applies changes; test-runner verifies behavior.
-```
-
-## Noisy route
-
-```text
-Use SKILL: github, code-review, ci, devops, docs, browser, release, planning
-```
-
-This route is too broad and should be split by work stage.
-
-## Source
-
-- [View starter `SKILL.md`](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/SKILL.md)
-- [View starter routing rules](https://github.com/eric861129/Workflow-skill-router/blob/main/starter/workflow-skill-router/references/routing-rules.md)
-
+See the [V2 routing guide](../guides/v2-routing.md) and [security boundaries](./security-boundaries.md) for orchestration and authority details.

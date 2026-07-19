@@ -1,4 +1,0 @@
-interface:
-  display_name: "QA Test Planner"
-  short_description: "Creates test plans, regression suites, and acceptance coverage."
-  default_prompt: "Use qa-test-planner to define the verification plan and regression coverage."

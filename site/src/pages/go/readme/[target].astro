@@ -6,31 +6,28 @@ export function getStaticPaths() {
     {
       params: { target: 'blank-router' },
       props: {
-        title: 'Download Blank Router',
-        description: 'Redirecting to the blank router release asset.',
-        destination:
-          'https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-blank.zip',
-        eventName: 'readme_blank_router_click',
+        title: 'Blank Router moved to V2 Skill-only',
+        description: 'Redirecting this legacy link to the supported V2 Skill-only installation guide.',
+        destination: '/Workflow-skill-router/guides/install-skill/',
+        eventName: 'legacy_blank_router_redirect',
       },
     },
     {
       params: { target: 'reference-template' },
       props: {
-        title: 'Download Reference Template',
-        description: 'Redirecting to the clean reference template release asset.',
-        destination:
-          'https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template-clean.zip',
-        eventName: 'readme_reference_template_click',
+        title: 'Reference Template moved to V2',
+        description: 'Redirecting this legacy link to the V1-to-V2 migration guide.',
+        destination: '/Workflow-skill-router/guides/migrate-v1-to-v2/',
+        eventName: 'legacy_reference_template_redirect',
       },
     },
     {
       params: { target: 'full-source' },
       props: {
-        title: 'Download Full Source Archive',
-        description: 'Redirecting to the full source archive release asset.',
-        destination:
-          'https://github.com/eric861129/Workflow-skill-router/raw/main/downloads/workflow-skill-router-template.zip',
-        eventName: 'readme_full_source_click',
+        title: 'Full Source Archive moved to V2 Plugin',
+        description: 'Redirecting this legacy link to the supported V2 Plugin installation guide.',
+        destination: '/Workflow-skill-router/guides/install-plugin/',
+        eventName: 'legacy_full_source_redirect',
       },
     },
     {
@@ -38,7 +35,7 @@ export function getStaticPaths() {
       props: {
         title: 'Open Latest Release',
         description: 'Redirecting to the latest GitHub Release.',
-        destination: 'https://github.com/eric861129/Workflow-skill-router/releases/latest',
+        destination: 'https://github.com/eric861129/Workflow-skill-router/releases',
         eventName: 'readme_release_click',
       },
     },

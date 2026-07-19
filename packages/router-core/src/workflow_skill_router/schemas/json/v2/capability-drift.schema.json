@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/capability-drift.schema.json",
+  "title": "Workflow Skill Router V2 Capability Drift",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "drift_id", "previous_snapshot_id", "current_snapshot_id", "capability_id",
+    "kind", "changed_fields", "before_fingerprint", "after_fingerprint", "detected_at"
+  ],
+  "properties": {
+    "drift_id": {"type": "string", "minLength": 1},
+    "previous_snapshot_id": {"type": ["string", "null"]},
+    "current_snapshot_id": {"type": "string", "minLength": 1},
+    "capability_id": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["add", "remove", "rename", "semantic-metadata", "instruction-content", "tool-schema", "auth", "policy", "runtime-exposure"]},
+    "changed_fields": {"type": "array", "items": {"type": "string"}},
+    "before_fingerprint": {"type": ["string", "null"]},
+    "after_fingerprint": {"type": ["string", "null"]},
+    "detected_at": {"type": "string", "format": "date-time"}
+  }
+}

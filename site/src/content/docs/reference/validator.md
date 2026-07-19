@@ -1,30 +1,31 @@
 ---
 title: Validation Toolchain
-description: Validate router structure, public readiness, skill inventory, routing quality, and tests before publishing.
+description: Validate the V2 SKILL, public surface, generated contracts, release packages, and tests before publishing.
 ---
 
-Workflow Skill Router includes a dependency-free validation toolchain. Use it before publishing a router repo, release, or public router package.
+Workflow Skill Router includes a local-first validation toolchain. Deterministic CI does not require Codex credentials or live-model quota.
 
 ## 1. Validate router structure
 
 ```bash
-python scripts/validate-router.py starter/workflow-skill-router
-python scripts/validate-router.py examples/template-skill-catalog
+python scripts/validate-router.py starter/v2/workflow-skill-router
 ```
 
 Expected:
 
 ```text
 OK: workflow-skill-router passed validation
-OK: template-skill-catalog passed validation
 ```
 
-This checks `SKILL.md`, required reference files, route `Primary:` markers, max skill count, example README files, and placeholder policy.
+This checks the V2 frontmatter, routing/Goal/evaluation references, routing envelopes, Explicit Skill Lock, runtime capability wording, and honest Skill-only fallback label.
 
 ## 2. Audit public readiness
 
 ```bash
+python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
+python scripts/check-markdown-links.py .
+python scripts/check-doc-parity.py
 ```
 
 Expected:
@@ -33,49 +34,40 @@ Expected:
 OK: public-readiness audit passed
 ```
 
-The audit checks community files, downloads, template catalog/manifest parity, site entrypoints, stale examples, mojibake, replacement characters, and hidden edit-link UI text.
+These checks enforce the V2 public tree, governance files, Plugin/MCP and SKILL-only entrypoints, English/Traditional Chinese route parity, local links, UTF-8 safety, and the reviewed V1 removal boundary.
 
-The legacy validator flag remains available:
-
-```bash
-python scripts/validate-router.py --public-readiness .
-```
-
-## 3. Scan the skill catalog
+## 3. Verify generated contracts
 
 ```bash
-python scripts/scan-skills.py ./sample-skills \
-  --out /tmp/skill-index.json \
-  --markdown /tmp/skill-index.md \
-  --warnings /tmp/skill-warnings.md \
-  --suggest-tree /tmp/suggested-skill-tree.md \
-  --fail-on-private \
-  --fail-on-duplicates
+python scripts/build-v2-demo-data.py --check
+node scripts/build-mcp-reference-data.mjs --check
 ```
 
-Use `--fail-on-private` and `--fail-on-duplicates` for release gates. The scanner writes a machine-readable index, Markdown summary, warnings report, and suggested skill tree.
+The first command proves the interactive Demo was generated from Router Core inputs. The second proves the public MCP reference matches the twelve real tool contracts and readiness matrix.
 
 ## 4. Evaluate routing quality
 
 ```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report /tmp/routing-report.md \
-  --json-report /tmp/routing-report.json \
-  --fail-on-violations \
-  --strict
+python scripts/run-v2-benchmark.py \
+  --suite full \
+  --evidence-class reference-driver \
+  --adapter-executable python \
+  --adapter-arg evaluation/v2/reference_driver.py \
+  --repeats 3 \
+  --output-dir dist/evaluation/v2/reference
 ```
 
-Add `--strict` when primary mismatches or missing expected supporting skills should fail CI.
+Reference-driver output proves only the harness contract. Behavior evidence requires a separately authorized fresh-model run and a validated 36-attempt report; without it, the public status remains `manual-required`.
 
 ## 5. Run unit tests
 
 ```bash
-python -m unittest discover -s tests
+$env:PYTHONPATH = "packages/router-core/src"
+python -m unittest discover -s packages/router-core/tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
-The test suite covers the evaluator and scanner with standard-library `unittest`.
+The suites cover Router Core, Plugin contracts, evaluation isolation, release reproducibility, installation smoke, public governance, and documentation policy.
 
 ## Lighthouse / Accessibility audit
 
@@ -111,6 +103,6 @@ Expected: HTTPS returns `200`, and HTTP resolves to the HTTPS project path.
 
 - [View `scripts/validate-router.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/validate-router.py)
 - [View `scripts/audit-public-readiness.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/audit-public-readiness.py)
-- [View `scripts/scan-skills.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/scan-skills.py)
-- [View `scripts/evaluate-routing.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/evaluate-routing.py)
-- [View the evaluation examples](https://github.com/eric861129/Workflow-skill-router/tree/main/evaluation)
+- [View `scripts/run-v2-benchmark.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/run-v2-benchmark.py)
+- [View `scripts/build-release-artifacts.py` on GitHub](https://github.com/eric861129/Workflow-skill-router/blob/main/scripts/build-release-artifacts.py)
+- [View the V2 evaluation contracts](https://github.com/eric861129/Workflow-skill-router/tree/main/evaluation/v2)

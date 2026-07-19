@@ -1,105 +1,84 @@
-# Routing Evaluation
+# Workflow Skill Router V2 evaluation
 
-Routing evaluation turns skill selection into something you can inspect, compare, and regress-test. Instead of relying on a few remembered examples, you keep a JSONL benchmark of tasks and expected routes, then compare a router's predictions against it.
+V2 separates deterministic regression fixtures from fresh-model evidence. A passing Contract suite proves that code follows a known routing contract; it does not prove that a model will make the same decision in a fresh task.
 
-## Concepts
+## Evidence map
 
-- `scenarios.example.jsonl` describes the benchmark tasks and the expected route.
-- `predictions.example.jsonl` describes what a router actually selected for each scenario.
-- `report.example.md` is a readable report generated from the two files.
-- `route-cases.generated.jsonl` is generated from public route cases for gallery-linked evaluation.
-- `metrics-history.jsonl` records release-level trend metrics.
-- `schema.md` documents the JSONL fields and normalization rules.
+| Location | Evidence | Purpose |
+| --- | --- | --- |
+| `packages/router-core/tests/fixtures/legacy-v1/` | `T0 contract-only` | Preserve the reviewed 80-case V1 regression value after the legacy public evaluator is retired. |
+| `evaluation/v2/cases/` | Runnable public-safe cases | Define paired baseline/candidate inputs for V2. |
+| `evaluation/v2/reference_driver.py` | `reference-driver` | Demonstrate protocol, isolation, repeat, and artifact reproducibility without calling a model. |
+| `evaluation/v2/adapters/codex_cli_driver.py` | Fresh model transport | Run isolated Codex CLI attempts with user configuration disabled and a strict output schema. |
+| `dist/evaluation/` | Local evaluation output | Keep provider traces and attempt directories out of Git; raw/checkpoint files live only under a verified `restricted/` child while the output root contains the sanitized report. |
 
-Use scenarios for stable expectations. Use predictions for the current router output. Keeping them separate makes it easy to compare two router versions against the same benchmark.
+Evaluation contract `2.2.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. It corrects the scoped-consent case so the proposed QA support is required by the current Phase's exit evidence instead of a future verification Phase. The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, the current Phase boundary, managed Goal planning, and capability-unavailable behavior. The thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route. Reports produced under `2.1.0` remain diagnostic and are never rescored against this oracle.
 
-## Run The Example
+## Deterministic reference run
 
-```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report evaluation/report.example.md \
-  --json-report /tmp/routing-report.json \
-  --fail-on-violations
+This run does not use model quota and can never be relabeled as Behavior evidence:
+
+```powershell
+$Python = (Get-Command python).Source
+python scripts/run-v2-benchmark.py `
+  --suite full `
+  --evidence-class reference-driver `
+  --adapter-executable $Python `
+  --adapter-arg evaluation/v2/reference_driver.py `
+  --repeats 3 `
+  --output-dir dist/evaluation/v2/reference
 ```
 
-Add `--strict` when primary mismatches or missing expected supporting skills should fail CI.
+## Paired Codex Behavior smoke
 
-## Create Your Own Scenarios
+Resolve a native Codex executable that supports the selected model, then review the case/repeat/cost envelope before running. On Windows, pass `codex.exe`, not the npm `codex.ps1` or `codex.cmd` wrapper, so the driver can preserve `shell=False`.
 
-The public example benchmark currently targets 80 scenarios. Keep it between 50 and 100 records so it stays broad enough to catch regressions and small enough to review.
-
-Start with real routing decisions that matter:
-
-- frontend regressions after API changes
-- backend contract changes that affect generated clients
-- CI failures and test repairs
-- release preparation and public-readiness checks
-- documentation-only tasks that should not trigger implementation skills
-- large tasks that should be split into stages
-
-Each scenario should name one expected primary skill, a small supporting set, forbidden skills that must not be selected, and a `max_skills` limit. Keep `max_skills` at 4 or lower unless the task is explicitly staged.
-
-## Generate Predictions
-
-You can create predictions manually, or ask an agent to route each scenario and emit JSONL in the documented prediction schema. Good prediction explanations are short, concrete, and tied to why the selected skills are enough.
-
-## Metrics
-
-- `Primary Accuracy`: how often the selected primary skill matches.
-- `Supporting Recall`: how many expected supporting skills were selected.
-- `Supporting Precision`: how many selected supporting skills were expected.
-- `Exact Route Match Rate`: primary and supporting set both match exactly.
-- `Forbidden Skill Violation Rate`: selected route includes forbidden skills.
-- `Max Skill Count Violation Rate`: route exceeds the scenario limit.
-- `Over-routing Rate`: selected route is larger than expected or exceeds the limit.
-- `Average Selected Skill Count`: average selected primary plus supporting count.
-- `Route Explanation Present Rate`: predictions with non-empty explanations.
-
-See [`docs/routing-metrics.md`](../docs/routing-metrics.md) for detailed definitions and improvement guidance.
-See [`docs/routing-metrics-trends.md`](../docs/routing-metrics-trends.md) for the release-level trend history.
-
-## Route Case Generated Scenarios
-
-Public route cases live in `route-cases/*.json`. They generate gallery data and additional evaluation scenarios:
-
-```bash
-python scripts/validate-route-cases.py route-cases
-python scripts/build-route-gallery.py
-python scripts/build-route-gallery.py --check
+```powershell
+$Codex = (Resolve-Path "C:\path\to\native\codex.exe").Path
+$Python = (Get-Command python).Source
+$Driver = (Resolve-Path "evaluation/v2/adapters/codex_cli_driver.py").Path
+$Schema = (Resolve-Path "evaluation/v2/schemas/codex-route-output.schema.json").Path
+$AuthSource = Join-Path ([Environment]::GetFolderPath('UserProfile')) ".codex\auth.json"
+$RunId = "beta1-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+$AttemptRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-attempts-$RunId"
+$OutputRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-live-$RunId"
+& $Codex --version
+python scripts/run-v2-benchmark.py `
+  --suite beta-smoke `
+  --evidence-class behavior `
+  --adapter-executable $Python `
+  --adapter-arg $Driver `
+  --adapter-arg=--codex-executable `
+  --adapter-arg $Codex `
+  --adapter-arg=--output-schema `
+  --adapter-arg $Schema `
+  --adapter-arg=--attempt-root `
+  --adapter-arg $AttemptRoot `
+  --adapter-arg=--timeout-seconds `
+  --adapter-arg 150 `
+  --adapter-arg=--auth-source `
+  --adapter-arg $AuthSource `
+  --adapter-arg=--model `
+  --adapter-arg gpt-5.6-sol `
+  --repeats 3 `
+  --timeout-seconds 180 `
+  --output-dir $OutputRoot `
+  --confirm-live-run
 ```
 
-Add a hand-authored benchmark scenario when a route case introduces a new behavior that should become a release gate. Keep generated route-case scenarios as gallery-linked coverage.
+That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. Before the first attempt, the runner recomputes the canonical path-and-SHA-256 manifest and rejects any mismatch with the declared instruction digest. Attempt nonces bind the prompt, capability snapshot, and tool-inventory digests, so a changed case cannot resume an older transcript.
 
-## CI Usage
+Use a new `RunId` for every authorized run. The runner accepts only a missing or empty output root, rejects legacy public `checkpoint.json` or `raw-results.json`, verifies the Windows DACL or POSIX modes before accepting evidence, and exposes only `sanitized-report.json` at the output root. Do not reuse a superseded output or attempt root.
 
-Use a tolerant gate while building the benchmark:
+The driver also uses a fresh `HOME` and `CODEX_HOME`, disables plugins and bundled Skills, and copies authentication into that isolated home only for the duration of one turn. The copy is removed in `finally`, including timeout and process-start failure paths. This prevents personal Skills and configuration from contaminating either arm.
 
-```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report /tmp/routing-report.md \
-  --json-report /tmp/routing-report.json \
-  --fail-on-violations
-```
+## Claim and review policy
 
-Use a strict gate once the benchmark is stable:
+- `reference-driver` demonstrates orchestration only. It is not Behavior or Outcome evidence.
+- Behavior requires at least three fresh contexts per case and complete nonce, prompt, tool-inventory, and trace digests.
+- The Codex beta measures routing and consent decisions. Real Skill activation and task Outcome remain `not-observable`, so this run cannot establish `hybrid-full` conformance.
+- Missing model identity, token, or cost data is reported as `null` with `metric_status: "unavailable"`; zero is never fabricated.
+- Generated reports remain `review-required` and omit a public composite score until a trusted human verifies provenance, redaction, and evidence completeness.
+- Raw traces and attempt transcripts remain under ignored `dist/evaluation/`. Publish only a reviewed, sanitized artifact under the public attestation policy.
 
-```bash
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report /tmp/routing-report.md \
-  --strict \
-  --fail-on-violations
-```
-
-## Avoid Over-routing
-
-Over-routing usually means the router selected skills that are related but not necessary. Add scenarios for tiny docs edits, single-layer bugs, and forbidden-skill boundaries. These cases keep the router honest when new skills are added to the catalog.
-
-## Use Forbidden Skills
-
-Forbidden skills are boundary tests. They are useful when a task is close to another domain but should not activate it. For example, a metric documentation task can forbid backend and database skills, while a frontend API regression can forbid database migration skills.
+See [V2 adapter protocol](v2/README.md) for process-level fields, freshness rules, timeouts, and manual-import fallback.

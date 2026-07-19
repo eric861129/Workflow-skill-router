@@ -1,0 +1,5 @@
+{
+  "allowlist": "release/allowlists/plugin-runtime-files.json",
+  "archive_root": "workflow-skill-router",
+  "root": "plugins/workflow-skill-router"
+}

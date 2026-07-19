@@ -1,0 +1,80 @@
+{
+  "schema_version": "2.0",
+  "suite": "evaluation/v2/cases/behavior-routing.jsonl",
+  "skill_catalog": [
+    {
+      "canonical_id": "skill:workflow-skill-router",
+      "description": "Route task envelopes, Goal relations, explicit Skill locks, and scoped support consent.",
+      "domains": ["workflow-orchestration"],
+      "stages": ["routing", "governance"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:code-documenter",
+      "description": "Create and maintain developer-facing technical documentation.",
+      "domains": ["documentation"],
+      "stages": ["documentation"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:api-designer",
+      "description": "Design API contracts, resources, boundaries, and interface semantics.",
+      "domains": ["api"],
+      "stages": ["architecture", "design"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:qa-test-planner",
+      "description": "Design risk-based test strategy, coverage, and verification plans.",
+      "domains": ["quality-assurance"],
+      "stages": ["planning", "verification"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:systematic-debugging",
+      "description": "Diagnose regressions and trace root causes before implementing repairs.",
+      "domains": ["debugging"],
+      "stages": ["diagnosis", "repair"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:playwright",
+      "description": "Verify browser behavior through browser automation and UI coverage.",
+      "domains": ["browser-automation"],
+      "stages": ["verification"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:architecture-designer",
+      "description": "Decompose systems, migration boundaries, dependencies, and ordered architecture work.",
+      "domains": ["architecture"],
+      "stages": ["discovery", "planning"],
+      "availability": "available"
+    },
+    {
+      "canonical_id": "skill:frontend-design",
+      "description": "Design and implement production frontend experiences and visual systems.",
+      "domains": ["frontend"],
+      "stages": ["design", "implementation"],
+      "availability": "available"
+    }
+  ],
+  "execution": {
+    "mode": "hybrid-router",
+    "ignore_user_config": true,
+    "sandbox": "read-only",
+    "output_schema": "evaluation/v2/schemas/codex-route-output.schema.json",
+    "model": null,
+    "timeout_seconds": 120,
+    "sampling_settings": null
+  },
+  "instruction_package": {
+      "digest": "sha256:4ee944295b597bad24d5e06d63604241c47dec73e05ad6bf58f7b6349b4ccf28",
+    "files": [
+      "starter/v2/workflow-skill-router/references/evaluation-boundary.md",
+      "starter/v2/workflow-skill-router/references/goal-protocol.md",
+      "starter/v2/workflow-skill-router/references/routing-protocol.md",
+      "starter/v2/workflow-skill-router/SKILL.md"
+    ]
+  }
+}

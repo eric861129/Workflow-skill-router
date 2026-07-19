@@ -1,132 +1,64 @@
 ---
-title: Troubleshooting
-description: 修正常見安裝路徑、PowerShell、Python、zip 解壓與 validator 問題。
+title: V2 疑難排解
+description: 診斷安裝、runtime readiness、routing、state 與 evaluation 問題，同時維持安全邊界。
 ---
 
-如果 quickstart 沒有得到以下結果，請從這頁開始排查：
+## 先執行 `doctor`
 
-```text
-OK: workflow-skill-router passed validation
+```powershell
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-## 安裝路徑
+確認 runtime profile、telemetry 狀態、Python 版本、content preflight 結果、state path 與每個 tool 的 readiness。`bundled-local-r0` 如實代表 local planning 與 status，不是完整 Host orchestration。
 
-Codex skills 通常放在：
+## Plugin 沒有出現
 
-| 平台 | 預期 folder |
-| --- | --- |
-| Windows | `%USERPROFILE%\.codex\skills\workflow-skill-router` |
-| macOS / Linux | `$HOME/.codex/skills/workflow-skill-router` |
+```powershell
+codex plugin list
+```
 
-Windows PowerShell 檢查：
+使用 contributor checkout 時，確認 marketplace 指向 repository root，再重新安裝 `workflow-skill-router@workflow-skill-router`。Plugin registration 變更後，重新開啟 Codex 任務。在對應 tag 存在前，不要使用未來的 tagged install command。
+
+## 純 SKILL 沒有觸發
+
+確認目錄第一層直接包含 `SKILL.md`：
 
 ```powershell
 $Router = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
-Test-Path $Router
-Get-ChildItem $Router
+Test-Path (Join-Path $Router "SKILL.md")
+Get-Content -Encoding UTF8 (Join-Path $Router "SKILL.md") | Select-Object -First 8
 ```
 
-macOS 或 Linux 檢查：
+安裝後開啟新任務。純 SKILL 必須宣告 `skill-only-fallback`；它無法自行暴露 MCP tools。
 
-```bash
-test -d "$HOME/.codex/skills/workflow-skill-router"
-ls "$HOME/.codex/skills/workflow-skill-router"
-```
+## Tool 回傳 `capability-unavailable`
 
-這個 folder 應該包含 `SKILL.md`、`agents/` 與 `references/`。
+這是有型別、可預期的結果。閱讀 `runtime_requirement`、`required_capabilities` 與 `fallback_action`。不要虛構 Host authority，也不要把 tool 改標成 local-ready。`get_next_work`、受保護 route 驗證、events 與 gates 需要 verified Host ports；evaluation tools 需要 configured adapter。
 
-## PowerShell 問題
+## Explicit Skill Lock 詢問太頻繁
 
-### `python` is not recognized
+只有當使用者明確指定 SKILL，而且 Router 建議 lock 外的輔助技能時，才需要 consent。使用者沒有指定 SKILL 時，Router 應自動選擇最小合理集合，並在執行前宣告。
 
-請先安裝 Python 3，然後重新打開 terminal：
+## State 或 resume 問題
+
+檢查 `WORKFLOW_SKILL_ROUTER_DATA_DIR` 與[本機狀態](/Workflow-skill-router/zh-tw/reference/local-state/)列出的平台預設位置。放在 Plugin install/cache boundary 內的 state directory 會被拒絕。檢查或移除已審查的 state file 前，先停止 active Router processes。
+
+## Evaluation 無法執行
+
+Live execution 需要 operator-configured absolute executable path 與 `--confirm-live-run`。Dry-run 或 fixture 都不是 Behavior evidence。修正後的 live run 也需要明確 quota authorization；不得重試舊的 superseded run，然後把它宣稱為目前證據。
+
+## Site 或 docs 驗證失敗
 
 ```powershell
-python --version
+python scripts/check-doc-parity.py
+python scripts/check-markdown-links.py .
+node scripts/build-mcp-reference-data.mjs --check
+Set-Location site
+npm run build
 ```
 
-如果 Windows 打開 Microsoft Store，請從 python.org 安裝 Python，或到 Windows settings 關閉 Python app execution alias。
+應修正 source contracts 或 source docs，不可手動編輯 generated MCP reference data 或 release archives。
 
-### `Invoke-WebRequest` 失敗
+## 回報 issue
 
-有些公司網路會擋 GitHub raw download。可以先從 [GitHub releases page](https://github.com/eric861129/Workflow-skill-router/releases) 用瀏覽器下載 zip，再執行：
-
-```powershell
-$Skills = Join-Path $env:USERPROFILE ".codex\skills"
-New-Item -ItemType Directory -Force -Path $Skills | Out-Null
-Expand-Archive -Force -Path "$env:USERPROFILE\Downloads\workflow-skill-router-blank.zip" -DestinationPath $Skills
-```
-
-### Terminal 裡中文看起來是亂碼
-
-這常常是 console 顯示問題，不一定代表檔案壞掉。用明確 UTF-8 讀檔：
-
-```powershell
-Get-Content -Encoding UTF8 "$env:USERPROFILE\.codex\skills\workflow-skill-router\SKILL.md"
-```
-
-如果檔案本身出現 `U+FFFD` 這類 replacement-character marker，請重新下載套件。
-
-## Zip 解壓問題
-
-解壓後應該是這個結構：
-
-```text
-.codex/
-  skills/
-    workflow-skill-router/
-      SKILL.md
-```
-
-如果你看到的是：
-
-```text
-.codex/
-  skills/
-    workflow-skill-router-blank/
-      workflow-skill-router/
-        SKILL.md
-```
-
-請把內層的 `workflow-skill-router/` 移到 `.codex/skills/`，再重新驗證。
-
-## Validator 常見錯誤
-
-### `Missing SKILL.md`
-
-你驗證到錯誤 folder。請傳入直接包含 `SKILL.md` 的 folder：
-
-```powershell
-python $Validator (Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router")
-```
-
-### `Missing references/skill-tree.md`
-
-Router folder 不完整。請重新解壓 `workflow-skill-router-blank.zip`，確認 `references/` folder 存在。
-
-### `Missing references/routing-rules.md`
-
-Router 還沒有 conflict handling 說明。請從 blank package 還原 `references/routing-rules.md`，再改造成自己的版本。
-
-### `Route selects too many skills`
-
-每條 route 應該只有一個 primary skill，最多三個 supporting skills。如果真的需要超過四個 skills，請拆成多個階段。
-
-### Placeholder text remains
-
-請把 template placeholders 換成你的真實 skill names、route categories 與 conflict rules。Validator 會期待公開前的 router 已經被改造成可用版本。
-
-### Public-readiness audit 失敗
-
-`validate-router.py` 檢查 router 結構。`audit-public-readiness.py` 檢查公開 repo 表面：文件、downloads、manifest、examples 與 stale assets。本機 private router 可以結構正確，但因為含有私人名稱或路徑而不適合公開。
-
-## 還是卡住
-
-開 issue 時請提供：
-
-- 作業系統
-- 你執行的完整 command
-- 完整 validator output
-- `workflow-skill-router/` 附近的解壓 folder tree
-
-請不要貼私人專案名、客戶名、hostname、token 或內部 repository path。
+提供作業系統、runtime profile、完整 command、已去識別化 error，以及使用 Plugin 或純 SKILL。排除 tokens、raw model traces、private paths、customer names 與 internal repository data。

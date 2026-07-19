@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/capability.schema.json",
+  "title": "Workflow Skill Router V2 Capability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "canonical_id", "display_name", "kind", "source", "presence", "exposure",
+    "auth_state", "eligibility", "compatibility", "freshness", "description",
+    "domains", "stages", "side_effect", "requirements", "aliases", "conflicts",
+    "context_cost", "capability_fingerprint", "installer_content_digest",
+    "availability_by_risk", "provenance"
+  ],
+  "properties": {
+    "canonical_id": {"type": "string", "minLength": 1},
+    "display_name": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["skill", "mcp-tool", "plugin", "app", "host-tool"]},
+    "source": {"type": "string", "minLength": 1},
+    "presence": {"$ref": "#/$defs/presenceObservation"},
+    "exposure": {"$ref": "#/$defs/exposureObservation"},
+    "auth_state": {"$ref": "#/$defs/authObservation"},
+    "eligibility": {"$ref": "#/$defs/eligibilityObservation"},
+    "compatibility": {"$ref": "#/$defs/compatibilityObservation"},
+    "freshness": {"$ref": "#/$defs/freshness"},
+    "description": {"type": "string"},
+    "domains": {"type": "array", "items": {"type": "string"}},
+    "stages": {"type": "array", "items": {"type": "string"}},
+    "side_effect": {"enum": ["none", "local", "remote", "privileged"]},
+    "requirements": {"type": "array", "items": {"$ref": "#/$defs/requirement"}},
+    "aliases": {"type": "array", "items": {"type": "string"}},
+    "conflicts": {"type": "array", "items": {"type": "string"}},
+    "context_cost": {"type": "integer", "minimum": 0},
+    "capability_fingerprint": {"type": "string", "minLength": 1},
+    "installer_content_digest": {"$ref": "#/$defs/digestObservation"},
+    "availability_by_risk": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "x-risk-order": ["R0", "R1", "R2", "R3"],
+      "prefixItems": [
+        {"$ref": "#/$defs/riskAvailabilityR0"},
+        {"$ref": "#/$defs/riskAvailabilityR1"},
+        {"$ref": "#/$defs/riskAvailabilityR2"},
+        {"$ref": "#/$defs/riskAvailabilityR3"}
+      ],
+      "items": false
+    },
+    "provenance": {"type": "array", "items": {"$ref": "#/$defs/provenance"}}
+  },
+  "$defs": {
+    "observationBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "provider", "observed_at", "trust_level", "reason_code"],
+      "properties": {
+        "value": {},
+        "provider": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "trust_level": {"enum": ["cache", "metadata", "handshake", "runtime"]},
+        "reason_code": {"type": "string", "minLength": 1}
+      }
+    },
+    "presenceObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"enum": ["present", "absent", "not-applicable", "unknown"]}}}
+      ]
+    },
+    "exposureObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"enum": ["exposed", "not-exposed", "unknown"]}}}
+      ]
+    },
+    "authObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"enum": ["authorized", "required", "not-required", "unknown"]}}}
+      ]
+    },
+    "eligibilityObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"enum": ["eligible", "ineligible", "unknown"]}}}
+      ]
+    },
+    "compatibilityObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"enum": ["compatible", "incompatible", "unknown"]}}}
+      ]
+    },
+    "digestObservation": {
+      "allOf": [
+        {"$ref": "#/$defs/observationBase"},
+        {"properties": {"value": {"type": "string", "minLength": 1}}}
+      ]
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_at", "expires_at", "degraded_allowed", "stale"],
+      "properties": {
+        "observed_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "degraded_allowed": {"type": "boolean"},
+        "stale": {"type": "boolean"}
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_id", "kind", "purpose", "trusted"],
+      "properties": {
+        "canonical_id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["skill", "mcp-tool", "plugin", "app", "host-tool"]},
+        "purpose": {"type": "string", "minLength": 1},
+        "trusted": {"type": "boolean"}
+      }
+    },
+    "availabilityResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "reasons"],
+      "properties": {
+        "primary": {"enum": ["available", "unavailable", "auth-required", "degraded", "stale", "unknown", "incompatible"]},
+        "reasons": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "riskAvailabilityBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["risk", "result"],
+      "properties": {
+        "risk": {"enum": ["R0", "R1", "R2", "R3"]},
+        "result": {"$ref": "#/$defs/availabilityResult"}
+      }
+    },
+    "riskAvailabilityR0": {"allOf": [{"$ref": "#/$defs/riskAvailabilityBase"}, {"properties": {"risk": {"const": "R0"}}}]},
+    "riskAvailabilityR1": {"allOf": [{"$ref": "#/$defs/riskAvailabilityBase"}, {"properties": {"risk": {"const": "R1"}}}]},
+    "riskAvailabilityR2": {"allOf": [{"$ref": "#/$defs/riskAvailabilityBase"}, {"properties": {"risk": {"const": "R2"}}}]},
+    "riskAvailabilityR3": {"allOf": [{"$ref": "#/$defs/riskAvailabilityBase"}, {"properties": {"risk": {"const": "R3"}}}]},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "source_kind", "source_ref_digest", "observation_digest", "trust_level", "reason_code"],
+      "properties": {
+        "provider_id": {"type": "string", "minLength": 1},
+        "source_kind": {"type": "string", "minLength": 1},
+        "source_ref_digest": {"type": "string", "minLength": 1},
+        "observation_digest": {"type": "string", "minLength": 1},
+        "trust_level": {"enum": ["cache", "metadata", "handshake", "runtime"]},
+        "reason_code": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,32 +1,43 @@
-## Summary
+## Contract Changed
+
+Describe the user-visible behavior, security boundary, or documentation contract changed by this pull request.
 
 - 
 
-## Type
+## Surface
 
-- [ ] Documentation
-- [ ] Example router
-- [ ] Recipe
-- [ ] Validator
-- [ ] Other
+- [ ] Router Core
+- [ ] Plugin / MCP
+- [ ] Evaluation
+- [ ] SKILL-only
+- [ ] Documentation site
+- [ ] Documentation-only / governance
+- [ ] Release supply chain
 
-## Validation
+## Evidence
 
-- [ ] `python scripts/validate-router.py starter/workflow-skill-router`
-- [ ] `python scripts/validate-router.py --public-readiness .`
-- [ ] `python scripts/check-markdown-links.py .`
-- [ ] `python -m unittest discover -s tests`
-- [ ] `cd site && npm ci && npm run assets:demo:check && npm run assets:social:check && npm run build`
-- [ ] Validator ran against any changed example routers
-- [ ] No private repository names, customer names, hostnames, secrets, or internal paths
-- [ ] Site smoke/visual checks pass when the PR changes docs, site UI, or public media assets
+- Focused test or reproduction:
+- Full local gate run:
+- Remaining limitation:
 
-## Routing Scenario
+## Routing Context
 
-If this changes routing behavior, include:
+If routing behavior changed, include:
 
-- user request:
-- available skills:
-- expected route:
-- conflict rule:
+- task size and phase:
+- available Skills:
+- user-specified Skill, if any:
+- expected primary and supporting Skills:
+- consent state:
 
+## Safety Checklist
+
+- [ ] New behavior has a focused regression test.
+- [ ] `python scripts/check-markdown-links.py .` passes.
+- [ ] `python -m unittest discover -s tests` passes, or the reason is documented.
+- [ ] Plugin/MCP changes pass the bundled runtime and MCP smoke checks.
+- [ ] Site changes pass build and relevant smoke/visual checks in both locales.
+- [ ] No credentials, private prompts, SQLite state, internal paths, or unsanitized traces are included.
+- [ ] Fixtures and contract tests are not described as real model behavior.
+- [ ] CI does not invoke a live model or consume model quota.
+- [ ] Release artifacts are generated from source and are not edited in `downloads/`.

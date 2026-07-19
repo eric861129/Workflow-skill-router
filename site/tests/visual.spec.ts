@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 const pages = [
   { name: 'home', path: './' },
   { name: 'downloads', path: 'guides/downloads/' },
-  { name: 'gallery', path: 'examples/routing-gallery/' },
+  { name: 'showcase', path: 'showcase/' },
+  { name: 'quickstart', path: 'guides/quickstart/' },
+  { name: 'mcp-tools', path: 'reference/mcp-tools/' },
 ];
 
 const viewports = [

@@ -1,0 +1,10 @@
+{
+  "archive_root": "workflow-skill-router",
+  "files": [
+    "SKILL.md",
+    "references/evaluation-boundary.md",
+    "references/goal-protocol.md",
+    "references/routing-protocol.md"
+  ],
+  "root": "starter/v2/workflow-skill-router"
+}

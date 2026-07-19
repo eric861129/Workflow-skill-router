@@ -1,0 +1,43 @@
+name: V2 Plugin Smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Plugin runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
+      - name: Check deterministic Python runtime
+        run: python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Test Python core and CLI
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+      - name: Build and test MCP
+        working-directory: plugins/workflow-skill-router
+        run: npm ci && npm run check && node ./scripts/smoke-plugin.mjs

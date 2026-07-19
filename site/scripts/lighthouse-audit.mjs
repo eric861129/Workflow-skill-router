@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
+import { createGzip } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import lighthouse from 'lighthouse';
@@ -13,22 +14,25 @@ const reportRoot = path.join(siteRoot, 'lighthouse-reports');
 const basePath = '/Workflow-skill-router/';
 
 const thresholds = {
-  performance: Number(process.env.LH_MIN_PERFORMANCE ?? 0.7),
-  accessibility: Number(process.env.LH_MIN_ACCESSIBILITY ?? 0.95),
-  'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? 0.9),
-  seo: Number(process.env.LH_MIN_SEO ?? 0.9),
+  performance: Number(process.env.LH_MIN_PERFORMANCE ?? 0.9),
+  accessibility: Number(process.env.LH_MIN_ACCESSIBILITY ?? 1),
+  'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? 1),
+  seo: Number(process.env.LH_MIN_SEO ?? 1),
 };
 
 const routes = [
   { name: 'home-en', path: '/' },
   { name: 'home-zh-tw', path: '/zh-tw/' },
-  { name: 'showcase-en', path: '/showcase/' },
-  { name: 'showcase-zh-tw', path: '/zh-tw/showcase/' },
-  { name: 'downloads-en', path: '/guides/downloads/' },
-  { name: 'template-catalog-en', path: '/examples/template-skill-catalog/' },
-  { name: 'template-catalog-zh-tw', path: '/zh-tw/examples/template-skill-catalog/' },
-  { name: 'case-studies-en', path: '/examples/case-studies/' },
-  { name: 'validator-en', path: '/reference/validator/' },
+  { name: 'showcase-en', path: '/showcase/', maxLcpMs: 2500 },
+  { name: 'showcase-zh-tw', path: '/zh-tw/showcase/', maxLcpMs: 2500 },
+  { name: 'v2-routing-en', path: '/guides/v2-routing/' },
+  { name: 'v2-routing-zh-tw', path: '/zh-tw/guides/v2-routing/' },
+  { name: 'mcp-tools-en', path: '/reference/mcp-tools/' },
+  { name: 'mcp-tools-zh-tw', path: '/zh-tw/reference/mcp-tools/' },
+  { name: 'install-plugin-en', path: '/guides/install-plugin/' },
+  { name: 'install-plugin-zh-tw', path: '/zh-tw/guides/install-plugin/' },
+  { name: 'install-skill-en', path: '/guides/install-skill/' },
+  { name: 'install-skill-zh-tw', path: '/zh-tw/guides/install-skill/' },
 ];
 
 const mimeTypes = new Map([
@@ -36,12 +40,16 @@ const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
+  ['.mp4', 'video/mp4'],
   ['.png', 'image/png'],
   ['.svg', 'image/svg+xml; charset=utf-8'],
   ['.webp', 'image/webp'],
+  ['.webm', 'video/webm'],
   ['.xml', 'application/xml; charset=utf-8'],
   ['.txt', 'text/plain; charset=utf-8'],
 ]);
+
+const compressibleExtensions = new Set(['.css', '.html', '.js', '.json', '.svg', '.txt', '.xml']);
 
 function resolveStaticPath(urlPath) {
   let pathname = decodeURIComponent(urlPath.split('?')[0] || '/');
@@ -77,12 +85,17 @@ function startStaticServer() {
     const filePath = exists ? requested : path.join(distRoot, '404.html');
     const statusCode = exists ? 200 : 404;
     const extension = path.extname(filePath);
+    const acceptsGzip = request.headers['accept-encoding']?.includes('gzip');
+    const useGzip = Boolean(acceptsGzip && compressibleExtensions.has(extension));
 
     response.writeHead(statusCode, {
       'content-type': mimeTypes.get(extension) ?? 'application/octet-stream',
-      'cache-control': 'no-store',
+      'cache-control': extension === '.html' ? 'no-store' : 'public, max-age=3600',
+      ...(useGzip ? { 'content-encoding': 'gzip', vary: 'Accept-Encoding' } : {}),
     });
-    createReadStream(filePath).pipe(response);
+    const fileStream = createReadStream(filePath);
+    if (useGzip) fileStream.pipe(createGzip()).pipe(response);
+    else fileStream.pipe(response);
   });
 
   return new Promise((resolve, reject) => {
@@ -106,7 +119,7 @@ function slugify(value) {
   return value.replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 }
 
-async function runLighthouse(url, name, chromePort) {
+async function runLighthouse(url, route, chromePort) {
   const runnerResult = await lighthouse(url, {
     port: chromePort,
     logLevel: 'error',
@@ -122,14 +135,21 @@ async function runLighthouse(url, name, chromePort) {
     ? runnerResult.report
     : [JSON.stringify(runnerResult.lhr, null, 2), runnerResult.report];
 
-  const reportName = slugify(name);
+  const reportName = slugify(route.name);
   await writeFile(path.join(reportRoot, `${reportName}.json`), jsonReport, 'utf-8');
   await writeFile(path.join(reportRoot, `${reportName}.html`), htmlReport, 'utf-8');
 
   const scores = Object.fromEntries(
     Object.entries(runnerResult.lhr.categories).map(([key, value]) => [key, scoreOf(value)])
   );
-  return { name, url, scores };
+  const lcpMs = Math.round(runnerResult.lhr.audits['largest-contentful-paint'].numericValue ?? 0);
+  return {
+    name: route.name,
+    url,
+    scores,
+    metrics: { lcpMs },
+    budgets: { maxLcpMs: route.maxLcpMs ?? null },
+  };
 }
 
 function formatScores(scores) {
@@ -146,6 +166,9 @@ function findFailures(results) {
       if (score < minimum * 100) {
         failures.push(`${result.name}: ${category} ${score} < ${Math.round(minimum * 100)}`);
       }
+    }
+    if (result.budgets.maxLcpMs && result.metrics.lcpMs >= result.budgets.maxLcpMs) {
+      failures.push(`${result.name}: LCP ${result.metrics.lcpMs}ms >= ${result.budgets.maxLcpMs}ms`);
     }
   }
   return failures;
@@ -168,9 +191,9 @@ async function main() {
     const results = [];
     for (const route of routes) {
       const url = `${origin}${basePath.replace(/\/$/, '')}${route.path}`;
-      const result = await runLighthouse(url, route.name, chrome.port);
+      const result = await runLighthouse(url, route, chrome.port);
       results.push(result);
-      console.log(`${result.name}: ${formatScores(result.scores)}`);
+      console.log(`${result.name}: ${formatScores(result.scores)} lcp=${result.metrics.lcpMs}ms`);
     }
 
     const summary = {

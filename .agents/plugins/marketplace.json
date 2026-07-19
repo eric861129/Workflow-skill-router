@@ -1,0 +1,20 @@
+{
+  "interface": {
+    "displayName": "Workflow Skill Router"
+  },
+  "name": "workflow-skill-router",
+  "plugins": [
+    {
+      "category": "Productivity",
+      "name": "workflow-skill-router",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./plugins/workflow-skill-router",
+        "source": "local"
+      }
+    }
+  ]
+}

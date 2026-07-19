@@ -1,0 +1,60 @@
+---
+title: Evaluation Evidence
+description: 區分 deterministic contract、fresh model behavior 與 reviewed outcome。
+---
+
+<a id="problem"></a>
+## 問題
+
+Deterministic fixture 可以證明 parser 與 policy compatibility，卻不能證明 fresh model behavior。單一成功 transcript 也無法證明 reliability；未審查分數不應驅動 release。
+
+<a id="contract"></a>
+## 契約
+
+- **T0 Contract**：只包含 deterministic fixtures 與 reference-driver compatibility。
+- **Behavior**：每個 case 至少三個 fresh isolated attempts、bounded output、sealed scoring 與 paired baseline/candidate manifests。
+- **Outcome**：經審查的 task impact 與 downstream evidence。
+
+Beta smoke 是 6 cases × 3 attempts × 2 arms，共 36 attempts。其中一個 beta case 包含第二個 consent turn，因此 provider 實際執行 42 model turns。GA gate 是 13 cases × 3 attempts × 2 arms，共 78 attempts／96 model turns。兩者都必須依完整 turn budget 取得明確 quota authorization。
+
+Baseline arm 採 `model-only`，candidate arm 採 `hybrid-router`。Scoped-consent follow-up 會評測 model 的 intent classification，而最終 route 由 persisted deterministic transition 產生。SKILL-only consent evidence 仍屬 advisory，不能滿足 hybrid consent-safety gate。
+
+<a id="example"></a>
+## State、input 與 output 範例
+
+```json
+{
+  "adapter": "trusted-subprocess",
+  "attempts_per_case": 3,
+  "arms": ["baseline", "candidate"],
+  "status": "review-required",
+  "public_score": null
+}
+```
+
+修正版 beta Behavior run 目前仍待授權，因此 public demo 維持 `manual-required`。Reference-driver output 絕不標示為 real-model proof。
+
+<a id="failure-modes"></a>
+## Failure modes
+
+- 缺少 configured adapter 時產生 `manual-required`。
+- Nonce、case、prompt、tool 或 driver digest mismatch 會 fail closed。
+- Hard violation 不受平均 pass rate 影響，直接阻擋 release。
+- 缺少 trusted attestation 時維持 `review-required` 並隱藏 public score。
+
+<a id="security-boundary"></a>
+## Security 與 authority boundary
+
+Model 不能選 executable、擴張 adapter authorization、讀取 sealed scoring material，或核准自己的報告。Fresh run 使用 isolated home/workspace 與 server-owned adapter registry。Raw trace 與 checkpoint 只保留在經 host permission 驗證的 `restricted/` 目錄；只有安全的 aggregate case diagnostics 才能進入經審查的公開報告。
+
+<a id="verify"></a>
+## 驗證
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+Set-Location packages/router-core
+$env:PYTHONPATH = (Resolve-Path src).Path
+python -m unittest tests.evaluation.test_subprocess_adapter tests.evaluation.test_hybrid_consent -v
+Set-Location ../..
+python -m unittest tests.test_v2_benchmark tests.test_codex_cli_driver -v
+```

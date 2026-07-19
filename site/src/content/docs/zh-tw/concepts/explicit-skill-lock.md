@@ -1,0 +1,54 @@
+---
+title: Explicit Skill Lock
+description: 保留使用者指定 SKILL，同時避免每次自動路由都詢問。
+---
+
+<a id="problem"></a>
+## 問題
+
+使用者指定的 SKILL 必須被尊重，但每次 Router 自動加入支援能力都詢問，會讓正常工作失去可用性。靜默替換更糟：它違反使用者指令，也隱藏 context cost。
+
+<a id="contract"></a>
+## 契約
+
+使用者未指定 SKILL 時，selection mode 是 `auto`；Router 自動選擇最小支援，不為自己的推薦詢問。使用者指定一個或多個 SKILL 時，selection mode 是 `explicit-locked`：
+
+- `use`：指定 SKILL 優先成為 Primary；集合外支援需要同意。
+- `only`：指定集合就是完整 allowlist；禁止集合外支援。
+- `all`：所有指定 SKILL 都必須啟用或明確 waive 才能完成。
+
+Plugin 模式的 consent 不是第二次自由產生 route。`propose_support_consent` 會在詢問前持久化目前 Phase route 與 concrete support set；後續 model turn 只分類 `approved`、`rejected` 或 `unclear`，再由 `transition_support_consent` 產生 bound route。scope、revision 或 context 已漂移時一律拒絕。Skill-only 只以 advisory instructions 保留相同政策，不能宣稱 durable enforcement。
+
+<a id="example"></a>
+## State、input 與 output 範例
+
+```json
+{
+  "input": {"explicit_skill_ids": ["skill:api-designer"], "semantics": "use"},
+  "proposal": {"support": "skill:qa-test-planner", "scope": "verify contract"},
+  "user_decision": "reject",
+  "active_selections": ["skill:api-designer"]
+}
+```
+
+<a id="failure-modes"></a>
+## Failure modes
+
+- 被拒絕的支援只留在 audit trail，不得出現在 activation events。
+- 只改 Phase ID 不能重新詢問同一個已拒絕 proposal。
+- 指定 SKILL 無法完成 mandatory work 時，Router 應限縮 outcome 或誠實阻塞，不得靜默替代。
+
+<a id="security-boundary"></a>
+## Security 與 authority boundary
+
+SKILL consent 只允許在已宣告 scope 啟用 instruction。它不授權 Plugin 安裝、寫檔、部署、傳訊、secret 或 production access。R2/R3 仍以 Host permission 為準。
+
+<a id="verify"></a>
+## 驗證
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+Set-Location packages/router-core
+$env:PYTHONPATH = (Resolve-Path src).Path
+python -m unittest tests.routing.test_explicit_lock tests.routing.test_consent tests.integration.test_local_consent_control_plane -v
+```

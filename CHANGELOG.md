@@ -4,7 +4,25 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-- Nothing yet.
+- No unreleased changes.
+
+## 2.0.0-beta.1
+
+### Added
+
+- Rebuilt the project around the V2 hybrid architecture: deterministic Router Core, installable Plugin/MCP runtime, and a standalone SKILL-only package.
+- Added runtime capability discovery, task-size-aware phase routing, explicit user-specified SKILL consent rules, durable local state, and inspectable execution traces.
+- Added sealed model-evaluation adapters, reproducible benchmark manifests, evidence classifications, and a review gate that separates fixtures from real model behavior.
+- Added a bilingual V2-first documentation site, interactive trace demo, Plugin and SKILL-only installation guides, and automated accessibility, visual, smoke, and Lighthouse checks.
+- Added V2 community governance, focused issue forms, CodeQL, OpenSSF Scorecard, immutable Action pins, deterministic release artifacts, SBOM output, and GitHub build-provenance attestations.
+
+### Changed
+
+- CI now validates deterministic local contracts without Codex credentials or live model quota.
+- V1 remains a pinned compatibility surface; V1 gallery, evaluator, metrics, and starter-generation tooling are no longer accepted as V2 public proof.
+- Release automation accepts only full `v2.*` version tags and builds every published artifact from the tagged source revision.
+- Removed the reviewed 225-file V1, generated-download, duplicate-media, sample-catalog, and obsolete evaluator surface while preserving immutable V1.3.1 recovery.
+- Removed the separately reviewed 27-file residual set covering superseded issue forms, migrated internal plans, V1 CLI goldens, retired generators, and the orphaned Route Gallery component.
 
 ## v1.3.1
 
@@ -54,7 +72,7 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## v1.1.0
 
-See [docs/release-notes-v1.1.0.md](docs/release-notes-v1.1.0.md).
+See the immutable V1.1.0 tag and GitHub Release for the original notes.
 
 - Added routing evaluation scenarios, predictions, and generated reports.
 - Added dependency-free skill inventory scanner.
@@ -62,7 +80,7 @@ See [docs/release-notes-v1.1.0.md](docs/release-notes-v1.1.0.md).
 
 ## v1.0.0
 
-See [docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md).
+See the immutable V1.0.0 tag and GitHub Release for the original notes.
 
 - Introduced the Codex-ready Workflow Skill Router starter.
 - Added the template skill catalog and downloadable starter packages.

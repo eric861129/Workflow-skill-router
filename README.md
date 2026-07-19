@@ -1,359 +1,178 @@
-# Workflow Skill Router
+# Workflow Skill Router V2
 
-[![Validate router tools](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml/badge.svg)](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml)
-[![Release](https://img.shields.io/github/v/release/eric861129/Workflow-skill-router)](https://github.com/eric861129/Workflow-skill-router/releases)
-[![Downloads](https://img.shields.io/github/downloads/eric861129/Workflow-skill-router/total)](https://github.com/eric861129/Workflow-skill-router/releases)
-[![Stars](https://img.shields.io/github/stars/eric861129/Workflow-skill-router?style=social)](https://github.com/eric861129/Workflow-skill-router/stargazers)
-[![Site](https://img.shields.io/website?url=https%3A%2F%2Fhuangchiyu.com%2FWorkflow-skill-router%2F&label=site)](https://huangchiyu.com/Workflow-skill-router/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Languages](https://img.shields.io/badge/docs-English%20%7C%20Traditional%20Chinese-informational.svg)](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) · [Documentation](https://huangchiyu.com/Workflow-skill-router/) · [Routing Flight Recorder](https://huangchiyu.com/Workflow-skill-router/#routing-flight-recorder)
 
-> A Codex-ready routing layer for one slice of agent sprawl: skill selection sprawl.
+Workflow Skill Router is a runtime-aware planning and routing layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do.
 
-**Not another prompt collection. A routing layer for multi-skill AI agents.**
+> Current channel: `2.0.0-beta.1`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
 
-Modern AI coding agents can have dozens of skills, tools, connectors, and workflows. Workflow Skill Router turns that flat list into a small, reviewable decision before execution begins.
+## 60-second outcome
 
-Workflow Skill Router addresses one layer of agent sprawl: skill selection sprawl. It does not replace scope contracts, runtime permissions, or approval policies. Instead, it gives agents a small, reviewable routing decision before work starts, using only the skills that already exist and are already allowed in your environment.
-
-## Positioning
-
-Workflow Skill Router is a pre-execution skill selection layer. It helps an agent decide:
-
-- which one skill should own the task as Primary,
-- which supporting skills are truly needed,
-- which tempting but unnecessary skills should stay out,
-- why this route is the smallest useful skill set.
-
-It is not a security boundary. Pair it with your normal scope contracts, runtime permissions, approval policies, and tool access controls.
-
-## Before And After
-
-Without routing, a frontend bug can trigger every related skill:
+Give the Router a request. It returns an execution envelope, a capability plan, the consent boundary, and the evidence needed to continue safely. The public Flight Recorder shows the exact sanitized MCP request and response instead of recreating the decision in the browser.
 
 ```text
-frontend, ui, browser, playwright, qa, design-system, github, docs, deployment
+Request
+  -> classify work shape
+  -> discover usable runtime capabilities
+  -> lock explicit user choices
+  -> plan the smallest route
+  -> execute, verify, and disclose actual SKILL usage
 ```
 
-With routing, the agent selects a small working set:
+## Plugin + MCP versus Skill-only
 
-```text
-Route: Frontend / Debugging > Browser reproduction > Single-page app
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
-```
-
-Demo preview:
-
-[![Workflow Skill Router demo poster](docs/assets/workflow-skill-router-demo-poster.png)](https://huangchiyu.com/Workflow-skill-router/showcase/)
-
-Watch the polished demo: [MP4](docs/assets/workflow-skill-router-demo.mp4), [WebM](docs/assets/workflow-skill-router-demo.webm), or [site showcase](https://huangchiyu.com/Workflow-skill-router/showcase/).
-GIF fallback: [high-resolution demo GIF](docs/assets/workflow_skill_rout-GIF.gif) or [lightweight 60-second GIF](docs/assets/workflow-skill-router-60s-demo.gif)
-Short routing output demo: [fuzzy request to route output GIF](docs/assets/fuzzy-to-route-output.gif)
-Static preview: [before/after routing SVG](docs/assets/demo-routing-before-after.svg)
-
-## 30 Second Quickstart
-
-Website: `https://huangchiyu.com/Workflow-skill-router/`
-Traditional Chinese site: `https://huangchiyu.com/Workflow-skill-router/zh-tw/`
-
-Which package should I download?
-
-| Package | Use it when | Download |
+| Capability | Plugin + MCP | Skill-only |
 | --- | --- | --- |
-| Blank Router | You want to build your own router from your own skills, triggers, exclusions, and routing rules. | [workflow-skill-router-blank.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/) |
-| Reference Template | You want to study a public-safe example before adapting the blank router to your workflow. | [workflow-skill-router-template-clean.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/) |
-| Full source archive | You need per-skill README files, source context, or audit material behind the reference template. | [workflow-skill-router-template.zip](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/) |
+| Routing instructions | Included | Included |
+| Local durable R0 planning and scoped consent | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Not observable |
+| Verified-host scheduling and route validation | Available after host integration | Unavailable |
+| Cross-process state and compare-and-swap | Host/runtime dependent | Unavailable |
+| Sealed model evaluation | Configured adapter required | Manual workflow only |
+| Honest runtime label | `bundled-local-r0` or verified profile | `skill-only-fallback` |
 
-Try the framework without installing anything:
+Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone SKILL when you need instruction-only routing or must run in a host without Plugin support. The `hybrid-full` conformance label is unavailable to the standalone package.
 
-```bash
-git clone https://github.com/eric861129/Workflow-skill-router.git
-cd Workflow-skill-router
-python scripts/validate-router.py starter/workflow-skill-router
-```
+## Five-minute Plugin + MCP quickstart
 
-Install the blank skill into Codex on Windows PowerShell:
+For a contributor checkout:
 
 ```powershell
-$Repo = "https://github.com/eric861129/Workflow-skill-router"
-$Zip = Join-Path $env:TEMP "workflow-skill-router-blank.zip"
-$Validator = Join-Path $env:TEMP "workflow-skill-router-validate-router.py"
-$Skills = Join-Path $env:USERPROFILE ".codex\skills"
-Invoke-WebRequest "$Repo/raw/main/downloads/workflow-skill-router-blank.zip" -OutFile $Zip
-Invoke-WebRequest "$Repo/raw/main/scripts/validate-router.py" -OutFile $Validator
-New-Item -ItemType Directory -Force -Path $Skills | Out-Null
-Expand-Archive -Force -Path $Zip -DestinationPath $Skills
-python $Validator (Join-Path $Skills "workflow-skill-router")
-```
-
-For macOS and Linux install commands, see the [Quickstart guide](https://huangchiyu.com/Workflow-skill-router/guides/quickstart/).
-
-For a complete blank-router setup, see the [Blank Router walkthrough](https://huangchiyu.com/Workflow-skill-router/guides/blank-router-walkthrough/). If installation or validation fails, open [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/).
-
-Expected result:
-
-```text
-OK: workflow-skill-router passed validation
-```
-
-## Proof
-
-- `80` benchmark scenarios in `evaluation/scenarios.example.jsonl`.
-- Public routing metrics trend from `v1.2.0` to `v1.3.0`.
-- Public-safe Routing Gallery generated from root-level route cases.
-- Unit tests for scanner, evaluator, route cases, and metrics behavior.
-- Public-readiness audit for community files, downloads, manifests, examples, site entrypoints, and mojibake checks.
-- Lighthouse gate across English and Traditional Chinese pages; latest local pass had 100 accessibility, best-practices, and SEO scores.
-- Strict CI checks scanner privacy, duplicate skill ids, route violations, and exact routing expectations.
-
-## Download Skill Packages
-
-- [Blank Router package](https://huangchiyu.com/Workflow-skill-router/go/readme/blank-router/): the main download for people who want to build their own router from their own skills, naming conventions, triggers, exclusions, and routing rules.
-- [Reference Template package](https://huangchiyu.com/Workflow-skill-router/go/readme/reference-template/): a public-safe example for learning the structure before adapting the blank router to your own workflow.
-- [Full source archive](https://huangchiyu.com/Workflow-skill-router/go/readme/full-source/): the larger source archive with per-skill README files, useful only when you need source context or audit material.
-- [Template Skill Catalog](examples/template-skill-catalog): the matching route catalog for the Reference Template.
-- [Template manifest](downloads/workflow-skill-router-template-manifest.md): included skill folders, excluded private skill count, and sanitization summary.
-
-Direct repository paths for audit and offline use: [Blank Router](downloads/workflow-skill-router-blank.zip), [Reference Template](downloads/workflow-skill-router-template-clean.zip), [Full source archive](downloads/workflow-skill-router-template.zip).
-
-## Project Roadmap And Community
-
-Follow releases or watch the repo to track work on:
-
-- keeping multi-skill agents out of context overload,
-- benchmarking routing decisions with repeatable scenarios,
-- publishing public-safe skill catalogs without leaking private rules,
-- building public-safe reference packages from local skill folders.
-
-## What This Project Helps You Do
-
-- Inventory your available skills into a machine-readable catalog.
-- Organize skills by workflow stage, technical domain, triggers, and exclusions.
-- Route tasks to one primary skill and a small number of supporting skills.
-- Validate that routes are explainable, bounded, and public-safe.
-- Evaluate routing quality with repeatable scenarios and predictions.
-
-## Framework Quickstart
-
-```bash
 git clone https://github.com/eric861129/Workflow-skill-router.git
-cd Workflow-skill-router
-
-python scripts/validate-router.py starter/workflow-skill-router
-
-python scripts/scan-skills.py ./sample-skills \
-  --out references/skill-index.example.json \
-  --markdown references/skill-index.example.md \
-  --warnings references/skill-scan-warnings.example.md \
-  --suggest-tree references/suggested-skill-tree.example.md
-
-python scripts/evaluate-routing.py \
-  --scenarios evaluation/scenarios.example.jsonl \
-  --predictions evaluation/predictions.example.jsonl \
-  --report evaluation/report.example.md
+Set-Location Workflow-skill-router
+codex plugin marketplace add .
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-## Recommended Workflow
+After the immutable `v2.0.0-beta.1` tag is published, use the tagged marketplace snapshot:
 
-1. Copy the starter.
-2. Inventory available skills.
-3. Define the skill tree.
-4. Define routing rules.
-5. Add routing scenarios.
-6. Generate predictions.
-7. Evaluate routing quality.
-8. Run validation before publishing.
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
+```
 
-## Quality Gates
+The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
-- Max 4 skills per route unless the work is explicitly staged.
-- Primary skill must be clear.
-- Supporting skills should be minimal and distinct.
-- Route explanation should be present.
-- Forbidden skills should not be selected.
-- Private markers should not appear in public packages or examples.
-- Scenario coverage should grow as routing mistakes are discovered.
+## Five-minute Skill-only quickstart
 
-## Example Report Preview
+From a contributor checkout on Windows:
+
+```powershell
+$Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
+Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
+Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
+```
+
+For a published release, extract `workflow-skill-router-skill-v2.0.0-beta.1.zip` into the Codex Skills directory. This package preserves routing instructions and explicit-choice policy, but it cannot prove durable resume, full drift detection, or sealed activation. See [Skill-only installation](site/src/content/docs/guides/install-skill.md).
+
+## Architecture: Runtime Capability Discovery first
+
+Runtime Capability Discovery separates five facts that agents often collapse: installed metadata, host exposure, authentication, policy eligibility, and freshness. A capability becomes routable only when its risk-specific requirements pass.
+
+```mermaid
+flowchart LR
+    U["User request"] --> R["Router core"]
+    H["Codex host observations"] --> D["Runtime Capability Discovery"]
+    P["Plugin handshake"] --> D
+    S["SKILL metadata"] --> D
+    D --> R
+    R --> E["Single / Phased / Managed Goal"]
+    E --> L["Local R0 control plane"]
+    E --> V["Verified host adapters"]
+    E --> M["Configured evaluation adapter"]
+    V --> A["State, evidence, and audit stores"]
+```
+
+Maintainers can start with [the V2 architecture overview](docs/architecture/v2-overview.md).
+
+## Single, Phased, and Managed Goal
+
+- **Single** handles one bounded intent with one minimal primary capability.
+- **Phased** preserves distinct stages and reroutes each phase from current evidence.
+- **Managed Goal** maintains a resumable work graph, respects dependencies, and treats the Codex Goal as host-owned state.
+
+The Router does not force every task into Goal orchestration. Work shape comes from the request, dependencies, risk, and current Goal relation.
+
+## Explicit Skill Lock
+
+When the user names a SKILL, that choice becomes authoritative. The Router may recommend support, but it must explain the purpose, scope, refusal consequence, and context cost before activation. Rejected support stays out of active selections.
+
+In Plugin mode, the proposal is persisted before the question is shown. A follow-up model turn classifies only `approved`, `rejected`, or `unclear`; the deterministic MCP transition preserves the bound route and fails closed if Phase, scope, revision, or material context changed. Skill-only mode keeps the same interaction policy as advisory instructions, but cannot claim durable enforcement.
+
+When the user names no SKILL, the Router chooses the smallest sufficient route without repeatedly asking for consent to its own recommendations. Before execution it declares planned SKILL usage; after execution it reports actual usage and any change.
+
+## MCP tool surface
+
+The Plugin exposes twelve typed tools:
 
 ```text
-# Routing Evaluation Report
-
-| Metric | Value |
-| --- | ---: |
-| Scenario Count | 80 |
-| Primary Accuracy | 1.0 |
-| Forbidden Skill Violation Rate | 0.0 |
-| Max Skill Count Violation Rate | 0.0 |
-| Over-routing Rate | 0.0 |
+sync_runtime_context       plan_work                  propose_support_consent
+transition_support_consent get_next_work              validate_route
+record_work_event          evaluate_gate              get_router_status
+run_model_evaluation       compare_evaluations        export_router_artifact
 ```
 
-Before publishing your own router package or public examples, run the full repository audit:
+Tool schemas, risk, required capabilities, and fallback actions are generated from the same contracts used by the server. See the [generated MCP reference](site/src/content/docs/reference/mcp-tools.mdx).
 
-```bash
-python scripts/audit-public-readiness.py .
-python scripts/check-markdown-links.py .
-```
+## Runtime readiness matrix
 
-Expected result:
+| Availability in bundled local R0 | Tools | Meaning |
+| --- | --- | --- |
+| `local-ready` | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Durable local R0 planning, scoped consent, and status |
+| `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Needs verified host authority and stores |
+| `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
 
-```text
-OK: public-readiness audit passed
-```
+Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result.
 
-Run the site quality gate before a public launch:
+## Real Model Evaluation
 
-```bash
-cd site
-npm ci
-npm run assets:demo:check
-npm run assets:social:check
-npm run audit:lighthouse
-npm audit --omit=dev --audit-level=moderate
-```
+**Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication. The baseline arm is explicitly `model-only`; the candidate is `hybrid-router`. For consent follow-ups, the fresh model classifies intent and the persisted MCP state machine materializes the final route.
 
-This builds the Starlight site, runs Lighthouse against key English and Traditional Chinese pages, and writes local reports to `site/lighthouse-reports/`.
+Evaluation contract `2.2.0` separates the current-Phase oracle from a stateful Phase-transition case, binds scoped consent support to the current Phase's concrete exit evidence, and scores every declared turn. Its six-case beta profile remains 36 attempts and 42 model turns; the thirteen-case full gate is 78 attempts and 96 model turns at three repeats per arm. Any `2.1.0` report remains diagnostic, and runs bound to earlier case or instruction digests are never rescored against the new oracle. Before a fresh authorized `2.2.0` run, public evidence remains `manual-required`; after execution it remains `review-required` until trusted attestation.
 
-Regenerate all three archives locally:
+## Security boundary and local state
 
-```bash
-python scripts/package-downloads.py --skills-root <path-to-local-codex-skills> --exclude-prefix <private-prefix> --exclude-name <private-skill-name> --private-marker <private-text-marker>
-```
+Plugin installation, SKILL consent, runtime permission, and production authorization are separate decisions. The model cannot supply executable paths for evaluation, mint host authority, upgrade a fixture into runtime evidence, or mutate the native Codex Goal.
 
-The package builder refuses to use an implicit local skills directory. It also requires at least one private filter unless you explicitly pass `--allow-no-private-filters` after auditing your source directory.
+The Plugin stores state outside its cache:
 
-The Reference Template is generated from a real local `.codex/skills` folder. It excludes organization-specific skills and omits sensitive lines from otherwise public skills. Use it to study the pattern, then adapt Blank Router to your own skill set.
-
-## Practical Routing Examples
-
-### API contract sync
-
-```text
-User: Add a new customer settings endpoint, update OpenAPI, and make the frontend client follow it.
-
-Route: API / Contract lifecycle > Backend-to-frontend sync
-Use SKILL: api-designer, openapi-contract-generation-skill, openapi-to-typescript, qa-test-planner
-Reason: api-designer stabilizes the endpoint; openapi-contract-generation-skill manages schema diff and contract generation; openapi-to-typescript updates the client types; qa-test-planner defines contract coverage.
-```
-
-### Database migration with performance risk
-
-```text
-User: Add audit tables for account changes and make sure the admin query does not become slow.
-
-Route: Database / Schema and performance > Migration plus query review
-Use SKILL: database-schema-designer, sql-pro, database-optimizer, qa-test-planner
-Reason: database-schema-designer owns migration shape; sql-pro reviews SQL correctness; database-optimizer checks query plans; qa-test-planner defines regression coverage.
-```
-
-### Browser-only frontend bug
-
-```text
-User: A customer portal form only fails after a browser refresh. Reproduce it and add a regression check.
-
-Route: Frontend / Vue / UI > Browser regression
-Use SKILL: vue-expert, systematic-debugging, playwright
-Reason: vue-expert handles component behavior; systematic-debugging keeps the investigation causal; playwright captures the regression.
-```
-
-### PR review and CI repair
-
-```text
-User: Review this auth PR, address comments, and fix the failing checks.
-
-Route: Review / CI readiness > Security-sensitive change
-Use SKILL: receiving-code-review, systematic-debugging, qa-test-planner, commit-work
-Reason: receiving-code-review handles review feedback; systematic-debugging isolates failing checks; qa-test-planner defines verification; commit-work keeps the final change clean.
-```
-
-### Local development stack
-
-```text
-User: Create a Docker Compose setup with PostgreSQL, Redis, and MailDev for local development.
-
-Route: DevOps / Local development > Repeatable service stack
-Use SKILL: docker-compose-local-dev-skill, devops-engineer, systematic-debugging
-Reason: docker-compose-local-dev-skill owns local service ergonomics; devops-engineer checks infra tradeoffs; systematic-debugging helps when startup order or health checks fail.
-```
-
-## What Is Included
-
-- `starter/workflow-skill-router/`: a Codex-ready starter skill with an agent-agnostic routing contract.
-- `examples/template-skill-catalog/`: the single public example catalog that mirrors the template download package.
-- `sample-skills/`: copyable public `SKILL.md` examples that pair with the template catalog.
-- `downloads/`: generated blank and template SKILL zip packages.
-- `recipes/`: short practical patterns for API contract sync, frontend debugging, PR/CI work, documentation, and connector-heavy workflows.
-- `scripts/validate-router.py`: dependency-free validation for router structure plus a public-readiness audit for community files, downloads, template catalog/manifest parity, site assets, and stale examples.
-- `scripts/audit-public-readiness.py`: dedicated release gate for the public repo surface, powered by the same checks as `validate-router.py --public-readiness`.
-- `scripts/check-markdown-links.py`: dependency-free local Markdown/MDX link checker for docs, README, and examples.
-- `scripts/scan-skills.py`: dependency-free skill inventory scanner that writes JSON, Markdown, warnings, and a suggested tree.
-- `scripts/evaluate-routing.py`: dependency-free routing benchmark evaluator for scenarios and predictions.
-- `scripts/validate-route-cases.py`: public route case schema and public-safety validator.
-- `scripts/build-route-gallery.py`: generator for site gallery data and route-case evaluator scenarios.
-- `scripts/render-routing-metrics-trend.py`: generator for release-level metrics trend docs and site data.
-- `route-cases/`: canonical public-safe route cases accepted from maintainers and contributors.
-- `evaluation/`: benchmark scenarios, predictions, schema docs, generated route-case scenarios, metrics history, and generated report.
-- `references/`: generated example scanner outputs.
-- `tests/`: standard-library unit tests for scanner, evaluator, route case, and metrics behavior.
-- `scripts/package-downloads.py`: dependency-free packaging for downloadable SKILL archives.
-- `site/`: Astro Starlight website for GitHub Pages, including Playwright smoke and visual tests.
-- `site/scripts/lighthouse-audit.mjs`: formal Lighthouse and accessibility score gate for the public website.
-- `site/scripts/generate-demo-assets.mjs`: reproducible demo poster/WebM asset generator.
-- `site/scripts/generate-social-assets.mjs`: reproducible Open Graph/social preview generator.
-- `prompts/`: copy-paste prompts for creating or updating a personalized router.
-- `docs/`: conceptual docs, customization guidance, and validation checklists.
-
-## Example Routers
-
-| Example | Best for |
+| Platform | Default path |
 | --- | --- |
-| `examples/template-skill-catalog` | The Reference Template, organized into practical public-safe route categories |
+| Windows | `%LOCALAPPDATA%\Codex\workflow-skill-router` |
+| macOS | `~/Library/Application Support/Codex/workflow-skill-router` |
+| Linux | `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router` |
 
-## FAQ
+Set `WORKFLOW_SKILL_ROUTER_DATA_DIR` to choose another external directory. No telemetry is enabled by default. Read the [security boundary](site/src/content/docs/reference/security-boundaries.md) before integrating host-side R2/R3 actions.
 
-### Is this different from a system prompt?
+## Contributing
 
-Yes. A system prompt defines how an agent should behave. Workflow Skill Router decides which skill instructions should be loaded for a specific task. It sits before execution: classify the task, choose 1 primary skill and up to 3 supporting skills, then explain the route.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), then run the focused checks for the surface you changed. Release artifacts come from allowlists and deterministic builders; generated outputs are never edited by hand.
 
-### Is this an agent permission or sandbox layer?
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+python -m unittest discover -s packages/router-core/tests -v
+python -m unittest discover -s tests -v
+python scripts/build-v2-demo-data.py --check
+$Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
+$Output = Join-Path "dist" "release-$Version"
+python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+```
 
-No. Workflow Skill Router narrows skill selection before work starts. It does not grant permissions, enforce sandbox rules, approve tool calls, or replace your scope contract. Use it with your existing governance controls.
+The release builder allows repeatable overwrites only for the current manifest. It fails closed if the output directory contains a stale, unexpected, symlinked, or otherwise unmanifested path; use a version-specific directory instead of mixing release generations.
 
-### Why limit each route to 1-4 skills?
+## Version channels
 
-The limit keeps context focused. One primary skill owns the work; supporting skills add domain knowledge, verification, or tooling. If a task truly needs more than 4 skills, split it into stages and route each stage separately.
+| Channel | Current role | Promotion rule |
+| --- | --- | --- |
+| `latest` | V1.3.1 compatibility until V2 GA | Moves only after the GA release gate |
+| `latest-v1` | Immutable V1 recovery | Remains pinned to V1.3.1 |
+| `latest-v2` | V2 alpha/beta prerelease | Tracks reviewed V2 prereleases |
 
-### Can this work with Claude, Cursor, Gemini, or other agents?
+The repository is V2-first even while the compatibility channel remains pinned. Version metadata lives in [`release/version.json`](release/version.json).
 
-Yes. The pattern is agent-agnostic. The starter is Codex-ready, but the contract is plain text: skill inventory, routing rules, sample routes, and validator. Any agent that can read project instructions or custom rules can adapt it. See the [Claude, Cursor, and Gemini adapter notes](https://huangchiyu.com/Workflow-skill-router/guides/adapters/).
+## V1 migration
 
-### The install command failed. Where should I look?
+Use the [V1 to V2 migration guide](site/src/content/docs/guides/migrate-v1-to-v2.md) to move from template-based routing to the runtime-aware Plugin or standalone SKILL. V1 source and packages remain recoverable from the immutable [`v1.3.1` tag](https://github.com/eric861129/Workflow-skill-router/tree/v1.3.1) and GitHub Release; they are not primary V2 navigation.
 
-Open the [Troubleshooting guide](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/). It covers install paths, PowerShell, Python, zip extraction, validator errors, and public-readiness checks.
-
-## Learn More
-
-- [English guide](README.en.md)
-- [繁體中文說明](README.zh-TW.md)
-- [Website](https://huangchiyu.com/Workflow-skill-router/)
-- [Traditional Chinese site](https://huangchiyu.com/Workflow-skill-router/zh-tw/)
-- [Blank Router walkthrough](https://huangchiyu.com/Workflow-skill-router/guides/blank-router-walkthrough/)
-- [Troubleshooting](https://huangchiyu.com/Workflow-skill-router/guides/troubleshooting/)
-- [Claude, Cursor, and Gemini adapter notes](https://huangchiyu.com/Workflow-skill-router/guides/adapters/)
-- [Agent governance positioning](https://huangchiyu.com/Workflow-skill-router/reference/agent-governance-positioning/)
-- [Customization guide](docs/adoption-guide.md)
-- [System theory](docs/system-theory.en.md)
-- [Validation checklist](docs/validation-checklist.en.md)
-- [Dependency governance](docs/dependency-governance.md)
-- [Roadmap](docs/roadmap.md)
-- [Case studies](docs/case-studies.md)
-- [Showcase](docs/showcase.md)
-- [Anti-over-routing guide](docs/anti-over-routing.md)
-- [Forward tests](evaluation/forward-tests/)
-- [Shareable demo asset](docs/assets/route-demo-social.svg)
-- [Social preview PNG](docs/assets/workflow-skill-router-social-preview.png)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+MIT licensed.

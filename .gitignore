@@ -16,4 +16,12 @@ site-preview.pid
 # Python
 __pycache__/
 *.pyc
+packages/router-core/build/
+packages/router-core/src/*.egg-info/
+
+# Local isolated worktrees
+.worktrees/
+
+# Generated release, evaluation and local canary output
+dist/
 
