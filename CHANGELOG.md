@@ -4,7 +4,11 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixed
+
+- Prioritized immutable release installs for normal Plugin and Skill-only users, while keeping contributor checkout instructions separate.
+- Aligned public beta copy with the released 12-tool, four-local-ready Runtime profile and reviewed 36-attempt evaluation evidence.
+- Pointed Plugin metadata directly at the canonical documentation URL and clarified the beta roadmap status.
 
 ## 2.0.0-beta.1
 

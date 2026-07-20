@@ -10,6 +10,58 @@ VERSION = json.loads(
 
 
 class ReleaseCopyTests(unittest.TestCase):
+    def test_public_plugin_metadata_uses_the_canonical_documentation_url(self) -> None:
+        canonical = "https://huangchiyu.com/Workflow-skill-router/"
+        manifest = json.loads(
+            (
+                ROOT
+                / "plugins/workflow-skill-router/.codex-plugin/plugin.json"
+            ).read_text(encoding="utf-8")
+        )
+        package = json.loads(
+            (ROOT / "plugins/workflow-skill-router/package.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertEqual(canonical, manifest["homepage"])
+        self.assertEqual(canonical, manifest["interface"]["websiteURL"])
+        self.assertEqual(canonical, package["homepage"])
+        self.assertIn("Runtime-aware Skill routing", manifest["description"])
+        self.assertIn("Route Codex work", manifest["interface"]["shortDescription"])
+        self.assertIn(
+            "Discovers runtime capabilities",
+            manifest["interface"]["longDescription"],
+        )
+        self.assertTrue(
+            manifest["interface"]["defaultPrompt"][0].startswith("Classify")
+        )
+
+    def test_roadmap_separates_completed_beta_work_from_remaining_work(self) -> None:
+        pages = (
+            "site/src/content/docs/contributing/roadmap.md",
+            "site/src/content/docs/zh-tw/contributing/roadmap.md",
+        )
+
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("## Beta 2.0.0-beta.1", text)
+                self.assertGreaterEqual(text.count("- [x]"), 4)
+                self.assertIn("- [ ]", text)
+                self.assertLess(
+                    text.index("- [x]"),
+                    text.index("- [ ]"),
+                )
+
+    def test_changelog_records_post_beta_launch_copy(self) -> None:
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        unreleased = changelog.split("## 2.0.0-beta.1", maxsplit=1)[0]
+
+        self.assertNotIn("No unreleased changes", unreleased)
+        self.assertIn("immutable release installs", unreleased)
+        self.assertIn("canonical documentation URL", unreleased)
+
     def test_homepage_proof_stats_match_the_runtime_and_beta_profile(self) -> None:
         homepage = (ROOT / "site/src/components/HomeLanding.astro").read_text(
             encoding="utf-8"
