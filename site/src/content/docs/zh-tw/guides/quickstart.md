@@ -15,7 +15,7 @@ Plugin checkout：
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-預期結果：`runtime_profile` 是 `bundled-local-r0`；只有 `plan_work` 與 `get_router_status` 為 local-ready。純 SKILL 任務必須標示 `skill-only-fallback`。
+預期結果：`runtime_profile` 是 `bundled-local-r0`；`plan_work`、`propose_support_consent`、`transition_support_consent` 與 `get_router_status` 都是 local-ready。純 SKILL 任務必須標示 `skill-only-fallback`。
 
 ## 3. 試跑三種需求
 

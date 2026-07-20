@@ -34,7 +34,17 @@ Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone 
 
 ## Five-minute Plugin + MCP quickstart
 
-For a contributor checkout:
+For a normal installation, pin the published immutable `v2.0.0-beta.1` marketplace snapshot:
+
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+```
+
+Open a new Codex task and ask it to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, and four local-ready tools.
+
+For contributors who are changing or testing the Router:
 
 ```powershell
 git clone https://github.com/eric861129/Workflow-skill-router.git
@@ -45,18 +55,13 @@ codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-After the immutable `v2.0.0-beta.1` tag is published, use the tagged marketplace snapshot:
-
-```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
-codex plugin add workflow-skill-router@workflow-skill-router
-```
-
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
 ## Five-minute Skill-only quickstart
 
-From a contributor checkout on Windows:
+For a normal installation, download [`workflow-skill-router-skill-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-skill-v2.0.0-beta.1.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
+
+For contributors working from a checkout on Windows:
 
 ```powershell
 $Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
@@ -64,7 +69,7 @@ Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
 Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
 ```
 
-For a published release, extract `workflow-skill-router-skill-v2.0.0-beta.1.zip` into the Codex Skills directory. This package preserves routing instructions and explicit-choice policy, but it cannot prove durable resume, full drift detection, or sealed activation. See [Skill-only installation](site/src/content/docs/guides/install-skill.md).
+This package preserves routing instructions and explicit-choice policy, but it cannot prove durable resume, full drift detection, or sealed activation. See [Skill-only installation](site/src/content/docs/guides/install-skill.md).
 
 ## Architecture: Runtime Capability Discovery first
 

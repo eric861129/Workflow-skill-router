@@ -2,7 +2,7 @@
 
 [English](README.md) · [線上文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [Routing Flight Recorder](https://huangchiyu.com/Workflow-skill-router/zh-tw/#routing-flight-recorder)
 
-Workflow Skill Router 是 Codex 的 runtime-aware 規劃與路由層。它讓 Agent 專注於最小且可驗證的執行路徑，保留使用者權限，並如實呈現 Runtime 真正能做的事。
+Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 runtime-aware 規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。
 
 > 目前版本：`2.0.0-beta.1`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
 
@@ -34,7 +34,17 @@ Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或
 
 ## 五分鐘 Plugin + MCP quickstart
 
-Contributor checkout：
+一般使用者請固定安裝已發布且不可變的 `v2.0.0-beta.1` marketplace snapshot：
+
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+```
+
+開啟新的 Codex 任務，要求它顯示 Workflow Skill Router 狀態。預期結果應包含 `bundled-local-r0` Runtime 標籤、12 個 MCP tools，以及 4 個可在本機直接執行的 tools。
+
+需要修改 Router 的貢獻者才使用 checkout：
 
 ```powershell
 git clone https://github.com/eric861129/Workflow-skill-router.git
@@ -45,18 +55,13 @@ codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-immutable `v2.0.0-beta.1` tag 發布後，改用 tagged marketplace snapshot：
-
-```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
-codex plugin add workflow-skill-router@workflow-skill-router
-```
-
 正式 Plugin 已包含 MCP bundle 與 Python runtime。執行需要 Node.js 24+ 與 Python 3.11+；只有從原始碼重建時需要 npm。完整說明請看 [Plugin 安裝](site/src/content/docs/zh-tw/guides/install-plugin.md)。
 
 ## 五分鐘 Skill-only quickstart
 
-在 Windows contributor checkout 中執行：
+一般使用者請下載 [`workflow-skill-router-skill-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-skill-v2.0.0-beta.1.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+
+需要修改 Router 的貢獻者可在 Windows checkout 中執行：
 
 ```powershell
 $Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
@@ -64,7 +69,7 @@ Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
 Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
 ```
 
-正式 Release 則將 `workflow-skill-router-skill-v2.0.0-beta.1.zip` 解壓至 Codex Skills 目錄。此套件保留路由指令與 explicit-choice policy，但無法證明 durable resume、完整 drift detection 或 sealed activation。完整說明請看 [Skill-only 安裝](site/src/content/docs/zh-tw/guides/install-skill.md)。
+此套件保留路由指令與使用者指定 SKILL 優先的政策，但無法證明 durable resume、完整 drift detection 或 sealed activation。完整說明請看 [Skill-only 安裝](site/src/content/docs/zh-tw/guides/install-skill.md)。
 
 ## 架構：先做 Runtime Capability Discovery
 

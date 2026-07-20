@@ -127,5 +127,5 @@ jobs:
           gh release create "$RELEASE_TAG" "${release_files[@]}" \
             --verify-tag \
             --title "Workflow Skill Router $RELEASE_TAG" \
-            --generate-notes \
+            --notes-file "release/notes/${RELEASE_TAG}.md" \
             "${release_flags[@]}"

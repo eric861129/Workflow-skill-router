@@ -12,13 +12,15 @@ The released Plugin already contains the MCP bundle and Python runtime archive. 
 
 ## Install in Codex
 
-After the `v2.0.0-beta.1` tag is published, install the immutable Git marketplace snapshot:
+Install the published immutable `v2.0.0-beta.1` Git marketplace snapshot:
 
 ```powershell
 codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
+
+Restart Codex or open a new Codex task, then ask Codex to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, and four local-ready tools.
 
 For a contributor checkout, run this from the repository root:
 
@@ -28,11 +30,11 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-The beta tag command is a post-publication path. Local development and CI use the checkout path until that immutable tag exists.
+Use the tagged snapshot for normal installations. Use the checkout path only when developing or testing repository changes.
 
 ## Verify the MCP server
 
-From the extracted Plugin directory, verify the bundled Python runtime:
+For deep verification of an extracted package, run the bundled Python runtime check from the Plugin directory:
 
 ```powershell
 python runtime/workflow_skill_router.pyz doctor

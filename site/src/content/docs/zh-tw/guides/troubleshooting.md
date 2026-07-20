@@ -17,7 +17,7 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 codex plugin list
 ```
 
-使用 contributor checkout 時，確認 marketplace 指向 repository root，再重新安裝 `workflow-skill-router@workflow-skill-router`。Plugin registration 變更後，重新開啟 Codex 任務。在對應 tag 存在前，不要使用未來的 tagged install command。
+一般安裝請確認 marketplace 固定在 `v2.0.0-beta.1`，重新安裝 `workflow-skill-router@workflow-skill-router`，再重新啟動 Codex。使用 contributor checkout 時，請先確認 marketplace 指向 repository root。
 
 ## 純 SKILL 沒有觸發
 

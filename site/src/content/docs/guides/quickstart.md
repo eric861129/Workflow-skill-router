@@ -15,7 +15,7 @@ Plugin checkout:
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-Expected: `runtime_profile` is `bundled-local-r0`; only `plan_work` and `get_router_status` are local-ready. Skill-only tasks must state `skill-only-fallback`.
+Expected: `runtime_profile` is `bundled-local-r0`; `plan_work`, `propose_support_consent`, `transition_support_consent`, and `get_router_status` are local-ready. Skill-only tasks must state `skill-only-fallback`.
 
 ## 3. Try three requests
 
