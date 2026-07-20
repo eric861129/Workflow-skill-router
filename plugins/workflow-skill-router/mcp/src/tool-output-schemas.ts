@@ -19,6 +19,13 @@ const supportConsent = z.object({
   replayed: z.boolean(),
   runtime_mode: z.string(),
 }).strict();
+const plannedSkillPhase = z.object({
+  phase_id: z.string(),
+  primary_skill_id: z.string(),
+  support_skill_ids: z.array(z.string()).max(3),
+  exit_gate: z.string(),
+}).strict();
+const sha256Digest = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 
 export const TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: z.object({
@@ -38,6 +45,15 @@ export const TOOL_OUTPUT_SCHEMAS = {
     support_consent_required: z.boolean(),
     planned_skill_ids: z.array(z.string()),
     runtime_mode: z.string(),
+    route_source: z.enum([
+      "user-explicit", "workspace-profile", "personal-profile", "builtin-default",
+    ]),
+    routing_profile_ids: z.array(z.string()),
+    routing_profile_digest: sha256Digest.nullable(),
+    matched_profile_rule_id: z.string().nullable(),
+    planned_skill_tree: z.array(plannedSkillPhase),
+    activation_status: z.enum(["not-planned", "intended-unverified"]),
+    profile_warnings: z.array(z.string()),
   }).strict(),
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,

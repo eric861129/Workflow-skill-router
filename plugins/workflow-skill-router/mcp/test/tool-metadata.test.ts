@@ -24,3 +24,9 @@ test("read and mutation annotations reflect real authority", () => {
   assert.equal(definitions.propose_support_consent.annotations.readOnlyHint, false);
   assert.equal(definitions.transition_support_consent.annotations.readOnlyHint, false);
 });
+
+test("plan_work metadata explains user-owned profile precedence and activation boundary", () => {
+  const plan = TOOL_DEFINITIONS.find((item) => item.name === "plan_work")!;
+  assert.match(plan.description, /user-owned/i);
+  assert.match(plan.description, /runtime discovery/i);
+});

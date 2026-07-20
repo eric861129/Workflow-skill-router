@@ -15,7 +15,7 @@ Plugin checkout:
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-Expected: `runtime_profile` is `bundled-local-r0`; only `plan_work` and `get_router_status` are local-ready. Skill-only tasks must state `skill-only-fallback`.
+Expected: `runtime_profile` is `bundled-local-r0`; `plan_work`, `propose_support_consent`, `transition_support_consent`, and `get_router_status` are local-ready. Skill-only tasks must state `skill-only-fallback`.
 
 ## 3. Try three requests
 
@@ -43,7 +43,20 @@ Continue the migration Goal across API, Web, and docs.
 
 Expected local behavior: `plan_work` succeeds, `get_next_work` returns typed `capability-unavailable`, and `get_router_status` remains readable. A verified Host integration is required for actual scheduling.
 
-## 4. Inspect the evidence
+## 4. Try a Personal Routing Profile
+
+Personal Routing Profiles ship in `v2.0.0-beta.2`. From a contributor checkout, try a user-owned Skill Tree:
+
+```powershell
+Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile validate .\my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api
+```
+
+Use `.codex/workflow-skill-router.json` for a workspace Profile. The preview must report `intended-unverified`; Runtime Capability Discovery still controls activation. Skill-only can interpret the same contract only as `skill-only-fallback`.
+
+## 5. Inspect the evidence
 
 Open the homepage Flight Recorder. Expand each MCP step to inspect sanitized request/response JSON. `runtime-trace` is bundled local evidence; `fixture-trace` proves the Host contract through test ports and is not a live Host connection.
 
@@ -51,5 +64,6 @@ Open the homepage Flight Recorder. Expand each MCP step to inspect sanitized req
 
 - [Runtime Capability Discovery](/Workflow-skill-router/concepts/runtime-capability-discovery/)
 - [Routing Envelopes](/Workflow-skill-router/concepts/routing-envelopes/)
+- [Personal Routing Profiles](/Workflow-skill-router/concepts/personal-routing-profiles/)
 - [MCP tool reference](/Workflow-skill-router/reference/mcp-tools/)
 - [Troubleshooting](/Workflow-skill-router/guides/troubleshooting/)

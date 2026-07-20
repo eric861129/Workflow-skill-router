@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 from .evaluation import configure_evaluation_parser, run_evaluation_cli
+from .profiles import configure_profile_parser, run_profile_cli
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,6 +24,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("validate-route", help="Validate a JIT route and activation")
     evaluation = subparsers.add_parser("evaluation", help="Run or inspect evaluation artifacts")
     configure_evaluation_parser(evaluation)
+    profile = subparsers.add_parser(
+        "profile",
+        help="Validate, install, list, or preview user-owned routing profiles",
+    )
+    configure_profile_parser(profile)
     return parser
 
 
@@ -55,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "evaluation":
         return run_evaluation_cli(args)
+    if args.command == "profile":
+        return run_profile_cli(args)
     print("This command requires Plugin/MCP host context; use the bundled runtime tools.")
     return 2
 

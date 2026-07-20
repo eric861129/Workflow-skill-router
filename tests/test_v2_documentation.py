@@ -27,6 +27,39 @@ class V2DocumentationTests(unittest.TestCase):
             self.assertTrue((ROOT/"site/src/content/docs"/relative).is_file())
             self.assertTrue((ROOT/"site/src/content/docs/zh-tw"/relative).is_file())
 
+    def test_personal_routing_profiles_are_first_class_and_honest_in_both_modes(self):
+        pages = (
+            "README.md",
+            "README.zh-TW.md",
+            "site/src/content/docs/concepts/personal-routing-profiles.md",
+            "site/src/content/docs/zh-tw/concepts/personal-routing-profiles.md",
+            "site/src/content/docs/reference/cli.md",
+            "site/src/content/docs/zh-tw/reference/cli.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text("utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("Personal Routing Profile", text)
+                self.assertIn("workspace", text)
+                self.assertIn("personal", text)
+                self.assertIn("Runtime Capability Discovery", text)
+                self.assertIn("intended-unverified", text)
+                self.assertIn("profile preview", text)
+
+        navigation = (ROOT / "site/astro.config.mjs").read_text("utf-8")
+        self.assertIn("concepts/personal-routing-profiles", navigation)
+
+        english = (ROOT / pages[2]).read_text("utf-8")
+        chinese = (ROOT / pages[3]).read_text("utf-8")
+        for text in (english, chinese):
+            self.assertIn('"scope": "workspace"', text)
+            self.assertIn("workspace-routing-profile.example.json", text)
+            self.assertIn("beta.1", text)
+        self.assertIn("filesystem access", english)
+        self.assertIn("does not cover", english)
+        self.assertIn("Host 授權", chinese)
+        self.assertIn("不涵蓋", chinese)
+
     def test_ga_evaluation_budget_matches_contract_2_1(self):
         pages = (
             "site/src/content/docs/concepts/evaluation-evidence.md",

@@ -13,6 +13,8 @@ from workflow_skill_router.persistence.sqlite_store import (
     ConcurrencyConflict,
     IdempotencyConflict,
 )
+from workflow_skill_router.profiles.resolver import RoutingMatchContext, resolve_profile_route
+from workflow_skill_router.profiles.storage import RoutingProfileRepository
 from workflow_skill_router.routing.directives import resolve_directive
 from workflow_skill_router.routing.consent import ConsentPolicyError
 from workflow_skill_router.routing.models import (
@@ -24,6 +26,7 @@ from workflow_skill_router.routing.models import (
 from workflow_skill_router.routing.profiler import decide_request
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
+    PlannedSkillPhase,
     PlanWorkResult,
     RouterStatusView,
     SupportConsentResult,
@@ -31,6 +34,7 @@ from workflow_skill_router.service_models import (
 
 
 LOCAL_RUNTIME_MODE = "mcp-local-control-plane"
+_ROUTING_IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
 
 def _digest(value: str) -> str:
@@ -42,6 +46,35 @@ def _stable_id(prefix: str, session_id: str, idempotency_key: str) -> str:
         f"{session_id}\0{idempotency_key}".encode("utf-8")
     ).hexdigest()[:32]
     return f"{prefix}:{identity}"
+
+
+def _legacy_plan_request_digest(command, directive, objective_digest: str) -> str:
+    """Recreate the beta.1 request digest for idempotent plan replay."""
+
+    document = {
+        "actor": command.context.actor,
+        "correlation_id": command.correlation_id,
+        "explicit_semantics": (
+            None if directive.explicit_semantics is None
+            else directive.explicit_semantics.value
+        ),
+        "explicit_skill_ids": list(directive.explicit_skills),
+        "goal_binding_id": command.goal_binding_id,
+        "objective_digest": objective_digest,
+        "requested_work_mode": command.requested_work_mode,
+        "runtime_policy_snapshot_id": command.context.runtime_policy_snapshot_id,
+        "session_id": command.context.session_id,
+    }
+    return _digest(canonical_json(document))
+
+
+def _is_default_routing_context(routing_context) -> bool:
+    return (
+        routing_context.workspace_root is None
+        and not routing_context.domains
+        and not routing_context.tags
+        and routing_context.current_phase_id is None
+    )
 
 
 class LocalControlPlaneService:
@@ -69,13 +102,86 @@ class LocalControlPlaneService:
             requested_work_mode_hint=command.requested_work_mode,
         ))
         decision = decide_request(
-            GoalRelation.NONE,
+            GoalRelation.PROGRESS if command.goal_binding_id is not None else GoalRelation.NONE,
             TaskSignals.small(),
             directive,
             RuntimeMode.SKILL_ONLY,
         )
         if decision.routing is None:
             raise RuntimeError("planning-routing-profile-unavailable")
+
+        routing_context = command.routing_context
+        for field_name, values in (
+            ("domains", routing_context.domains),
+            ("tags", routing_context.tags),
+        ):
+            if len(values) > 32 or len(set(values)) != len(values):
+                raise ValueError(f"routing_context.{field_name} 必須唯一且最多 32 項")
+            if any(
+                not isinstance(value, str)
+                or _ROUTING_IDENTIFIER.fullmatch(value) is None
+                for value in values
+            ):
+                raise ValueError(f"routing_context.{field_name} 含有無效識別值")
+        if routing_context.current_phase_id is not None and (
+            not isinstance(routing_context.current_phase_id, str)
+            or _ROUTING_IDENTIFIER.fullmatch(routing_context.current_phase_id) is None
+        ):
+            raise ValueError("routing_context.current_phase_id 格式無效")
+
+        routing_envelope = decision.routing.envelope.value
+        route_source = "builtin-default"
+        routing_profile_ids: tuple[str, ...] = ()
+        routing_profile_digest = None
+        matched_profile_rule_id = None
+        planned_skill_tree: tuple[PlannedSkillPhase, ...] = ()
+        profile_warnings: tuple[str, ...] = ()
+        activation_status = "not-planned"
+        planned_skill_ids = directive.explicit_skills
+
+        if directive.explicit_skills:
+            route_source = "user-explicit"
+            activation_status = "intended-unverified"
+        else:
+            workspace_root = (
+                None
+                if routing_context.workspace_root is None
+                else Path(routing_context.workspace_root)
+            )
+            profiles = RoutingProfileRepository(self._database.parent).load_layers(
+                workspace_root=workspace_root
+            )
+            resolved = resolve_profile_route(
+                profiles,
+                objective=objective,
+                default_work_mode=routing_envelope,
+                context=RoutingMatchContext(
+                    domains=routing_context.domains,
+                    tags=routing_context.tags,
+                    current_phase_id=routing_context.current_phase_id,
+                    lock_work_mode=(
+                        command.requested_work_mode is not None
+                        or command.goal_binding_id is not None
+                    ),
+                ),
+            )
+            if resolved is not None:
+                routing_envelope = resolved.work_mode
+                route_source = resolved.route_source
+                routing_profile_ids = resolved.applied_profile_ids
+                routing_profile_digest = resolved.profile_digest
+                matched_profile_rule_id = resolved.matched_rule_id
+                planned_skill_ids = resolved.current_skill_ids
+                planned_skill_tree = tuple(
+                    PlannedSkillPhase(
+                        phase.phase_id,
+                        phase.primary_skill_id,
+                        phase.support_skill_ids,
+                        phase.exit_gate,
+                    )
+                    for phase in resolved.skill_tree
+                )
+                activation_status = resolved.activation_status
 
         workflow_run_id = _stable_id(
             "workflow",
@@ -98,7 +204,18 @@ class LocalControlPlaneService:
             "explicit_skill_ids": list(directive.explicit_skills),
             "goal_binding_id": command.goal_binding_id,
             "objective_digest": objective_digest,
+            "profile_digest": routing_profile_digest,
             "requested_work_mode": command.requested_work_mode,
+            "routing_context": {
+                "current_phase_id": routing_context.current_phase_id,
+                "domains": list(routing_context.domains),
+                "tags": list(routing_context.tags),
+                "workspace_root_digest": (
+                    None
+                    if routing_context.workspace_root is None
+                    else _digest(str(Path(routing_context.workspace_root).expanduser().resolve()))
+                ),
+            },
             "runtime_policy_snapshot_id": command.context.runtime_policy_snapshot_id,
             "session_id": command.context.session_id,
         }
@@ -117,22 +234,31 @@ class LocalControlPlaneService:
             ).fetchone()
             if existing is not None:
                 if existing["request_digest"] != request_digest:
-                    connection.rollback()
-                    raise IdempotencyConflict(
-                        "相同 idempotency key 不得對應不同規劃請求"
+                    legacy_digest = _legacy_plan_request_digest(
+                        command, directive, objective_digest
                     )
+                    if (
+                        not _is_default_routing_context(routing_context)
+                        or existing["request_digest"] != legacy_digest
+                    ):
+                        connection.rollback()
+                        raise IdempotencyConflict(
+                            "相同 idempotency key 不得對應不同規劃請求"
+                        )
                 connection.commit()
                 return self._result(existing)
 
-            connection.execute(
-                "INSERT INTO local_control_plans("
-                "plan_id,session_id,actor,runtime_policy_snapshot_id,idempotency_key,"
-                "request_digest,workflow_run_id,work_graph_id,goal_binding_id,"
-                "objective_digest,routing_envelope,selection_mode,support_policy,"
-                "support_consent_required,explicit_skill_ids_json,explicit_semantics,"
-                "created_work_items,state_version,created_at"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)",
-                (
+            columns = (
+                "plan_id", "session_id", "actor", "runtime_policy_snapshot_id",
+                "idempotency_key", "request_digest", "workflow_run_id", "work_graph_id",
+                "goal_binding_id", "objective_digest", "routing_envelope", "selection_mode",
+                "support_policy", "support_consent_required", "explicit_skill_ids_json",
+                "explicit_semantics", "route_source", "routing_profile_ids_json",
+                "routing_profile_digest", "matched_profile_rule_id", "planned_skill_ids_json",
+                "planned_skill_tree_json", "activation_status", "profile_warnings_json",
+                "created_work_items", "state_version", "created_at",
+            )
+            values = (
                     _stable_id("plan", command.context.session_id, command.idempotency_key),
                     command.context.session_id,
                     command.context.actor,
@@ -143,7 +269,7 @@ class LocalControlPlaneService:
                     work_graph_id,
                     command.goal_binding_id,
                     objective_digest,
-                    decision.routing.envelope.value,
+                    routing_envelope,
                     decision.routing.skill_policy.value,
                     directive.support_policy.value,
                     int(support_consent_required),
@@ -152,8 +278,22 @@ class LocalControlPlaneService:
                         None if directive.explicit_semantics is None
                         else directive.explicit_semantics.value
                     ),
+                    route_source,
+                    canonical_json(list(routing_profile_ids)),
+                    routing_profile_digest,
+                    matched_profile_rule_id,
+                    canonical_json(list(planned_skill_ids)),
+                    canonical_json([phase.to_dict() for phase in planned_skill_tree]),
+                    activation_status,
+                    canonical_json(list(profile_warnings)),
+                    1,
+                    1,
                     datetime.now(UTC).isoformat(),
-                ),
+                )
+            connection.execute(
+                f"INSERT INTO local_control_plans({','.join(columns)}) "
+                f"VALUES ({','.join('?' for _ in values)})",
+                values,
             )
             stored = connection.execute(
                 "SELECT * FROM local_control_plans WHERE workflow_run_id=?",
@@ -468,6 +608,15 @@ class LocalControlPlaneService:
 
     @staticmethod
     def _result(row: sqlite3.Row) -> PlanWorkResult:
+        planned_tree = tuple(
+            PlannedSkillPhase(
+                phase["phase_id"],
+                phase["primary_skill_id"],
+                tuple(phase["support_skill_ids"]),
+                phase["exit_gate"],
+            )
+            for phase in json.loads(row["planned_skill_tree_json"])
+        )
         return PlanWorkResult(
             status="planned-local-control",
             workflow_run_id=row["workflow_run_id"],
@@ -476,8 +625,15 @@ class LocalControlPlaneService:
             routing_envelope=row["routing_envelope"],
             selection_mode=row["selection_mode"],
             support_consent_required=bool(row["support_consent_required"]),
-            planned_skill_ids=tuple(json.loads(row["explicit_skill_ids_json"])),
+            planned_skill_ids=tuple(json.loads(row["planned_skill_ids_json"])),
             runtime_mode=LOCAL_RUNTIME_MODE,
+            route_source=row["route_source"],
+            routing_profile_ids=tuple(json.loads(row["routing_profile_ids_json"])),
+            routing_profile_digest=row["routing_profile_digest"],
+            matched_profile_rule_id=row["matched_profile_rule_id"],
+            planned_skill_tree=planned_tree,
+            activation_status=row["activation_status"],
+            profile_warnings=tuple(json.loads(row["profile_warnings_json"])),
         )
 
     @staticmethod

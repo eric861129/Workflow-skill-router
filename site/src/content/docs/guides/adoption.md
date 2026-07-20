@@ -31,6 +31,10 @@ Large wording does not automatically require a Goal. Complexity, dependencies, r
 
 ## Preserve user choice
 
+With `v2.0.0-beta.2`, start with one Personal Routing Profile rule for a repeated workflow. Validate and `profile preview` it against representative small, phased, and Managed Goal requests before adding another rule. Keep project policy in `.codex/workflow-skill-router.json`; keep cross-project preferences personal.
+
+Treat Profile results as `intended-unverified`. Runtime Capability Discovery remains the activation gate, and an explicit user SKILL always wins.
+
 When the user names no SKILL, auto-route the minimal set without a consent ceremony. When the user explicitly names a SKILL, lock that selection. Any proposed support outside the lock stays inactive until the user accepts it.
 
 Declare expected SKILL usage before work. At completion, disclose what was actually used, skipped, or added with consent.

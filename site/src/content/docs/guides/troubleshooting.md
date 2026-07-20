@@ -17,7 +17,7 @@ Confirm the runtime profile, telemetry state, Python version, content preflight 
 codex plugin list
 ```
 
-For a contributor checkout, ensure the marketplace points at the repository root and reinstall `workflow-skill-router@workflow-skill-router`. Restart the Codex task after changing Plugin registration. Do not use the future tagged install command until that tag exists.
+For a normal installation, ensure the marketplace is pinned to `v2.0.0-beta.2`, reinstall `workflow-skill-router@workflow-skill-router`, and restart Codex. For a contributor checkout, ensure the marketplace points at the repository root before reinstalling.
 
 ## Skill-only does not trigger
 

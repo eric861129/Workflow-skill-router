@@ -23,6 +23,18 @@ description: 以可回復的方式，從靜態 template router 移轉到 V2 Plug
 
 ## 3. 轉換 policies
 
+把 V1 Skill Tree 偏好轉成 Personal Routing Profile，不要壓平成一段全域 prompt。每個 workflow matcher 轉成一條 rule；每個 stage 轉成一個 `skill_tree` Phase，包含單一 Primary、最多三個 immediate support SKILL，以及 exit gate ID。
+
+```powershell
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile validate .\migrated-v1-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\migrated-v1-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "代表性的 V1 任務" --work-mode phased
+```
+
+Personal Routing Profile commands 隨 `v2.0.0-beta.2` 提供；contributor checkout 請使用下方較長的 repository-relative runtime 路徑。
+
+專案政策使用 `.codex/workflow-skill-router.json` 與 `scope: workspace`；跨專案個人偏好使用 `scope: personal`。Workspace 以整棵 route 取代 personal，不 deep merge。Runtime Capability Discovery 仍會把所選 SKILL 標成 `intended-unverified`，直到 activation 得到證明。
+
 - 小型 route 轉成 `single`。
 - 多階段 route 轉成 `phased`，每個 phase 都定義 verification gate。
 - 可恢復且有相依性的工作轉成 `managed-goal` Work Items。

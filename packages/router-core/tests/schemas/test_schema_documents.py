@@ -12,8 +12,8 @@ class SchemaDocumentTests(unittest.TestCase):
             json.loads(path.read_text(encoding="utf-8"))
             for path in sorted(SCHEMA_ROOT.glob("*.json"))
         ]
-        self.assertEqual(4, len(documents))
-        self.assertEqual(4, len({item["$id"] for item in documents}))
+        self.assertEqual(5, len(documents))
+        self.assertEqual(5, len({item["$id"] for item in documents}))
         self.assertTrue(all(
             item["$schema"] == "https://json-schema.org/draft/2020-12/schema"
             for item in documents
@@ -47,6 +47,16 @@ class SchemaDocumentTests(unittest.TestCase):
             "drift_id", "previous_snapshot_id", "current_snapshot_id", "capability_id",
             "kind", "changed_fields", "before_fingerprint", "after_fingerprint", "detected_at",
         }.issubset(document["required"]))
+
+    def test_routing_profile_schema_has_no_free_form_instruction_surface(self) -> None:
+        document = json.loads(
+            (SCHEMA_ROOT / "routing-profile.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(False, document["additionalProperties"])
+        self.assertNotIn("instructions", document["properties"])
+        phase = document["$defs"]["skillTreePhase"]
+        self.assertEqual(3, phase["properties"]["support_skill_ids"]["maxItems"])
+        self.assertEqual(False, phase["additionalProperties"])
 
 
 if __name__ == "__main__":

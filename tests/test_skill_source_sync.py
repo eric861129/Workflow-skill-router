@@ -7,8 +7,11 @@ SOURCE = ROOT / "starter" / "v2" / "workflow-skill-router"
 TARGET = ROOT / "plugins" / "workflow-skill-router" / "skills" / "workflow-skill-router"
 SKILL_FILES = (
     Path("SKILL.md"),
+    Path("assets/personal-routing-profile.example.json"),
+    Path("assets/workspace-routing-profile.example.json"),
     Path("references/evaluation-boundary.md"),
     Path("references/goal-protocol.md"),
+    Path("references/personal-routing-profiles.md"),
     Path("references/routing-protocol.md"),
 )
 
@@ -115,6 +118,51 @@ class SkillSourceSyncTests(unittest.TestCase):
         )
         self.assertIn("`approved` 時保留相同 support_skills", combined)
         self.assertIn("`rejected` 時清空 support_skills", combined)
+
+    def test_canonical_skill_preserves_user_owned_skill_tree_customization(self) -> None:
+        skill = (SOURCE / "SKILL.md").read_text(encoding="utf-8")
+        profiles = (SOURCE / "references/personal-routing-profiles.md").read_text(
+            encoding="utf-8"
+        )
+        combined = skill + "\n" + profiles
+
+        for marker in (
+            "Personal Routing Profile",
+            ".codex/workflow-skill-router.json",
+            "workspace profile > personal profile > built-in",
+            "使用者當次明確指定 SKILL",
+            "Runtime Capability Discovery",
+            "intended-unverified",
+            "skill-only-fallback",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, combined)
+
+    def test_profile_example_is_a_strict_non_executable_skill_tree(self) -> None:
+        import json
+
+        profile = json.loads(
+            (SOURCE / "assets/personal-routing-profile.example.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual("workflow-skill-router/routing-profile", profile["schema_id"])
+        self.assertEqual("personal", profile["scope"])
+        self.assertNotIn("instructions", profile)
+        self.assertTrue(all(
+            len(phase["support_skill_ids"]) <= 3
+            for rule in profile["rules"]
+            for phase in rule["route"]["skill_tree"]
+        ))
+
+        workspace = json.loads(
+            (SOURCE / "assets/workspace-routing-profile.example.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual("workspace:api-delivery", workspace["profile_id"])
+        self.assertEqual("workspace", workspace["scope"])
+        self.assertNotIn("instructions", workspace)
 
 if __name__ == "__main__":
     unittest.main()

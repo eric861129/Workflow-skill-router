@@ -3228,8 +3228,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path3) {
-      let input = path3;
+    function removeDotSegments(path5) {
+      let input = path5;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3481,8 +3481,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path3, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
+        const [path5, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6875,12 +6875,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs, exportName) {
+    function addFormats(ajv, list, fs2, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs[f]);
+        ajv.addFormat(f, fs2[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -7247,8 +7247,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path3, errorMaps, issueData } = params;
-  const fullPath = [...path3, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7363,11 +7363,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path3, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path3;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -11265,10 +11265,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path3) {
-  if (!path3)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path3.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11629,11 +11629,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path3, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path3);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -11795,7 +11795,7 @@ function formatError(error46, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error46, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error47, path3 = []) => {
+  const processError = (error47, path5 = []) => {
     var _a, _b;
     for (const issue2 of error47.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
@@ -11805,7 +11805,7 @@ function treeifyError(error46, mapper = (issue2) => issue2.message) {
       } else if (issue2.code === "invalid_element") {
         processError({ issues: issue2.issues }, issue2.path);
       } else {
-        const fullpath = [...path3, ...issue2.path];
+        const fullpath = [...path5, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -11837,8 +11837,8 @@ function treeifyError(error46, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path3 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path3) {
+  const path5 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path5) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -28977,6 +28977,9 @@ var StdioServerTransport = class {
   }
 };
 
+// mcp/src/server.ts
+import path4 from "node:path";
+
 // mcp/src/core-client.ts
 import { spawn as spawn2 } from "node:child_process";
 import path2 from "node:path";
@@ -29166,6 +29169,18 @@ var agentSnapshot = external_exports3.object({
     aliases: external_exports3.array(external_exports3.string()).describe("Alternative identifiers observed for this capability.")
   }).strict()).describe("Capabilities directly observable from the current agent runtime.")
 }).strict();
+var routingIdentifier = external_exports3.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
+var routingIdentifiers = external_exports3.array(routingIdentifier).max(32).refine((values) => new Set(values).size === values.length, "Routing identifiers must be unique.");
+var routingContext = external_exports3.object({
+  workspace_root: external_exports3.string().min(1).nullable().describe(
+    "Workspace root whose fixed .codex/workflow-skill-router.json may be loaded after MCP Client-root or operator-root authorization."
+  ),
+  domains: routingIdentifiers.describe("Deterministic domain identifiers used by profile matchers."),
+  tags: routingIdentifiers.describe("Deterministic task tags used by profile matchers."),
+  current_phase_id: routingIdentifier.nullable().describe(
+    "Current Phase identifier; only that Phase's Primary and immediate support become current intent."
+  )
+}).strict();
 var TOOL_INPUT_SHAPES = {
   sync_runtime_context: external_exports3.object({
     ...mutation,
@@ -29181,7 +29196,10 @@ var TOOL_INPUT_SHAPES = {
     goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
     requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
     explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
-    explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists.")
+    explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+    routing_context: routingContext.optional().describe(
+      "Optional user-owned routing profile context. Omission preserves the V2 beta.1 request contract."
+    )
   }).strict().shape,
   propose_support_consent: external_exports3.object({
     ...mutation,
@@ -29280,6 +29298,13 @@ var supportConsent = external_exports3.object({
   replayed: external_exports3.boolean(),
   runtime_mode: external_exports3.string()
 }).strict();
+var plannedSkillPhase = external_exports3.object({
+  phase_id: external_exports3.string(),
+  primary_skill_id: external_exports3.string(),
+  support_skill_ids: external_exports3.array(external_exports3.string()).max(3),
+  exit_gate: external_exports3.string()
+}).strict();
+var sha256Digest = external_exports3.string().regex(/^sha256:[0-9a-f]{64}$/);
 var TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: external_exports3.object({
     snapshot: unknownObject,
@@ -29297,7 +29322,19 @@ var TOOL_OUTPUT_SCHEMAS = {
     selection_mode: external_exports3.string(),
     support_consent_required: external_exports3.boolean(),
     planned_skill_ids: external_exports3.array(external_exports3.string()),
-    runtime_mode: external_exports3.string()
+    runtime_mode: external_exports3.string(),
+    route_source: external_exports3.enum([
+      "user-explicit",
+      "workspace-profile",
+      "personal-profile",
+      "builtin-default"
+    ]),
+    routing_profile_ids: external_exports3.array(external_exports3.string()),
+    routing_profile_digest: sha256Digest.nullable(),
+    matched_profile_rule_id: external_exports3.string().nullable(),
+    planned_skill_tree: external_exports3.array(plannedSkillPhase),
+    activation_status: external_exports3.enum(["not-planned", "intended-unverified"]),
+    profile_warnings: external_exports3.array(external_exports3.string())
   }).strict(),
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,
@@ -29397,7 +29434,7 @@ var TITLES = {
 };
 var DESCRIPTIONS = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime supports this idempotent mutation and preserves explicit Skill locks without speculative consent prompts.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime can apply strict user-owned personal and trusted-root workspace routing profiles while preserving explicit Skill locks. Profile choices remain intended routes until Runtime Discovery validates activation, and no speculative support-consent prompt is created.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
   get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",
@@ -29443,6 +29480,80 @@ var TOOL_DEFINITIONS = PUBLIC_TOOL_NAMES.map((name) => ({
   runtimeRequirement: RUNTIME_REQUIREMENTS[name]
 }));
 
+// mcp/src/workspace-roots.ts
+import fs from "node:fs";
+import path3 from "node:path";
+import { fileURLToPath } from "node:url";
+var WorkspaceRootTrustError = class extends Error {
+  code = "workspace-root-untrusted";
+  constructor() {
+    super("Workspace profile access requires a matching MCP Client root or operator-configured root.");
+    this.name = "WorkspaceRootTrustError";
+  }
+};
+var canonicalExistingDirectory = (value) => {
+  try {
+    const resolved = fs.realpathSync.native(path3.resolve(value));
+    return fs.statSync(resolved).isDirectory() ? resolved : null;
+  } catch {
+    return null;
+  }
+};
+var isWithin = (candidate, root) => {
+  const relative = path3.relative(root, candidate);
+  return relative === "" || relative !== ".." && !relative.startsWith(`..${path3.sep}`) && !path3.isAbsolute(relative);
+};
+function collectTrustedWorkspaceRoots(clientRoots, configuredRoots) {
+  const roots = /* @__PURE__ */ new Set();
+  for (const root of clientRoots) {
+    try {
+      const url2 = new URL(root.uri);
+      if (url2.protocol === "file:") {
+        const canonical = canonicalExistingDirectory(fileURLToPath(url2));
+        if (canonical !== null) roots.add(canonical);
+      }
+    } catch {
+    }
+  }
+  for (const root of configuredRoots) {
+    if (root.trim()) {
+      const canonical = canonicalExistingDirectory(root);
+      if (canonical !== null) roots.add(canonical);
+    }
+  }
+  return [...roots].sort((left, right) => left.localeCompare(right));
+}
+function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
+  const canonicalRoots = trustedRoots.map(canonicalExistingDirectory).filter((root) => root !== null);
+  const rawContext = arguments_.routing_context;
+  if (rawContext === void 0) {
+    if (canonicalRoots.length !== 1) return arguments_;
+    return {
+      ...arguments_,
+      routing_context: {
+        workspace_root: canonicalRoots[0],
+        domains: [],
+        tags: [],
+        current_phase_id: null
+      }
+    };
+  }
+  if (rawContext === null || typeof rawContext !== "object" || Array.isArray(rawContext)) {
+    return arguments_;
+  }
+  const context2 = rawContext;
+  if (context2.workspace_root === null || context2.workspace_root === void 0) return arguments_;
+  if (typeof context2.workspace_root !== "string") throw new WorkspaceRootTrustError();
+  const requested = canonicalExistingDirectory(context2.workspace_root);
+  if (requested === null || !canonicalRoots.some((root) => isWithin(requested, root))) {
+    throw new WorkspaceRootTrustError();
+  }
+  return {
+    ...arguments_,
+    routing_context: { ...context2, workspace_root: requested }
+  };
+}
+
 // mcp/src/server.ts
 var core = new CoreClient();
 try {
@@ -29451,7 +29562,19 @@ try {
   process.stderr.write("Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF0C\u5207\u63DB\u70BA skill-only-fallback\u3002\n");
   process.exit(78);
 }
-var server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.1" });
+var server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.2" });
+var trustedWorkspaceRoots = async () => {
+  let clientRoots = [];
+  if (server.server.getClientCapabilities()?.roots) {
+    try {
+      clientRoots = (await server.server.listRoots(void 0, { timeout: 2e3 })).roots;
+    } catch {
+      clientRoots = [];
+    }
+  }
+  const configured = (process.env.WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS ?? "").split(path4.delimiter).filter(Boolean);
+  return collectTrustedWorkspaceRoots(clientRoots, configured);
+};
 for (const definition of TOOL_DEFINITIONS) {
   server.registerTool(
     definition.name,
@@ -29464,7 +29587,11 @@ for (const definition of TOOL_DEFINITIONS) {
     },
     async (arguments_) => {
       try {
-        const result = await core.call(definition.name, arguments_);
+        const boundArguments = definition.name === "plan_work" ? bindPlanWorkWorkspaceRoot(
+          arguments_,
+          await trustedWorkspaceRoots()
+        ) : arguments_;
+        const result = await core.call(definition.name, boundArguments);
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],
           structuredContent: result
@@ -29474,6 +29601,16 @@ for (const definition of TOOL_DEFINITIONS) {
           return {
             isError: true,
             content: [{ type: "text", text: JSON.stringify(error46.details) }]
+          };
+        }
+        if (error46 instanceof WorkspaceRootTrustError) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: JSON.stringify({
+              code: error46.code,
+              message: error46.message,
+              fallback_action: "Use an MCP Client root, configure WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS, or omit workspace_root."
+            }) }]
           };
         }
         throw error46;

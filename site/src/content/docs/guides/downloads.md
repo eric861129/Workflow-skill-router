@@ -15,7 +15,7 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
       <p>Use the Codex Plugin when you want durable local R0 planning, runtime readiness, typed MCP results, and fail-closed handoff to stronger Host capabilities.</p>
     </div>
     <dl class="wsr-download-specs">
-      <div><dt>Local-ready</dt><dd><code>plan_work</code> and <code>get_router_status</code></dd></div>
+      <div><dt>Local-ready</dt><dd><code>plan_work</code>, <code>propose_support_consent</code>, <code>transition_support_consent</code>, and <code>get_router_status</code></dd></div>
       <div><dt>Runtime label</dt><dd><code>bundled-local-r0</code></dd></div>
       <div><dt>Requirements</dt><dd>Codex Plugin/MCP support, Python 3.11+, Node.js 24+</dd></div>
     </dl>
@@ -58,7 +58,7 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
     </div>
     <dl class="wsr-download-specs">
       <div><dt>Runtime label</dt><dd><code>skill-only-fallback</code></dd></div>
-      <div><dt>Includes</dt><dd>Canonical <code>SKILL.md</code>, references, agent metadata</dd></div>
+      <div><dt>Current source includes</dt><dd><code>SKILL.md</code>, <code>assets/personal-routing-profile.example.json</code>, <code>assets/workspace-routing-profile.example.json</code>, <code>references/evaluation-boundary.md</code>, <code>references/goal-protocol.md</code>, <code>references/personal-routing-profiles.md</code>, and <code>references/routing-protocol.md</code></dd></div>
       <div><dt>Excludes</dt><dd>Durable resume, cross-process CAS, sealed instrumentation</dd></div>
     </dl>
     <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/guides/install-skill/">Use Skill only</a>
@@ -79,9 +79,19 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
   </article>
 </div>
 
+The `v2.0.0-beta.2` Plugin and Skill-only packages both include the strict Personal and Workspace Routing Profile examples. Skill-only can read fixed local Profile paths only when the Host grants filesystem access.
+
 ## Marketplace install
 
-Use a contributor checkout until the immutable beta tag is published:
+For normal installations, pin the published immutable marketplace snapshot:
+
+```powershell
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.2
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+```
+
+Contributors who are changing the Router can install from a checkout instead:
 
 ```powershell
 git clone https://github.com/eric861129/Workflow-skill-router.git
@@ -90,27 +100,34 @@ codex plugin marketplace add .
 codex plugin add workflow-skill-router@workflow-skill-router
 ```
 
-After `v2.0.0-beta.1` exists, pin the marketplace snapshot:
-
-```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
-codex plugin add workflow-skill-router@workflow-skill-router
-```
-
 ## Offline inspection assets
 
-The target beta assets below become available only after the GitHub prerelease is published. They are release assets, not mutable `raw/main/downloads` files.
+Use the immutable `v2.0.0-beta.2` GitHub prerelease assets instead of mutable `raw/main/downloads` files.
 
-- [Plugin ZIP: `workflow-skill-router-plugin-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-plugin-v2.0.0-beta.1.zip)
-- [Skill-only ZIP: `workflow-skill-router-skill-v2.0.0-beta.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.1/workflow-skill-router-skill-v2.0.0-beta.1.zip)
+- [Plugin ZIP: `workflow-skill-router-plugin-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-plugin-v2.0.0-beta.2.zip)
+- [Skill-only ZIP: `workflow-skill-router-skill-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-skill-v2.0.0-beta.2.zip)
 - [All releases](https://github.com/eric861129/Workflow-skill-router/releases)
 
 The ZIPs are for offline inspection and fallback installation. Verify published checksums, SBOM, and provenance before use. Do not treat a local prerelease build as a published asset.
 
 ## Verify after installation
 
+For a marketplace installation, verify that Codex sees the Plugin, restart Codex, then open a new task and ask it to show the Workflow Skill Router status:
+
+```powershell
+codex plugin list
+```
+
+For an extracted Plugin package, run from the extracted Plugin root:
+
+```powershell
+python runtime/workflow_skill_router.pyz doctor
+```
+
+Repository contributors run the same check from the repository root:
+
 ```powershell
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-Expected bundled result: `runtime_profile` is `bundled-local-r0`, telemetry is disabled, and only `plan_work` plus `get_router_status` are local-ready. Continue with the [V2 Quickstart](/Workflow-skill-router/guides/quickstart/).
+Expected bundled result: `runtime_profile` is `bundled-local-r0`, telemetry is disabled, and `plan_work`, `propose_support_consent`, `transition_support_consent`, and `get_router_status` are local-ready. Continue with the [V2 Quickstart](/Workflow-skill-router/guides/quickstart/).

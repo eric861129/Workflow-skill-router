@@ -1,6 +1,6 @@
 {
   "name": "workflow-skill-router-plugin-runtime",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.2",
   "description": "Deterministic MCP runtime for Workflow Skill Router V2.",
   "private": true,
   "license": "MIT",
@@ -9,7 +9,7 @@
     "url": "https://github.com/eric861129/Workflow-skill-router.git",
     "directory": "plugins/workflow-skill-router"
   },
-  "homepage": "https://eric861129.github.io/Workflow-skill-router/",
+  "homepage": "https://huangchiyu.com/Workflow-skill-router/",
   "bugs": {
     "url": "https://github.com/eric861129/Workflow-skill-router/issues"
   },

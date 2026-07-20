@@ -2,8 +2,11 @@
   "archive_root": "workflow-skill-router",
   "files": [
     "SKILL.md",
+    "assets/personal-routing-profile.example.json",
+    "assets/workspace-routing-profile.example.json",
     "references/evaluation-boundary.md",
     "references/goal-protocol.md",
+    "references/personal-routing-profiles.md",
     "references/routing-protocol.md"
   ],
   "root": "starter/v2/workflow-skill-router"

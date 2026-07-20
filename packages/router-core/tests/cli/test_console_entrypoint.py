@@ -11,7 +11,9 @@ class ConsoleTests(unittest.TestCase):
         with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
             main(["--help"])
         self.assertEqual(0, raised.exception.code)
-        for command in ("serve-jsonl", "doctor", "status", "plan", "validate-route", "evaluation"):
+        for command in (
+            "serve-jsonl", "doctor", "status", "plan", "validate-route", "evaluation", "profile"
+        ):
             self.assertIn(command, output.getvalue())
 
 

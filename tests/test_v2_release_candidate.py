@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BETA_VERSION = "2.0.0-beta.1"
+BETA_VERSION = "2.0.0-beta.2"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):
@@ -64,11 +64,11 @@ class V2ReleaseCandidateTests(unittest.TestCase):
             self.assertNotIn('version: "2.0.0-alpha.1"', text)
 
         self.assertIn(
-            f"Current channel: `{BETA_VERSION}`",
+            f"Current prerelease: `{BETA_VERSION}`",
             (ROOT / "README.md").read_text(encoding="utf-8"),
         )
         self.assertIn(
-            f"目前版本：`{BETA_VERSION}`",
+            f"目前 prerelease：`{BETA_VERSION}`",
             (ROOT / "README.zh-TW.md").read_text(encoding="utf-8"),
         )
 

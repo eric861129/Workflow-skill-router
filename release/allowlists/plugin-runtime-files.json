@@ -9,8 +9,11 @@
     "package.json",
     "runtime/workflow_skill_router.pyz",
     "skills/workflow-skill-router/SKILL.md",
+    "skills/workflow-skill-router/assets/personal-routing-profile.example.json",
+    "skills/workflow-skill-router/assets/workspace-routing-profile.example.json",
     "skills/workflow-skill-router/references/evaluation-boundary.md",
     "skills/workflow-skill-router/references/goal-protocol.md",
+    "skills/workflow-skill-router/references/personal-routing-profiles.md",
     "skills/workflow-skill-router/references/routing-protocol.md"
   ]
 }

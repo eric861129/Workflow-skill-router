@@ -208,7 +208,9 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
     if (!(event instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-preset]')];
-    const current = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
+    const focused = tabs.findIndex((tab) => tab === event.target);
+    const selected = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
+    const current = focused >= 0 ? focused : selected;
     const next = (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
     tabs[next].click();
     tabs[next].focus();

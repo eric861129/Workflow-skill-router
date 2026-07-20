@@ -15,7 +15,7 @@ Plugin checkout：
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-預期結果：`runtime_profile` 是 `bundled-local-r0`；只有 `plan_work` 與 `get_router_status` 為 local-ready。純 SKILL 任務必須標示 `skill-only-fallback`。
+預期結果：`runtime_profile` 是 `bundled-local-r0`；`plan_work`、`propose_support_consent`、`transition_support_consent` 與 `get_router_status` 都是 local-ready。純 SKILL 任務必須標示 `skill-only-fallback`。
 
 ## 3. 試跑三種需求
 
@@ -43,7 +43,20 @@ Managed Goal：
 
 預期本機行為：`plan_work` 成功、`get_next_work` 回傳 typed `capability-unavailable`，而 `get_router_status` 仍可讀取。真正排程需要 verified Host integration。
 
-## 4. 檢查證據
+## 4. 試跑 Personal Routing Profile
+
+Personal Routing Profiles 隨 `v2.0.0-beta.2` 提供。請在 contributor checkout 中試跑使用者自訂 Skill Tree：
+
+```powershell
+Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile validate .\my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付 API" --work-mode phased --domain api
+```
+
+Workspace Profile 放在 `.codex/workflow-skill-router.json`。Preview 必須回報 `intended-unverified`；Runtime Capability Discovery 仍控制 activation。Skill-only 只能依相同 contract 做 `skill-only-fallback`。
+
+## 5. 檢查證據
 
 開啟首頁 Flight Recorder，展開每個 MCP step 查看已去識別化的 request/response JSON。`runtime-trace` 是 bundled local evidence；`fixture-trace` 透過測試 ports 證明 Host contract，不是 live Host connection。
 
@@ -51,5 +64,6 @@ Managed Goal：
 
 - [Runtime Capability Discovery](/Workflow-skill-router/zh-tw/concepts/runtime-capability-discovery/)
 - [Routing Envelopes](/Workflow-skill-router/zh-tw/concepts/routing-envelopes/)
+- [Personal Routing Profiles](/Workflow-skill-router/zh-tw/concepts/personal-routing-profiles/)
 - [MCP tool reference](/Workflow-skill-router/zh-tw/reference/mcp-tools/)
 - [疑難排解](/Workflow-skill-router/zh-tw/guides/troubleshooting/)
