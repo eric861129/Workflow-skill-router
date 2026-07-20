@@ -1,3 +1,4 @@
+import json
 import re
 import unittest
 from pathlib import Path
@@ -7,10 +8,23 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+JOB_BLOCK_PATTERN = re.compile(
+    r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
+    r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
+)
 
 
 def workflow_text(name: str) -> str:
     return (WORKFLOWS / name).read_text(encoding="utf-8")
+
+
+def workflow_job_names(name: str) -> dict[str, str]:
+    jobs: dict[str, str] = {}
+    for match in JOB_BLOCK_PATTERN.finditer(workflow_text(name)):
+        job_name = re.search(r"(?m)^    name:\s*(.+?)\s*$", match.group("body"))
+        if job_name:
+            jobs[match.group("job")] = job_name.group(1)
+    return jobs
 
 
 class GitHubWorkflowTests(unittest.TestCase):
@@ -123,6 +137,21 @@ class GitHubWorkflowTests(unittest.TestCase):
         for required in ('directory: "/site"', 'directory: "/plugins/workflow-skill-router"'):
             self.assertIn(required, content)
         self.assertIn('package-ecosystem: "github-actions"', content)
+
+    def test_branch_protection_contract_tracks_actual_check_run_names(self) -> None:
+        contract = json.loads(
+            (ROOT / ".github" / "branch-protection.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual("main", contract["branch"])
+        self.assertTrue(contract["required_status_checks"]["strict"])
+
+        required_checks = contract["required_status_checks"]["checks"]
+        self.assertEqual(2, len(required_checks))
+        for check in required_checks:
+            with self.subTest(job=check["job"]):
+                names = workflow_job_names(Path(check["workflow"]).name)
+                self.assertEqual(names[check["job"]], check["context"])
+                self.assertEqual(15368, check["app_id"])
 
 
 if __name__ == "__main__":

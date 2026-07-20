@@ -18,6 +18,28 @@
 - Model evaluation evidence status (`manual-required`, `review-required`, or `attested`):
 - Authorized model quota and attempt budget, if behavior evidence was produced:
 
+## Repository Governance
+
+- [ ] `.github/branch-protection.json` still matches the protected `main` branch.
+- [ ] Required checks use the Check Run display names, not workflow job IDs.
+- [ ] A pull request passed every required check and merged without an administrator bypass.
+
+The versioned contract currently requires these GitHub Actions checks:
+
+- `Core, documentation, and policy contracts`
+- `Site visual regression`
+
+Audit the live rule before a release:
+
+```bash
+gh api repos/eric861129/Workflow-skill-router/branches/main/protection \
+  --jq '.required_status_checks | {strict, checks}'
+```
+
+If a workflow job's display name changes, update the workflow and
+`.github/branch-protection.json` together, then update the live GitHub rule in the
+same pull request cycle.
+
 ## Supply Chain
 
 - [ ] Artifacts were built from the clean tagged source revision.
