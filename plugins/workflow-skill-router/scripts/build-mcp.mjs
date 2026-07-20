@@ -8,8 +8,19 @@ const outputIndex = process.argv.indexOf("--output");
 const explicitOutput = outputIndex === -1 ? null : process.argv[outputIndex + 1];
 if (outputIndex !== -1 && !explicitOutput) throw new Error("--output requires a path");
 if (tests && explicitOutput) throw new Error("--output cannot be combined with --tests");
+const testSources = [
+  ["bundled-runtime", "ts"],
+  ["python-discovery", "ts"],
+  ["runtime-readiness", "ts"],
+  ["state-path", "ts"],
+  ["tool-metadata", "ts"],
+  ["tool-output", "ts"],
+  ["tool-surface", "ts"],
+  ["workspace-roots", "ts"],
+  ["workspace-roots.property", "js"],
+];
 const entries = tests
-  ? ["bundled-runtime", "python-discovery", "runtime-readiness", "state-path", "tool-metadata", "tool-output", "tool-surface", "workspace-roots", "workspace-roots.property"].map((name) => ({ in: path.join(root, "mcp", "test", `${name}.test.ts`), out: path.join(root, ".test-build", `${name}.test.mjs`) }))
+  ? testSources.map(([name, extension]) => ({ in: path.join(root, "mcp", "test", `${name}.test.${extension}`), out: path.join(root, ".test-build", `${name}.test.mjs`) }))
   : [{ in: path.join(root, "mcp", "src", "server.ts"), out: explicitOutput ? path.resolve(explicitOutput) : path.join(root, "mcp", "server.bundle.mjs") }];
 for (const entry of entries) {
   fs.mkdirSync(path.dirname(entry.out), { recursive: true });

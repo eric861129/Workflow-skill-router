@@ -26,7 +26,7 @@ class ScorecardMaturityTests(unittest.TestCase):
             encoding="utf-8"
         )
         property_test_path = (
-            PLUGIN_ROOT / "mcp" / "test" / "workspace-roots.property.test.ts"
+            PLUGIN_ROOT / "mcp" / "test" / "workspace-roots.property.test.js"
         )
 
         self.assertRegex(fast_check_version, re.compile(r"^\d+\.\d+\.\d+$"))
@@ -34,6 +34,10 @@ class ScorecardMaturityTests(unittest.TestCase):
         self.assertTrue(property_test_path.is_file())
 
         property_test = property_test_path.read_text(encoding="utf-8")
+        self.assertRegex(
+            property_test,
+            re.compile(r'import\s+\w+\s+from\s+["\']fast-check["\']'),
+        )
         for required in (
             "fc.assert",
             "collectTrustedWorkspaceRoots",
