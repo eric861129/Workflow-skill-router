@@ -31,7 +31,7 @@ Large wording does not automatically require a Goal. Complexity, dependencies, r
 
 ## Preserve user choice
 
-With `v2.0.0-beta.2`, start with one Personal Routing Profile rule for a repeated workflow. Validate and `profile preview` it against representative small, phased, and Managed Goal requests before adding another rule. Keep project policy in `.codex/workflow-skill-router.json`; keep cross-project preferences personal.
+With `v2.0.0-beta.3`, start with one Personal Routing Profile rule for a repeated workflow. Validate and `profile preview` it against representative small, phased, and Managed Goal requests before adding another rule. Keep project policy in `.codex/workflow-skill-router.json`; keep cross-project preferences personal.
 
 Treat Profile results as `intended-unverified`. Runtime Capability Discovery remains the activation gate, and an explicit user SKILL always wins.
 

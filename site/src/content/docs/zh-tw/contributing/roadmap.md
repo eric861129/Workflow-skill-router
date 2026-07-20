@@ -27,6 +27,13 @@ description: 以可驗證的證據，追蹤從 alpha 到 GA 的里程碑。
 - [x] 已審查 paired results，只發布有 attestation 且已去識別化的 evidence
 - [x] 已在 Windows、macOS、Linux 驗證 Plugin 與純 SKILL 的 release-archive contracts
 
+## Beta 2.0.0-beta.3 — 已完成
+
+- [x] 以 scoped dependency boundary 修正 Lighthouse／OpenTelemetry 開發工具鏈 advisory
+- [x] 移除 Pages deployment 的 privileged `workflow_run` checkout
+- [x] 將 Pages 發布綁定到已驗證的受信任 `main` revision
+- [x] 發布新的 immutable prerelease，且只移動 `latest-v2`
+
 ## 下一個 beta 里程碑
 
 - [ ] 在 fixtures 以外實際演練 verified Host scheduler/evidence integration

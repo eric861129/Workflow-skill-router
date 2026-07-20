@@ -175,8 +175,8 @@ class ReleaseCopyTests(unittest.TestCase):
         for required in (
             "## Why V2",
             "## Choose your install mode",
-            "workflow-skill-router-plugin-v2.0.0-beta.2.zip",
-            "workflow-skill-router-skill-v2.0.0-beta.2.zip",
+            f"workflow-skill-router-plugin-v{VERSION}.zip",
+            f"workflow-skill-router-skill-v{VERSION}.zip",
             "36 attempts",
             "42 model turns",
             "checksums.sha256",
@@ -201,7 +201,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            "eric861129/Workflow-skill-router --ref v2.0.0-beta.2"
+            f"eric861129/Workflow-skill-router --ref v{VERSION}"
         )
 
         for relative in pages:
@@ -236,7 +236,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            "eric861129/Workflow-skill-router --ref v2.0.0-beta.2"
+            f"eric861129/Workflow-skill-router --ref v{VERSION}"
         )
 
         for relative, task_phrase, contributor_marker in pages:
@@ -259,7 +259,7 @@ class ReleaseCopyTests(unittest.TestCase):
             "site/src/content/docs/guides/install-skill.md",
             "site/src/content/docs/zh-tw/guides/install-skill.md",
         )
-        asset = "workflow-skill-router-skill-v2.0.0-beta.2.zip"
+        asset = f"workflow-skill-router-skill-v{VERSION}.zip"
 
         for relative in pages:
             text = (ROOT / relative).read_text(encoding="utf-8")

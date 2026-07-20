@@ -4,7 +4,7 @@
 
 Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 runtime-aware 規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。
 
-> 目前 prerelease：`2.0.0-beta.2`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
+> 目前 prerelease：`2.0.0-beta.3`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
 
 ## 60-second outcome / 60 秒成果
 
@@ -35,10 +35,10 @@ Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或
 
 ## 五分鐘 Plugin + MCP quickstart
 
-一般使用者請固定安裝不可變的 `v2.0.0-beta.2` marketplace snapshot：
+一般使用者請固定安裝不可變的 `v2.0.0-beta.3` marketplace snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.3
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -60,7 +60,7 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
 ## 五分鐘 Skill-only quickstart
 
-一般使用者請下載 [`workflow-skill-router-skill-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-skill-v2.0.0-beta.2.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+一般使用者請下載 [`workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
 
 需要修改 Router 的貢獻者可在 Windows checkout 中執行：
 

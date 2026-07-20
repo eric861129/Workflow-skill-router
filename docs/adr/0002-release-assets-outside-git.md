@@ -15,7 +15,7 @@ Codex Git marketplace installation still requires a minimal bundled MCP module a
 - Plugin and SKILL release archives, checksums, SPDX SBOMs, manifests, and provenance are built from source into the ignored `dist/release` directory.
 - Published packages belong in GitHub Release Assets and are rebuilt from the exact immutable tag by the release workflow. The workflow also produces build provenance and attestation.
 - Archive contents come from sorted explicit allowlists. Builds use fixed metadata, verify determinism, and bind publishable provenance to the source revision and source tree.
-- `latest` and `latest-v1` remain pinned to V1.3.1 during beta; generated `latest-v2` metadata identifies the current V2 prerelease (`2.0.0-beta.2` for this release) without promoting the stable channel.
+- `latest` and `latest-v1` remain pinned to V1.3.1 during beta; generated `latest-v2` metadata identifies the current V2 prerelease (`2.0.0-beta.3` for this release) without promoting the stable channel.
 - Product SemVer and persisted schema versions are separate contracts. A beta product release does not silently change schema identifiers or migrate stored state; that requires its own compatibility decision and migration.
 
 ## Consequences

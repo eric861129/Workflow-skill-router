@@ -27,6 +27,13 @@ description: Track evidence-backed milestones from alpha to GA.
 - [x] Reviewed paired results and published only attested, sanitized evidence
 - [x] Validated Plugin and Skill-only release-archive contracts on Windows, macOS, and Linux
 
+## Beta 2.0.0-beta.3 — completed
+
+- [x] Close the Lighthouse/OpenTelemetry development-tooling advisory with a scoped dependency boundary
+- [x] Remove the privileged `workflow_run` checkout from Pages deployment
+- [x] Bind Pages publication to the validated trusted `main` revision
+- [x] Publish a new immutable prerelease and move only `latest-v2`
+
 ## Next beta milestone
 
 - [ ] Exercise a verified Host scheduler/evidence integration beyond fixtures
