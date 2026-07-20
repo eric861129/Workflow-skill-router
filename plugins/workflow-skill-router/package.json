@@ -26,5 +26,5 @@
     "@modelcontextprotocol/sdk": "1.29.0",
     "zod": "4.1.12"
   },
-  "devDependencies": { "esbuild": "0.28.1" }
+  "devDependencies": { "esbuild": "0.28.1", "fast-check": "4.9.0" }
 }

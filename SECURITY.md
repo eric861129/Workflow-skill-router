@@ -16,7 +16,7 @@ The SKILL-only package has no MCP runtime or durable state guarantees. Security 
 
 Do not disclose a vulnerability, exploit, private prompt, credential, or state database in a public issue or Discussion.
 
-Use GitHub **private vulnerability reporting** from the repository Security tab. If that feature is unavailable, open a content-free issue asking the maintainer to enable a private contact channel; do not include technical details in that issue.
+Use GitHub **[private vulnerability reporting](https://github.com/eric861129/Workflow-skill-router/security/advisories/new)** from the repository Security tab. If that feature is unavailable, open a content-free issue asking the maintainer to enable a private contact channel; do not include technical details in that issue.
 
 Useful private reports include:
 
