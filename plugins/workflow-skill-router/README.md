@@ -12,10 +12,10 @@ The released Plugin already contains the MCP bundle and Python runtime archive. 
 
 ## Install in Codex
 
-Install the published immutable `v2.0.0-beta.1` Git marketplace snapshot:
+Install the immutable `v2.0.0-beta.2` Git marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -48,9 +48,24 @@ node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/wo
 
 The smoke verifies the manifest, canonical SKILL, twelve MCP tool names, external state boundary, and a real stdio MCP initialize/tools-list exchange. Runtime readiness is authoritative: the bundled local R0 profile does not imply that every public tool is locally executable.
 
+## Personal Routing Profiles
+
+V2 supports user-owned Skill Trees without expanding the twelve-tool MCP surface. Validate and install a strict personal Profile, then preview the effective route:
+
+> Personal Routing Profiles ship in `v2.0.0-beta.2`. The 36-attempt beta.1 Model Evaluation does not cover this feature.
+
+```powershell
+python runtime/workflow_skill_router.pyz profile validate .\my-profile.json
+python runtime/workflow_skill_router.pyz profile install .\my-profile.json
+python runtime/workflow_skill_router.pyz profile list
+python runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api
+```
+
+Workspace Profiles use `.codex/workflow-skill-router.json`; `plan_work.routing_context.workspace_root` opts into that fixed path only when it is inside an MCP Client root or an operator-configured `WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS` entry. An arbitrary model-supplied local path fails closed. Precedence is explicit user SKILL, workspace, personal, then built-in. A match remains `intended-unverified` until Runtime Capability Discovery validates activation. Profiles live in external state, not the Plugin cache.
+
 ## Skill-only fallback
 
-If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.0-beta.1.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but scoped consent remains advisory because there is no persisted proposal or deterministic transition. It also has no durable resume, CAS, complete drift detection, or sealed activation instrumentation, and must not be reported as `hybrid-full`.
+If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.0-beta.2.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but scoped consent remains advisory because there is no persisted proposal or deterministic transition. It can load fixed Profile files only when the Host grants filesystem access to those locations. It also has no durable resume, CAS, complete drift detection, or sealed activation instrumentation, and must not be reported as `hybrid-full`.
 
 ## Local state and privacy
 

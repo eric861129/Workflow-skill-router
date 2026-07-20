@@ -28,6 +28,7 @@ class DocumentationParityTests(unittest.TestCase):
             "Phased",
             "Managed Goal",
             "Explicit Skill Lock",
+            "Personal Routing Profiles",
             "Real Model Evaluation",
             "Security boundary",
             "Version channels",
@@ -57,6 +58,7 @@ class DocumentationParityTests(unittest.TestCase):
             "guides/install-skill",
             "concepts/runtime-capability-discovery",
             "concepts/routing-envelopes",
+            "concepts/personal-routing-profiles",
             "reference/mcp-tools",
             "contributing/release-process",
         ):

@@ -23,6 +23,18 @@ Use [Plugin + MCP](/Workflow-skill-router/guides/install-plugin/) when available
 
 ## 3. Translate policies
 
+Move V1 Skill Tree preferences into a Personal Routing Profile instead of flattening them into one global prompt. Convert each workflow matcher into a rule and each stage into a `skill_tree` Phase with one Primary, at most three immediate support SKILLs, and an exit gate ID.
+
+```powershell
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile validate .\migrated-v1-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\migrated-v1-profile.json
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Representative V1 task" --work-mode phased
+```
+
+These Personal Routing Profile commands ship in `v2.0.0-beta.2`; contributor checkouts use the longer repository-relative runtime path shown below.
+
+Use `scope: workspace` at `.codex/workflow-skill-router.json` for project policy and `scope: personal` for cross-project preferences. Workspace wins as one complete route; it does not deep-merge with personal. Runtime Capability Discovery still marks every selected SKILL `intended-unverified` until activation is proven.
+
 - Convert small routes to `single`.
 - Split multi-stage routes into `phased` and define a verification gate per phase.
 - Convert resumable dependency work into `managed-goal` Work Items.

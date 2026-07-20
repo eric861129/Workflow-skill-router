@@ -13,6 +13,10 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 使用者未指定 SKILL 時，Router 自動選擇最小且足以完成工作的 Primary／Supporting SKILL 組合，不為 Router 自己推薦的輔助 SKILL 額外詢問同意；仍須遵守最小路由、能力可用性與 host 權限邊界。
 
+使用者未在當次請求指定 SKILL 時，先解析 Personal Routing Profile。固定優先序是「使用者當次明確指定 SKILL > workspace profile > personal profile > built-in」；system、developer、safety 與 host hard constraints 永遠不能被 Profile 覆寫。Workspace Profile 固定放在目前 workspace 的 `.codex/workflow-skill-router.json`；personal profiles 放在 Router 外部資料根目錄的 `profiles/personal/*.json`（Windows `%LOCALAPPDATA%\Codex\workflow-skill-router`、macOS `~/Library/Application Support/Codex/workflow-skill-router`、Linux `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router`），不放在 Plugin cache。Plugin/MCP 負責 deterministic loading；SKILL-only 只有在 host filesystem access 能讀取固定位置時才能 advisory 套用，並必須標示 `skill-only-fallback`。Profile 只能宣告 matcher、work mode、Phase、Primary、最多三個 immediate support 與 exit gate ID，不得包含自由形式 instructions。Workspace 與 personal 同時匹配時採用 workspace 的完整 Skill Tree，不做隱含 deep merge。
+
+Profile 命中代表 `intended-unverified` 路由偏好，不代表能力已安裝、已曝光、已授權或可啟用；Runtime Capability Discovery 仍是 activation gate。Profile 宣告的 canonical Skill 不可用時保留 intended Skill 並誠實標示 unavailable／degraded，不得靜默改選。Profile 自動路由不額外詢問輔助 SKILL 同意；但只要使用者當次明確指定 SKILL，Profile 必須讓位，任何額外支援仍回到 scoped consent 規則。
+
 選擇前先讀 capability descriptors 的 `description、domains、stages、availability`，不要只靠名稱猜測。Primary 是負責目前決策瓶頸或第一個可執行 Phase 的 SKILL；Supporting SKILL 只保留目前 Phase 與 immediate exit gate 不可缺少的能力。固定輸出配方是「目前 route = 目前 Phase Primary + immediate exit gate support」；只有必須在目前 Phase 結束前實際啟用的能力，才可列入 support_skills。定義、描述或規劃 exit evidence 不等於啟用 verification SKILL；若 Primary 能自行完成目前 Phase 與 exit gate 定義，support_skills 必須為空。未來 Phase 的能力只記在 phase plan，未來 Phase 的能力不得提前列入目前 support_skills。Phase transition 後建立新 route，不沿用或聚合舊 route。`managed-goal` 以目前 Work Item 的規劃或執行瓶頸決定 Primary；Goal 規劃 Work Item 只選規劃本身需要的能力，未來 Work Item 的 SKILL 只能記在計畫，不得聚合成目前 support_skills，進入該 Work Item 時重新路由。除非任務本身是在維護 Router，否則不得把 workflow-skill-router 自己當成預設 Primary。
 
 `availability` 是 activation gate，不是 semantic selection filter。已驗證 snapshot 指定必要 canonical Skill 時，該 Skill 仍是 intended `primary_skill`；這會保留 intended SKILL 與需求。activation 標成 unavailable／degraded，fallback 只寫在說明中。fallback 不得改寫 primary_skill 或塞入 support_skills。
@@ -29,4 +33,4 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 完成工作時，列出本次實際使用的 SKILL；若與執行前宣告不同，要簡短說明新增、移除或替換原因。
 
-依需要讀取 [routing protocol](references/routing-protocol.md)、[Goal protocol](references/goal-protocol.md) 或 [evaluation boundary](references/evaluation-boundary.md)，不要一次載入全部參考資料。
+若任務需要套用、建立、遷移或說明自訂 Skill Tree，讀取 [Personal Routing Profiles](references/personal-routing-profiles.md)。其他情況依需要讀取 [routing protocol](references/routing-protocol.md)、[Goal protocol](references/goal-protocol.md) 或 [evaluation boundary](references/evaluation-boundary.md)，不要一次載入全部參考資料。

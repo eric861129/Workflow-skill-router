@@ -1,0 +1,43 @@
+{
+  "schema_id": "workflow-skill-router/routing-profile",
+  "schema_version": "1.0.0",
+  "artifact_kind": "routing-profile",
+  "profile_id": "workspace:api-delivery",
+  "scope": "workspace",
+  "enabled": true,
+  "rules": [
+    {
+      "rule_id": "api-delivery",
+      "priority": 100,
+      "match": {
+        "objective_keywords": ["api", "openapi"],
+        "domains": ["api"],
+        "tags": [],
+        "work_modes": []
+      },
+      "route": {
+        "work_mode": "phased",
+        "skill_tree": [
+          {
+            "phase_id": "contract",
+            "primary_skill_id": "skill:api-designer",
+            "support_skill_ids": ["skill:api-guidelines-skill"],
+            "exit_gate": "contract-reviewed"
+          },
+          {
+            "phase_id": "implementation",
+            "primary_skill_id": "skill:csharp-developer",
+            "support_skill_ids": [],
+            "exit_gate": "implementation-complete"
+          },
+          {
+            "phase_id": "verification",
+            "primary_skill_id": "skill:qa-test-planner",
+            "support_skill_ids": ["skill:playwright"],
+            "exit_gate": "tests-passed"
+          }
+        ]
+      }
+    }
+  ]
+}

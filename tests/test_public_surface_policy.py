@@ -37,7 +37,7 @@ class PublicSurfacePolicyTests(unittest.TestCase):
         self.assertFalse(self.policy["legacy"]["visible_in_primary_navigation"])
 
         self.assertEqual("v2-first", self.version["public_surface"])
-        self.assertEqual("2.0.0-beta.1", self.version["target_prerelease"])
+        self.assertEqual("2.0.0-beta.2", self.version["target_prerelease"])
         self.assertEqual("latest", self.version["stable_channel"])
         self.assertEqual("1.3.1", self.version["v1_pinned_version"])
 

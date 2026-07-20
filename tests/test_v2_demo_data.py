@@ -18,6 +18,7 @@ class DemoDataTests(unittest.TestCase):
             "small-explicit-reject-support",
             "medium-explicit-phase-consent",
             "medium-auto",
+            "personal-skill-tree",
             "goal-work-graph",
             "verified-host-flow",
             "real-model-evaluation",
@@ -25,6 +26,26 @@ class DemoDataTests(unittest.TestCase):
         source=json.loads((ROOT/"demo/v2-scenarios/inputs.json").read_text("utf-8"))
         forbidden={"request_decision","route","active_selections","policy_result","events"}
         self.assertTrue(all(forbidden.isdisjoint(item) for item in source["presets"]))
+
+    def test_personal_skill_tree_is_resolved_by_router_core_not_hand_authored(self):
+        preset = next(
+            item
+            for item in build_demo_data(ROOT)["presets"]
+            if item["id"] == "personal-skill-tree"
+        )
+        plan = preset["mcp_results"][0]["result"]
+        self.assertEqual("personal-profile", plan["route_source"])
+        self.assertEqual(["personal:demo-api"], plan["routing_profile_ids"])
+        self.assertEqual("demo-api", plan["matched_profile_rule_id"])
+        self.assertEqual("intended-unverified", plan["activation_status"])
+        self.assertEqual(
+            ["contract", "implementation", "verification"],
+            [phase["phase_id"] for phase in plan["planned_skill_tree"]],
+        )
+        route = preset["branches"][0]["route"]
+        self.assertEqual("personal-profile", route["primary_selection_source"])
+        self.assertEqual("skill:api-designer", route["primary_selection"])
+        self.assertEqual(["skill:api-guidelines-skill"], route["support_selections"])
 
     def test_every_scenario_exposes_ordered_sanitized_mcp_trace(self):
         data=build_demo_data(ROOT)

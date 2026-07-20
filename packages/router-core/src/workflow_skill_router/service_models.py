@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from workflow_skill_router.capabilities.agent_runtime import AgentRuntimeSnapshot
@@ -37,6 +37,14 @@ class SyncRuntimeContext:
 
 
 @dataclass(frozen=True, slots=True)
+class RoutingContextInput:
+    workspace_root: str | None = None
+    domains: tuple[str, ...] = ()
+    tags: tuple[str, ...] = ()
+    current_phase_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class PlanWork:
     context: RequestContext
     objective: str
@@ -47,6 +55,15 @@ class PlanWork:
     expected_state_version: int
     idempotency_key: str
     correlation_id: str
+    routing_context: RoutingContextInput = field(default_factory=RoutingContextInput)
+
+
+@dataclass(frozen=True, slots=True)
+class PlannedSkillPhase(ResultCodec):
+    phase_id: str
+    primary_skill_id: str
+    support_skill_ids: tuple[str, ...]
+    exit_gate: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +77,13 @@ class PlanWorkResult(ResultCodec):
     support_consent_required: bool
     planned_skill_ids: tuple[str, ...]
     runtime_mode: str
+    route_source: str
+    routing_profile_ids: tuple[str, ...]
+    routing_profile_digest: str | None
+    matched_profile_rule_id: str | None
+    planned_skill_tree: tuple[PlannedSkillPhase, ...]
+    activation_status: str
+    profile_warnings: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

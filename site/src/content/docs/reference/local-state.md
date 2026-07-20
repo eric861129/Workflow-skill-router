@@ -15,6 +15,10 @@ Set `WORKFLOW_SKILL_ROUTER_DATA_DIR` to use another directory. The runtime rejec
 
 ## Stored data
 
+Personal Routing Profile files live under `profiles/personal/*.json` inside the same external data root. Workspace Profiles remain project-owned at `.codex/workflow-skill-router.json`; the Router reads only that fixed path, and MCP mode requires the root to be advertised by the Client or configured in `WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS`. Profile files never belong in the Plugin cache.
+
+Profile content is strict routing data, not executable instructions. Invalid existing files fail closed. A valid match is still `intended-unverified` until Runtime Capability Discovery checks the selected SKILLs.
+
 Bundled local R0 stores durable plan records, state versions, idempotency keys, workflow/work-graph IDs, envelope decisions, and objective digests. It does not store plaintext objectives in the local plan table. Verified Host integrations may add event, projection, artifact, and evaluation stores under separate authority.
 
 ## Upgrade and uninstall

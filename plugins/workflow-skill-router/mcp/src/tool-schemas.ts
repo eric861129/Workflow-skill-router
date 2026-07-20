@@ -31,6 +31,19 @@ const agentSnapshot = z.object({
     aliases: z.array(z.string()).describe("Alternative identifiers observed for this capability."),
   }).strict()).describe("Capabilities directly observable from the current agent runtime."),
 }).strict();
+const routingIdentifier = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
+const routingIdentifiers = z.array(routingIdentifier).max(32)
+  .refine((values) => new Set(values).size === values.length, "Routing identifiers must be unique.");
+const routingContext = z.object({
+  workspace_root: z.string().min(1).nullable().describe(
+    "Workspace root whose fixed .codex/workflow-skill-router.json may be loaded after MCP Client-root or operator-root authorization.",
+  ),
+  domains: routingIdentifiers.describe("Deterministic domain identifiers used by profile matchers."),
+  tags: routingIdentifiers.describe("Deterministic task tags used by profile matchers."),
+  current_phase_id: routingIdentifier.nullable().describe(
+    "Current Phase identifier; only that Phase's Primary and immediate support become current intent.",
+  ),
+}).strict();
 
 export const TOOL_INPUT_SHAPES = {
   sync_runtime_context: z.object({
@@ -48,6 +61,9 @@ export const TOOL_INPUT_SHAPES = {
     requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
     explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
     explicit_semantics: z.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+    routing_context: routingContext.optional().describe(
+      "Optional user-owned routing profile context. Omission preserves the V2 beta.1 request contract.",
+    ),
   }).strict().shape,
   propose_support_consent: z.object({
     ...mutation,

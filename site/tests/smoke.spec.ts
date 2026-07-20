@@ -126,6 +126,21 @@ test('auto routing never renders support consent controls', async ({ page }) => 
   await expect(page.getByTestId('demo-consent-reject')).toBeHidden();
 });
 
+test('personal profile demo exposes intended current-phase routing without consent', async ({ page }) => {
+  await page.goto('./');
+  await page.getByTestId('demo-preset-personal-skill-tree').click();
+  await expect(page.locator('[data-demo-envelope]')).toHaveText('phased');
+  await expect(page.locator('[data-demo-route]')).toContainText('skill:api-designer');
+  await expect(page.locator('[data-demo-route]')).toContainText('skill:api-guidelines-skill');
+  await expect(page.locator('[data-demo-route]')).toContainText('personal-profile');
+  await expect(
+    page.getByTestId('demo-audit-event').filter({ hasText: 'ROUTING_PROFILE_APPLIED' }),
+  ).toHaveCount(1);
+  await expect(page.getByTestId('demo-consent-approve')).toBeHidden();
+  await page.getByTestId('demo-mcp-step').first().locator('summary').click();
+  await expect(page.getByTestId('demo-mcp-step').first()).toContainText('intended-unverified');
+});
+
 test('managed Goal renders three independently routed work items', async ({ page }) => {
   await page.goto('./');
   await page.getByTestId('demo-preset-goal-work-graph').click();

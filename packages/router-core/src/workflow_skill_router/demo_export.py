@@ -20,7 +20,7 @@ from workflow_skill_router.routing.models import (
     UserDirective,
 )
 from workflow_skill_router.routing.profiler import decide_request
-from workflow_skill_router.schemas.artifacts import canonical_json_bytes
+from workflow_skill_router.schemas.artifacts import canonical_json, canonical_json_bytes
 from workflow_skill_router.service_models import (
     NextWorkResult,
     PlanWorkResult,
@@ -94,6 +94,15 @@ class _VerifiedPlanner:
             support_consent_required=False,
             planned_skill_ids=command.explicit_skill_ids,
             runtime_mode="verified-host-fixture",
+            route_source="user-explicit" if command.explicit_skill_ids else "builtin-default",
+            routing_profile_ids=(),
+            routing_profile_digest=None,
+            matched_profile_rule_id=None,
+            planned_skill_tree=(),
+            activation_status=(
+                "intended-unverified" if command.explicit_skill_ids else "not-planned"
+            ),
+            profile_warnings=(),
         )
         self.plans[workflow_run_id] = result
         return result
@@ -222,13 +231,21 @@ class DemoScenarioExporter:
         if not planned["ok"]:
             raise RuntimeError(f"demo plan_work failed: {item['id']}")
         plan_result = planned["result"]
+        profile_applied = bool(plan_result["routing_profile_ids"])
+        planned_skill_ids = plan_result["planned_skill_ids"]
         route = {
             "envelope": plan_result["routing_envelope"],
-            "primary_selection": item["primary"],
-            "primary_selection_source": (
-                "explicit-directive" if explicit else "scenario-capability-fixture"
+            "primary_selection": (
+                planned_skill_ids[0] if profile_applied else item["primary"]
             ),
-            "support_selections": [],
+            "primary_selection_source": (
+                plan_result["route_source"]
+                if profile_applied
+                else "explicit-directive"
+                if explicit
+                else "scenario-capability-fixture"
+            ),
+            "support_selections": planned_skill_ids[1:] if profile_applied else [],
             "selection_mode": plan_result["selection_mode"],
         }
         events = [{
@@ -238,6 +255,16 @@ class DemoScenarioExporter:
                 "trace_request_id": trace["mcp_calls"][0]["request_id"],
             },
         }]
+        if profile_applied:
+            events.append({
+                "event_type": "ROUTING_PROFILE_APPLIED",
+                "payload": {
+                    "profile_ids": plan_result["routing_profile_ids"],
+                    "profile_digest": plan_result["routing_profile_digest"],
+                    "matched_rule_id": plan_result["matched_profile_rule_id"],
+                    "activation_status": plan_result["activation_status"],
+                },
+            })
         branches = self._branches(item, support_policy, route, events, trace)
         result = {
             "id": item["id"],
@@ -292,6 +319,8 @@ class DemoScenarioExporter:
                 "correlation_id": f"demo-correlation-{scenario_id}",
             },
         }
+        if "routing_context" in item:
+            plan_call["arguments"]["routing_context"] = item["routing_context"]
         calls = [plan_call]
         results = _execute_bridge(dispatcher, [plan_call])
         if not results[0]["ok"]:
@@ -541,7 +570,19 @@ def build_demo_artifact(
     evaluation: Mapping[str, Any],
 ) -> dict[str, Any]:
     with TemporaryDirectory(prefix="workflow-skill-router-demo-") as temporary:
-        local_service = LocalControlPlaneService(Path(temporary) / "router.db")
+        temporary_root = Path(temporary)
+        profile_dir = temporary_root / "profiles/personal"
+        profiles = [item["routing_profile"] for item in source["presets"] if "routing_profile" in item]
+        if profiles:
+            profile_dir.mkdir(parents=True, exist_ok=True)
+            for profile in profiles:
+                profile_name = str(profile["profile_id"]).split(":", 1)[1]
+                (profile_dir / f"{profile_name}.json").write_text(
+                    canonical_json(profile) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+        local_service = LocalControlPlaneService(temporary_root / "router.db")
         exporter = DemoScenarioExporter(
             ToolDispatcher(local_service),
             _verified_host_fixture_dispatcher(),

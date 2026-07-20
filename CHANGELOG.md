@@ -10,6 +10,25 @@ All notable changes to Workflow Skill Router are documented here.
 - Aligned public beta copy with the released 12-tool, four-local-ready Runtime profile and reviewed 36-attempt evaluation evidence.
 - Pointed Plugin metadata directly at the canonical documentation URL and clarified the beta roadmap status.
 
+## 2.0.0-beta.2
+
+### Added
+
+- Added strict Personal and Workspace Routing Profiles so users can own repeatable Skill Trees without forking the Plugin or bypassing Runtime Capability Discovery.
+- Added packaged personal and workspace examples, deterministic validate/install/list/preview commands, workspace trust-root binding, and current-Phase-only route selection.
+
+### Fixed
+
+- Closed MCP workspace junction and symlink escapes by authorizing canonical existing directories instead of lexical paths.
+- Prevented linked Profile directories and linked install sources from writing outside the Router data directory.
+- Preserved beta.1 explicit Skill intent and idempotent replay when migration `0005` adds Profile planning fields.
+- Separated beta.1 real-model evidence from beta.2 Profile claims across the homepage, documentation, release notes, and Blog.
+
+### Changed
+
+- Clarified that Skill-only Profile loading requires Host filesystem access and remains advisory `skill-only-fallback`.
+- Kept the public MCP surface at twelve tools and the bundled local-ready surface at four tools.
+
 ## 2.0.0-beta.1
 
 ### Added

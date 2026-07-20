@@ -10,9 +10,12 @@ SOURCE = ROOT / "starter" / "v2" / "workflow-skill-router"
 TARGET = PLUGIN / "skills" / "workflow-skill-router"
 ALLOWED = (
     Path("SKILL.md"),
+    Path("assets/personal-routing-profile.example.json"),
+    Path("assets/workspace-routing-profile.example.json"),
     Path("references/routing-protocol.md"),
     Path("references/goal-protocol.md"),
     Path("references/evaluation-boundary.md"),
+    Path("references/personal-routing-profiles.md"),
 )
 
 

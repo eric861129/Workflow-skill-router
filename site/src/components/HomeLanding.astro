@@ -26,7 +26,7 @@ const text = {
     gifAlt: 'A fuzzy request becoming a small routing output',
     heroTitle: 'Runtime-aware routing before the work begins',
     heroCopy:
-      'Workflow Skill Router V2 chooses a Single, Phased, or Managed Goal envelope from current runtime evidence before work starts.',
+      'Bring your own Skill Tree. V2 applies personal and workspace routing preferences, then chooses a Single, Phased, or Managed Goal envelope from current runtime evidence.',
     positioningLabel: 'Positioning',
     positioningTitle: 'A routing control plane, not a permission system',
     positioningCopy:
@@ -44,6 +44,11 @@ const text = {
         'Work envelope',
         'Choose Single, Phased, or Managed Goal',
         'The Router classifies dependencies, verification boundaries, resume needs, and Goal relation before selecting capabilities.',
+      ],
+      [
+        'Your Skill Tree',
+        'Apply Personal Routing Profiles',
+        'Workspace and personal preferences become deterministic intended routes without bypassing runtime discovery.',
       ],
       [
         'User authority',
@@ -73,6 +78,7 @@ const text = {
       'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
     outcomesTitle: 'Designed for trustworthy outcomes',
     outcomes: [
+      ['Own the route', 'Define repeatable personal or workspace Skill Trees without turning them into executable prompts.'],
       ['Less context noise', 'Automatic routing stays minimal and does not add a consent ceremony when no SKILL was named.'],
       ['Honest degradation', 'Unavailable Host or adapter capabilities return typed fallbacks instead of simulated success.'],
       ['Auditable execution', 'Sanitized traces show what was planned, called, rejected, and actually used.'],
@@ -80,10 +86,12 @@ const text = {
     validatorTitle: 'Evidence before claims',
     validatorCopy:
       'Contract fixtures prove compatibility. Runtime traces prove bundled execution. Real Model Evaluation requires fresh paired attempts, explicit quota authorization, review, and attestation.',
+    validatorEvidenceNote:
+      'Evidence boundary: 36 attempts and 42 model turns are historical beta.1 evidence. Personal Routing Profiles and beta.2 currently have deterministic contract, integration, security, and package evidence only.',
     proofStats: [
       ['12', 'typed MCP tools'],
       ['4', 'local-ready tools'],
-      ['36', 'beta attempts · 42 model turns'],
+      ['36', 'beta.1 attempts · 42 model turns'],
     ],
     validatorCommand: `# Inspect truthful runtime readiness
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
@@ -111,7 +119,7 @@ python -m unittest discover -s tests -v`,
     gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
     heroTitle: '工作開始前，先用 runtime evidence 決定 route',
     heroCopy:
-      'Workflow Skill Router V2 會依目前 runtime evidence，選擇 Single、Phased 或 Managed Goal envelope。',
+      '帶入自己的 Skill Tree。V2 先套用 personal 與 workspace 路由偏好，再依目前 runtime evidence 選擇 Single、Phased 或 Managed Goal envelope。',
     positioningLabel: '專案定位',
     positioningTitle: '它是 routing control plane，不是權限系統',
     positioningCopy:
@@ -129,6 +137,11 @@ python -m unittest discover -s tests -v`,
         '工作 envelope',
         '選擇 Single、Phased 或 Managed Goal',
         'Router 先判斷 dependencies、verification boundaries、resume needs 與 Goal relation，再選擇 capabilities。',
+      ],
+      [
+        '你的 Skill Tree',
+        '套用 Personal Routing Profile',
+        'Workspace 與 personal 偏好會成為 deterministic intended route，但不會繞過 runtime discovery。',
       ],
       [
         '使用者權威',
@@ -158,6 +171,7 @@ python -m unittest discover -s tests -v`,
       'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
     outcomesTitle: '為可信任的成果設計',
     outcomes: [
+      ['擁有自己的 route', '定義可重複使用的 personal 或 workspace Skill Tree，又不把它變成 executable prompt。'],
       ['降低上下文噪音', '自動 routing 維持最小集合；未指定 SKILL 時不增加多餘 consent ceremony。'],
       ['誠實降級', 'Host 或 adapter 能力不可用時回傳 typed fallback，不模擬成功。'],
       ['可稽核執行', 'Sanitized traces 呈現 plan、call、reject 與實際使用結果。'],
@@ -165,10 +179,12 @@ python -m unittest discover -s tests -v`,
     validatorTitle: '有證據，才提出主張',
     validatorCopy:
       'Contract fixtures 證明 compatibility，runtime traces 證明 bundled execution。Real Model Evaluation 需要 fresh paired attempts、明確 quota authorization、review 與 attestation。',
+    validatorEvidenceNote:
+      '證據邊界：36 次 attempts 與 42 次 model turns 是 beta.1 的歷史證據。Personal Routing Profiles 與 beta.2 目前只有 deterministic contract、integration、security 與 package evidence。',
     proofStats: [
       ['12', '個型別化 MCP 工具'],
       ['4', '個本機可用工具'],
-      ['36', '次 beta 嘗試 · 42 次模型呼叫'],
+      ['36', '次 beta.1 嘗試 · 42 次模型呼叫'],
     ],
     validatorCommand: `# 檢查真實 runtime readiness
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
@@ -309,7 +325,7 @@ const heroPreview = isZh
     </div>
   </section>
 
-  <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} />
+  <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} initialPreset="personal-skill-tree" />
 
   <section id="why-it-works" class="wsr-section wsr-section-light">
     <div class="wsr-shell wsr-section-grid">
@@ -337,6 +353,7 @@ const heroPreview = isZh
           <p>{text.processNote}</p>
           <div class="wsr-process-links">
             <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
+            <a class="wsr-text-link" href={`${rootPath}/concepts/personal-routing-profiles/`}>{isZh ? '自訂 Skill Tree' : 'Own your Skill Tree'}</a>
             <a class="wsr-text-link" href={`${rootPath}/showcase/`}>{text.showcase}</a>
             <a class="wsr-text-link" href={`${rootPath}/concepts/routing-envelopes/`}>{text.templateLink}</a>
           </div>
@@ -403,6 +420,7 @@ const heroPreview = isZh
       <div>
         <h2>{text.validatorTitle}</h2>
         <p>{text.validatorCopy}</p>
+        <p>{text.validatorEvidenceNote}</p>
         <div class="wsr-proof-stats" aria-label={isZh ? '驗證數字' : 'Validation stats'}>
           {text.proofStats.map(([value, label]) => (
             <span>

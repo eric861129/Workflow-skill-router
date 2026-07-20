@@ -29,7 +29,7 @@ const TITLES: Record<PublicToolName, string> = {
 
 const DESCRIPTIONS: Record<PublicToolName, string> = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime supports this idempotent mutation and preserves explicit Skill locks without speculative consent prompts.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime can apply strict user-owned personal and trusted-root workspace routing profiles while preserving explicit Skill locks. Profile choices remain intended routes until Runtime Discovery validates activation, and no speculative support-consent prompt is created.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
   get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",

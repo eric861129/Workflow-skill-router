@@ -19,6 +19,13 @@ class V2StarterSurfaceTests(unittest.TestCase):
         self.assertIn("capability snapshot", text)
         self.assertIn("skill-only-fallback", text)
         self.assertIn("explicit-locked", text)
+        self.assertIn("Personal Routing Profile", text)
+        self.assertTrue(
+            (STARTER / "assets/personal-routing-profile.example.json").is_file()
+        )
+        self.assertTrue(
+            (STARTER / "assets/workspace-routing-profile.example.json").is_file()
+        )
 
 
 if __name__ == "__main__":

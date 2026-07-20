@@ -10,6 +10,7 @@ from workflow_skill_router.capabilities.agent_runtime import decode_agent_runtim
 from workflow_skill_router.service_models import (
     CompareEvaluations, EvaluateGate, ExportRouterArtifact, NextWorkQuery, PlanWork,
     ProposeSupportConsent, RecordWorkEvent, RequestContext, RouterStatusQuery,
+    RoutingContextInput,
     RunModelEvaluation, TransitionSupportConsent,
     RuntimeContextSyncIntent, SyncRuntimeContext, ValidateRoute,
 )
@@ -102,10 +103,27 @@ def _sync(value):
     )
 
 
+def _plan(value):
+    if not isinstance(value, Mapping):
+        raise ServiceCodecError("invalid-arguments")
+    legacy_fields = {field.name for field in fields(PlanWork)} - {"routing_context"}
+    actual = {str(key) for key in value}
+    if not legacy_fields.issubset(actual) or actual - legacy_fields - {"routing_context"}:
+        raise ServiceCodecError("invalid-arguments")
+    normalized = dict(value)
+    normalized.setdefault("routing_context", {
+        "workspace_root": None,
+        "domains": [],
+        "tags": [],
+        "current_phase_id": None,
+    })
+    return _decode_dataclass(PlanWork, normalized)
+
+
 def build_service_codec_registry() -> Mapping[str, ServiceCodec]:
     return {
         "sync_runtime_context": ServiceCodec(SyncRuntimeContext, custom_decoder=_sync),
-        "plan_work": ServiceCodec(PlanWork),
+        "plan_work": ServiceCodec(PlanWork, custom_decoder=_plan),
         "propose_support_consent": ServiceCodec(ProposeSupportConsent),
         "transition_support_consent": ServiceCodec(TransitionSupportConsent),
         "get_next_work": ServiceCodec(NextWorkQuery),

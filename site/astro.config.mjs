@@ -149,6 +149,7 @@ export default defineConfig({
           items: [
             { slug: 'concepts/runtime-capability-discovery' },
             { slug: 'concepts/routing-envelopes' },
+            { slug: 'concepts/personal-routing-profiles' },
             { slug: 'concepts/explicit-skill-lock' },
             { slug: 'concepts/phase-state-machine' },
             { slug: 'concepts/managed-goals' },

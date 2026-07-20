@@ -14,6 +14,13 @@ test("plan_work and get_router_status outputs match bundled runtime fields", () 
     support_consent_required: false,
     planned_skill_ids: [],
     runtime_mode: "mcp-local-control-plane",
+    route_source: "builtin-default",
+    routing_profile_ids: [],
+    routing_profile_digest: null,
+    matched_profile_rule_id: null,
+    planned_skill_tree: [],
+    activation_status: "not-planned",
+    profile_warnings: [],
   }).success, true);
   assert.equal(TOOL_OUTPUT_SCHEMAS.get_router_status.safeParse({
     goal_binding_id: null,
@@ -21,6 +28,32 @@ test("plan_work and get_router_status outputs match bundled runtime fields", () 
     created_work_items: 0,
     goal_status_candidate: null,
     host_goal_mutated: false,
+  }).success, true);
+});
+
+test("profile-routed plan exposes current intent without claiming activation", () => {
+  assert.equal(TOOL_OUTPUT_SCHEMAS.plan_work.safeParse({
+    status: "planned-local-control",
+    workflow_run_id: "workflow:1",
+    work_graph_id: "work-graph:1",
+    created_work_items: 1,
+    routing_envelope: "phased",
+    selection_mode: "auto",
+    support_consent_required: false,
+    planned_skill_ids: ["skill:qa-test-planner", "skill:playwright"],
+    runtime_mode: "mcp-local-control-plane",
+    route_source: "workspace-profile",
+    routing_profile_ids: ["workspace:api"],
+    routing_profile_digest: `sha256:${"a".repeat(64)}`,
+    matched_profile_rule_id: "api",
+    planned_skill_tree: [{
+      phase_id: "verification",
+      primary_skill_id: "skill:qa-test-planner",
+      support_skill_ids: ["skill:playwright"],
+      exit_gate: "tests-passed",
+    }],
+    activation_status: "intended-unverified",
+    profile_warnings: [],
   }).success, true);
 });
 
