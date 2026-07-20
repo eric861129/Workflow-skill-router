@@ -109,3 +109,53 @@ jobs:
       - name: Run documentation site visual regression tests
         working-directory: site
         run: npm run test:site:visual
+
+  build-pages:
+    name: Build validated Pages artifact
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [release-artifacts, validate, site-visual]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout validated main revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install, build, and upload site
+        uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6.1.2
+        with:
+          path: site
+          node-version: 24
+          package-manager: npm@11.6.2
+
+  deploy-pages:
+    name: Deploy validated site to GitHub Pages
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: build-pages
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+      - name: Smoke test public HTTPS URL
+        shell: bash
+        run: |
+          curl -fsS --head --max-time 20 https://huangchiyu.com/Workflow-skill-router/
+          final_url="$(curl -fsS -I -L --max-time 20 -o /dev/null -w '%{url_effective}' http://huangchiyu.com/Workflow-skill-router/)"
+          case "$final_url" in
+            https://huangchiyu.com/Workflow-skill-router/*) ;;
+            *)
+              echo "Expected HTTP to resolve to the HTTPS project path, got: $final_url"
+              exit 1
+              ;;
+          esac

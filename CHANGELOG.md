@@ -4,6 +4,18 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.0.0-beta.3
+
+### Security
+
+- Eliminated the privileged `workflow_run` checkout from Pages deployment; the trusted `main` revision now deploys only after deterministic artifacts, core contracts, and site visual gates pass in the same workflow.
+- Updated Lighthouse's scoped Sentry dependency to the patched OpenTelemetry 2.x line and added a lockfile regression test for `GHSA-8988-4f7v-96qf`.
+
+### Changed
+
+- Published a new immutable prerelease snapshot so source, Plugin, Skill-only, checksums, SBOM, and `latest-v2` all describe the security-hardened revision.
+- Preserved V1.3.1 on stable `latest` and retained beta.1 model evaluation as historical evidence; beta.3 does not claim a new behavior evaluation.
+
 ## 2.0.0-beta.2
 
 ### Added

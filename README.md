@@ -4,7 +4,7 @@
 
 Workflow Skill Router is a runtime-aware planning and routing layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do.
 
-> Current prerelease: `2.0.0-beta.2`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
+> Current prerelease: `2.0.0-beta.3`. V2 is the public product direction; immutable V1.3.1 recovery remains available during migration.
 
 ## 60-second outcome
 
@@ -35,10 +35,10 @@ Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone 
 
 ## Five-minute Plugin + MCP quickstart
 
-For a normal installation, pin the immutable `v2.0.0-beta.2` marketplace snapshot:
+For a normal installation, pin the immutable `v2.0.0-beta.3` marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.3
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -60,7 +60,7 @@ The released Plugin already contains the MCP bundle and Python runtime. Node.js 
 
 ## Five-minute Skill-only quickstart
 
-For a normal installation, download [`workflow-skill-router-skill-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-skill-v2.0.0-beta.2.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
+For a normal installation, download [`workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
 
 For contributors working from a checkout on Windows:
 

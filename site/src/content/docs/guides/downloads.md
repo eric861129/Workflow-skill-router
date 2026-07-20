@@ -79,14 +79,14 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
   </article>
 </div>
 
-The `v2.0.0-beta.2` Plugin and Skill-only packages both include the strict Personal and Workspace Routing Profile examples. Skill-only can read fixed local Profile paths only when the Host grants filesystem access.
+The `v2.0.0-beta.3` Plugin and Skill-only packages both include the strict Personal and Workspace Routing Profile examples. Skill-only can read fixed local Profile paths only when the Host grants filesystem access.
 
 ## Marketplace install
 
 For normal installations, pin the published immutable marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.3
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -102,10 +102,10 @@ codex plugin add workflow-skill-router@workflow-skill-router
 
 ## Offline inspection assets
 
-Use the immutable `v2.0.0-beta.2` GitHub prerelease assets instead of mutable `raw/main/downloads` files.
+Use the immutable `v2.0.0-beta.3` GitHub prerelease assets instead of mutable `raw/main/downloads` files.
 
-- [Plugin ZIP: `workflow-skill-router-plugin-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-plugin-v2.0.0-beta.2.zip)
-- [Skill-only ZIP: `workflow-skill-router-skill-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-skill-v2.0.0-beta.2.zip)
+- [Plugin ZIP: `workflow-skill-router-plugin-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-plugin-v2.0.0-beta.3.zip)
+- [Skill-only ZIP: `workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip)
 - [All releases](https://github.com/eric861129/Workflow-skill-router/releases)
 
 The ZIPs are for offline inspection and fallback installation. Verify published checksums, SBOM, and provenance before use. Do not treat a local prerelease build as a published asset.

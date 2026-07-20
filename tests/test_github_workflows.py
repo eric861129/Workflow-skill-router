@@ -105,6 +105,26 @@ class GitHubWorkflowTests(unittest.TestCase):
         ):
             self.assertIn(required, content)
 
+    def test_pages_deploys_only_after_validating_the_trusted_main_revision(self) -> None:
+        validate = workflow_text("validate.yml")
+        all_workflows = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted(WORKFLOWS.glob("*.y*ml"))
+        )
+
+        self.assertFalse((WORKFLOWS / "deploy-site.yml").exists())
+        self.assertNotIn("workflow_run:", all_workflows)
+        self.assertNotIn("github.event.workflow_run.head_sha", all_workflows)
+        self.assertIn("needs: [release-artifacts, validate, site-visual]", validate)
+        self.assertIn(
+            "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            validate,
+        )
+        self.assertIn("pages: write", validate)
+        self.assertIn("id-token: write", validate)
+        self.assertIn("actions/deploy-pages@", validate)
+        self.assertIn("Smoke test public HTTPS URL", validate)
+
     def test_release_only_accepts_v2_tags_and_supports_safe_tag_retries(self) -> None:
         content = workflow_text("release-v2.yml")
         for required in (

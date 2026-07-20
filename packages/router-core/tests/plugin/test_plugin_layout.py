@@ -6,13 +6,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 PLUGIN = ROOT / "plugins" / "workflow-skill-router"
 CANONICAL = ROOT / "starter" / "v2" / "workflow-skill-router"
+VERSION = json.loads(
+    (ROOT / "release" / "version.json").read_text(encoding="utf-8")
+)["v2_version"]
 
 
 class PluginLayoutTests(unittest.TestCase):
     def test_manifest_and_companions_are_consistent(self) -> None:
         manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual("workflow-skill-router", manifest["name"])
-        self.assertEqual("2.0.0-beta.2", manifest["version"])
+        self.assertEqual(VERSION, manifest["version"])
         self.assertEqual("./skills/", manifest["skills"])
         self.assertEqual("./.mcp.json", manifest["mcpServers"])
         self.assertNotIn("apps", manifest)

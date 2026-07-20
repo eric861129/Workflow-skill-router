@@ -11,7 +11,7 @@ description: 只安裝 routing instructions，不啟用 Plugin 或 MCP。
 
 ## 從 release asset 安裝
 
-從 GitHub prerelease 下載 [`workflow-skill-router-skill-v2.0.0-beta.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.2/workflow-skill-router-skill-v2.0.0-beta.2.zip)，再把內層 `workflow-skill-router/` 解壓縮到 Codex Skills 目錄。
+從 GitHub prerelease 下載 [`workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip)，再把內層 `workflow-skill-router/` 解壓縮到 Codex Skills 目錄。
 
 壓縮檔的完整路徑如下：
 
