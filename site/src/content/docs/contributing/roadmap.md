@@ -21,7 +21,7 @@ description: Track evidence-backed milestones from alpha to GA.
 
 - [x] Add Personal and Workspace Routing Profiles with packaged examples
 - [x] Close junction, symlink, migration, and evidence-labeling gaps
-- [ ] Pass Windows, macOS, and Linux CI on the frozen source revision
+- [x] Pass Windows, macOS, and Linux CI on the frozen source revision
 - [ ] Publish the prerelease and move only `latest-v2`
 - [x] Completed the corrected 36-attempt Behavior smoke with explicit quota authorization
 - [x] Reviewed paired results and published only attested, sanitized evidence
