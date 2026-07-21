@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workflow-skill-router/restricted-pilot-binding-manifest/1.0",
+  "title": "Restricted beta.5 Pilot binding manifest",
+  "description": "Private pre-execution bindings. The instance belongs in restricted evidence and must never be published.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "protocol_digest",
+    "source_revision",
+    "runtime_package_digest",
+    "commitment_scheme",
+    "bindings",
+    "binding_manifest_commitment",
+    "task_set_commitment",
+    "reviewer_attestation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "workflow-skill-router/restricted-pilot-binding-manifest/1.0"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,127}$"
+    },
+    "protocol_digest": {
+      "$ref": "#/$defs/sha256Digest"
+    },
+    "source_revision": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 128
+    },
+    "runtime_package_digest": {
+      "$ref": "#/$defs/sha256Digest"
+    },
+    "commitment_scheme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "key_scope",
+        "secret_storage",
+        "publicly_reversible",
+        "canonicalization",
+        "domain_separation"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "HMAC-SHA-256"
+        },
+        "key_scope": {
+          "const": "one-secret-per-run"
+        },
+        "secret_storage": {
+          "const": "restricted-reviewer-access-only"
+        },
+        "publicly_reversible": {
+          "const": false
+        },
+        "canonicalization": {
+          "const": "RFC8785-JCS"
+        },
+        "domain_separation": {
+          "const": "workflow-skill-router-pilot-v1-labeled-inputs"
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "slot_id",
+          "task_identity_commitment",
+          "source_identity_commitment",
+          "profile_binding",
+          "metric_population_flags",
+          "record_integrity_commitment"
+        ],
+        "properties": {
+          "slot_id": {
+            "type": "string",
+            "pattern": "^(single-0[1-6]|phased-0[1-8]|goal-like-0[1-6])$"
+          },
+          "task_identity_commitment": {
+            "type": "string",
+            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+          },
+          "source_identity_commitment": {
+            "type": "string",
+            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+          },
+          "profile_binding": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["profile_backed"],
+                "properties": {
+                  "profile_backed": {
+                    "const": false
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "profile_backed",
+                  "profile_identity_commitment",
+                  "profile_revision_digest"
+                ],
+                "properties": {
+                  "profile_backed": {
+                    "const": true
+                  },
+                  "profile_identity_commitment": {
+                    "type": "string",
+                    "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+                  },
+                  "profile_revision_digest": {
+                    "$ref": "#/$defs/sha256Digest"
+                  }
+                }
+              }
+            ]
+          },
+          "metric_population_flags": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "manual_envelope",
+              "no_explicit_skill",
+              "explicit_lock",
+              "router_local_resume"
+            ],
+            "properties": {
+              "manual_envelope": {
+                "const": true
+              },
+              "no_explicit_skill": {
+                "type": "boolean"
+              },
+              "explicit_lock": {
+                "type": "boolean"
+              },
+              "router_local_resume": {
+                "type": "boolean"
+              }
+            }
+          },
+          "record_integrity_commitment": {
+            "type": "string",
+            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "binding_manifest_commitment": {
+      "$ref": "#/$defs/hmacCommitment"
+    },
+    "task_set_commitment": {
+      "$ref": "#/$defs/hmacCommitment"
+    },
+    "reviewer_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_identity",
+        "attested_at",
+        "reviewed_before_task_1",
+        "real_task_status_human_reviewed",
+        "commitments_verified_with_run_secret",
+        "reviewer_attestation_commitment"
+      ],
+      "properties": {
+        "reviewer_identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "attested_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewed_before_task_1": {
+          "const": true
+        },
+        "real_task_status_human_reviewed": {
+          "const": true
+        },
+        "commitments_verified_with_run_secret": {
+          "const": true
+        },
+        "reviewer_attestation_commitment": {
+          "$ref": "#/$defs/hmacCommitment"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hmacCommitment": {
+      "type": "string",
+      "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+    }
+  }
+}

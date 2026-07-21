@@ -22,6 +22,26 @@ diagnostics only. Objectives, raw prompts, repository/workspace paths,
 instruction bodies, secrets, raw transcripts, expected/actual Skill values,
 and unreviewed evidence remain restricted.
 
+Before task 1, an independent reviewer must approve a restricted binding
+manifest containing exactly 20 records. A per-run secret HMAC-SHA-256 commits
+to each task identity, source identity, Profile identity/revision when used,
+metric-population flags, and record integrity. Public evidence carries only
+the binding-manifest commitment, task-set commitment, and
+reviewer-attestation commitment; it cannot reverse task content and does not
+replace human review that each input is a real task.
+
+All task commitments must be distinct, every source commitment must be
+present, exact slot IDs and the restricted manifest digest must match frozen
+metadata, and no record may change after task 1 starts. Any missing, ambiguous,
+duplicate, changed, or digest-mismatched binding makes the run invalid, never
+ineligible.
+
+Metric flags are frozen before execution. The minimum populations are 20
+manual-envelope, 10 no-explicit-Skill, 4 Explicit Lock, and 10 resume-eligible
+slots; overlap is allowed. Every eligible slot needs a final record and every
+resume-eligible slot must be attempted. An under-minimum or zero denominator is
+invalid and cannot pass as `0/0`.
+
 Offline reference adapter conformance is development evidence only. A genuine
 verified Host Pilot requires actual Host-side authority and receipts plus human
 review. If real Host APIs are unavailable, publish a reviewed

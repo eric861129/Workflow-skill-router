@@ -24,12 +24,48 @@ change thresholds, scoring rules, or the manifest silently.
 | Source revision | `[required before execution]` |
 | Runtime/package digest | `[required before execution]` |
 | Protocol digest | `[required before execution]` |
+| Restricted binding manifest digest | `[required before execution]` |
+| Binding-manifest commitment | `[required before execution]` |
+| Task-set commitment | `[required before execution]` |
+| Reviewer-attestation commitment | `[required before execution]` |
 | Reviewer | `[required before execution]` |
 | Timestamp | `[required before execution]` |
 
 Any protocol change requires a new digest and a new run. Keep task objectives,
 raw prompts, repository or workspace paths, and expected/actual Skill values
 inside reviewed restricted evidence.
+
+## Pre-execution restricted binding manifest
+
+Schema: [`evaluation/v2/pilots/restricted-binding-manifest.schema.json`](../../evaluation/v2/pilots/restricted-binding-manifest.schema.json)
+
+Before task 1, create the restricted binding manifest with exactly one record
+for each of the 20 frozen slot IDs. Use a per-run secret HMAC-SHA-256 to commit
+to the task identity, its source identity, and each complete binding record.
+Never publish the secret, task input, source path, raw prompt, or restricted
+manifest.
+
+Each record freezes:
+
+- the immutable slot ID;
+- non-reversible task and source identity commitments;
+- Profile identity commitment and revision digest when Profile-backed;
+- `manual_envelope`, `no_explicit_skill`, `explicit_lock`, and
+  `router_local_resume` population flags;
+- a record-integrity commitment.
+
+The restricted reviewer verifies the secret inputs, distinct task identities,
+source bindings, Profile revisions, metric flags, and real-task status. Record
+the reviewer attestation before task 1. Public-safe evidence contains only the
+binding-manifest commitment, task-set commitment, and reviewer-attestation
+commitment. This supports later audit but does not replace human review of
+whether each private input is a real task.
+
+All 20 task commitments must be distinct; every source commitment must be
+present; the ordered task/source pairs and exact slot set must match the frozen
+manifest. The restricted manifest digest must match the frozen run metadata.
+Any missing, ambiguous, duplicate, digest-mismatched, or post-start-changed
+binding or record makes the entire run invalid, never ineligible.
 
 ## Local-work-loop evidence
 
@@ -42,6 +78,19 @@ Protocol: [`evaluation/v2/pilots/local-work-loop-plan.json`](../../evaluation/v2
 - Unnecessary consent rate for no-explicit-Skill work: `<= 5%`.
 - Explicit Skill Lock gate: zero unconsented support Skills.
 - Router-owned local resume success gate: `>= 95%`.
+
+Freeze metric membership before task 1. All 20 slots belong to
+`manual_envelope`; at least 10 belong to `no_explicit_skill`, at least 4 to
+`explicit_lock`, and at least 10 to `router_local_resume`. Populations may
+overlap. Every eligible slot requires a final record, and every resume-eligible
+slot must be attempted.
+
+The exact measurements are corrected envelopes divided by all 20 slots;
+unnecessary prompts divided by frozen no-explicit-Skill slots; unauthorized
+support events across at least four Explicit Lock slots; and successful resumes
+divided by attempted resume-eligible slots. Missing records or a zero or
+under-minimum denominator makes the gate unmet and the run invalid. `0/0` can
+never pass.
 
 Sanitized aggregate fields and case-safe diagnostics belong here only after
 review. Do not insert objectives, prompts, instruction bodies, paths, secrets,

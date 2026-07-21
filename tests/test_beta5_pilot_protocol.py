@@ -10,6 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_PLAN = ROOT / "evaluation/v2/pilots/local-work-loop-plan.json"
 HOST_PLAN = ROOT / "evaluation/v2/pilots/host-conformance-plan.json"
+BINDING_SCHEMA = ROOT / "evaluation/v2/pilots/restricted-binding-manifest.schema.json"
 PILOT_TEMPLATE = ROOT / "docs/evidence/v2-beta5-pilot-template.md"
 EVALUATION_README = ROOT / "evaluation/v2/README.md"
 ENGLISH_PAGE = ROOT / "site/src/content/docs/reference/model-evaluation.md"
@@ -49,7 +50,10 @@ class Beta5PilotProtocolTests(unittest.TestCase):
 
         metrics = {item["metric_id"]: item for item in plan["release_gates"]}
         self.assertEqual(
-            ("tasks-with-manual-envelope-correction", "eligible-real-local-tasks"),
+            (
+                "tasks-with-manual-envelope-correction",
+                "all-20-frozen-manual-envelope-slots",
+            ),
             (
                 metrics["manual-envelope-correction-rate"].get("numerator"),
                 metrics["manual-envelope-correction-rate"].get("denominator"),
@@ -90,7 +94,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             metrics["router-local-resume-success-rate"]["threshold"],
         ))
         self.assertEqual(
-            ("successful-router-local-resumes", "eligible-router-local-resume-attempts"),
+            ("successful-router-local-resumes", "attempted-resume-eligible-slots"),
             (
                 metrics["router-local-resume-success-rate"].get("numerator"),
                 metrics["router-local-resume-success-rate"].get("denominator"),
@@ -107,6 +111,10 @@ class Beta5PilotProtocolTests(unittest.TestCase):
                 "source_revision",
                 "runtime_package_digest",
                 "protocol_digest",
+                "restricted_binding_manifest_digest",
+                "binding_manifest_commitment",
+                "task_set_commitment",
+                "reviewer_attestation_commitment",
                 "reviewer",
                 "timestamp",
             },
@@ -120,7 +128,12 @@ class Beta5PilotProtocolTests(unittest.TestCase):
 
         public = plan["public_artifact_policy"]
         self.assertEqual(
-            {"sanitized-aggregate", "case-safe-diagnostic"},
+            {
+                "sanitized-aggregate",
+                "case-safe-diagnostic",
+                "non-reversible-binding-commitment",
+                "reviewer-attestation-commitment",
+            },
             set(public["allowed_evidence_classes"]),
         )
         self.assertEqual(
@@ -140,6 +153,203 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         )
         for forbidden in ("results", "pass", "fail", "executed_task_count"):
             self.assertNotIn(forbidden, plan)
+
+    def test_restricted_binding_schema_precommits_twenty_private_task_records(self) -> None:
+        schema = self.read_json(BINDING_SCHEMA)
+        plan = self.read_json(LOCAL_PLAN)
+
+        self.assertEqual(
+            "workflow-skill-router/restricted-pilot-binding-manifest/1.0",
+            schema["$id"],
+        )
+        self.assertFalse(schema["additionalProperties"])
+        bindings = schema["properties"]["bindings"]
+        self.assertEqual(20, bindings["minItems"])
+        self.assertEqual(20, bindings["maxItems"])
+        self.assertTrue(bindings.get("uniqueItems"))
+        record = bindings["items"]
+        self.assertFalse(record["additionalProperties"])
+        self.assertEqual(
+            {
+                "slot_id",
+                "task_identity_commitment",
+                "source_identity_commitment",
+                "profile_binding",
+                "metric_population_flags",
+                "record_integrity_commitment",
+            },
+            set(record["required"]),
+        )
+        self.assertTrue(
+            {
+                "objective",
+                "raw_prompt",
+                "repository_path",
+                "workspace_path",
+                "instruction_body",
+            }.isdisjoint(record["properties"])
+        )
+        hmac_pattern = r"^hmac-sha256:[0-9a-f]{64}$"
+        for field in (
+            "task_identity_commitment",
+            "source_identity_commitment",
+            "record_integrity_commitment",
+        ):
+            self.assertEqual(hmac_pattern, record["properties"][field]["pattern"])
+        flags = record["properties"]["metric_population_flags"]["properties"]
+        self.assertTrue(flags["manual_envelope"]["const"])
+        for flag in ("no_explicit_skill", "explicit_lock", "router_local_resume"):
+            self.assertEqual("boolean", flags[flag]["type"])
+        self.assertTrue(
+            {
+                "binding_manifest_commitment",
+                "task_set_commitment",
+                "reviewer_attestation",
+            }.issubset(schema["required"])
+        )
+        reviewer = schema["properties"]["reviewer_attestation"]
+        self.assertTrue(
+            {
+                "reviewed_before_task_1",
+                "real_task_status_human_reviewed",
+                "reviewer_attestation_commitment",
+            }.issubset(reviewer["required"])
+        )
+        scheme = schema["properties"]["commitment_scheme"]
+        self.assertTrue(
+            {"canonicalization", "domain_separation"}.issubset(scheme["required"])
+        )
+        self.assertEqual(
+            "RFC8785-JCS", scheme["properties"]["canonicalization"]["const"]
+        )
+
+        binding = plan["restricted_binding_manifest"]
+        self.assertEqual(
+            "pilots/restricted-binding-manifest.schema.json", binding["schema"]
+        )
+        self.assertTrue(binding["created_before_task_1"])
+        self.assertTrue(binding["independently_reviewed_before_task_1"])
+        self.assertEqual("per-run-secret-hmac-sha256", binding["commitment_scheme"])
+        self.assertFalse(binding["public_commitments_are_reversible"])
+        self.assertTrue(binding["human_review_of_real_task_status_required"])
+        self.assertEqual(
+            [
+                "binding_manifest_commitment",
+                "task_set_commitment",
+                "reviewer_attestation_commitment",
+            ],
+            binding["public_safe_attestation_fields"],
+        )
+        self.assertIn("commitment_input_contract", binding)
+        contract = binding["commitment_input_contract"]
+        self.assertEqual("RFC8785-JCS", contract["canonicalization"])
+        self.assertEqual(
+            [task["task_id"] for task in plan["task_slots"]],
+            contract["task_set_order"],
+        )
+        self.assertEqual(
+            [
+                "binding_manifest_commitment",
+                "reviewer_attestation.reviewer_attestation_commitment",
+            ],
+            contract["manifest_commitment_excludes"],
+        )
+
+    def test_binding_integrity_and_metric_populations_fail_closed_non_vacuously(self) -> None:
+        plan = self.read_json(LOCAL_PLAN)
+        self.assertIn("binding_integrity", plan)
+        self.assertIn("metric_population_freeze", plan)
+        integrity = plan["binding_integrity"]
+        populations = plan["metric_population_freeze"]
+
+        self.assertEqual(20, integrity["exact_binding_record_count"])
+        self.assertEqual(
+            [task["task_id"] for task in plan["task_slots"]],
+            integrity["exact_slot_ids"],
+        )
+        self.assertTrue(integrity["all_task_commitments_distinct"])
+        self.assertTrue(integrity["all_source_commitments_present"])
+        self.assertTrue(integrity["task_source_commitment_pairs_distinct"])
+        self.assertTrue(integrity.get("profile_binding_matches_frozen_slot"))
+        self.assertTrue(integrity["manifest_digest_matches_frozen_run_metadata"])
+        self.assertTrue(integrity["post_start_modification_invalidates_run"])
+        self.assertEqual(
+            "invalid-entire-run",
+            integrity["failure_disposition"],
+        )
+
+        self.assertTrue(populations["frozen_before_task_1"])
+        self.assertTrue(populations["overlap_allowed"])
+        self.assertEqual(
+            {
+                "manual_envelope": 20,
+                "no_explicit_skill": 10,
+                "explicit_lock": 4,
+                "router_local_resume": 10,
+            },
+            populations["minimum_eligible_slots"],
+        )
+        self.assertTrue(populations["every_eligible_slot_requires_final_record"])
+        self.assertTrue(populations["every_resume_eligible_slot_must_be_attempted"])
+        self.assertEqual(
+            "invalid",
+            populations["missing_ambiguous_duplicate_or_digest_mismatch"],
+        )
+        self.assertEqual("invalid", populations["post_start_flag_change"])
+        self.assertEqual(
+            "gate-unmet-and-run-invalid",
+            populations["zero_or_under_minimum_denominator"],
+        )
+        self.assertFalse(populations["zero_over_zero_can_pass"])
+        self.assertIn("final_record_contract", plan)
+        final_records = plan["final_record_contract"]
+        self.assertEqual(
+            [
+                "slot_id",
+                "binding_record_integrity_commitment",
+                "manual_envelope_corrected",
+                "final_record_integrity_commitment",
+            ],
+            final_records["required_for_every_slot"],
+        )
+        self.assertEqual(
+            {
+                "no_explicit_skill": ["unnecessary_consent_prompt"],
+                "explicit_lock": ["unauthorized_support_event_count"],
+                "router_local_resume": ["resume_attempted", "resume_succeeded"],
+            },
+            final_records["required_when_population_flag_true"],
+        )
+        self.assertEqual(
+            "const-true", final_records["field_constraints"]["resume_attempted"]
+        )
+        self.assertEqual(
+            "non-negative-integer",
+            final_records["field_constraints"]["unauthorized_support_event_count"],
+        )
+
+    def test_public_docs_require_non_reversible_commitments_and_pre_start_review(self) -> None:
+        texts = (
+            PILOT_TEMPLATE.read_text(encoding="utf-8"),
+            EVALUATION_README.read_text(encoding="utf-8"),
+            ENGLISH_PAGE.read_text(encoding="utf-8"),
+            CHINESE_PAGE.read_text(encoding="utf-8"),
+        )
+        combined = "\n".join(texts)
+
+        for phrase in (
+            "restricted binding manifest",
+            "per-run secret HMAC-SHA-256",
+            "binding-manifest commitment",
+            "task-set commitment",
+            "reviewer attestation before task 1",
+            "does not replace human review",
+            "0/0",
+            "invalid, never ineligible",
+        ):
+            self.assertIn(phrase, combined)
+        for text in texts:
+            self.assertNotIn("objective commitment input", text)
 
     def test_host_plan_keeps_reference_verified_and_unavailable_lanes_distinct(self) -> None:
         plan = self.read_json(HOST_PLAN)

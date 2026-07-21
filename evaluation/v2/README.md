@@ -8,6 +8,11 @@ The safe preparation artifacts are now frozen with
 - [`pilots/local-work-loop-plan.json`](pilots/local-work-loop-plan.json) freezes
   the twenty-slot real local task mix, manifest, scoring gates, and sanitized
   public evidence boundary.
+- [`pilots/restricted-binding-manifest.schema.json`](pilots/restricted-binding-manifest.schema.json)
+  defines the private pre-execution bindings. Exactly 20 records use a per-run
+  secret HMAC-SHA-256 for task/source identity, Profile revision, population
+  flags, and record integrity; the actual manifest and secret never become
+  public.
 - [`pilots/host-conformance-plan.json`](pilots/host-conformance-plan.json) keeps
   offline reference conformance, a genuine verified Host Pilot, and reviewed
   `capability-unavailable` evidence in separate lanes.
@@ -18,6 +23,15 @@ No real Pilot task has been executed or counted. Published beta.3 remains the
 public V2 release, beta.4 is prepared, unpublished source work, and beta.5 is
 unreleased. These protocols do not authorize a live model, a real Host, or a
 release.
+
+The binding-manifest commitment, task-set commitment, and reviewer-attestation
+commitment must be frozen before task 1. The restricted reviewer verifies real
+task status and uniqueness; commitments support audit but do not replace human
+review. Metric populations are also frozen: 20 manual-envelope slots, at least
+10 no-explicit-Skill slots, at least 4 Explicit Lock slots, and at least 10
+resume-eligible slots. Missing or changed records, duplicate commitments,
+digest mismatch, or an under-minimum denominator makes the run invalid, never
+ineligible; `0/0` never passes.
 
 The default remains
 `deterministic-default-no-semantic-recommender`. An experimental recommender is

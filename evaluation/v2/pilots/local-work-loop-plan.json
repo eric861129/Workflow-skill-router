@@ -30,24 +30,173 @@
     "freeze_all_inputs_before_first_task": true,
     "synthetic_or_dry_run_is_countable": false
   },
+  "restricted_binding_manifest": {
+    "schema": "pilots/restricted-binding-manifest.schema.json",
+    "created_before_task_1": true,
+    "independently_reviewed_before_task_1": true,
+    "exact_binding_records": 20,
+    "commitment_scheme": "per-run-secret-hmac-sha256",
+    "secret_storage": "restricted-reviewer-access-only",
+    "public_commitments_are_reversible": false,
+    "human_review_of_real_task_status_required": true,
+    "public_safe_attestation_fields": [
+      "binding_manifest_commitment",
+      "task_set_commitment",
+      "reviewer_attestation_commitment"
+    ],
+    "commitment_input_contract": {
+      "canonicalization": "RFC8785-JCS",
+      "domain_labels": {
+        "task_identity": "workflow-skill-router/pilot/task-identity/v1",
+        "source_identity": "workflow-skill-router/pilot/source-identity/v1",
+        "profile_identity": "workflow-skill-router/pilot/profile-identity/v1",
+        "record_integrity": "workflow-skill-router/pilot/record-integrity/v1",
+        "task_set": "workflow-skill-router/pilot/task-set/v1",
+        "binding_manifest": "workflow-skill-router/pilot/binding-manifest/v1",
+        "reviewer_attestation": "workflow-skill-router/pilot/reviewer-attestation/v1"
+      },
+      "task_set_order": [
+        "single-01",
+        "single-02",
+        "single-03",
+        "single-04",
+        "single-05",
+        "single-06",
+        "phased-01",
+        "phased-02",
+        "phased-03",
+        "phased-04",
+        "phased-05",
+        "phased-06",
+        "phased-07",
+        "phased-08",
+        "goal-like-01",
+        "goal-like-02",
+        "goal-like-03",
+        "goal-like-04",
+        "goal-like-05",
+        "goal-like-06"
+      ],
+      "record_integrity_excludes": [
+        "record_integrity_commitment"
+      ],
+      "manifest_commitment_excludes": [
+        "binding_manifest_commitment",
+        "reviewer_attestation.reviewer_attestation_commitment"
+      ],
+      "reviewer_attestation_commitment_excludes": [
+        "reviewer_attestation_commitment"
+      ]
+    },
+    "claim_boundary": "Commitments prove reviewed pre-binding and support later audit; they do not expose task content or replace human review that each input is a real task."
+  },
+  "binding_integrity": {
+    "exact_binding_record_count": 20,
+    "exact_slot_ids": [
+      "single-01",
+      "single-02",
+      "single-03",
+      "single-04",
+      "single-05",
+      "single-06",
+      "phased-01",
+      "phased-02",
+      "phased-03",
+      "phased-04",
+      "phased-05",
+      "phased-06",
+      "phased-07",
+      "phased-08",
+      "goal-like-01",
+      "goal-like-02",
+      "goal-like-03",
+      "goal-like-04",
+      "goal-like-05",
+      "goal-like-06"
+    ],
+    "all_task_commitments_distinct": true,
+    "all_source_commitments_present": true,
+    "task_source_commitment_pairs_distinct": true,
+    "profile_binding_matches_frozen_slot": true,
+    "profile_identity_and_revision_required_when_profile_backed": true,
+    "record_integrity_commitment_required": true,
+    "manifest_digest_matches_frozen_run_metadata": true,
+    "post_start_modification_invalidates_run": true,
+    "failure_disposition": "invalid-entire-run"
+  },
+  "metric_population_freeze": {
+    "frozen_before_task_1": true,
+    "overlap_allowed": true,
+    "flags_per_slot": [
+      "manual_envelope",
+      "no_explicit_skill",
+      "explicit_lock",
+      "router_local_resume"
+    ],
+    "minimum_eligible_slots": {
+      "manual_envelope": 20,
+      "no_explicit_skill": 10,
+      "explicit_lock": 4,
+      "router_local_resume": 10
+    },
+    "every_eligible_slot_requires_final_record": true,
+    "every_resume_eligible_slot_must_be_attempted": true,
+    "missing_ambiguous_duplicate_or_digest_mismatch": "invalid",
+    "post_start_flag_change": "invalid",
+    "zero_or_under_minimum_denominator": "gate-unmet-and-run-invalid",
+    "zero_over_zero_can_pass": false
+  },
   "frozen_run_manifest": {
     "required_before_first_task": true,
     "required_fields": [
       "source_revision",
       "runtime_package_digest",
       "protocol_digest",
+      "restricted_binding_manifest_digest",
+      "binding_manifest_commitment",
+      "task_set_commitment",
+      "reviewer_attestation_commitment",
       "reviewer",
       "timestamp"
     ],
     "immutable_after_freeze": true,
     "task_inputs": "Store the twenty distinct real local task inputs under restricted evidence before execution; public task slots expose no task content."
   },
+  "final_record_contract": {
+    "required_for_every_slot": [
+      "slot_id",
+      "binding_record_integrity_commitment",
+      "manual_envelope_corrected",
+      "final_record_integrity_commitment"
+    ],
+    "required_when_population_flag_true": {
+      "no_explicit_skill": [
+        "unnecessary_consent_prompt"
+      ],
+      "explicit_lock": [
+        "unauthorized_support_event_count"
+      ],
+      "router_local_resume": [
+        "resume_attempted",
+        "resume_succeeded"
+      ]
+    },
+    "field_constraints": {
+      "manual_envelope_corrected": "boolean",
+      "unnecessary_consent_prompt": "boolean",
+      "unauthorized_support_event_count": "non-negative-integer",
+      "resume_attempted": "const-true",
+      "resume_succeeded": "boolean"
+    },
+    "record_deadline": "before-scoring-and-attestation",
+    "missing_or_conflicting_record": "invalid-entire-run"
+  },
   "release_gates": [
     {
       "metric_id": "manual-envelope-correction-rate",
       "definition": "Real tasks whose Router envelope required human correction divided by eligible real tasks.",
       "numerator": "tasks-with-manual-envelope-correction",
-      "denominator": "eligible-real-local-tasks",
+      "denominator": "all-20-frozen-manual-envelope-slots",
       "operator": "<=",
       "threshold": 0.10,
       "population": "all-eligible-real-local-tasks"
@@ -73,7 +222,7 @@
       "metric_id": "router-local-resume-success-rate",
       "definition": "Eligible Router-owned local workflows that resume from persisted Router-local state without Host authority or state corruption divided by resume attempts.",
       "numerator": "successful-router-local-resumes",
-      "denominator": "eligible-router-local-resume-attempts",
+      "denominator": "attempted-resume-eligible-slots",
       "operator": ">=",
       "threshold": 0.95,
       "population": "eligible-router-owned-local-resume-attempts"
@@ -82,13 +231,15 @@
   "scoring_policy": {
     "later_records_cannot_change_gates": true,
     "protocol_change_requires_new_digest_and_run": true,
-    "ambiguous_or_missing_required_record": "ineligible-and-review-required",
+    "ambiguous_or_missing_required_record": "invalid-entire-run",
     "dry_run_counts_as_pilot": false
   },
   "public_artifact_policy": {
     "allowed_evidence_classes": [
       "sanitized-aggregate",
-      "case-safe-diagnostic"
+      "case-safe-diagnostic",
+      "non-reversible-binding-commitment",
+      "reviewer-attestation-commitment"
     ],
     "prohibited_public_fields": [
       "objectives",
