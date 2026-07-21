@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 import hashlib
 import re
@@ -20,6 +20,12 @@ _IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _PROFILE_ID = re.compile(r"^(personal|workspace):[a-z0-9][a-z0-9._-]{0,63}$")
 _SKILL_ID = re.compile(r"^skill:[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _WORK_MODES = frozenset({"single", "phased", "managed-goal"})
+
+
+def is_canonical_skill_id(value: object) -> bool:
+    """判斷識別碼是否符合 Routing Profile 的 canonical Skill ID 契約。"""
+
+    return isinstance(value, str) and _SKILL_ID.fullmatch(value) is not None
 
 
 class RoutingProfileContractError(ValueError):
@@ -106,12 +112,20 @@ def _string_list(
     *,
     path: str,
     pattern: re.Pattern[str] | None = _IDENTIFIER,
+    item_predicate: Callable[[object], bool] | None = None,
     maximum: int = 32,
 ) -> tuple[str, ...]:
     if not isinstance(value, list) or len(value) > maximum:
         raise RoutingProfileContractError(f"{path} must be an array with at most {maximum} items")
     result: list[str] = []
     for index, item in enumerate(value):
+        if item_predicate is not None:
+            if not item_predicate(item) or not isinstance(item, str):
+                raise RoutingProfileContractError(
+                    f"{path}[{index}] has an invalid identifier"
+                )
+            result.append(item)
+            continue
         if not isinstance(item, str) or not item or len(item) > 128:
             raise RoutingProfileContractError(f"{path}[{index}] must be a non-empty string")
         if pattern is not None and pattern.fullmatch(item) is None:
@@ -153,12 +167,13 @@ def _decode_phase(value: object, *, path: str) -> SkillTreePhase:
     )
     phase_id = _identifier(document["phase_id"], path=f"{path}.phase_id")
     primary = document["primary_skill_id"]
-    if not isinstance(primary, str) or _SKILL_ID.fullmatch(primary) is None:
+    if not is_canonical_skill_id(primary):
         raise RoutingProfileContractError(f"{path}.primary_skill_id must be canonical skill:<id>")
     support = _string_list(
         document["support_skill_ids"],
         path=f"{path}.support_skill_ids",
-        pattern=_SKILL_ID,
+        pattern=None,
+        item_predicate=is_canonical_skill_id,
         maximum=MAX_SUPPORT_SKILLS,
     )
     if primary in support:

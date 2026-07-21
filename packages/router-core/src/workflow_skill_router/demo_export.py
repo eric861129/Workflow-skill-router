@@ -12,6 +12,7 @@ from workflow_skill_router.bridge import serve
 from workflow_skill_router.capabilities.models import RiskLevel
 from workflow_skill_router.composition import RouterCompositionPorts, compose_router_service
 from workflow_skill_router.local_control import LocalControlPlaneService
+from workflow_skill_router.profiles.contract import is_canonical_skill_id
 from workflow_skill_router.routing.models import (
     ExplicitSemantics,
     GoalRelation,
@@ -38,8 +39,8 @@ _SERVICE_SEMANTICS = {
     "required-all": "all",
 }
 
-_PLANNED_SELECTION_ID = re.compile(
-    r"^(?P<namespace>[a-z][a-z0-9-]*):(?P<local_id>[a-z0-9][a-z0-9._/-]*)$"
+_PUBLIC_NON_SKILL_SELECTION_ID = re.compile(
+    r"^(?!skill:)[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._/-]*$"
 )
 
 
@@ -53,11 +54,12 @@ def _split_planned_selection_ids(
     for selection_id in selection_ids:
         if not isinstance(selection_id, str):
             raise ValueError("demo planned selection identifier is invalid")
-        match = _PLANNED_SELECTION_ID.fullmatch(selection_id)
-        if match is None:
+        if is_canonical_skill_id(selection_id):
+            skill_ids.append(selection_id)
+        elif _PUBLIC_NON_SKILL_SELECTION_ID.fullmatch(selection_id) is not None:
+            non_skill_ids.append(selection_id)
+        else:
             raise ValueError("demo planned selection identifier is invalid")
-        target = skill_ids if match.group("namespace") == "skill" else non_skill_ids
-        target.append(selection_id)
     return skill_ids, non_skill_ids
 
 

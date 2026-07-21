@@ -10,9 +10,28 @@ SPEC=importlib.util.spec_from_file_location("build_v2_demo_data",ROOT/"scripts/b
 module=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=module;SPEC.loader.exec_module(module)
 build_demo_data=module.build_demo_data
 validate_routing_evidence=module._validate_routing_evidence
+split_planned_selection_ids=module._split_planned_selection_ids
 
 
 class DemoDataTests(unittest.TestCase):
+    def test_typed_split_uses_the_canonical_profile_skill_id_contract(self):
+        longest_skill_id = f"skill:{'A' * 128}"
+        skill_ids, non_skill_ids = split_planned_selection_ids([
+            "skill:API:Design.V2",
+            "evaluation:runner",
+            longest_skill_id,
+        ])
+        self.assertEqual(
+            ["skill:API:Design.V2", longest_skill_id],
+            skill_ids,
+        )
+        self.assertEqual(["evaluation:runner"], non_skill_ids)
+
+        for invalid in ("skill:", f"skill:{'a' * 129}"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(ValueError, "selection identifier"):
+                    split_planned_selection_ids([invalid])
+
     def test_required_sanitized_presets_and_no_hand_authored_outputs(self):
         data=build_demo_data(ROOT)
         self.assertEqual({
