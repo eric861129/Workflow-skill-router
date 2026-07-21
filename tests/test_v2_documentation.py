@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unittest
 
 
@@ -15,6 +16,37 @@ DOCS=(
 
 class V2DocumentationTests(unittest.TestCase):
     def test_explainable_classification_and_runtime_mode_contract(self):
+        current_tools = {
+            "local-ready": (
+                "plan_work",
+                "propose_support_consent",
+                "transition_support_consent",
+                "get_router_status",
+            ),
+            "verified-host": (
+                "sync_runtime_context",
+                "get_next_work",
+                "validate_route",
+                "record_work_event",
+                "evaluate_gate",
+            ),
+            "configured-adapter": (
+                "run_model_evaluation",
+                "compare_evaluations",
+                "export_router_artifact",
+            ),
+        }
+        def readiness_row(section, readiness, relative):
+            matching_rows = tuple(
+                line
+                for line in section.splitlines()
+                if line.startswith("|") and f"`{readiness}`" in line
+            )
+            self.assertEqual(1, len(matching_rows), (relative, readiness))
+            row = matching_rows[0]
+            tool_cell = row.split("|")[2]
+            return tuple(re.findall(r"`([^`]+)`", tool_cell)), row
+
         documents = (
             "docs/adr/0004-explainable-classification-and-runtime-modes.md",
             "docs/architecture/v2-overview.md",
@@ -46,23 +78,24 @@ class V2DocumentationTests(unittest.TestCase):
                     "target-beta.5", 1
                 )[0]
                 target_section = text.split("target-beta.5", 1)[1]
-                for tool in (
-                    "plan_work",
-                    "propose_support_consent",
-                    "transition_support_consent",
-                    "get_router_status",
-                    "sync_runtime_context",
-                    "get_next_work",
-                    "validate_route",
-                    "record_work_event",
-                    "evaluate_gate",
-                    "run_model_evaluation",
-                    "compare_evaluations",
-                    "export_router_artifact",
-                ):
-                    self.assertIn(tool, current_section, relative)
+                for readiness, expected_tools in current_tools.items():
+                    documented_tools, _ = readiness_row(
+                        current_section, readiness, relative
+                    )
+                    self.assertEqual(expected_tools, documented_tools, relative)
                 self.assertNotIn("conditional-local", current_section, relative)
-                self.assertIn("conditional-local", target_section, relative)
+                conditional_tools, conditional_row = readiness_row(
+                    target_section, "conditional-local", relative
+                )
+                self.assertEqual(
+                    ("get_next_work", "record_work_event", "evaluate_gate"),
+                    conditional_tools,
+                    relative,
+                )
+                self.assertIn("authority_mode=router-local", conditional_row, relative)
+                self.assertIn(
+                    "host_transition_authorized=false", conditional_row, relative
+                )
                 self.assertIn(
                     "not available in current bundled R0", target_section, relative
                 )
@@ -76,6 +109,8 @@ class V2DocumentationTests(unittest.TestCase):
         plan = (
             ROOT / "docs/superpowers/plans/2026-07-21-router-v2-intelligence-to-ga.md"
         ).read_text("utf-8")
+        self.assertIn("**Step 2: Write ADR 0004**", plan)
+        self.assertNotIn("**Step 2: Write ADR 0003**", plan)
         self.assertIn("0004-explainable-classification-and-runtime-modes.md", plan)
         self.assertNotIn("0003-explainable-classification-and-runtime-modes.md", plan)
 

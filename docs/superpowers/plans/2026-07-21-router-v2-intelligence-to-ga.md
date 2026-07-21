@@ -140,7 +140,7 @@ python -m unittest tests.test_v2_documentation -v
 
 Expected: FAIL，指出 ADR 或文件尚未存在。
 
-- [ ] **Step 2: Write ADR 0003**
+- [ ] **Step 2: Write ADR 0004**
 
 ADR 必須固定以下決策：
 
