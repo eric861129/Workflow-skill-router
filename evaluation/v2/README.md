@@ -41,7 +41,14 @@ The exact ordered slots are `single-01..06`, `phased-01..08`, and
 membership is fixed at 20 manual-envelope, 10 no-explicit-Skill, 4 Explicit
 Lock, and 10 resume-eligible slots; no-explicit-Skill and Explicit Lock are
 mutually exclusive. Restricted raw task/source identities are opaque reviewer
-IDs, never objectives, prompts, or paths.
+IDs, never objectives, prompts, or paths. A source identity is a unique
+task-specific source snapshot or brief, not a shared repository identity.
+
+`attested_at` and `frozen_at` use canonical RFC3339 UTC
+`YYYY-MM-DDTHH:MM:SSZ`. The reviewer HMAC binds `attested_at`, the manifest HMAC
+binds `frozen_at`, and the verifier requires `attested_at <= frozen_at`. A
+future real-Pilot runner must require `task_1_started_at > frozen_at` before it
+counts task 1; that execution check has not been performed.
 
 The HMAC message is UTF-8 `workflow-skill-router/beta5-pilot/v1`, NUL, the
 domain label, NUL, then each field encoded as `ASCII(decimal byte_length) +

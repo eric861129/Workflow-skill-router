@@ -29,7 +29,7 @@ change thresholds, scoring rules, or the manifest silently.
 | Task-set commitment | `[required before execution]` |
 | Reviewer-attestation commitment | `[required before execution]` |
 | Reviewer | `[required before execution]` |
-| Timestamp | `[required before execution]` |
+| Frozen at (canonical RFC3339 UTC) | `[YYYY-MM-DDTHH:MM:SSZ]` |
 
 Any protocol change requires a new digest and a new run. Keep task objectives,
 raw prompts, repository or workspace paths, and expected/actual Skill values
@@ -45,8 +45,10 @@ for each frozen slot, in this order: `single-01` through `single-06`,
 `wsr-beta5-pilot-hmac-v1` per-run secret HMAC-SHA-256 contract to commit to the
 task identity, its source identity, and each complete binding record. Raw task
 and source identities in the restricted manifest are reviewer-assigned opaque
-IDs, not objectives, prompts, or paths. Never publish the 32-byte secret, task
-input, source path, raw prompt, or restricted manifest.
+IDs, not objectives, prompts, or paths. Every source identity represents one
+task-specific source snapshot or brief and must be unique across all 20 slots;
+a shared repository must use distinct task-specific snapshots. Never publish
+the 32-byte secret, task input, source path, raw prompt, or restricted manifest.
 
 The commitment input is byte-exact: UTF-8
 `workflow-skill-router/beta5-pilot/v1`, one NUL byte, the UTF-8 domain label,
@@ -65,11 +67,16 @@ Each record freezes:
 - a record-integrity commitment.
 
 The restricted reviewer verifies the secret inputs, distinct task identities,
-source bindings, Profile revisions, metric flags, and real-task status. Record
-the reviewer attestation before task 1. Public-safe evidence contains only the
+distinct task-specific source snapshots, Profile revisions, metric flags, and
+real-task status. Record `attested_at` and `frozen_at` as canonical RFC3339 UTC
+instants in exact `YYYY-MM-DDTHH:MM:SSZ` form and require
+`attested_at <= frozen_at`. The reviewer-attestation HMAC binds `attested_at`;
+the binding-manifest HMAC binds `frozen_at`. Public-safe evidence contains only the
 binding-manifest commitment, task-set commitment, and reviewer-attestation
 commitment. This supports later audit but does not replace human review of
 whether each private input is a real task.
+
+Complete the reviewer attestation before task 1.
 
 All 20 task commitments must be distinct; every source commitment must be
 present; the ordered task/source pairs and exact slot set must match the frozen
@@ -88,6 +95,9 @@ python evaluation/v2/pilots/verify_restricted_manifest.py `
 
 The command prints only `valid` and a safe diagnostic `code`; it never prints
 the secret or private identities. Only `pilot-binding-valid` may proceed.
+The future real-Pilot runner must separately require a canonical
+`task_1_started_at > frozen_at` before counting task 1. That execution check has
+not been run and this template does not claim otherwise.
 
 ## Local-work-loop evidence
 

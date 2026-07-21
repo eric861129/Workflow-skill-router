@@ -125,6 +125,7 @@ class Beta5PilotManifestVerifierTests(unittest.TestCase):
                 manifest["protocol_digest"],
                 manifest["task_set_commitment"],
                 attestation["reviewer_id"],
+                attestation["attested_at"],
                 verifier.boolean_field(attestation["reviewed_before_task_1"]),
                 verifier.boolean_field(attestation["real_task_status_human_reviewed"]),
                 verifier.boolean_field(attestation["commitments_verified_with_run_secret"]),
@@ -135,6 +136,7 @@ class Beta5PilotManifestVerifierTests(unittest.TestCase):
             "binding-manifest",
             (
                 manifest["run_id"],
+                manifest["frozen_at"],
                 manifest["source_revision"],
                 manifest["runtime_package_digest"],
                 manifest["protocol_digest"],
@@ -149,6 +151,7 @@ class Beta5PilotManifestVerifierTests(unittest.TestCase):
             "schema_version": "workflow-skill-router/restricted-pilot-binding-manifest/1.0",
             "execution_status": "restricted-binding-frozen-before-task-1",
             "run_id": "run:beta5-pilot-0001",
+            "frozen_at": "2026-07-21T08:30:00Z",
             "protocol_digest": DIGEST_A,
             "source_revision": "abcdef0123456789",
             "runtime_package_digest": DIGEST_B,
@@ -236,6 +239,76 @@ class Beta5PilotManifestVerifierTests(unittest.TestCase):
         self.assertEqual(
             "pilot-binding-task-duplicate",
             verifier.verify_manifest(duplicate_task, SECRET).code,
+        )
+
+    def test_duplicate_task_specific_source_identity_fails_even_when_resigned(self) -> None:
+        verifier = self.verifier()
+        duplicate_source = self.valid_manifest(verifier)
+        duplicate_source["bindings"][1]["source_identity"] = (
+            duplicate_source["bindings"][0]["source_identity"]
+        )
+        self.resign_record(verifier, duplicate_source, duplicate_source["bindings"][1])
+        self.resign_aggregate(verifier, duplicate_source)
+
+        self.assertEqual(
+            "pilot-binding-source-duplicate",
+            verifier.verify_manifest(duplicate_source, SECRET).code,
+        )
+
+    def test_attestation_time_is_bound_and_must_be_canonical_utc(self) -> None:
+        verifier = self.verifier()
+        mutated = self.valid_manifest(verifier)
+        mutated["reviewer_attestation"]["attested_at"] = "2026-07-21T07:59:59Z"
+        self.assertEqual(
+            "pilot-binding-review-invalid",
+            verifier.verify_manifest(mutated, SECRET).code,
+        )
+
+        invalid_values = (
+            "2026-07-21T08:00:00+00:00",
+            "2026-07-21T08:00:00.000Z",
+            " 2026-07-21T08:00:00Z",
+            "2026-02-30T08:00:00Z",
+            "２０２６-07-21T08:00:00Z",
+        )
+        for value in invalid_values:
+            with self.subTest(value=value):
+                invalid = self.valid_manifest(verifier)
+                invalid["reviewer_attestation"]["attested_at"] = value
+                self.resign_aggregate(verifier, invalid)
+                self.assertEqual(
+                    "pilot-binding-attested-at-invalid",
+                    verifier.verify_manifest(invalid, SECRET).code,
+                )
+
+    def test_attestation_must_not_be_after_bound_canonical_freeze_time(self) -> None:
+        verifier = self.verifier()
+        after_freeze = self.valid_manifest(verifier)
+        after_freeze["reviewer_attestation"]["attested_at"] = (
+            "2026-07-21T08:30:01Z"
+        )
+        self.resign_aggregate(verifier, after_freeze)
+        self.assertEqual(
+            "pilot-binding-attestation-order-invalid",
+            verifier.verify_manifest(after_freeze, SECRET).code,
+        )
+
+        invalid_freeze = self.valid_manifest(verifier)
+        invalid_freeze["frozen_at"] = "2026-07-21T08:30:00+00:00"
+        self.resign_aggregate(verifier, invalid_freeze)
+        self.assertEqual(
+            "pilot-binding-frozen-at-invalid",
+            verifier.verify_manifest(invalid_freeze, SECRET).code,
+        )
+
+    def test_freeze_time_is_bound_into_manifest_commitment(self) -> None:
+        verifier = self.verifier()
+        manifest = self.valid_manifest(verifier)
+        manifest["frozen_at"] = "2026-07-21T08:31:00Z"
+
+        self.assertEqual(
+            "pilot-binding-manifest-commitment-invalid",
+            verifier.verify_manifest(manifest, SECRET).code,
         )
 
     def test_profile_and_population_adversaries_fail_even_when_resigned(self) -> None:

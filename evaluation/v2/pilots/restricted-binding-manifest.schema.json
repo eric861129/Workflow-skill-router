@@ -9,6 +9,7 @@
     "schema_version",
     "execution_status",
     "run_id",
+    "frozen_at",
     "protocol_digest",
     "source_revision",
     "runtime_package_digest",
@@ -28,6 +29,12 @@
     "run_id": {
       "type": "string",
       "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,127}$"
+    },
+    "frozen_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "format": "date-time",
+      "description": "Canonical UTC instant when the reviewed binding manifest became frozen."
     },
     "protocol_digest": {
       "$ref": "#/$defs/sha256Digest"
@@ -117,6 +124,7 @@
         },
         "attested_at": {
           "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
           "format": "date-time"
         },
         "reviewed_before_task_1": {
@@ -234,7 +242,8 @@
         },
         "source_identity": {
           "type": "string",
-          "pattern": "^source:[A-Za-z0-9_-]{16,128}$"
+          "pattern": "^source:[A-Za-z0-9_-]{16,128}$",
+          "description": "Opaque task-specific source snapshot or brief identity; never a shared repository identity."
         },
       "source_identity_commitment": {
         "type": "string",

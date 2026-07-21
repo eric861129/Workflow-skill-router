@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 import hmac
 import json
@@ -22,6 +23,9 @@ TASK_IDENTITY = re.compile(r"^task:[A-Za-z0-9_-]{16,128}$")
 SOURCE_IDENTITY = re.compile(r"^source:[A-Za-z0-9_-]{16,128}$")
 PROFILE_IDENTITY = re.compile(r"^profile:[A-Za-z0-9_-]{16,128}$")
 REVIEWER_IDENTITY = re.compile(r"^reviewer:[A-Za-z0-9_-]{12,128}$")
+CANONICAL_UTC = re.compile(
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+)
 
 
 def _slot_specs() -> tuple[tuple[str, bool, bool, bool, bool], ...]:
@@ -97,6 +101,15 @@ def _invalid(code: str) -> VerificationResult:
     return VerificationResult(False, code)
 
 
+def _canonical_utc(value: object) -> datetime | None:
+    if not isinstance(value, str) or CANONICAL_UTC.fullmatch(value) is None:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+
+
 def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
     if not isinstance(secret, bytes) or len(secret) != 32:
         return _invalid("pilot-binding-secret-invalid")
@@ -104,6 +117,7 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
         "schema_version",
         "execution_status",
         "run_id",
+        "frozen_at",
         "protocol_digest",
         "source_revision",
         "runtime_package_digest",
@@ -126,6 +140,9 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
         or not _matches(DIGEST, manifest.get("runtime_package_digest"))
     ):
         return _invalid("pilot-binding-structure-invalid")
+    frozen_at = _canonical_utc(manifest.get("frozen_at"))
+    if frozen_at is None:
+        return _invalid("pilot-binding-frozen-at-invalid")
     scheme = manifest.get("commitment_scheme")
     if not _exact_keys(
         scheme,
@@ -151,6 +168,7 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
         return _invalid("pilot-binding-slot-order-invalid")
     task_commitments: set[str] = set()
     task_identities: set[str] = set()
+    source_identities: set[str] = set()
     task_source_pairs: set[tuple[str, str]] = set()
     record_commitments: list[str] = []
     record_keys = frozenset({
@@ -189,6 +207,10 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
         if task_identity in task_identities:
             return _invalid("pilot-binding-task-duplicate")
         task_identities.add(task_identity)
+        source_identity = str(record["source_identity"])
+        if source_identity in source_identities:
+            return _invalid("pilot-binding-source-duplicate")
+        source_identities.add(source_identity)
 
         profile = record.get("profile_binding")
         profile_commitment = ""
@@ -261,7 +283,7 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
             (
                 str(manifest["run_id"]),
                 slot_id,
-                str(record["source_identity"]),
+                source_identity,
             ),
         )
         if not _same(record.get("source_identity_commitment"), source_commitment):
@@ -316,13 +338,17 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
     assert isinstance(reviewer, Mapping)
     if (
         not _matches(REVIEWER_IDENTITY, reviewer.get("reviewer_id"))
-        or not isinstance(reviewer.get("attested_at"), str)
         or reviewer.get("reviewed_before_task_1") is not True
         or reviewer.get("real_task_status_human_reviewed") is not True
         or reviewer.get("commitments_verified_with_run_secret") is not True
         or not _matches(COMMITMENT, reviewer.get("reviewer_attestation_commitment"))
     ):
         return _invalid("pilot-binding-review-invalid")
+    attested_at = _canonical_utc(reviewer.get("attested_at"))
+    if attested_at is None:
+        return _invalid("pilot-binding-attested-at-invalid")
+    if attested_at > frozen_at:
+        return _invalid("pilot-binding-attestation-order-invalid")
     reviewer_commitment = compute_commitment(
         secret,
         "reviewer-attestation",
@@ -333,6 +359,7 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
             str(manifest["protocol_digest"]),
             task_set_commitment,
             str(reviewer["reviewer_id"]),
+            str(reviewer["attested_at"]),
             boolean_field(True),
             boolean_field(True),
             boolean_field(True),
@@ -346,6 +373,7 @@ def verify_manifest(manifest: object, secret: bytes) -> VerificationResult:
         "binding-manifest",
         (
             str(manifest["run_id"]),
+            str(manifest["frozen_at"]),
             str(manifest["source_revision"]),
             str(manifest["runtime_package_digest"]),
             str(manifest["protocol_digest"]),

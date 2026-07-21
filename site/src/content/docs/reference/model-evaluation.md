@@ -28,7 +28,9 @@ manifest containing exactly 20 records in order: `single-01..06`,
 `wsr-beta5-pilot-hmac-v1` commits to each opaque task identity, opaque source
 identity, Profile identity/revision when used, metric-population flags, and
 record integrity. The restricted IDs are reviewer-assigned identifiers, not
-objectives, prompts, or paths. Public evidence carries only the
+objectives, prompts, or paths. Every source ID represents a unique
+task-specific source snapshot or brief; a shared repository is not itself a
+source identity. Public evidence carries only the
 binding-manifest commitment, task-set commitment, and reviewer-attestation
 commitment; it cannot reverse task content and does not replace human review
 that each input is a real task.
@@ -47,8 +49,16 @@ python evaluation/v2/pilots/verify_restricted_manifest.py `
 
 The verifier prints only `valid` and a safe diagnostic `code`.
 
-All task commitments must be distinct, every source commitment must be
-present, exact slot IDs and the restricted manifest digest must match frozen
+Both `attested_at` and `frozen_at` must be canonical RFC3339 UTC in exact
+`YYYY-MM-DDTHH:MM:SSZ` form. The reviewer HMAC binds `attested_at`; the manifest
+HMAC binds `frozen_at`; and verification requires
+`attested_at <= frozen_at`. The future real-Pilot runner must also require
+`task_1_started_at > frozen_at` before task 1 can count. This execution check
+has not run and is not Pilot evidence.
+
+All task commitments and restricted task identities must be distinct. Every
+source commitment must be present and every raw task-specific source identity
+must be distinct. Exact slot IDs and the restricted manifest digest must match frozen
 metadata, and no record may change after task 1 starts. Any missing, ambiguous,
 duplicate, changed, or digest-mismatched binding makes the run invalid, never
 ineligible.

@@ -140,7 +140,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
                 "task_set_commitment",
                 "reviewer_attestation_commitment",
                 "reviewer",
-                "timestamp",
+                "frozen_at",
             },
             set(manifest["required_fields"]),
         )
@@ -235,6 +235,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
                 self.assertIsInstance(flags[flag]["const"], bool)
         self.assertTrue(
             {
+                "frozen_at",
                 "binding_manifest_commitment",
                 "task_set_commitment",
                 "reviewer_attestation",
@@ -247,6 +248,16 @@ class Beta5PilotProtocolTests(unittest.TestCase):
                 "real_task_status_human_reviewed",
                 "reviewer_attestation_commitment",
             }.issubset(reviewer["required"])
+        )
+        canonical_utc = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        self.assertEqual(canonical_utc, schema["properties"]["frozen_at"]["pattern"])
+        self.assertEqual(
+            canonical_utc,
+            reviewer["properties"]["attested_at"]["pattern"],
+        )
+        self.assertIn(
+            "task-specific source snapshot",
+            record["properties"]["source_identity"]["description"],
         )
         scheme = schema["properties"]["commitment_scheme"]
         self.assertEqual(
@@ -321,10 +332,37 @@ class Beta5PilotProtocolTests(unittest.TestCase):
                 "runtime_package_digest",
                 "protocol_digest",
                 "task_set_commitment",
+                "reviewer_id",
+                "attested_at",
+                "reviewed_before_task_1",
+                "real_task_status_human_reviewed",
+                "commitments_verified_with_run_secret",
+            ],
+            contract["domain_fields"]["reviewer-attestation"],
+        )
+        self.assertEqual(
+            [
+                "run_id",
+                "frozen_at",
+                "source_revision",
+                "runtime_package_digest",
+                "protocol_digest",
+                "task_set_commitment",
                 "reviewer_attestation_commitment",
                 "20 binding_record_commitments in frozen order",
             ],
             contract["domain_fields"]["binding-manifest"],
+        )
+        self.assertEqual(
+            {
+                "field": "task_1_started_at",
+                "canonical_utc": "YYYY-MM-DDTHH:MM:SSZ",
+                "operator": ">",
+                "compared_to": "frozen_at",
+                "enforced_by": "future-real-pilot-runner",
+                "execution_status": "not-executed",
+            },
+            plan["task_1_start_requirement"],
         )
 
     def test_binding_integrity_and_metric_populations_fail_closed_non_vacuously(self) -> None:
@@ -342,6 +380,11 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         self.assertTrue(integrity["all_task_commitments_distinct"])
         self.assertTrue(integrity["all_restricted_task_identities_distinct"])
         self.assertTrue(integrity["all_source_commitments_present"])
+        self.assertTrue(integrity["all_restricted_source_identities_distinct"])
+        self.assertEqual(
+            "opaque-task-specific-source-snapshot-or-brief-never-shared-repository-identity",
+            integrity["source_identity_semantics"],
+        )
         self.assertTrue(integrity["task_source_commitment_pairs_distinct"])
         self.assertTrue(integrity.get("profile_binding_matches_frozen_slot"))
         self.assertTrue(integrity["manifest_digest_matches_frozen_run_metadata"])
@@ -416,6 +459,10 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "wsr-beta5-pilot-hmac-v1",
             "verify_restricted_manifest.py",
             "goal-01",
+            "canonical RFC3339 UTC",
+            "attested_at <= frozen_at",
+            "task-specific source snapshot",
+            "task_1_started_at > frozen_at",
             "binding-manifest commitment",
             "task-set commitment",
             "reviewer attestation before task 1",

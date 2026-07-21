@@ -60,8 +60,8 @@
         "profile-identity": ["run_id", "slot_id", "profile_id", "profile_revision_digest"],
         "binding-record": ["run_id", "slot_id", "task_commitment", "source_commitment", "profile_commitment_or_empty", "profile_revision_digest_or_empty", "manual_flag", "no_explicit_flag", "explicit_lock_flag", "resume_flag"],
         "task-set": ["run_id", "20 binding_record_commitments in frozen order"],
-        "reviewer-attestation": ["run_id", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_id", "reviewed_before_task_1", "real_task_status_human_reviewed", "commitments_verified_with_run_secret"],
-        "binding-manifest": ["run_id", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_attestation_commitment", "20 binding_record_commitments in frozen order"]
+        "reviewer-attestation": ["run_id", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_id", "attested_at", "reviewed_before_task_1", "real_task_status_human_reviewed", "commitments_verified_with_run_secret"],
+        "binding-manifest": ["run_id", "frozen_at", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_attestation_commitment", "20 binding_record_commitments in frozen order"]
       },
       "boolean_encoding": {"true": "true", "false": "false"},
       "task_set_order": [
@@ -122,6 +122,8 @@
     "all_task_commitments_distinct": true,
     "all_restricted_task_identities_distinct": true,
     "all_source_commitments_present": true,
+    "all_restricted_source_identities_distinct": true,
+    "source_identity_semantics": "opaque-task-specific-source-snapshot-or-brief-never-shared-repository-identity",
     "task_source_commitment_pairs_distinct": true,
     "profile_binding_matches_frozen_slot": true,
     "profile_identity_and_revision_required_when_profile_backed": true,
@@ -163,10 +165,18 @@
       "task_set_commitment",
       "reviewer_attestation_commitment",
       "reviewer",
-      "timestamp"
+      "frozen_at"
     ],
     "immutable_after_freeze": true,
     "task_inputs": "Store the twenty distinct real local task inputs under restricted evidence before execution; public task slots expose no task content."
+  },
+  "task_1_start_requirement": {
+    "field": "task_1_started_at",
+    "canonical_utc": "YYYY-MM-DDTHH:MM:SSZ",
+    "operator": ">",
+    "compared_to": "frozen_at",
+    "enforced_by": "future-real-pilot-runner",
+    "execution_status": "not-executed"
   },
   "final_record_contract": {
     "required_for_every_slot": [
