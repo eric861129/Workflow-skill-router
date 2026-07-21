@@ -44,8 +44,10 @@ class GitHubWorkflowTests(unittest.TestCase):
         *,
         frozen_version: str,
         trusted_version: str,
-        frozen_v1_pinned_version: str = "1.3.1",
-        trusted_v1_pinned_version: str = "1.3.1",
+        frozen_v1_pinned_version: object = "1.3.1",
+        trusted_v1_pinned_version: object = "1.3.1",
+        include_frozen_v1_pinned_version: bool = True,
+        include_trusted_v1_pinned_version: bool = True,
         notes_match: bool = True,
         trusted_notes_change: bool = False,
         trusted_notes_newline: str | None = None,
@@ -80,14 +82,14 @@ class GitHubWorkflowTests(unittest.TestCase):
         notes.mkdir(parents=True)
         allowlists.mkdir(parents=True)
         scripts.mkdir(parents=True)
+        frozen_metadata: dict[str, object] = {
+            "target_prerelease": frozen_version,
+            "v2_version": frozen_version,
+        }
+        if include_frozen_v1_pinned_version:
+            frozen_metadata["v1_pinned_version"] = frozen_v1_pinned_version
         (release / "version.json").write_text(
-            json.dumps(
-                {
-                    "target_prerelease": frozen_version,
-                    "v1_pinned_version": frozen_v1_pinned_version,
-                    "v2_version": frozen_version,
-                }
-            ),
+            json.dumps(frozen_metadata),
             encoding="utf-8",
             newline="\n",
         )
@@ -152,16 +154,16 @@ class GitHubWorkflowTests(unittest.TestCase):
             ["git", "rev-parse", "HEAD"], cwd=directory, text=True
         ).strip()
 
+        trusted_metadata: dict[str, object] = {
+            "release_lifecycle": "reviewed-attested-publishable",
+            "release_source_revision": frozen_revision,
+            "target_prerelease": trusted_version,
+            "v2_version": trusted_version,
+        }
+        if include_trusted_v1_pinned_version:
+            trusted_metadata["v1_pinned_version"] = trusted_v1_pinned_version
         (release / "version.json").write_text(
-            json.dumps(
-                {
-                    "release_lifecycle": "reviewed-attested-publishable",
-                    "release_source_revision": frozen_revision,
-                    "target_prerelease": trusted_version,
-                    "v1_pinned_version": trusted_v1_pinned_version,
-                    "v2_version": trusted_version,
-                }
-            ),
+            json.dumps(trusted_metadata),
             encoding="utf-8",
             newline="\n",
         )
@@ -690,6 +692,87 @@ class GitHubWorkflowTests(unittest.TestCase):
                 result.stderr,
             )
             self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_enforces_the_v1_hard_ceiling_when_contracts_match(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                frozen_v1_pinned_version="1.3.2",
+                trusted_v1_pinned_version="1.3.2",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Release metadata V1 pinned version is invalid.",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_missing_or_non_string_trusted_v1_pin(
+        self,
+    ) -> None:
+        cases = (
+            ("missing", False, "1.3.1"),
+            ("non-string", True, 1),
+        )
+        for case, include_v1_pin, v1_pin in cases:
+            with self.subTest(case=case):
+                with tempfile.TemporaryDirectory() as directory:
+                    repository = Path(directory)
+                    _, trusted_revision = self._create_release_fixture(
+                        repository,
+                        frozen_version="2.0.0-beta.4",
+                        trusted_version="2.0.0-beta.4",
+                        trusted_v1_pinned_version=v1_pin,
+                        include_trusted_v1_pinned_version=include_v1_pin,
+                    )
+                    result, output_path = self._run_publication_gate(
+                        repository, trusted_revision
+                    )
+
+                    self.assertEqual(1, result.returncode, result.stderr)
+                    self.assertIn(
+                        "Release metadata 'v1_pinned_version' is missing or invalid.",
+                        result.stderr,
+                    )
+                    self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_missing_or_non_string_frozen_v1_pin(
+        self,
+    ) -> None:
+        cases = (
+            ("missing", False, "1.3.1"),
+            ("non-string", True, 1),
+        )
+        for case, include_v1_pin, v1_pin in cases:
+            with self.subTest(case=case):
+                with tempfile.TemporaryDirectory() as directory:
+                    repository = Path(directory)
+                    _, trusted_revision = self._create_release_fixture(
+                        repository,
+                        frozen_version="2.0.0-beta.4",
+                        trusted_version="2.0.0-beta.4",
+                        frozen_v1_pinned_version=v1_pin,
+                        include_frozen_v1_pinned_version=include_v1_pin,
+                    )
+                    result, output_path = self._run_publication_gate(
+                        repository, trusted_revision
+                    )
+
+                    self.assertEqual(1, result.returncode, result.stderr)
+                    self.assertIn(
+                        "Frozen release metadata does not match trusted V1 channel contract",
+                        result.stderr,
+                    )
+                    self.assertFalse(output_path.exists())
 
     def test_publishable_metadata_accepts_the_pinned_frozen_v1_channel_contract(
         self,
