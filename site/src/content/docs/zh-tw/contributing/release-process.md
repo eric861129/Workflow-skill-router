@@ -34,6 +34,14 @@ Builder 會讀取排序後的 allowlists、正規化 ZIP metadata、產生 check
 
 ## 4. 透過受信任的發行 dispatch 推進
 
+在發行 dispatch 前，先驗證 GitHub 的即時治理設定：
+
+```powershell
+python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
+```
+
+此命令為唯讀，不會變更 GitHub 設定。通過僅確認擷取到的設定符合已納入版控的契約；它不是實際發行工作流程的演練，也不表示 GitHub Actions 的繞過權限已成功執行。失敗代表尚未證明遠端設定正確，必須阻擋本次發行清單。套用或變更遠端規則屬於需要權限的外部作業；請依照 `docs/governance/remote-release-governance.md` 的維護者指南處理。
+
 `Release V2` workflow 只能由受信任的預設分支透過 `workflow_dispatch` 執行，並且必須輸入完全相同的確認字串 `CREATE_V2_RELEASE`。它會讀取受信任分支 `release/version.json` 的 `release_source_revision`，並在任何 preflight 開始前驗證該凍結 revision 可從受信任分支到達。
 
 三平台 preflight 與 release build 都會 checkout 該凍結 revision，而不是 checkout 觸發 workflow 的分支。只有全部通過後，workflow 才會以 `GITHUB_TOKEN` 建立或驗證 annotated V2 tag、確認遠端 tag 解析為同一個凍結 revision、attest assets，並發布 GitHub prerelease。重試只在既有 tag 已解析為相同 revision 時才有效。

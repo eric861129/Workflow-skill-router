@@ -353,6 +353,47 @@ class GitHubWorkflowTests(unittest.TestCase):
             with self.subTest(context=context):
                 self.assertIn(f"`{context}`", template)
 
+    def test_release_template_requires_remote_governance_verifier(self) -> None:
+        template = (ROOT / ".github" / "RELEASE_TEMPLATE.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("verify-remote-governance.py", template)
+        self.assertIn("does not change GitHub configuration", template)
+
+    def test_bilingual_release_processes_define_remote_governance_boundary(self) -> None:
+        command = (
+            "python scripts/verify-remote-governance.py "
+            "--repo eric861129/Workflow-skill-router"
+        )
+        for path, rehearsal_boundary in (
+            (
+                ROOT
+                / "site"
+                / "src"
+                / "content"
+                / "docs"
+                / "contributing"
+                / "release-process.md",
+                "not a live release-workflow rehearsal",
+            ),
+            (
+                ROOT
+                / "site"
+                / "src"
+                / "content"
+                / "docs"
+                / "zh-tw"
+                / "contributing"
+                / "release-process.md",
+                "不是實際發行工作流程的演練",
+            ),
+        ):
+            content = path.read_text(encoding="utf-8")
+            with self.subTest(path=path):
+                self.assertIn(command, content)
+                self.assertIn(rehearsal_boundary, content)
+
 
 if __name__ == "__main__":
     unittest.main()

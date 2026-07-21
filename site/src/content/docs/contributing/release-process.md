@@ -34,6 +34,14 @@ The output directory may be reused only when every existing entry belongs to the
 
 ## 4. Promote through the trusted release dispatch
 
+Before dispatching a release, verify the live GitHub governance configuration:
+
+```powershell
+python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
+```
+
+This command is read-only and does not change GitHub configuration. A pass confirms the captured configuration meets the checked-in contract; it is not a live release-workflow rehearsal and does not prove the GitHub Actions bypass has been successfully exercised. A failure means the remote settings have not been proven and blocks the release checklist. Applying or changing remote rules is privileged external work; follow the maintainer guide in `docs/governance/remote-release-governance.md`.
+
 The `Release V2` workflow runs only through a `workflow_dispatch` from the trusted default branch. It requires the exact confirmation `CREATE_V2_RELEASE`, reads the `release_source_revision` from the trusted branch's `release/version.json`, and verifies that the frozen revision is reachable before any preflight work begins.
 
 The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow create or verify the annotated V2 tag with `GITHUB_TOKEN`, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the GitHub prerelease. A retry is valid only when the existing tag already resolves to that same revision.
