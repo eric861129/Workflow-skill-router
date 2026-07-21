@@ -8,8 +8,14 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any
+
+SCRIPT_DIRECTORY = Path(__file__).resolve().parent
+if str(SCRIPT_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIRECTORY))
+
+from release_path_safety import parse_safe_relative_posix_path
 
 
 PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
@@ -106,11 +112,12 @@ def _verify_allowlist_schema(path: str, allowlist_text: str) -> None:
             f"Frozen release allowlist {path!r} must be sorted and unique."
         )
     for relative_name in raw_files:
-        relative_path = PurePosixPath(relative_name)
-        if relative_path.is_absolute() or ".." in relative_path.parts:
+        try:
+            parse_safe_relative_posix_path(relative_name)
+        except ValueError as error:
             raise PublicationGateError(
                 f"Frozen release allowlist {path!r} contains an unsafe file path."
-            )
+            ) from error
 
 
 def _verify_frozen_source_contract(

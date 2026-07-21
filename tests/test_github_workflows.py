@@ -47,6 +47,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         notes_match: bool = True,
         trusted_notes_change: bool = False,
         trusted_plugin_runtime_allowlist_change: bool = False,
+        frozen_plugin_runtime_allowlist_files: list[str] | None = None,
     ) -> tuple[str, str]:
         subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
         subprocess.run(
@@ -97,7 +98,13 @@ class GitHubWorkflowTests(unittest.TestCase):
             newline="\n",
         )
         (allowlists / "plugin-runtime-files.json").write_text(
-            '{"files": ["runtime/workflow_skill_router.pyz"]}\n',
+            json.dumps(
+                {
+                    "files": frozen_plugin_runtime_allowlist_files
+                    or ["runtime/workflow_skill_router.pyz"]
+                }
+            )
+            + "\n",
             encoding="utf-8",
             newline="\n",
         )
@@ -645,6 +652,36 @@ class GitHubWorkflowTests(unittest.TestCase):
             self.assertEqual(1, result.returncode, result.stderr)
             self.assertIn("plugin-runtime-files.json", result.stderr)
             self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_windows_unsafe_frozen_allowlist_paths(
+        self,
+    ) -> None:
+        unsafe_paths = (
+            r"..\escape.txt",
+            r"C:\escape.txt",
+            "C:/escape.txt",
+            r"\\server\share\escape.txt",
+            r"\rooted\escape.txt",
+            "/rooted/escape.txt",
+            "//server/share/escape.txt",
+        )
+
+        for unsafe_path in unsafe_paths:
+            with self.subTest(unsafe_path=unsafe_path), tempfile.TemporaryDirectory() as directory:
+                repository = Path(directory)
+                _, trusted_revision = self._create_release_fixture(
+                    repository,
+                    frozen_version="2.0.0-beta.4",
+                    trusted_version="2.0.0-beta.4",
+                    frozen_plugin_runtime_allowlist_files=[unsafe_path],
+                )
+                result, output_path = self._run_publication_gate(
+                    repository, trusted_revision
+                )
+
+                self.assertEqual(1, result.returncode, result.stderr)
+                self.assertIn("unsafe file path", result.stderr)
+                self.assertFalse(output_path.exists())
 
     def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
         release_job = workflow_job_body("release-v2.yml", "release")

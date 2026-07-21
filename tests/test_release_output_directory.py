@@ -25,6 +25,40 @@ def snapshot(root: Path) -> dict[str, bytes]:
 
 
 class ReleaseOutputDirectoryTests(unittest.TestCase):
+    def test_allowlist_rejects_windows_paths_that_can_escape_the_package_root(
+        self,
+    ) -> None:
+        unsafe_paths = (
+            r"..\escape.txt",
+            r"C:\escape.txt",
+            "C:/escape.txt",
+            r"\\server\share\escape.txt",
+            r"\rooted\escape.txt",
+            "/rooted/escape.txt",
+            "//server/share/escape.txt",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source_root = Path(temporary) / "package"
+            source_root.mkdir()
+            allowlist_path = Path(temporary) / "allowlist.json"
+
+            for unsafe_path in unsafe_paths:
+                with self.subTest(unsafe_path=unsafe_path):
+                    allowlist_path.write_text(
+                        json.dumps({"files": [unsafe_path]}) + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+
+                    with self.assertRaisesRegex(ValueError, "unsafe allowlist path"):
+                        builder.safe_allowlist_entries(
+                            source_root,
+                            "workflow-skill-router",
+                            allowlist_path,
+                            require_all=True,
+                        )
+
     def test_cli_writes_deterministic_v2_release_tree_to_explicit_output(self) -> None:
         downloads_before = snapshot(ROOT / "downloads")
         version = json.loads(

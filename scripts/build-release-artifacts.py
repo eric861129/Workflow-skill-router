@@ -6,11 +6,17 @@ from hashlib import sha256
 import io
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import subprocess
 import sys
 import zipfile
+
+SCRIPT_DIRECTORY = Path(__file__).resolve().parent
+if str(SCRIPT_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIRECTORY))
+
+from release_path_safety import parse_safe_relative_posix_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,9 +57,7 @@ def zip_bytes(entries: list[tuple[str, bytes]]) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_STORED) as archive:
         for name, content in sorted(entries):
-            pure = PurePosixPath(name)
-            if pure.is_absolute() or ".." in pure.parts:
-                raise ValueError(f"unsafe archive path: {name}")
+            parse_safe_relative_posix_path(name)
             info = zipfile.ZipInfo(name, FIXED_TIME)
             info.create_system = 3
             info.external_attr = 0o100644 << 16
@@ -95,19 +99,24 @@ def safe_allowlist_entries(
     if raw_files != sorted(set(raw_files)):
         raise ValueError(f"allowlist must be sorted and unique: {allowlist_path.relative_to(ROOT)}")
 
+    resolved_source_root = source_root.resolve()
     entries: list[tuple[str, bytes]] = []
     for relative_name in raw_files:
-        relative = PurePosixPath(relative_name)
-        if relative.is_absolute() or ".." in relative.parts:
-            raise ValueError(f"unsafe allowlist path: {relative_name}")
+        relative = parse_safe_relative_posix_path(relative_name)
         path = source_root.joinpath(*relative.parts)
+        try:
+            path.resolve(strict=False).relative_to(resolved_source_root)
+        except ValueError as error:
+            raise ValueError(f"unsafe allowlist path: {relative_name!r}") from error
         if not path.is_file():
             if require_all:
                 raise FileNotFoundError(path)
             continue
         if path.is_symlink():
             raise ValueError(f"symlink forbidden: {path.relative_to(ROOT)}")
-        entries.append((f"{archive_root}/{relative.as_posix()}", path.read_bytes()))
+        archive_name = f"{archive_root}/{relative.as_posix()}"
+        parse_safe_relative_posix_path(archive_name)
+        entries.append((archive_name, path.read_bytes()))
     return entries
 
 
