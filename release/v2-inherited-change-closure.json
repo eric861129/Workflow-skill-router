@@ -18,7 +18,7 @@
     {"path":"packages/router-core/src/workflow_skill_router/bridge.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"5d5d8336b08f98f39a3c722c75a2a1f2bf7726e55c084134a3da11883cca05e6"}},
     {"path":"packages/router-core/src/workflow_skill_router/cli/__init__.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"c7919d9e65cd3194ce9174374d16e0ca5b372cce3385ba5996300e08767c0616"}},
     {"path":"packages/router-core/src/workflow_skill_router/demo_export.py","owner_task":9,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"9d5be1edf26dd1cfd9bb854368303803ca2503adb81e5ac8ddf56cf8e0af3fe3"}},
-    {"path":"packages/router-core/src/workflow_skill_router/local_control.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"abb80d853e535f70e443872d4cbb6bb06d02dc485b6b8c484f855d9424cdc659"}},
+    {"path":"packages/router-core/src/workflow_skill_router/local_control.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"5b62f84b45b431c8f2674832b4ff656a330c79d5b5f89e9662eb91030a1b0159"}},
     {"path":"packages/router-core/src/workflow_skill_router/persistence/migrations/0003_local_control_plane.sql","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"57751b7a1a1e9c9056b1bbc74ff44d434ea9bcd4997a81ce2b3e4efc5697b3b2"}},
     {"path":"packages/router-core/src/workflow_skill_router/routing/consent.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"325118d2880ba4bed8fae04f21d41a70f98152d80451ad896fd75ec9245d4fe4"}},
     {"path":"packages/router-core/src/workflow_skill_router/routing/directives.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"be5f5f1961c95b69cb82d91bb6961cf8e45da4564c508590442ac8a51804a9f1"}},
@@ -40,9 +40,9 @@
     {"path":"plugins/workflow-skill-router/skills/workflow-skill-router/references/routing-protocol.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"605e0d5aa3676e13e6a168b270495fd62945e07fcbe2276deba93dd71764a2b8"}},
     {"path":"plugins/workflow-skill-router/skills/workflow-skill-router/SKILL.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"ccda8102912845c08e25fbd39f0b3037e58fbba153be771bea4d723b2db96b3d"}},
     {"path":"README.en.md","owner_task":14,"disposition":"removed","evidence":{"kind":"removal-manifest","manifest":"release/legacy-v1-removal-manifest.json"}},
-    {"path":"README.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"c9cd812552f25c7352a87feb8af3b65988c0e935dc0b40e49332d4027728cbd4"}},
-    {"path":"README.zh-TW.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"e29db2f38a6e32755f3eb92e858092da9612728a4e2d78ea5cf0e87c0280a231"}},
-    {"path":"scripts/build-release-artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"6eb7f689cc336b14941969ee801fe08c524227603d564884f4130051dd53cb3b"}},
+    {"path":"README.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"90d7a3f6dc6e09dcf14f816a2c4408989b5583d72d6f801820d8a3a141f9246e"}},
+    {"path":"README.zh-TW.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"20e00e30086c9ac5d3f8ff5198f3ae71d1932b84508e51e2f8209c04f2312592"}},
+    {"path":"scripts/build-release-artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"04a19f65d628fd4488a9d140b87232baabe333937180cda34cece2b76c1479d9"}},
     {"path":"site/src/content/docs/guides/v2-routing.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"e6dd6a4c7c4092c568ac8cb947eb6ff151e661460c56a2fcba13e5b9bf27cecd"}},
     {"path":"site/src/content/docs/showcase.md","owner_task":9,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"a2c91eca5bd418c75ee5f39a551289b3462f59c5404e29a4e1dae225936b7d24"}},
     {"path":"site/src/content/docs/zh-tw/guides/v2-routing.md","owner_task":10,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"af068ea6cc3c20af5618989b460fdd08e5a890b42dbbb2f3a2c84b79bc834648"}},
@@ -51,7 +51,7 @@
     {"path":"starter/v2/workflow-skill-router/references/routing-protocol.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"605e0d5aa3676e13e6a168b270495fd62945e07fcbe2276deba93dd71764a2b8"}},
     {"path":"starter/v2/workflow-skill-router/SKILL.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"ccda8102912845c08e25fbd39f0b3037e58fbba153be771bea4d723b2db96b3d"}},
     {"path":"tests/test_build_runtime.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"74b969268bbcb8a261f9094484ab6c717ecda1a5ee2d7f71eb59a9b7a32cd384"}},
-    {"path":"tests/test_release_artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"56fa75d6f150cd316917ace9af4a5b3ef4c3ff986d5dcb52819a6bb24fecc293"}},
+    {"path":"tests/test_release_artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"53caaa413d45614e8a7368d95f9e6e5009538e30fbedcd3beb6e52747208b47c"}},
     {"path":"tests/test_v2_demo_data.py","owner_task":9,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"c3d8b8d7995fb34e7a6fde2d119d1c3ab98e161b7258aa7773941a93ed9b8193"}}
   ]
 }
