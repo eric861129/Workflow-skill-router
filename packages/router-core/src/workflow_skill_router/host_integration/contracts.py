@@ -98,6 +98,7 @@ class ServerOwnedHostResources:
 class ReceiptProbe:
     context: object
     activation_receipt_ref: str
+    route_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +127,7 @@ class HostConformanceProbeInputs:
     valid_session_id: str
     wrong_session_id: str
     native_goal_id: str
+    evaluation_mode: str = "unavailable"
 
 
 @dataclass(frozen=True, slots=True)

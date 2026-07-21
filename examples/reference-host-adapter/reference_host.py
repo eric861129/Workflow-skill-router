@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 from workflow_skill_router.composition import RouterCompositionPorts
 from workflow_skill_router.host_integration import (
@@ -18,7 +19,7 @@ from workflow_skill_router.host_integration import (
     run_host_conformance,
 )
 from workflow_skill_router.persistence.artifacts import ArtifactRef
-from workflow_skill_router.service_models import NextWorkResult, RouterDiagnostics, RouterStatusView
+from workflow_skill_router.service_models import RouterDiagnostics, RouterStatusView
 
 
 VALID_SESSION = "session:reference"
@@ -55,18 +56,111 @@ class _RequestAuthorizer:
         self._require(context)
 
 
+@dataclass(frozen=True, slots=True)
+class _RuntimeAuthority:
+    session_id: str
+    runtime_fingerprint: str
+    runtime_policy_snapshot_id: str
+    verification_receipt_digest: str
+
+
+class _RuntimeAuthorityRepository:
+    def require(self, context):
+        if context.session_id != VALID_SESSION:
+            raise HostIntegrationConformanceError("request-session-mismatch")
+        return _RuntimeAuthority(
+            session_id=context.session_id,
+            runtime_fingerprint="runtime:reference",
+            runtime_policy_snapshot_id=context.runtime_policy_snapshot_id,
+            verification_receipt_digest="sha256:" + "1" * 64,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _RuntimeContextResult:
+    session_id: str
+    snapshot_ref: str
+    fresh: bool
+    runtime_fingerprint: str
+    runtime_policy_snapshot_id: str
+    authority_receipt_digest: str
+
+
+class _RuntimeContext:
+    expected_runtime_fingerprint = "runtime:reference"
+    expected_policy_snapshot_id = "policy:conformance"
+    expected_authority_receipt = "sha256:" + "1" * 64
+
+    def sync_verified(self, request):
+        authority = request.authority
+        if (
+            authority is None
+            or authority.session_id != VALID_SESSION
+            or authority.runtime_fingerprint != self.expected_runtime_fingerprint
+            or authority.runtime_policy_snapshot_id != self.expected_policy_snapshot_id
+            or authority.verification_receipt_digest
+            != self.expected_authority_receipt
+        ):
+            raise HostIntegrationConformanceError("runtime-authority-unavailable")
+        if request.host_snapshot_ref != _SnapshotRepository.fresh_ref:
+            raise HostIntegrationConformanceError("runtime-context-unavailable")
+        return _RuntimeContextResult(
+            authority.session_id,
+            request.host_snapshot_ref,
+            True,
+            authority.runtime_fingerprint,
+            authority.runtime_policy_snapshot_id,
+            authority.verification_receipt_digest,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _ActivationBindingResult:
+    valid: bool
+    activation_lease_ref: str
+    route_id: str
+    session_id: str
+    snapshot_ref: str
+
+
 class _ActivationPreflight:
     valid_receipt_ref = "receipt:reference-valid"
 
+    def __init__(self) -> None:
+        self._bound_routes: set[str] = set()
+        self._receipt_route: str | None = None
+
     def bind_single_use_after_validation(self, command, result, snapshot):
-        del command, snapshot
-        return result
+        if command.context.session_id != VALID_SESSION:
+            raise HostIntegrationConformanceError("request-session-mismatch")
+        snapshot_ref = (
+            snapshot.get("snapshot_id")
+            if isinstance(snapshot, dict)
+            else getattr(snapshot, "snapshot_id", None)
+        )
+        if getattr(result, "valid", None) is not True or not snapshot_ref:
+            raise HostIntegrationConformanceError("activation-preflight-failed")
+        if command.route_id in self._bound_routes:
+            raise HostIntegrationConformanceError("activation-lease-already-bound")
+        self._bound_routes.add(command.route_id)
+        self._receipt_route = command.route_id
+        return _ActivationBindingResult(
+            valid=True,
+            activation_lease_ref="activation-lease:reference",
+            route_id=command.route_id,
+            session_id=command.context.session_id,
+            snapshot_ref=snapshot_ref,
+        )
 
     def verify_consumption_receipt(self, command) -> None:
         if command.context.session_id != VALID_SESSION:
             raise HostIntegrationConformanceError("request-session-mismatch")
         if command.activation_receipt_ref != self.valid_receipt_ref:
             raise HostIntegrationConformanceError("activation-receipt-invalid")
+        if command.route_id != self._receipt_route:
+            raise HostIntegrationConformanceError(
+                "activation-receipt-route-mismatch"
+            )
 
 
 class _ReferenceArtifactStore:
@@ -115,6 +209,74 @@ class _SnapshotRepository:
 
 
 @dataclass(frozen=True, slots=True)
+class _PolicySnapshot:
+    revision: int
+    runtime_policy_snapshot_id: str
+    receipt_ref: str
+
+
+class _PolicyRepository:
+    current_revision = 7
+
+    def require(self, policy_revision: int, runtime_policy_snapshot_id: str):
+        if policy_revision != self.current_revision:
+            raise HostIntegrationConformanceError("policy-stale")
+        if runtime_policy_snapshot_id != "policy:conformance":
+            raise HostIntegrationConformanceError("policy-unavailable")
+        return _PolicySnapshot(
+            policy_revision,
+            runtime_policy_snapshot_id,
+            "policy-receipt:reference",
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _RouteValidationContext:
+    session_id: str
+    current: bool
+    receipt_ref: str
+
+
+class _ValidationContext:
+    def current_for(self, command, snapshot, policy):
+        if command.context.session_id != VALID_SESSION:
+            raise HostIntegrationConformanceError("request-session-mismatch")
+        if not snapshot or not isinstance(policy, _PolicySnapshot):
+            raise HostIntegrationConformanceError("route-validation-unavailable")
+        return _RouteValidationContext(
+            session_id=command.context.session_id,
+            current=True,
+            receipt_ref="route-context-receipt:reference",
+        )
+
+
+class _RouteValidator:
+    def validate(self, request, snapshot, policy, context):
+        if (
+            not snapshot
+            or not isinstance(policy, _PolicySnapshot)
+            or not isinstance(context, _RouteValidationContext)
+            or context.current is not True
+        ):
+            raise HostIntegrationConformanceError("route-validation-unavailable")
+        if getattr(request, "allowed", None) is not True:
+            raise HostIntegrationConformanceError("route-validation-rejected")
+        snapshot_ref = (
+            snapshot.get("snapshot_id")
+            if isinstance(snapshot, dict)
+            else getattr(snapshot, "snapshot_id", None)
+        )
+        return SimpleNamespace(
+            valid=True,
+            receipt_ref="route-validation-receipt:reference",
+            route_id=request.route_id,
+            snapshot_ref=snapshot_ref,
+            policy_revision=policy.revision,
+            context_receipt_ref=context.receipt_ref,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class _AppendResult:
     event_id: str
     resulting_state_version: int
@@ -153,7 +315,91 @@ class _Scheduler:
             raise HostIntegrationConformanceError("request-session-mismatch")
         if require_resume_refresh and tuple(query.refreshed_contexts) != self.required_refresh:
             raise HostIntegrationConformanceError("goal-resume-refresh-required")
-        return NextWorkResult("ready", (), None)
+        return SimpleNamespace(
+            status="ready",
+            receipt_ref="scheduler-decision-receipt:reference",
+            session_id=query.context.session_id,
+            native_goal_id=query.goal_binding_id,
+            refreshed_contexts=tuple(query.refreshed_contexts),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _GateContextResult:
+    workflow_run_id: str
+    phase_id: str
+    current: bool
+    evidence_digest: str
+
+
+class _GateContext:
+    def build_from_current_projection(self, command):
+        if command.context.session_id != VALID_SESSION:
+            raise HostIntegrationConformanceError("request-session-mismatch")
+        if not str(command.expected_evidence_digest).startswith("sha256:"):
+            raise HostIntegrationConformanceError("evidence-stale")
+        return _GateContextResult(
+            command.workflow_run_id,
+            command.phase_id,
+            True,
+            command.expected_evidence_digest,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _GateEvaluationResult:
+    status: str
+    passed: bool
+    evidence_digest: str
+    decision_ref: str
+
+
+class _GateEvaluator:
+    def evaluate(self, request):
+        if (
+            getattr(request, "current", None) is not True
+            or not str(getattr(request, "evidence_digest", "")).startswith("sha256:")
+        ):
+            raise HostIntegrationConformanceError("gate-evaluation-unavailable")
+        return _GateEvaluationResult(
+            "evaluated",
+            True,
+            request.evidence_digest,
+            "gate-decision:reference",
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _GatePersistReceipt:
+    state_version: int
+    receipt_ref: str
+    idempotency_key: str
+
+
+class _GateCoordinator:
+    def __init__(self) -> None:
+        self._state_version = 0
+        self._idempotency_keys: set[str] = set()
+
+    def persist_result(self, command, result):
+        if command.context.session_id != VALID_SESSION:
+            raise HostIntegrationConformanceError("request-session-mismatch")
+        if (
+            getattr(result, "status", None) != "evaluated"
+            or getattr(result, "passed", None) is not True
+        ):
+            raise HostIntegrationConformanceError("gate-persist-failed")
+        if command.expected_state_version != self._state_version:
+            raise HostIntegrationConformanceError("state-version-conflict")
+        if command.idempotency_key in self._idempotency_keys:
+            raise HostIntegrationConformanceError("gate-persist-failed")
+        self._idempotency_keys.add(command.idempotency_key)
+        self._state_version += 1
+        return _GatePersistReceipt(
+            self._state_version,
+            "gate-append-receipt:reference",
+            command.idempotency_key,
+        )
 
 
 class _Noop:
@@ -255,8 +501,8 @@ class ReferenceHostAdapter:
         noop = _Noop()
         ports = RouterCompositionPorts(
             authorizer=request_authorizer,
-            runtime_authority=noop,
-            runtime_context=noop,
+            runtime_authority=_RuntimeAuthorityRepository(),
+            runtime_context=_RuntimeContext(),
             artifacts=artifact_protector,
             snapshot_codec=noop,
             runtime_sync=noop,
@@ -264,14 +510,14 @@ class ReferenceHostAdapter:
             planner=noop,
             scheduler=scheduler,
             snapshots=snapshots,
-            policies=noop,
-            validation_context=noop,
-            route_validator=noop,
+            policies=_PolicyRepository(),
+            validation_context=_ValidationContext(),
+            route_validator=_RouteValidator(),
             activation_preflight=activation_preflight,
             coordinator=coordinator,
-            gate_context=noop,
-            gate_evaluator=noop,
-            gate_coordinator=noop,
+            gate_context=_GateContext(),
+            gate_evaluator=_GateEvaluator(),
+            gate_coordinator=_GateCoordinator(),
             status_reader=_StatusReader(),
             diagnostics_reader=lambda: RouterDiagnostics(0, 0, 0),
             evaluation=evaluation_ports,
@@ -288,6 +534,7 @@ class ReferenceHostAdapter:
             valid_session_id=VALID_SESSION,
             wrong_session_id="session:wrong",
             native_goal_id="native-goal:reference",
+            evaluation_mode="unavailable",
         )
 
 
