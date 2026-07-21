@@ -12,6 +12,7 @@ const testSources = [
   ["bundled-runtime", "ts"],
   ["python-discovery", "ts"],
   ["runtime-readiness", "ts"],
+  ["runtime-output-validation", "ts"],
   ["state-path", "ts"],
   ["tool-metadata", "ts"],
   ["tool-output", "ts"],

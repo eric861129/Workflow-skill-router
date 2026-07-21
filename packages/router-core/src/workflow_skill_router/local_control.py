@@ -890,6 +890,10 @@ class LocalControlPlaneService:
         command,
         tool_name: str,
     ) -> tuple[sqlite3.Row, tuple[LocalWorkItem, ...]]:
+        graph_action = {
+            "record_work_event": "reporting local progress",
+            "evaluate_gate": "evaluating a local gate",
+        }.get(tool_name, "continuing")
         plan = connection.execute(
             "SELECT * FROM local_control_plans WHERE workflow_run_id=? "
             "AND session_id=? AND actor=? AND runtime_policy_snapshot_id=?",
@@ -905,7 +909,8 @@ class LocalControlPlaneService:
                 tool_name,
                 required_capabilities=("router-owned-work-graph",),
                 fallback_action=(
-                    "Create or replay a Router-owned local work graph in this session."
+                    "Create or replay a Router-owned local work graph in this session "
+                    f"before {graph_action}."
                 ),
             )
         graph_version = int(plan["local_work_graph_version"])
@@ -927,7 +932,8 @@ class LocalControlPlaneService:
                 tool_name,
                 required_capabilities=("router-owned-work-graph",),
                 fallback_action=(
-                    "Replay or create the Router-owned local work graph before reporting."
+                    "Replay or create the Router-owned local work graph before "
+                    f"{graph_action}."
                 ),
             )
         items = validate_local_work_graph(
@@ -942,12 +948,25 @@ class LocalControlPlaneService:
             expected_plan_revision=int(plan["state_version"]),
         )
         if plan["goal_binding_id"] is not None:
+            native_goal_requirements = {
+                "record_work_event": (
+                    "verified-event-store", "activation-receipt-verifier",
+                ),
+                "evaluate_gate": ("verified-evidence-store", "gate-authority"),
+            }
+            native_goal_fallbacks = {
+                "record_work_event": (
+                    "Retain the observation locally and report it only through a "
+                    "verified host."
+                ),
+                "evaluate_gate": (
+                    "Keep the gate pending until verified evidence and state are available."
+                ),
+            }
             raise CapabilityUnavailable.for_local_condition(
                 tool_name,
-                required_capabilities=("verified-host-scheduler",),
-                fallback_action=(
-                    "Continue this native Goal through the verified host scheduler."
-                ),
+                required_capabilities=native_goal_requirements[tool_name],
+                fallback_action=native_goal_fallbacks[tool_name],
             )
         return plan, items
 

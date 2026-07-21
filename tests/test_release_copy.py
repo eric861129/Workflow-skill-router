@@ -142,6 +142,53 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("latest", text)
                 self.assertIn("V1.3.1", text)
 
+    def test_beta3_quickstart_and_unreleased_beta5_source_are_not_conflated(self) -> None:
+        for relative, contributor_marker, unpublished_phrase in (
+            ("README.md", "For contributors", "not yet published"),
+            ("README.zh-TW.md", "需要修改 Router", "尚未發布"),
+        ):
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            quickstart = text.split(
+                f"--ref v{PUBLISHED_VERSION}", 1
+            )[1].split(contributor_marker, 1)[0]
+            with self.subTest(relative=relative):
+                self.assertIn("4 always local-ready", quickstart)
+                self.assertIn("5 verified-Host-required", quickstart)
+                self.assertNotIn("3 Router-owned conditional-local", quickstart)
+                self.assertIn("unreleased beta.5 source checkout", text)
+                self.assertIn("not included in published beta.3", text)
+                self.assertIn("2.0.0-beta.4", text)
+                self.assertIn(unpublished_phrase, text)
+
+    def test_conditional_local_failure_contract_is_tool_specific_and_public_safe(self) -> None:
+        pages = (
+            "README.md",
+            "README.zh-TW.md",
+            "site/src/content/docs/concepts/routing-envelopes.md",
+            "site/src/content/docs/zh-tw/concepts/routing-envelopes.md",
+            "docs/adr/0004-explainable-classification-and-runtime-modes.md",
+        )
+        required = (
+            "router-owned-work-graph",
+            "verified-host-scheduler",
+            "verified-event-store",
+            "activation-receipt-verifier",
+            "verified-evidence-store",
+            "gate-authority",
+            "internal-error",
+        )
+        stale = (
+            "missing or corrupt graph fail closed to the verified Host path",
+            "缺少 graph 或 graph 損毀時一律 fail closed 到 verified Host 路徑",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                for term in required:
+                    self.assertIn(term, text)
+                for phrase in stale:
+                    self.assertNotIn(phrase, text)
+
     def test_published_beta_is_described_in_the_present_tense(self) -> None:
         public_pages = (
             "README.md",

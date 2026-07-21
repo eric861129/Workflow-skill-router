@@ -41,10 +41,50 @@ const classificationDecision = z.object({
 }).strict().describe(
   "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority.",
 );
+const routerLocalWorkItem = z.object({
+  work_item_id: z.string(),
+  workflow_run_id: z.string(),
+  phase_id: z.string(),
+  dependency_ids: z.array(z.string()),
+  primary_skill_id: z.string().nullable(),
+  support_skill_ids: z.array(z.string()).max(3),
+  status: z.enum([
+    "pending", "ready", "active", "verifying", "paused", "completed", "failed",
+    "decomposition-required", "host-scheduler-required",
+  ]),
+  authority_mode: z.literal("router-local"),
+}).strict();
+const verifiedHostSummaryWorkItem = z.object({
+  work_item_id: z.string(),
+  routing_envelope: z.enum(["single", "phased", "managed-goal"]),
+  status: z.string(),
+}).strict();
+const verifiedHostGraphWorkItem = z.object({
+  work_item_id: z.string(),
+  milestone_id: z.string(),
+  title: z.string(),
+  required: z.boolean(),
+  status: z.string(),
+  envelope: z.enum(["single", "phased", "managed-goal"]),
+  dependency_ids: z.array(z.string()),
+  read_resources: z.array(z.string()),
+  write_resources: z.array(z.string()),
+  scope: z.array(z.string()),
+  skill_policy_ref: z.string(),
+  phase_ids: z.array(z.string()),
+}).strict();
+const verifiedHostWorkItem = z.union([
+  verifiedHostSummaryWorkItem,
+  verifiedHostGraphWorkItem,
+]);
+const laneAwareWorkItem = z.union([
+  routerLocalWorkItem,
+  verifiedHostWorkItem,
+]);
 const nextWorkFields = {
   status: z.string(),
   refresh_requirements: z.array(z.string()),
-  work_item: z.unknown().nullable(),
+  work_item: laneAwareWorkItem.nullable(),
 };
 const recordWorkEvent = z.object({
   event_ids: z.array(z.string()),
@@ -102,6 +142,13 @@ const gateEvaluation = z.object({
       message: "Router-local gates require the complete local evidence boundary and no Host-only fields.",
     });
   }
+  if (isLocal && value.failures !== undefined
+    && value.passed !== (value.failures.length === 0)) {
+    context.addIssue({
+      code: "custom",
+      message: "Router-local gate pass state must agree with the failures list.",
+    });
+  }
   const carriesLocalOnlyField = value.failures !== undefined
     || value.resulting_state_version !== undefined
     || value.replayed !== undefined
@@ -112,6 +159,12 @@ const gateEvaluation = z.object({
     context.addIssue({
       code: "custom",
       message: "Verified-Host gates require mandatory_failures and cannot carry Router-local-only fields.",
+    });
+  }
+  if (!isLocal && value.status === "evaluated-local") {
+    context.addIssue({
+      code: "custom",
+      message: "Verified-Host gates cannot claim Router-local evaluation status.",
     });
   }
 });
@@ -161,6 +214,18 @@ export const TOOL_OUTPUT_SCHEMAS = {
         code: "custom",
         message: "Router-local scheduling cannot claim a Host Goal mutation.",
       });
+    }
+    if (value.work_item !== null) {
+      const expectedLane = value.authority_mode === "router-local"
+        ? routerLocalWorkItem
+        : verifiedHostWorkItem;
+      if (!expectedLane.safeParse(value.work_item).success) {
+        context.addIssue({
+          code: "custom",
+          path: ["work_item"],
+          message: "Nested work item does not match the declared authority lane.",
+        });
+      }
     }
   }),
   validate_route: z.object({

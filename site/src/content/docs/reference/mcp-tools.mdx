@@ -13,7 +13,9 @@ This page renders `site/src/data/mcp-tools.generated.json`, which is generated f
 
 Current generated profile: **{toolData.runtime_profile}**
 
-This profile exposes **4 always local-ready + 3 Router-owned conditional-local** tools. Conditional-local does not mean `7/12 local-ready`: it is available only for a validated Router-owned work graph with no Native Goal authority. Explicit Skill Lock and consent remain unchanged. Native Goal work and missing or corrupt graphs fail closed. A local gate is advisory and is not Skill activation, deployment, production approval, or Host evidence.
+This generated profile describes the **unreleased beta.5 source checkout**, which is **not included in published beta.3**. It exposes **4 always local-ready + 3 Router-owned conditional-local** tools. Conditional-local does not mean `7/12 local-ready`: it is available only for a validated Router-owned work graph with no Native Goal authority. Explicit Skill Lock and consent remain unchanged. A local gate is advisory and is not Skill activation, deployment, production approval, or Host evidence.
+
+Native Goal boundaries remain tool-specific: `verified-host-scheduler` for next work, `verified-event-store` plus `activation-receipt-verifier` for formal progress, and `verified-evidence-store` plus `gate-authority` for gates. Missing graphs require local creation or replay through `router-owned-work-graph`; corrupt graphs return a sanitized `internal-error`. Every unavailable or unsafe branch must **fail closed**.
 
 | Availability | Meaning |
 | --- | --- |

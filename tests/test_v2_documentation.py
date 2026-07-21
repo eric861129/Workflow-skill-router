@@ -16,7 +16,7 @@ DOCS=(
 
 class V2DocumentationTests(unittest.TestCase):
     def test_explainable_classification_and_runtime_mode_contract(self):
-        current_tools = {
+        published_beta3_tools = {
             "local-ready": (
                 "plan_work",
                 "propose_support_consent",
@@ -59,11 +59,11 @@ class V2DocumentationTests(unittest.TestCase):
             "classification_reason_codes",
             "conditional-local",
             "host_transition_authorized",
-            "current-bundled-r0",
-            "target-beta.5",
+            "published-beta.3",
+            "unreleased-beta.5-source",
             "propose_support_consent",
             "transition_support_consent",
-            "not available in current bundled R0",
+            "not included in published beta.3",
         )
 
         for relative in documents:
@@ -74,18 +74,18 @@ class V2DocumentationTests(unittest.TestCase):
                 for term in required_terms:
                     self.assertIn(term, text, relative)
 
-                current_section = text.split("current-bundled-r0", 1)[1].split(
-                    "target-beta.5", 1
+                published_section = text.split("published-beta.3", 1)[1].split(
+                    "unreleased-beta.5-source", 1
                 )[0]
-                target_section = text.split("target-beta.5", 1)[1]
-                for readiness, expected_tools in current_tools.items():
+                source_section = text.split("unreleased-beta.5-source", 1)[1]
+                for readiness, expected_tools in published_beta3_tools.items():
                     documented_tools, _ = readiness_row(
-                        current_section, readiness, relative
+                        published_section, readiness, relative
                     )
                     self.assertEqual(expected_tools, documented_tools, relative)
-                self.assertNotIn("conditional-local", current_section, relative)
+                self.assertNotIn("conditional-local", published_section, relative)
                 conditional_tools, conditional_row = readiness_row(
-                    target_section, "conditional-local", relative
+                    source_section, "conditional-local", relative
                 )
                 self.assertEqual(
                     ("get_next_work", "record_work_event", "evaluate_gate"),
@@ -97,7 +97,7 @@ class V2DocumentationTests(unittest.TestCase):
                     "host_transition_authorized=false", conditional_row, relative
                 )
                 self.assertIn(
-                    "not available in current bundled R0", target_section, relative
+                    "not included in published beta.3", source_section, relative
                 )
 
         self.assertFalse(

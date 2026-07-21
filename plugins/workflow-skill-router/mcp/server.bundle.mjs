@@ -29320,10 +29320,57 @@ var classificationDecision = external_exports3.object({
 }).strict().describe(
   "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority."
 );
+var routerLocalWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  workflow_run_id: external_exports3.string(),
+  phase_id: external_exports3.string(),
+  dependency_ids: external_exports3.array(external_exports3.string()),
+  primary_skill_id: external_exports3.string().nullable(),
+  support_skill_ids: external_exports3.array(external_exports3.string()).max(3),
+  status: external_exports3.enum([
+    "pending",
+    "ready",
+    "active",
+    "verifying",
+    "paused",
+    "completed",
+    "failed",
+    "decomposition-required",
+    "host-scheduler-required"
+  ]),
+  authority_mode: external_exports3.literal("router-local")
+}).strict();
+var verifiedHostSummaryWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  routing_envelope: external_exports3.enum(["single", "phased", "managed-goal"]),
+  status: external_exports3.string()
+}).strict();
+var verifiedHostGraphWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  milestone_id: external_exports3.string(),
+  title: external_exports3.string(),
+  required: external_exports3.boolean(),
+  status: external_exports3.string(),
+  envelope: external_exports3.enum(["single", "phased", "managed-goal"]),
+  dependency_ids: external_exports3.array(external_exports3.string()),
+  read_resources: external_exports3.array(external_exports3.string()),
+  write_resources: external_exports3.array(external_exports3.string()),
+  scope: external_exports3.array(external_exports3.string()),
+  skill_policy_ref: external_exports3.string(),
+  phase_ids: external_exports3.array(external_exports3.string())
+}).strict();
+var verifiedHostWorkItem = external_exports3.union([
+  verifiedHostSummaryWorkItem,
+  verifiedHostGraphWorkItem
+]);
+var laneAwareWorkItem = external_exports3.union([
+  routerLocalWorkItem,
+  verifiedHostWorkItem
+]);
 var nextWorkFields = {
   status: external_exports3.string(),
   refresh_requirements: external_exports3.array(external_exports3.string()),
-  work_item: external_exports3.unknown().nullable()
+  work_item: laneAwareWorkItem.nullable()
 };
 var recordWorkEvent = external_exports3.object({
   event_ids: external_exports3.array(external_exports3.string()),
@@ -29368,11 +29415,23 @@ var gateEvaluation = external_exports3.object({
       message: "Router-local gates require the complete local evidence boundary and no Host-only fields."
     });
   }
+  if (isLocal && value.failures !== void 0 && value.passed !== (value.failures.length === 0)) {
+    context2.addIssue({
+      code: "custom",
+      message: "Router-local gate pass state must agree with the failures list."
+    });
+  }
   const carriesLocalOnlyField = value.failures !== void 0 || value.resulting_state_version !== void 0 || value.replayed !== void 0 || value.gate_scope !== void 0 || value.evidence_class !== void 0 || value.host_transition_authorized !== void 0;
   if (!isLocal && (value.mandatory_failures === void 0 || carriesLocalOnlyField)) {
     context2.addIssue({
       code: "custom",
       message: "Verified-Host gates require mandatory_failures and cannot carry Router-local-only fields."
+    });
+  }
+  if (!isLocal && value.status === "evaluated-local") {
+    context2.addIssue({
+      code: "custom",
+      message: "Verified-Host gates cannot claim Router-local evaluation status."
     });
   }
 });
@@ -29424,6 +29483,16 @@ var TOOL_OUTPUT_SCHEMAS = {
         code: "custom",
         message: "Router-local scheduling cannot claim a Host Goal mutation."
       });
+    }
+    if (value.work_item !== null) {
+      const expectedLane = value.authority_mode === "router-local" ? routerLocalWorkItem : verifiedHostWorkItem;
+      if (!expectedLane.safeParse(value.work_item).success) {
+        context2.addIssue({
+          code: "custom",
+          path: ["work_item"],
+          message: "Nested work item does not match the declared authority lane."
+        });
+      }
     }
   }),
   validate_route: external_exports3.object({
@@ -29511,10 +29580,10 @@ var DESCRIPTIONS = {
   plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
-  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. When Native Goal or Host authority applies, or the graph is missing or corrupt, fail closed with a public-safe boundary response and continue through the verified Host scheduler.",
+  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. Native Goal scheduling requires verified-host-scheduler. A missing graph requests Router-owned graph creation or replay; a corrupt graph returns only a sanitized internal-error correlation. All unavailable or unsafe branches fail closed.",
   validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
-  record_work_event: "For a validated Router-owned work graph with no Native Goal authority, append only user-or-agent-reported-local progress and return host_transition_authorized=false. Formal evidence, activation receipts, Native Goal work, or a missing or corrupt graph fails closed and remains on the verified Host event path.",
-  evaluate_gate: "For a validated Router-owned work graph with no Native Goal authority, evaluate only persisted local check IDs as a router-local advisory gate with host_transition_authorized=false. A local pass is not Skill activation, Native Goal completion, deployment, or production approval; Host-owned or invalid graphs fail closed and require verified Host evidence authority.",
+  record_work_event: "For a validated Router-owned work graph with no Native Goal authority, append only user-or-agent-reported-local progress and return host_transition_authorized=false. Native Goal work requires verified-event-store and activation-receipt-verifier. A missing graph requests local graph creation or replay; a corrupt graph returns a sanitized internal-error. All unavailable or unsafe branches fail closed.",
+  evaluate_gate: "For a validated Router-owned work graph with no Native Goal authority, evaluate only persisted local check IDs as a router-local advisory gate with host_transition_authorized=false. A local pass is not Skill activation, Native Goal completion, deployment, or production approval. Native Goal gates require verified-evidence-store and gate-authority; missing graphs request local creation or replay, while corrupt graphs return a sanitized internal-error. All unavailable or unsafe branches fail closed.",
   get_router_status: "Read durable Router plan counts and native Goal status candidates without mutating the host Goal. This read is available from the bundled local R0 control plane.",
   run_model_evaluation: "Run fresh attempts from a sealed case through a server-configured evaluation adapter. This quota-consuming operation requires configured-adapter authority and never accepts executable paths from model input.",
   compare_evaluations: "Compare authorized baseline and candidate evaluation runs without fabricating unavailable metrics. This read requires configured evaluation evidence and remains review-required until attested.",

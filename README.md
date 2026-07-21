@@ -43,7 +43,7 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Open a new Codex task and ask it to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, **4 always local-ready** tools, and **3 Router-owned conditional-local** tools.
+Open a new Codex task and ask it to show the Workflow Skill Router status. The published beta.3 snapshot exposes twelve MCP tools: **4 always local-ready**, **5 verified-Host-required**, and 3 configured-adapter-required tools. It does not contain the conditional-local work loop described below.
 
 For contributors who are changing or testing the Router:
 
@@ -55,6 +55,8 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
+
+The checkout currently contains **unreleased beta.5 source checkout** work for the conditional-local loop. It is **not included in published beta.3**. Release metadata intentionally remains on the prepared, unpublished `2.0.0-beta.4` candidate until the later release task; this source statement is not a beta.5 release claim.
 
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
@@ -145,6 +147,18 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 
 ## Runtime readiness matrix
 
+### Published beta.3 (`published-beta.3`)
+
+| Availability | Tools | Meaning |
+| --- | --- | --- |
+| `local-ready` | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Four bundled Router-local operations |
+| `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Five operations require verified Host authority |
+| `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Three operations require an authorized evaluation adapter |
+
+### Unreleased beta.5 source checkout (`unreleased-beta.5-source`)
+
+The following source matrix is **not included in published beta.3** and is not a published beta.5 release:
+
 | Availability in bundled local R0 | Tools | Meaning |
 | --- | --- | --- |
 | `local-ready` | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Durable local R0 planning, scoped consent, and status |
@@ -152,7 +166,16 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 | `verified-host-required` | `sync_runtime_context`, `validate_route` | Needs verified host authority and stores |
 | `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
 
-The readiness claim is deliberately **4 always local-ready + 3 Router-owned conditional-local**, never `7/12 local-ready`. A conditional-local call succeeds only for a validated Router-owned work graph with no Native Goal authority. `get_next_work` returns `authority_mode=router-local` and `host_goal_mutated=false`; progress and local gate results use `evidence_class=user-or-agent-reported-local` and `host_transition_authorized=false`. A local gate pass is advisory: it is not Skill activation, Native Goal completion, deployment approval, or production permission. Native Goal work and a missing or corrupt graph fail closed to the verified Host path. Explicit Skill Lock and consent behavior are unaffected.
+The unreleased source claim is deliberately **4 always local-ready + 3 Router-owned conditional-local**, never `7/12 local-ready`. A conditional-local call succeeds only for a validated Router-owned work graph with no Native Goal authority. `get_next_work` returns `authority_mode=router-local` and `host_goal_mutated=false`; progress and local gate results use `evidence_class=user-or-agent-reported-local` and `host_transition_authorized=false`. A local gate pass is advisory: it is not Skill activation, Native Goal completion, deployment approval, or production permission. Explicit Skill Lock and consent behavior are unaffected.
+
+| Runtime condition | `get_next_work` | `record_work_event` | `evaluate_gate` |
+| --- | --- | --- | --- |
+| Valid Router-owned graph | Router-local result | Router-local reported progress | Router-local advisory gate |
+| Native Goal | `verified-host-scheduler` | `verified-event-store` + `activation-receipt-verifier` | `verified-evidence-store` + `gate-authority` |
+| Missing Router-owned graph | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally |
+| Corrupt Router-owned graph | Sanitized `internal-error` | Sanitized `internal-error` | Sanitized `internal-error` |
+
+A missing graph is a local graph-initialization condition, not a reason to invent a Host fallback. A corrupt graph crosses an integrity boundary and returns only a public-safe correlation through `internal-error`; internal corruption details remain in diagnostics. Native Goal work uses the tool-specific verified Host capability shown above. Every unavailable or unsafe branch must **fail closed**.
 
 Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result. The `latest` compatibility channel remains on V1.3.1 until the V2 GA gate is passed.
 

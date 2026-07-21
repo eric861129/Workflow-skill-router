@@ -115,7 +115,16 @@ test("conditional-local outputs require explicit Router-local authority boundari
   const nextWork = {
     status: "ready",
     refresh_requirements: [],
-    work_item: { work_item_id: "work-item:1" },
+    work_item: {
+      work_item_id: "work-item:1",
+      workflow_run_id: "workflow:1",
+      phase_id: "single-work",
+      dependency_ids: [],
+      primary_skill_id: null,
+      support_skill_ids: [],
+      status: "ready",
+      authority_mode: "router-local",
+    },
     authority_mode: "router-local",
     host_goal_mutated: false,
   };
@@ -166,6 +175,16 @@ test("conditional-local outputs require explicit Router-local authority boundari
     ...gate,
     mandatory_failures: [],
   }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    ...gate,
+    passed: true,
+    failures: ["missing-local-check:tests-passed"],
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    ...gate,
+    passed: false,
+    failures: [],
+  }).success, false);
 });
 
 test("conditional-local output schemas retain strict verified-host variants", () => {
@@ -183,7 +202,11 @@ test("conditional-local output schemas retain strict verified-host variants", ()
   assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse({
     status: "ready",
     refresh_requirements: [],
-    work_item: null,
+    work_item: {
+      work_item_id: "work-item:host",
+      routing_envelope: "single",
+      status: "ready",
+    },
     authority_mode: "verified-host",
     host_goal_mutated: true,
   }).success, true);
@@ -199,6 +222,45 @@ test("conditional-local output schemas retain strict verified-host variants", ()
     resulting_state_version: 2,
     replayed: false,
     authority_mode: "router-local",
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    status: "evaluated-local",
+    passed: true,
+    mandatory_failures: [],
+    evidence_digest: `sha256:${"b".repeat(64)}`,
+  }).success, false);
+});
+
+test("get_next_work rejects cross-lane nested work items", () => {
+  const localWorkItem = {
+    work_item_id: "work-item:local",
+    workflow_run_id: "workflow:local",
+    phase_id: "single-work",
+    dependency_ids: [],
+    primary_skill_id: null,
+    support_skill_ids: [],
+    status: "ready",
+    authority_mode: "router-local",
+  };
+  const hostWorkItem = {
+    work_item_id: "work-item:host",
+    routing_envelope: "single",
+    status: "ready",
+  };
+
+  assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse({
+    status: "ready",
+    refresh_requirements: [],
+    work_item: hostWorkItem,
+    authority_mode: "router-local",
+    host_goal_mutated: false,
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse({
+    status: "ready",
+    refresh_requirements: [],
+    work_item: localWorkItem,
+    authority_mode: "verified-host",
+    host_goal_mutated: false,
   }).success, false);
 });
 

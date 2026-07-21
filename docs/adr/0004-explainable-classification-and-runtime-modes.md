@@ -27,15 +27,15 @@ Profiles remain deterministic. A semantic adapter may return a reviewable candid
 
 Router-owned local state and Host-authoritative state use distinct `authority_mode` values:
 
-- `router-local` means a result applies only to Router-owned state. In the current bundled runtime this covers planning, consent, and status; target beta.5 local transition and gate results would set `host_transition_authorized=false`.
+- `router-local` means a result applies only to Router-owned state. Published beta.3 covers planning, consent, and status; the unreleased beta.5 source checkout also implements bounded local scheduling, reported progress, and advisory gates with `host_transition_authorized=false`.
 - `verified-host` means the Host supplied the required authoritative state, receipts, policy, and transition capability.
 - `configured-adapter` means a server-configured evaluation adapter and its authorization govern the operation.
 
-`conditional-local` is a target availability class, not an authority upgrade. A conditionally local operation must fail closed when the target is a native Goal, formal evidence, Skill activation, or another Host-owned transition.
+`conditional-local` is an availability class, not an authority upgrade. A conditionally local operation must fail closed when the target is a native Goal, formal evidence, Skill activation, or another Host-owned transition.
 
 ### Runtime readiness
 
-#### Current bundled R0 (`current-bundled-r0`)
+#### Published beta.3 (`published-beta.3`)
 
 | Current class | Tools | Boundary |
 | --- | --- | --- |
@@ -43,24 +43,32 @@ Router-owned local state and Host-authoritative state use distinct `authority_mo
 | `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires Host-owned authority, current state, and receipts. |
 | `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a configured evaluation adapter, authorization, and applicable attestation. |
 
-#### Target beta.5 (`target-beta.5`)
+#### Unreleased beta.5 source checkout (`unreleased-beta.5-source`)
 
-`conditional-local` is a beta.5 target and is **not available in current bundled R0**.
+The checkout implements the beta.5 `conditional-local` source work, but it is **not included in published beta.3** and is not a published beta.5 release. Release metadata remains on the prepared, unpublished beta.4 candidate until the release task.
 
-| Target class | Tools | Boundary |
+| Source class | Tools | Boundary |
 | --- | --- | --- |
 | `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Unchanged Router-local R0 operations. |
 | `conditional-local` (3) | `get_next_work`, `record_work_event`, `evaluate_gate` | Router-owned graphs and local advisory evidence only; results use `authority_mode=router-local` and `host_transition_authorized=false`. |
 | `verified-host` (2) | `sync_runtime_context`, `validate_route` | Host authority remains mandatory. |
 | `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Configured-adapter authority remains mandatory. |
 
-GA is not defined as all 12 tools being locally usable. Promoting three tools to the beta.5 target must not weaken verified-Host or configured-adapter authority to improve a tool-count metric.
+GA is not defined as all 12 tools being locally usable. Implementing three conditional-local source paths must not weaken verified-Host or configured-adapter authority to improve a tool-count metric.
+
+| Condition | `get_next_work` | `record_work_event` | `evaluate_gate` |
+| --- | --- | --- | --- |
+| Valid Router-owned graph | Router-local result | Router-local report | Router-local advisory gate |
+| Native Goal | `verified-host-scheduler` | `verified-event-store` + `activation-receipt-verifier` | `verified-evidence-store` + `gate-authority` |
+| Missing graph | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally |
+| Corrupt graph | Sanitized `internal-error` | Sanitized `internal-error` | Sanitized `internal-error` |
 
 ## Fail-closed behavior
 
 - If a local request targets native Goal progress or steer, the Router returns a Host requirement and does not mutate Goal state.
-- In current bundled R0, local `get_next_work`, `record_work_event`, and `evaluate_gate` requests return the verified-Host requirement without running the operation.
-- If the beta.5 Router-local gate target is implemented and a local gate passes, it proves only the local advisory gate; it does not claim Skill activation or grant deployment or production permission.
+- Published beta.3 keeps `get_next_work`, `record_work_event`, and `evaluate_gate` on the verified-Host path.
+- In the unreleased source checkout, missing graphs request local creation or replay, while corrupt graphs return a sanitized `internal-error`; neither condition invents Host authority.
+- If a Router-local gate passes, it proves only the local advisory gate; it does not claim Skill activation or grant deployment or production permission.
 - If a semantic adapter proposes a different envelope, the candidate remains advisory and cannot replace the persisted route.
 - If the required Host receipt, configured adapter, consent, or Explicit Skill Lock condition is absent, the protected operation does not run.
 
