@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workflow-skill-router/capability-unavailable-attestation/1.0",
+  "title": "Reviewed capability-unavailable attestation",
+  "description": "Public-safe evidence only. This schema does not record a Host Pilot result or authorize Host access.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "attestation_status",
+    "evidence_lane",
+    "claim_boundary",
+    "checked_capability",
+    "source_revision",
+    "runtime",
+    "authority_boundary",
+    "safe_diagnostic",
+    "reviewer",
+    "timestamp",
+    "claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "workflow-skill-router/capability-unavailable-attestation/1.0"
+    },
+    "record_type": {
+      "const": "reviewed-capability-unavailable-attestation"
+    },
+    "attestation_status": {
+      "const": "reviewed"
+    },
+    "evidence_lane": {
+      "const": "capability-unavailable"
+    },
+    "claim_boundary": {
+      "const": "unavailable-evidence-only-not-a-verified-host-pilot"
+    },
+    "checked_capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authority_requirement"],
+      "properties": {
+        "id": {
+          "enum": ["sync_runtime_context", "validate_route"]
+        },
+        "authority_requirement": {
+          "const": "verified-host-required"
+        }
+      }
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^git:[0-9a-f]{7,64}$"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_profile", "conformance_profile", "fallback_mode", "runtime_package_digest"],
+      "properties": {
+        "runtime_profile": {"const": "bundled-local-r0"},
+        "conformance_profile": {"const": null},
+        "fallback_mode": {"const": "skill-only-fallback"},
+        "runtime_package_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "authority_boundary": {
+      "const": "real-host-apis-absent"
+    },
+    "safe_diagnostic": {
+      "const": "verified-host-capability-unavailable"
+    },
+    "reviewer": {
+      "type": "string",
+      "pattern": "^reviewer:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verified_host_pilot", "production_authority", "hybrid_full"],
+      "properties": {
+        "verified_host_pilot": {"const": false},
+        "production_authority": {"const": false},
+        "hybrid_full": {"const": false}
+      }
+    }
+  }
+}

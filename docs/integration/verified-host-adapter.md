@@ -58,6 +58,15 @@ set of shadow ports or a shadow service. A manifest may declare production autho
 development suite cannot verify it; the report therefore keeps
 `production_authority_verified=false`.
 
+## Capability-unavailable evidence
+
+When a real Host API is absent, do not turn a local conformance check into a
+Host Pilot result. Use the future-only [capability-unavailable attestation
+template](../evidence/capability-unavailable-attestation-template.md) and its
+strict validator after authorized human review. This lane records only a safe
+unavailable boundary; it never establishes production authority or
+`hybrid-full`.
+
 Artifact protection is verified through `ArtifactStorePort.put_bytes`, the same
 method used by `RouterService`. A restricted artifact must return an opaque
 digest-bound protected reference, never a path, location, or URL. Unsafe output
