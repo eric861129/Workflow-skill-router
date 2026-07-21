@@ -131,6 +131,63 @@ class CliTests(unittest.TestCase):
             self.assertNotIn(str(root), explained.stdout)
             self.assertNotIn("private API instructions", explained.stdout)
 
+    def test_profile_preview_explain_preserves_traces_when_current_phase_is_invalid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = root / "profile.json"
+            profile.write_text(
+                json.dumps(self.profile_document(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            state = root / "state"
+            environment = {**os.environ, "PYTHONPATH": str(ROOT / "packages/router-core/src")}
+
+            def run(*arguments: str):
+                return subprocess.run(
+                    [sys.executable, "-m", "workflow_skill_router", "profile", *arguments],
+                    text=True,
+                    encoding="utf-8",
+                    capture_output=True,
+                    env=environment,
+                )
+
+            installed = run("install", str(profile), "--data-dir", str(state))
+            self.assertEqual(0, installed.returncode, installed.stderr)
+
+            invalid_explained = run(
+                "preview",
+                "--data-dir", str(state),
+                "--objective", f"交付 {root} private API instructions",
+                "--work-mode", "phased",
+                "--domain", "api",
+                "--current-phase", str(root / "missing-phase"),
+                "--explain",
+            )
+
+        self.assertEqual(2, invalid_explained.returncode)
+        invalid_payload = json.loads(invalid_explained.stderr)
+        self.assertEqual("invalid", invalid_payload["status"])
+        self.assertEqual(
+            "current-phase-absent-from-matched-profile",
+            invalid_payload["error"],
+        )
+        self.assertEqual(
+            [{
+                "rule_id": "api",
+                "matched": True,
+                "matched_dimensions": [
+                    "objective_keywords",
+                    "domains",
+                    "work_modes",
+                ],
+                "unmatched_dimensions": [],
+                "reason_codes": [],
+            }],
+            invalid_payload["rule_traces"],
+        )
+        self.assertNotIn(str(root), invalid_explained.stderr)
+        self.assertNotIn("private API instructions", invalid_explained.stderr)
+
     def test_profile_lint_uses_error_code_two_and_keeps_advisories_non_blocking(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

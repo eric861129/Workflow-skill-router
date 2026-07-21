@@ -116,6 +116,54 @@ class RoutingProfileResolverTests(unittest.TestCase):
         self.assertEqual("advisory", alias_issue.severity)
         self.assertIn("應用程式介面", alias_issue.message)
 
+    def test_lint_models_locked_and_unlocked_cross_route_shadowing(self) -> None:
+        shadowed_document = profile_document()
+        higher = shadowed_document["rules"][0]
+        higher["rule_id"] = "higher-single-route"
+        higher["match"]["work_modes"] = ["single"]
+        higher["route"]["work_mode"] = "single"
+        higher["route"]["skill_tree"] = higher["route"]["skill_tree"][:1]
+        lower = profile_document()["rules"][0]
+        lower["rule_id"] = "lower-cross-route"
+        lower["priority"] = 10
+        lower["match"]["work_modes"] = ["single"]
+        lower["route"]["work_mode"] = "phased"
+        shadowed_document["rules"].append(lower)
+
+        issues = lint_profile(decode_routing_profile(shadowed_document))
+
+        self.assertIn(
+            ("shadowed-rule", "lower-cross-route", "higher-single-route"),
+            [
+                (issue.code, issue.rule_id, issue.related_rule_id)
+                for issue in issues
+            ],
+        )
+
+        reachable_document = profile_document()
+        higher = reachable_document["rules"][0]
+        higher["rule_id"] = "higher-single-route"
+        higher["match"]["work_modes"] = ["phased"]
+        higher["route"]["work_mode"] = "single"
+        higher["route"]["skill_tree"] = higher["route"]["skill_tree"][:1]
+        lower = profile_document()["rules"][0]
+        lower["rule_id"] = "lower-phased-route"
+        lower["priority"] = 10
+        lower["match"]["work_modes"] = ["phased"]
+        lower["route"]["work_mode"] = "phased"
+        reachable_document["rules"].append(lower)
+
+        issues = lint_profile(decode_routing_profile(reachable_document))
+
+        self.assertNotIn(
+            "lower-phased-route",
+            [
+                issue.rule_id
+                for issue in issues
+                if issue.code == "shadowed-rule"
+            ],
+        )
+
     def test_workspace_profile_wins_as_one_complete_tree_without_deep_merge(self) -> None:
         personal_document = profile_document(scope="personal")
         workspace_document = profile_document(scope="workspace")

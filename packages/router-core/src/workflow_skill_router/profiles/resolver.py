@@ -210,9 +210,7 @@ def _objective_keywords_cover(
 
 
 def _rule_covers(higher: RoutingProfileRule, lower: RoutingProfileRule) -> bool:
-    if higher.route.work_mode != lower.route.work_mode:
-        return False
-    return (
+    matcher_coverage = (
         _objective_keywords_cover(
             higher.match.objective_keywords,
             lower.match.objective_keywords,
@@ -220,6 +218,14 @@ def _rule_covers(higher: RoutingProfileRule, lower: RoutingProfileRule) -> bool:
         and _match_values_cover(higher.match.domains, lower.match.domains)
         and _match_values_cover(higher.match.tags, lower.match.tags)
         and _match_values_cover(higher.match.work_modes, lower.match.work_modes)
+    )
+    if not matcher_coverage:
+        return False
+    if higher.route.work_mode == lower.route.work_mode:
+        return True
+    return (
+        bool(lower.match.work_modes)
+        and lower.route.work_mode not in lower.match.work_modes
     )
 
 

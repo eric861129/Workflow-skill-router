@@ -158,12 +158,22 @@ def run_profile_cli(args: argparse.Namespace) -> int:
                 if args.explain
                 else ()
             )
-            route = resolve_profile_route(
-                profiles,
-                objective=args.objective,
-                default_work_mode=args.work_mode,
-                context=context,
-            )
+            try:
+                route = resolve_profile_route(
+                    profiles,
+                    objective=args.objective,
+                    default_work_mode=args.work_mode,
+                    context=context,
+                )
+            except RoutingProfileResolutionError:
+                if not args.explain:
+                    raise
+                _print({
+                    "status": "invalid",
+                    "error": "current-phase-absent-from-matched-profile",
+                    "rule_traces": [trace.to_dict() for trace in traces],
+                }, output=sys.stderr)
+                return 2
             if route is None:
                 payload = {
                     "status": "no-profile-match",
