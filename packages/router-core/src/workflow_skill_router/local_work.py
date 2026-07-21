@@ -252,17 +252,23 @@ def validate_local_work_graph(
     workflow_run_id: str,
     work_graph_id: str,
     expected_count: int,
+    expected_items: tuple[LocalWorkItem, ...],
     session_id: str,
+    expected_actor: str,
 ) -> tuple[LocalWorkItem, ...]:
     rows = connection.execute(
         "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
         (workflow_run_id,),
     ).fetchall()
-    if len(rows) != expected_count or not rows:
+    if (
+        len(rows) != expected_count
+        or len(rows) != len(expected_items)
+        or not rows
+    ):
         raise LocalWorkGraphCorruption("local-work-graph-corruption: item-count")
 
-    known_ids: list[str] = []
     for expected_order, row in enumerate(rows):
+        expected_item = expected_items[expected_order]
         try:
             raw_dependencies = json.loads(row["dependency_ids_json"])
             raw_support_skills = json.loads(row["support_skill_ids_json"])
@@ -281,17 +287,17 @@ def validate_local_work_graph(
             )
         dependencies = tuple(raw_dependencies)
         support_skills = tuple(raw_support_skills)
-        expected_dependencies = () if not known_ids else (known_ids[-1],)
-        expected_work_item_id = _public_id(
-            "work-item", work_graph_id, str(expected_order), row["phase_id"]
-        )
         if (
-            row["work_item_id"] != expected_work_item_id
+            row["work_item_id"] != expected_item.work_item_id
+            or row["workflow_run_id"] != expected_item.workflow_run_id
             or row["work_graph_id"] != work_graph_id
             or int(row["item_order"]) != expected_order
-            or row["authority_mode"] != "router-local"
+            or row["phase_id"] != expected_item.phase_id
+            or dependencies != expected_item.dependency_ids
+            or row["primary_skill_id"] != expected_item.primary_skill_id
+            or support_skills != expected_item.support_skill_ids
+            or row["authority_mode"] != expected_item.authority_mode
             or row["status"] not in LOCAL_WORK_STATUSES
-            or dependencies != expected_dependencies
             or len(set(support_skills)) != len(support_skills)
             or (
                 row["primary_skill_id"] is not None
@@ -311,8 +317,8 @@ def validate_local_work_graph(
         for version, transition in enumerate(transitions, start=1):
             expected_from = previous_status
             expected_digest = local_transition_request_digest(
-                session_id=transition["session_id"],
-                actor=transition["actor"],
+                session_id=session_id,
+                actor=expected_actor,
                 workflow_run_id=workflow_run_id,
                 work_item_id=row["work_item_id"],
                 transition_kind=transition["transition_kind"],
@@ -323,6 +329,7 @@ def validate_local_work_graph(
             )
             if (
                 transition["session_id"] != session_id
+                or transition["actor"] != expected_actor
                 or transition["workflow_run_id"] != workflow_run_id
                 or transition["work_item_id"] != row["work_item_id"]
                 or transition["transition_id"] != _public_id(
@@ -334,6 +341,7 @@ def validate_local_work_graph(
                 or transition["request_digest"] != expected_digest
                 or transition["to_status"] not in LOCAL_WORK_STATUSES
                 or (version == 1 and transition["transition_kind"] != "create")
+                or (version == 1 and transition["to_status"] != expected_item.status)
                 or (
                     version == 1
                     and transition["idempotency_key"] != _public_id(
@@ -347,8 +355,6 @@ def validate_local_work_graph(
             previous_status = transition["to_status"]
         if previous_status != row["status"]:
             raise LocalWorkGraphCorruption("local-work-graph-corruption: status-drift")
-
-        known_ids.append(row["work_item_id"])
 
     return tuple(LocalWorkItem(
         work_item_id=row["work_item_id"],

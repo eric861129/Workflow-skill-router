@@ -10,6 +10,7 @@ import re
 import sqlite3
 
 from workflow_skill_router.local_work import (
+    LocalWorkItem,
     LocalWorkGraphCorruption,
     build_local_work_items,
     persist_local_work_graph,
@@ -282,6 +283,10 @@ class LocalControlPlaneService:
                             raise IdempotencyConflict(
                                 "相同 idempotency key 不得對應不同規劃請求"
                             )
+                    if existing["actor"] != command.context.actor:
+                        raise LocalWorkGraphCorruption(
+                            "local-work-graph-corruption: plan-actor"
+                        )
                     if int(existing["local_work_graph_version"]) == 0:
                         existing_count = connection.execute(
                             "SELECT COUNT(*) FROM local_work_items WHERE workflow_run_id=?",
@@ -291,13 +296,7 @@ class LocalControlPlaneService:
                             raise LocalWorkGraphCorruption(
                                 "local-work-graph-corruption: legacy-marker"
                             )
-                        legacy_items = build_local_work_items(
-                            workflow_run_id=existing["workflow_run_id"],
-                            work_graph_id=existing["work_graph_id"],
-                            routing_envelope=existing["routing_envelope"],
-                            goal_binding_id=existing["goal_binding_id"],
-                            planned_skill_tree=self._planned_tree(existing),
-                        )
+                        legacy_items = self._expected_local_work_items(existing)
                         persisted_count = persist_local_work_graph(
                             connection,
                             session_id=existing["session_id"],
@@ -320,12 +319,15 @@ class LocalControlPlaneService:
                             raise LocalWorkGraphCorruption(
                                 "local-work-graph-corruption: legacy-plan"
                             )
+                    expected_items = self._expected_local_work_items(existing)
                     validate_local_work_graph(
                         connection,
                         workflow_run_id=existing["workflow_run_id"],
                         work_graph_id=existing["work_graph_id"],
                         expected_count=int(existing["created_work_items"]),
+                        expected_items=expected_items,
                         session_id=existing["session_id"],
+                        expected_actor=existing["actor"],
                     )
                     connection.commit()
                 except Exception:
@@ -407,12 +409,15 @@ class LocalControlPlaneService:
                 ).fetchone()
                 if stored is None:
                     raise RuntimeError("persisted-plan-unavailable")
+                expected_items = self._expected_local_work_items(stored)
                 validate_local_work_graph(
                     connection,
                     workflow_run_id=workflow_run_id,
                     work_graph_id=work_graph_id,
                     expected_count=int(stored["created_work_items"]),
+                    expected_items=expected_items,
                     session_id=command.context.session_id,
+                    expected_actor=stored["actor"],
                 )
                 connection.commit()
             except Exception:
@@ -734,6 +739,18 @@ class LocalControlPlaneService:
                 phase["exit_gate"],
             )
             for phase in json.loads(row["planned_skill_tree_json"])
+        )
+
+    @staticmethod
+    def _expected_local_work_items(
+        row: sqlite3.Row,
+    ) -> tuple[LocalWorkItem, ...]:
+        return build_local_work_items(
+            workflow_run_id=row["workflow_run_id"],
+            work_graph_id=row["work_graph_id"],
+            routing_envelope=row["routing_envelope"],
+            goal_binding_id=row["goal_binding_id"],
+            planned_skill_tree=LocalControlPlaneService._planned_tree(row),
         )
 
     @staticmethod

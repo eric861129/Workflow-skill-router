@@ -13,7 +13,10 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from workflow_skill_router.local_control import LocalControlPlaneService
-from workflow_skill_router.local_work import LocalWorkGraphCorruption
+from workflow_skill_router.local_work import (
+    LocalWorkGraphCorruption,
+    local_transition_request_digest,
+)
 from workflow_skill_router.persistence.migrator import iter_complete_statements, migrate
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
@@ -59,6 +62,11 @@ class LocalWorkLoopTests(unittest.TestCase):
         with closing(sqlite3.connect(self.database)) as connection:
             connection.row_factory = sqlite3.Row
             return list(connection.execute(sql, values).fetchall())
+
+    @staticmethod
+    def public_id(prefix: str, *parts: str) -> str:
+        identity = hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:32]
+        return f"{prefix}:{identity}"
 
     def write_phased_profile(self) -> None:
         profile_dir = self.database.parent / "profiles/personal"
@@ -294,6 +302,216 @@ class LocalWorkLoopTests(unittest.TestCase):
             connection.commit()
         with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
             self.service.plan_work(actor_command)
+
+    def test_replay_reconstructs_profile_skills_and_phase_from_persisted_plan(self) -> None:
+        self.write_phased_profile()
+        commands = {
+            kind: self.command(
+                objective="Design and verify the API",
+                idempotency_key=f"immutable-{kind}",
+                requested_work_mode="phased",
+                routing_context=RoutingContextInput(domains=("api",)),
+            )
+            for kind in ("primary", "support", "phase")
+        }
+        plans = {kind: self.service.plan_work(command) for kind, command in commands.items()}
+
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            connection.execute(
+                "UPDATE local_work_items SET primary_skill_id='skill:other-designer' "
+                "WHERE workflow_run_id=? AND item_order=0",
+                (plans["primary"].workflow_run_id,),
+            )
+            connection.execute(
+                "UPDATE local_work_items SET support_skill_ids_json='[\"skill:other-support\"]' "
+                "WHERE workflow_run_id=? AND item_order=0",
+                (plans["support"].workflow_run_id,),
+            )
+
+            phase_plan = plans["phase"]
+            first = connection.execute(
+                "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+                (phase_plan.workflow_run_id,),
+            ).fetchone()
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE workflow_run_id=? "
+                "AND work_item_id=?",
+                (phase_plan.workflow_run_id, first["work_item_id"]),
+            ).fetchone()
+            new_phase_id = "discovery"
+            new_work_item_id = self.public_id(
+                "work-item", first["work_graph_id"], "0", new_phase_id
+            )
+            new_transition_id = self.public_id("work-transition", new_work_item_id, "1")
+            new_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=transition["actor"],
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=new_work_item_id,
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_work_items SET work_item_id=?,phase_id=? WHERE work_item_id=?",
+                (new_work_item_id, new_phase_id, first["work_item_id"]),
+            )
+            connection.execute(
+                "UPDATE local_work_items SET dependency_ids_json=? "
+                "WHERE workflow_run_id=? AND item_order=1",
+                (canonical_json([new_work_item_id]), phase_plan.workflow_run_id),
+            )
+            connection.execute(
+                "UPDATE local_work_transitions SET transition_id=?,work_item_id=?,request_digest=? "
+                "WHERE transition_id=?",
+                (
+                    new_transition_id,
+                    new_work_item_id,
+                    new_digest,
+                    transition["transition_id"],
+                ),
+            )
+            connection.commit()
+
+        rejected = []
+        for kind, command in commands.items():
+            try:
+                self.service.plan_work(command)
+            except LocalWorkGraphCorruption:
+                rejected.append(kind)
+        self.assertEqual(["primary", "support", "phase"], rejected)
+
+    def test_replay_binds_initial_status_semantics_for_every_boundary_branch(self) -> None:
+        commands = {
+            "single": self.command(idempotency_key="initial-single"),
+            "native": self.command(
+                objective="Continue the native Goal",
+                idempotency_key="initial-native",
+                requested_work_mode="managed-goal",
+                goal_binding_id="goal-native-initial",
+            ),
+            "decomposition": self.command(
+                objective="Design then implement",
+                idempotency_key="initial-decomposition",
+                requested_work_mode="phased",
+            ),
+        }
+        plans = {kind: self.service.plan_work(command) for kind, command in commands.items()}
+        replacements = {
+            "single": "paused",
+            "native": "decomposition-required",
+            "decomposition": "host-scheduler-required",
+        }
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            for kind, plan in plans.items():
+                transition = connection.execute(
+                    "SELECT * FROM local_work_transitions WHERE workflow_run_id=?",
+                    (plan.workflow_run_id,),
+                ).fetchone()
+                new_status = replacements[kind]
+                new_digest = local_transition_request_digest(
+                    session_id=transition["session_id"],
+                    actor=transition["actor"],
+                    workflow_run_id=transition["workflow_run_id"],
+                    work_item_id=transition["work_item_id"],
+                    transition_kind=transition["transition_kind"],
+                    from_status=transition["from_status"],
+                    to_status=new_status,
+                    expected_state_version=transition["expected_state_version"],
+                    resulting_state_version=transition["resulting_state_version"],
+                )
+                connection.execute(
+                    "UPDATE local_work_items SET status=? WHERE work_item_id=?",
+                    (new_status, transition["work_item_id"]),
+                )
+                connection.execute(
+                    "UPDATE local_work_transitions SET to_status=?,request_digest=? "
+                    "WHERE transition_id=?",
+                    (new_status, new_digest, transition["transition_id"]),
+                )
+            connection.commit()
+
+        rejected = []
+        for kind, command in commands.items():
+            try:
+                self.service.plan_work(command)
+            except LocalWorkGraphCorruption:
+                rejected.append(kind)
+        self.assertEqual(["single", "native", "decomposition"], rejected)
+
+    def test_replay_binds_actor_even_when_attacker_recomputes_transition_digest(self) -> None:
+        command = self.command(idempotency_key="actor-and-digest-corruption")
+        plan = self.service.plan_work(command)
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE workflow_run_id=?",
+                (plan.workflow_run_id,),
+            ).fetchone()
+            forged_actor = "attacker"
+            forged_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=forged_actor,
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=transition["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_work_transitions SET actor=?,request_digest=? "
+                "WHERE transition_id=?",
+                (forged_actor, forged_digest, transition["transition_id"]),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
+            self.service.plan_work(command)
+
+    def test_replay_rejects_plan_and_transition_actor_rewrite(self) -> None:
+        command = self.command(idempotency_key="plan-actor-corruption")
+        plan = self.service.plan_work(command)
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE workflow_run_id=?",
+                (plan.workflow_run_id,),
+            ).fetchone()
+            forged_actor = "attacker"
+            forged_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=forged_actor,
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=transition["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_control_plans SET actor=? WHERE workflow_run_id=?",
+                (forged_actor, plan.workflow_run_id),
+            )
+            connection.execute(
+                "UPDATE local_work_transitions SET actor=?,request_digest=? "
+                "WHERE transition_id=?",
+                (forged_actor, forged_digest, transition["transition_id"]),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
+            self.service.plan_work(command)
 
     def test_transition_log_rejects_updates_deletes_and_duplicate_versions(self) -> None:
         result = self.service.plan_work(self.command(idempotency_key="append-only"))
