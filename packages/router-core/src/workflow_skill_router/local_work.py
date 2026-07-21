@@ -103,6 +103,7 @@ def local_evidence_digest(check_ids: tuple[str, ...]) -> str:
 def local_transition_target(from_status: str, transition: str) -> str:
     targets = {
         ("ready", "start"): "active",
+        ("pending", "start"): "active",
         ("active", "submit"): "verifying",
         ("active", "pause"): "paused",
         ("verifying", "pause"): "paused",
@@ -283,18 +284,22 @@ def _validate_transition_document(
     if document.get("kind") == "local-progress":
         expected_fields = {
             "kind", "work_item_id", "transition", "check_ids",
-            "reported_outcome", *common,
+            "reported_outcome", "satisfied_dependency_ids", *common,
         }
         if set(document) != expected_fields:
             raise LocalWorkGraphCorruption(
                 "local-work-graph-corruption: progress-fields"
             )
         check_ids = document["check_ids"]
+        satisfied_dependency_ids = document["satisfied_dependency_ids"]
         outcome = document["reported_outcome"]
         if (
             not isinstance(check_ids, list)
+            or not isinstance(satisfied_dependency_ids, list)
             or any(not isinstance(item, str) for item in check_ids)
+            or any(not isinstance(item, str) for item in satisfied_dependency_ids)
             or len(set(check_ids)) != len(check_ids)
+            or len(set(satisfied_dependency_ids)) != len(satisfied_dependency_ids)
             or (outcome is not None and not isinstance(outcome, str))
             or transition["transition_kind"] != document["transition"]
         ):
@@ -341,6 +346,8 @@ def _validate_transition_document(
             or len(set(required)) != len(required)
             or len(set(persisted)) != len(persisted)
             or not isinstance(passed, bool)
+            or isinstance(document["expected_plan_revision"], bool)
+            or not isinstance(document["expected_plan_revision"], int)
             or document["evidence_digest"] != local_evidence_digest(tuple(persisted))
             or transition["from_status"] != "verifying"
             or transition["transition_kind"] != ("gate-pass" if passed else "gate-fail")
@@ -563,6 +570,7 @@ def validate_local_work_graph(
     session_id: str,
     expected_actor: str,
     expected_check_ids_by_phase: Mapping[str, tuple[str, ...]],
+    expected_plan_revision: int,
 ) -> tuple[LocalWorkItem, ...]:
     rows = connection.execute(
         "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
@@ -574,6 +582,7 @@ def validate_local_work_graph(
         or not rows
     ):
         raise LocalWorkGraphCorruption("local-work-graph-corruption: item-count")
+    rows_by_id = {row["work_item_id"]: row for row in rows}
 
     for expected_order, row in enumerate(rows):
         expected_item = expected_items[expected_order]
@@ -652,12 +661,39 @@ def validate_local_work_graph(
                         )
                     if observation_document["transition"] == "submit":
                         persisted_check_ids.update(check_ids)
+                    satisfied_dependencies = tuple(
+                        observation_document["satisfied_dependency_ids"]
+                    )
+                    if observation_document["transition"] == "start":
+                        if satisfied_dependencies != expected_item.dependency_ids:
+                            raise LocalWorkGraphCorruption(
+                                "local-work-graph-corruption: dependency-proof"
+                            )
+                        if any(
+                            dependency_id not in rows_by_id
+                            or rows_by_id[dependency_id]["status"] != "completed"
+                            for dependency_id in satisfied_dependencies
+                        ):
+                            raise LocalWorkGraphCorruption(
+                                "local-work-graph-corruption: dependency-proof"
+                            )
+                    elif satisfied_dependencies:
+                        raise LocalWorkGraphCorruption(
+                            "local-work-graph-corruption: dependency-proof"
+                        )
                 elif observation_document["kind"] == "local-gate":
                     failures = tuple(
                         f"missing-local-check:{check_id}"
                         for check_id in required_check_ids
                         if check_id not in persisted_check_ids
                     )
+                    if (
+                        observation_document["expected_plan_revision"]
+                        != expected_plan_revision
+                    ):
+                        raise LocalWorkGraphCorruption(
+                            "local-work-graph-corruption: gate-plan-revision"
+                        )
                     if (
                         observation_document["phase_id"] != row["phase_id"]
                         or tuple(observation_document["required_check_ids"])

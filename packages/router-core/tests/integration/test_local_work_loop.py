@@ -1382,6 +1382,226 @@ class LocalWorkLoopTests(unittest.TestCase):
         self.assertEqual(original.evidence_digest, replay.evidence_digest)
         self.assertEqual(original.resulting_state_version, replay.resulting_state_version)
 
+    def test_projected_second_phase_can_start_only_after_persisted_dependency_completion(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="two-phase-local-loop",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        items = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
+            (plan.workflow_run_id,),
+        )
+        first, second = items
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                plan, second, transition="start", expected_state_version=1,
+                idempotency_key="second-premature-start",
+            ))
+
+        self.service.record_work_event(self.record_command(
+            plan, first, transition="start", expected_state_version=1,
+            idempotency_key="first-start-for-second",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, first, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=2, idempotency_key="first-submit-for-second",
+        ))
+        self.service.evaluate_gate(self.gate_command(
+            plan, first, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(("contract-ready",)),
+            idempotency_key="first-gate-for-second",
+        ))
+
+        projected = self.service.get_next_work(self.query(plan.workflow_run_id))
+        self.assertEqual(second["work_item_id"], projected.work_item.work_item_id)
+        self.assertEqual("ready", projected.work_item.status)
+        self.assertEqual("pending", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (second["work_item_id"],),
+        )[0]["status"])
+
+        started = self.service.record_work_event(self.record_command(
+            plan, second, transition="start", expected_state_version=1,
+            idempotency_key="second-start-after-dependency",
+        ))
+        self.assertEqual(2, started.resulting_state_version)
+        transition = self.rows(
+            "SELECT * FROM local_work_transitions WHERE work_item_id=? "
+            "AND transition_kind='start'",
+            (second["work_item_id"],),
+        )[0]
+        self.assertEqual("pending", transition["from_status"])
+        self.assertEqual("active", transition["to_status"])
+        self.assertEqual(
+            [first["work_item_id"]],
+            json.loads(transition["observation_json"])["satisfied_dependency_ids"],
+        )
+        self.service.record_work_event(self.record_command(
+            plan, second, transition="submit", check_ids=("tests-passed",),
+            expected_state_version=2, idempotency_key="second-submit-after-dependency",
+        ))
+        result = self.service.evaluate_gate(self.gate_command(
+            plan, second, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(("tests-passed",)),
+            idempotency_key="second-gate-after-dependency",
+        ))
+        self.assertTrue(result.passed)
+        self.assertEqual("completed", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (second["work_item_id"],),
+        )[0]["status"])
+
+    def test_pending_start_rejects_cross_graph_dependency_and_boundary_items(self) -> None:
+        self.write_phased_profile()
+        first_plan = self.service.plan_work(self.command(
+            objective="Design and verify the API", idempotency_key="cross-graph-first",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        second_plan = self.service.plan_work(self.command(
+            objective="Design and verify the API", idempotency_key="cross-graph-second",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        first_pending = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=1",
+            (first_plan.workflow_run_id,),
+        )[0]
+        foreign_dependency = self.rows(
+            "SELECT work_item_id FROM local_work_items WHERE workflow_run_id=? "
+            "AND item_order=0",
+            (second_plan.workflow_run_id,),
+        )[0]["work_item_id"]
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.execute(
+                "UPDATE local_work_items SET dependency_ids_json=? WHERE work_item_id=?",
+                (canonical_json([foreign_dependency]), first_pending["work_item_id"]),
+            )
+            connection.commit()
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: item-state",
+        ):
+            self.service.record_work_event(self.record_command(
+                first_plan, first_pending, transition="start", expected_state_version=1,
+                idempotency_key="cross-graph-pending-start",
+            ))
+
+        boundary_plan = self.service.plan_work(self.command(
+            objective="Design then implement", idempotency_key="boundary-start",
+            requested_work_mode="phased",
+        ))
+        boundary = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (boundary_plan.workflow_run_id,),
+        )[0]
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                boundary_plan, boundary, transition="start", expected_state_version=1,
+                idempotency_key="decomposition-boundary-start",
+            ))
+
+        native_plan = self.service.plan_work(self.command(
+            objective="Continue native Goal", idempotency_key="native-boundary-start",
+            requested_work_mode="managed-goal", goal_binding_id="goal-boundary-start",
+        ))
+        native_boundary = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (native_plan.workflow_run_id,),
+        )[0]
+        with self.assertRaises(CapabilityUnavailable):
+            self.service.record_work_event(self.record_command(
+                native_plan, native_boundary, transition="start",
+                expected_state_version=1, idempotency_key="native-item-start",
+            ))
+
+    def test_local_gate_rejects_stale_bool_and_recomputed_plan_revision(self) -> None:
+        self.write_phased_profile()
+        command = self.command(
+            objective="Design and verify the API",
+            idempotency_key="gate-plan-revision",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        )
+        plan = self.service.plan_work(command)
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="revision-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=2, idempotency_key="revision-submit",
+        ))
+        digest = self.local_evidence_digest(("contract-ready",))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.evaluate_gate(EvaluateGate(
+                self.context, plan.workflow_run_id, item["phase_id"], 3, True,
+                digest, (), "revision-bool", "correlation-revision-bool",
+            ))
+        with self.assertRaises(ConcurrencyConflict):
+            self.service.evaluate_gate(EvaluateGate(
+                self.context, plan.workflow_run_id, item["phase_id"], 3, 2,
+                digest, (), "revision-stale", "correlation-revision-stale",
+            ))
+        original_command = self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=digest, idempotency_key="revision-gate",
+        )
+        original = self.service.evaluate_gate(original_command)
+        replay = self.service.evaluate_gate(original_command)
+        self.assertEqual(original, replay.__class__(
+            replay.status, replay.passed, replay.failures, replay.evidence_digest,
+            replay.resulting_state_version, False,
+        ))
+        self.assertTrue(replay.replayed)
+        with self.assertRaises(IdempotencyConflict):
+            self.service.evaluate_gate(EvaluateGate(
+                self.context, plan.workflow_run_id, item["phase_id"], 4, 1,
+                digest, (), "revision-gate", "correlation-revision-collision",
+            ))
+
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE work_item_id=? "
+                "AND transition_kind='gate-pass'",
+                (item["work_item_id"],),
+            ).fetchone()
+            document = json.loads(transition["observation_json"])
+            document["expected_plan_revision"] = 2
+            forged_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=transition["actor"],
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=transition["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+                observation_document=document,
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_work_transitions SET observation_json=?,request_digest=? "
+                "WHERE transition_id=?",
+                (canonical_json(document), forged_digest, transition["transition_id"]),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: gate-plan-revision",
+        ):
+            self.service.plan_work(command)
+
 
 if __name__ == "__main__":
     unittest.main()

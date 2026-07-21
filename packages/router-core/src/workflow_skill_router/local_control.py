@@ -343,6 +343,7 @@ class LocalControlPlaneService:
                         session_id=existing["session_id"],
                         expected_actor=existing["actor"],
                         expected_check_ids_by_phase=self._expected_local_check_ids(existing),
+                        expected_plan_revision=int(existing["state_version"]),
                     )
                     connection.commit()
                 except Exception:
@@ -434,6 +435,7 @@ class LocalControlPlaneService:
                     session_id=command.context.session_id,
                     expected_actor=stored["actor"],
                     expected_check_ids_by_phase=self._expected_local_check_ids(stored),
+                    expected_plan_revision=int(stored["state_version"]),
                 )
                 connection.commit()
             except Exception:
@@ -549,6 +551,7 @@ class LocalControlPlaneService:
                 session_id=plan["session_id"],
                 expected_actor=plan["actor"],
                 expected_check_ids_by_phase=self._expected_local_check_ids(plan),
+                expected_plan_revision=int(plan["state_version"]),
             )
         if plan["goal_binding_id"] is not None:
             raise CapabilityUnavailable.for_local_condition(
@@ -625,12 +628,27 @@ class LocalControlPlaneService:
                     raise LocalObservationPolicyError(
                         "local-checks-only-accepted-on-submit"
                     )
+                satisfied_dependency_ids: tuple[str, ...] = ()
+                if observation.transition == "start":
+                    status_by_id = {
+                        candidate.work_item_id: candidate.status
+                        for candidate in items
+                    }
+                    if any(
+                        status_by_id.get(dependency_id) != "completed"
+                        for dependency_id in item.dependency_ids
+                    ):
+                        raise LocalObservationPolicyError(
+                            "local-work-item-dependencies-incomplete"
+                        )
+                    satisfied_dependency_ids = item.dependency_ids
                 document: dict[str, object] = {
                     "kind": "local-progress",
                     "work_item_id": observation.work_item_id,
                     "transition": observation.transition,
                     "check_ids": list(observation.check_ids),
                     "reported_outcome": observation.reported_outcome,
+                    "satisfied_dependency_ids": list(satisfied_dependency_ids),
                     "authority_mode": "router-local",
                     "evidence_class": "user-or-agent-reported-local",
                     "host_transition_authorized": False,
@@ -683,6 +701,7 @@ class LocalControlPlaneService:
                         session_id=plan["session_id"],
                         expected_actor=plan["actor"],
                         expected_check_ids_by_phase=self._expected_local_check_ids(plan),
+                        expected_plan_revision=int(plan["state_version"]),
                     )
                 connection.commit()
             except Exception:
@@ -714,11 +733,6 @@ class LocalControlPlaneService:
             raise LocalObservationPolicyError(
                 "router-local-gate-rejects-formal-evidence-refs"
             )
-        if command.expected_plan_revision != 1:
-            raise ConcurrencyConflict(
-                f"expected_plan_revision={command.expected_plan_revision}, actual=1"
-            )
-
         now = datetime.now(UTC).isoformat()
         with closing(sqlite3.connect(self._database, timeout=30.0)) as connection:
             connection.row_factory = sqlite3.Row
@@ -727,6 +741,12 @@ class LocalControlPlaneService:
             connection.execute("BEGIN IMMEDIATE")
             try:
                 plan, items = self._bound_local_graph(connection, command, "evaluate_gate")
+                persisted_plan_revision = int(plan["state_version"])
+                if command.expected_plan_revision != persisted_plan_revision:
+                    raise ConcurrencyConflict(
+                        "expected_plan_revision="
+                        f"{command.expected_plan_revision}, actual={persisted_plan_revision}"
+                    )
                 matching = tuple(
                     item for item in items if item.phase_id == command.phase_id
                 )
@@ -843,6 +863,7 @@ class LocalControlPlaneService:
                         session_id=plan["session_id"],
                         expected_actor=plan["actor"],
                         expected_check_ids_by_phase=self._expected_local_check_ids(plan),
+                        expected_plan_revision=int(plan["state_version"]),
                     )
                 connection.commit()
             except Exception:
@@ -918,6 +939,7 @@ class LocalControlPlaneService:
             session_id=plan["session_id"],
             expected_actor=plan["actor"],
             expected_check_ids_by_phase=self._expected_local_check_ids(plan),
+            expected_plan_revision=int(plan["state_version"]),
         )
         if plan["goal_binding_id"] is not None:
             raise CapabilityUnavailable.for_local_condition(
