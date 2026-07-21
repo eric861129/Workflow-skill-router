@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import closing
+from dataclasses import replace
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -105,6 +106,8 @@ class LocalControlPlaneService:
             skill_semantics_hint=command.explicit_semantics,
             requested_work_mode_hint=command.requested_work_mode,
         ))
+        if command.requested_work_mode is None:
+            directive = replace(directive, requested_work_mode=None)
         routing_context = command.routing_context
         for field_name, values in (
             ("domains", routing_context.domains),
@@ -225,7 +228,6 @@ class LocalControlPlaneService:
             "explicit_skill_ids": list(directive.explicit_skills),
             "goal_binding_id": command.goal_binding_id,
             "objective_digest": objective_digest,
-            "profile_digest": routing_profile_digest,
             "requested_work_mode": command.requested_work_mode,
             "routing_context": {
                 "current_phase_id": routing_context.current_phase_id,

@@ -13,6 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from workflow_skill_router.local_control import LocalControlPlaneService
 from workflow_skill_router.persistence.migrator import iter_complete_statements
 from workflow_skill_router.persistence.sqlite_store import IdempotencyConflict
+from workflow_skill_router.routing.models import TaskSignals
+from workflow_skill_router.routing.task_signal_analyzer import TaskSignalAnalysis
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
     PlanWork,
@@ -139,6 +141,21 @@ class LocalControlPlaneTests(unittest.TestCase):
 
         self.assertEqual("single", result.routing_envelope)
         self.assertEqual("caller-work-mode-hint", result.classification.source)
+
+    def test_free_form_work_mode_phrase_is_not_a_structured_caller_hint(self) -> None:
+        free_form = self.service.plan_work(self.command(
+            objective="請用分階段處理這項工作",
+            requested_work_mode=None,
+            idempotency_key="free-form-work-mode",
+        ))
+        structured = self.service.plan_work(self.command(
+            objective="請用分階段處理這項工作",
+            requested_work_mode="phased",
+            idempotency_key="structured-work-mode",
+        ))
+
+        self.assertNotEqual("caller-work-mode-hint", free_form.classification.source)
+        self.assertEqual("caller-work-mode-hint", structured.classification.source)
 
     def test_builtin_single_fallback_is_explicit(self) -> None:
         result = self.service.plan_work(self.command(
@@ -361,6 +378,66 @@ class LocalControlPlaneTests(unittest.TestCase):
             "deterministic-objective-v2",
             new_plan.classification.classifier_revision,
         )
+
+    def test_replay_ignores_profile_outcome_changes_from_analyzer_revision(self) -> None:
+        profile_dir = self.database.parent / "profiles/personal"
+        profile_dir.mkdir(parents=True)
+        (profile_dir / "replay.json").write_text(json.dumps({
+            "schema_id": "workflow-skill-router/routing-profile",
+            "schema_version": "1.0.0",
+            "artifact_kind": "routing-profile",
+            "profile_id": "personal:replay",
+            "scope": "personal",
+            "enabled": True,
+            "rules": [{
+                "rule_id": "single-only",
+                "priority": 50,
+                "match": {
+                    "objective_keywords": ["交付"],
+                    "domains": [],
+                    "tags": [],
+                    "work_modes": ["single"],
+                },
+                "route": {
+                    "work_mode": "phased",
+                    "skill_tree": [{
+                        "phase_id": "delivery",
+                        "primary_skill_id": "skill:delivery",
+                        "support_skill_ids": [],
+                        "exit_gate": "delivered",
+                    }],
+                },
+            }],
+        }, ensure_ascii=False), encoding="utf-8")
+        command = self.command(
+            objective="交付變更",
+            requested_work_mode=None,
+            idempotency_key="behavioral-revision-replay",
+        )
+        first = self.service.plan_work(command)
+        revised_analysis = TaskSignalAnalysis(
+            signals=TaskSignals(distinct_stages=2),
+            confidence="medium",
+            classifier_revision="deterministic-objective-v2",
+            reason_codes=("multi-action-family",),
+        )
+
+        with patch(
+            "workflow_skill_router.local_control.analyze_task_signals",
+            return_value=revised_analysis,
+        ):
+            try:
+                replay = self.service.plan_work(command)
+            except IdempotencyConflict as error:
+                self.fail(f"exact replay was rejected after analyzer revision: {error}")
+
+        self.assertEqual(first, replay)
+        self.assertEqual("profile-route", replay.classification.source)
+        self.assertEqual(
+            "deterministic-objective-v1",
+            replay.classification.classifier_revision,
+        )
+        self.assertIsNotNone(replay.routing_profile_digest)
 
     def test_beta_1_explicit_plan_migrates_without_losing_intent_or_replay(self) -> None:
         self.directory.cleanup()
