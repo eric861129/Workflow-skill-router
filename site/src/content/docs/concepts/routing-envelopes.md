@@ -15,7 +15,13 @@ Treating every request as one step hides verification boundaries; treating every
 - `phased`: two or more distinct stages or domains; every phase reroutes independently.
 - `managed-goal`: resumable, cross-repository, multi-milestone, dependency-DAG work, or active Goal progress/steer.
 
-A Managed Goal work item may override its inner envelope to `single` or `phased`. Goal status and side questions are control/read-only requests, not new Managed Goal work.
+A Managed Goal work item may use `single` or `phased` as its inner envelope. Classification follows a fixed order:
+
+1. Goal status and side questions are classified first as control/read-only requests, not new execution work.
+2. Native Goal progress or steer establishes the outer `managed-goal` envelope.
+3. For a detached request or the current work item, `requested_work_mode`, the deterministic analyzer, a deterministic Profile route, and the builtin fallback choose the inner envelope, in that order.
+
+The structural analyzer records `classifier_revision: deterministic-objective-v1`, `classification_source`, and `classification_reason_codes`. It evaluates bounded signals such as stages, dependencies, and resumability. It does not claim to understand every task semantically, and classification never authorizes a Skill, tool, or side effect. A semantic adapter may suggest a reviewable candidate but cannot directly rewrite a persisted route.
 
 <a id="example"></a>
 ## State, input, and output example
@@ -23,10 +29,28 @@ A Managed Goal work item may override its inner envelope to `single` or `phased`
 ```json
 {
   "signals": {"distinct_stages": 3, "dependency_edges": 2, "resumable": false},
-  "decision": {"execution_kind": "routed-work", "envelope": "phased"},
+  "decision": {
+    "execution_kind": "routed-work",
+    "envelope": "phased",
+    "classifier_revision": "deterministic-objective-v1",
+    "classification_source": "deterministic-analyzer",
+    "classification_reason_codes": ["multiple-distinct-stages"]
+  },
   "phases": ["design", "implement", "verify"]
 }
 ```
+
+<a id="runtime-readiness"></a>
+## Runtime readiness
+
+| Readiness | Operations | What it means |
+| --- | --- | --- |
+| `local-ready` | `plan_work`, consent proposal/transition, `get_router_status` | Four bundled R0 operations are available for documented Router-local work. |
+| `conditional-local` | `get_next_work`, `record_work_event`, `evaluate_gate` | Only Router-owned graphs and local advisory evidence; outputs use `authority_mode=router-local` and `host_transition_authorized=false`. |
+| `verified-host-required` | `sync_runtime_context`, `validate_route` | Requires verified Host state, policy, and receipts. |
+| `configured-adapter-required` | model evaluation, comparison, export | Requires a server-configured adapter, authorization, and applicable attestation. |
+
+Host-authoritative state uses a separate `authority_mode=verified-host`; configured evaluation uses `authority_mode=configured-adapter`. GA does not mean all 12 tools are locally usable. The honest split is four always local-ready operations, three conditionally local operations, and five operations that keep their stronger authority requirements.
 
 <a id="failure-modes"></a>
 ## Failure modes
@@ -34,11 +58,14 @@ A Managed Goal work item may override its inner envelope to `single` or `phased`
 - A large request forced into `single` loses phase-specific capability and evidence checks.
 - A copy edit forced into `managed-goal` creates needless state and consent overhead.
 - Reusing one route across phases keeps stale capabilities active after the work changes.
+- If a local request targets native Goal progress or steer, it fails closed with a verified-Host requirement and does not mutate native Codex Goal.
+- A passing Router-local gate is only advisory. It does not activate a Skill, authorize a native Goal transition, or grant deployment or production permission.
+- Without the required receipt, configured adapter, consent, or Explicit Skill Lock condition, the protected operation does not run.
 
 <a id="security-boundary"></a>
 ## Security and authority boundary
 
-Envelope classification does not grant tool permission. Every route still passes capability, risk, consent, and host approval checks. The model cannot use “Goal mode” to widen repository, production, or communication authority.
+Envelope classification does not grant tool permission. Every route still passes capability, risk, consent, Explicit Skill Lock, and Host approval checks. Router-local state never claims Skill activation or changes native Goal state. The model cannot use “Goal mode” to widen repository, deployment, production, or communication authority.
 
 <a id="verify"></a>
 ## Verify

@@ -14,6 +14,29 @@ DOCS=(
 
 
 class V2DocumentationTests(unittest.TestCase):
+    def test_explainable_classification_and_runtime_mode_contract(self):
+        documents = (
+            "docs/adr/0003-explainable-classification-and-runtime-modes.md",
+            "docs/architecture/v2-overview.md",
+            "site/src/content/docs/concepts/routing-envelopes.md",
+            "site/src/content/docs/zh-tw/concepts/routing-envelopes.md",
+        )
+        required_terms = (
+            "deterministic-objective-v1",
+            "classification_source",
+            "classification_reason_codes",
+            "conditional-local",
+            "host_transition_authorized",
+        )
+
+        for relative in documents:
+            path = ROOT / relative
+            with self.subTest(relative=relative):
+                self.assertTrue(path.is_file(), relative)
+                text = path.read_text("utf-8")
+                for term in required_terms:
+                    self.assertIn(term, text, relative)
+
     def test_required_claim_boundaries_exist(self):
         for relative in DOCS:
             text=(ROOT/relative).read_text("utf-8")
