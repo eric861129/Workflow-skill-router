@@ -21,7 +21,10 @@ from workflow_skill_router.routing.models import (
     TaskSignals,
     UserDirective,
 )
-from workflow_skill_router.routing.profiler import decide_request
+from workflow_skill_router.routing.profiler import (
+    decide_request,
+    resolve_classification_source,
+)
 
 
 class RequestProfilerTests(unittest.TestCase):
@@ -75,6 +78,68 @@ class RequestProfilerTests(unittest.TestCase):
             RuntimeMode.HYBRID,
         )
         self.assertEqual(RoutingEnvelope.MANAGED_GOAL, decision.routing.envelope)
+
+    def test_native_goal_binding_has_first_classification_precedence(self) -> None:
+        directive = replace(
+            UserDirective.auto(),
+            requested_work_mode=RoutingEnvelope.SINGLE,
+        )
+        decision = decide_request(
+            GoalRelation.PROGRESS,
+            TaskSignals.large(),
+            directive,
+            RuntimeMode.HYBRID,
+        )
+
+        self.assertEqual(
+            "native-goal-binding",
+            resolve_classification_source(GoalRelation.PROGRESS, directive, decision),
+        )
+
+    def test_caller_work_mode_hint_precedes_deterministic_analysis(self) -> None:
+        directive = replace(
+            UserDirective.auto(),
+            requested_work_mode=RoutingEnvelope.SINGLE,
+        )
+        decision = decide_request(
+            GoalRelation.NONE,
+            TaskSignals.large(),
+            directive,
+            RuntimeMode.HYBRID,
+        )
+
+        self.assertEqual(
+            "caller-work-mode-hint",
+            resolve_classification_source(GoalRelation.NONE, directive, decision),
+        )
+
+    def test_non_single_analyzer_decision_is_explainable(self) -> None:
+        directive = UserDirective.auto()
+        decision = decide_request(
+            GoalRelation.NONE,
+            TaskSignals(distinct_stages=2),
+            directive,
+            RuntimeMode.HYBRID,
+        )
+
+        self.assertEqual(
+            "deterministic-analyzer",
+            resolve_classification_source(GoalRelation.NONE, directive, decision),
+        )
+
+    def test_single_analyzer_default_uses_builtin_fallback(self) -> None:
+        directive = UserDirective.auto()
+        decision = decide_request(
+            GoalRelation.NONE,
+            TaskSignals.small(),
+            directive,
+            RuntimeMode.HYBRID,
+        )
+
+        self.assertEqual(
+            "builtin-fallback",
+            resolve_classification_source(GoalRelation.NONE, directive, decision),
+        )
 
     def test_explicit_phased_mode_overrides_small_size_classifier(self) -> None:
         directive = replace(

@@ -63,3 +63,21 @@ def decide_request(
         ),
     )
     return RequestDecision(goal_relation, ExecutionKind.ROUTED_WORK, routing)
+
+
+def resolve_classification_source(
+    goal_relation: GoalRelation,
+    directive: UserDirective,
+    decision: RequestDecision,
+) -> str:
+    """依工作包絡的權威優先序回傳可持久化分類來源。"""
+    if goal_relation in (GoalRelation.PROGRESS, GoalRelation.STEER):
+        return "native-goal-binding"
+    if directive.requested_work_mode is not None:
+        return "caller-work-mode-hint"
+    if (
+        decision.routing is not None
+        and decision.routing.envelope is not RoutingEnvelope.SINGLE
+    ):
+        return "deterministic-analyzer"
+    return "builtin-fallback"

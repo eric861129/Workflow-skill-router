@@ -67,6 +67,14 @@ class PlannedSkillPhase(ResultCodec):
 
 
 @dataclass(frozen=True, slots=True)
+class ClassificationDecisionView(ResultCodec):
+    source: str
+    confidence: str
+    classifier_revision: str
+    reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class PlanWorkResult(ResultCodec):
     status: str
     workflow_run_id: str | None
@@ -84,6 +92,7 @@ class PlanWorkResult(ResultCodec):
     planned_skill_tree: tuple[PlannedSkillPhase, ...]
     activation_status: str
     profile_warnings: tuple[str, ...]
+    classification: ClassificationDecisionView
 
 
 @dataclass(frozen=True, slots=True)

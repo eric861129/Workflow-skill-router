@@ -21,6 +21,12 @@ test("plan_work and get_router_status outputs match bundled runtime fields", () 
     planned_skill_tree: [],
     activation_status: "not-planned",
     profile_warnings: [],
+    classification: {
+      source: "caller-work-mode-hint",
+      confidence: "low",
+      classifier_revision: "deterministic-objective-v1",
+      reason_codes: ["single-default"],
+    },
   }).success, true);
   assert.equal(TOOL_OUTPUT_SCHEMAS.get_router_status.safeParse({
     goal_binding_id: null,
@@ -54,7 +60,36 @@ test("profile-routed plan exposes current intent without claiming activation", (
     }],
     activation_status: "intended-unverified",
     profile_warnings: [],
+    classification: {
+      source: "profile-route",
+      confidence: "low",
+      classifier_revision: "deterministic-objective-v1",
+      reason_codes: ["single-default"],
+    },
   }).success, true);
+});
+
+test("plan classification rejects unknown properties", () => {
+  const classification = {
+    source: "deterministic-analyzer",
+    confidence: "medium",
+    classifier_revision: "deterministic-objective-v1",
+    reason_codes: ["multi-stage-sequence"],
+    grants_authority: true,
+  };
+
+  assert.equal(TOOL_OUTPUT_SCHEMAS.plan_work.shape.classification.safeParse(
+    classification,
+  ).success, false);
+});
+
+test("plan classification rejects unknown sources", () => {
+  assert.equal(TOOL_OUTPUT_SCHEMAS.plan_work.shape.classification.safeParse({
+    source: "semantic-guess",
+    confidence: "low",
+    classifier_revision: "deterministic-objective-v1",
+    reason_codes: [],
+  }).success, false);
 });
 
 test("support consent output preserves the route binding", () => {

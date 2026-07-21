@@ -26,6 +26,19 @@ const plannedSkillPhase = z.object({
   exit_gate: z.string(),
 }).strict();
 const sha256Digest = z.string().regex(/^sha256:[0-9a-f]{64}$/);
+const classificationDecision = z.object({
+  source: z.enum([
+    "native-goal-binding",
+    "caller-work-mode-hint",
+    "deterministic-analyzer",
+    "profile-route",
+    "builtin-fallback",
+    "legacy-replay",
+  ]),
+  confidence: z.enum(["high", "medium", "low"]),
+  classifier_revision: z.string(),
+  reason_codes: z.array(z.string()),
+}).strict();
 
 export const TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: z.object({
@@ -54,6 +67,7 @@ export const TOOL_OUTPUT_SCHEMAS = {
     planned_skill_tree: z.array(plannedSkillPhase),
     activation_status: z.enum(["not-planned", "intended-unverified"]),
     profile_warnings: z.array(z.string()),
+    classification: classificationDecision,
   }).strict(),
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,

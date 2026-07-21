@@ -22,6 +22,7 @@ from workflow_skill_router.routing.models import (
 from workflow_skill_router.routing.profiler import decide_request
 from workflow_skill_router.schemas.artifacts import canonical_json, canonical_json_bytes
 from workflow_skill_router.service_models import (
+    ClassificationDecisionView,
     NextWorkResult,
     PlanWorkResult,
     RouterDiagnostics,
@@ -103,6 +104,20 @@ class _VerifiedPlanner:
                 "intended-unverified" if command.explicit_skill_ids else "not-planned"
             ),
             profile_warnings=(),
+            classification=ClassificationDecisionView(
+                source=(
+                    "caller-work-mode-hint"
+                    if command.requested_work_mode is not None
+                    else "builtin-fallback"
+                ),
+                confidence="low",
+                classifier_revision="verified-host-fixture-v1",
+                reason_codes=(
+                    ("caller-work-mode-hint",)
+                    if command.requested_work_mode is not None
+                    else ("single-default",)
+                ),
+            ),
         )
         self.plans[workflow_run_id] = result
         return result

@@ -21,11 +21,15 @@ from workflow_skill_router.routing.models import (
     DirectiveInput,
     GoalRelation,
     RuntimeMode,
-    TaskSignals,
 )
-from workflow_skill_router.routing.profiler import decide_request
+from workflow_skill_router.routing.profiler import (
+    decide_request,
+    resolve_classification_source,
+)
+from workflow_skill_router.routing.task_signal_analyzer import analyze_task_signals
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
+    ClassificationDecisionView,
     PlannedSkillPhase,
     PlanWorkResult,
     RouterStatusView,
@@ -101,15 +105,6 @@ class LocalControlPlaneService:
             skill_semantics_hint=command.explicit_semantics,
             requested_work_mode_hint=command.requested_work_mode,
         ))
-        decision = decide_request(
-            GoalRelation.PROGRESS if command.goal_binding_id is not None else GoalRelation.NONE,
-            TaskSignals.small(),
-            directive,
-            RuntimeMode.SKILL_ONLY,
-        )
-        if decision.routing is None:
-            raise RuntimeError("planning-routing-profile-unavailable")
-
         routing_context = command.routing_context
         for field_name, values in (
             ("domains", routing_context.domains),
@@ -129,7 +124,31 @@ class LocalControlPlaneService:
         ):
             raise ValueError("routing_context.current_phase_id 格式無效")
 
+        analysis = analyze_task_signals(
+            objective,
+            trusted_domains=routing_context.domains,
+            trusted_tags=routing_context.tags,
+        )
+        goal_relation = (
+            GoalRelation.PROGRESS
+            if command.goal_binding_id is not None
+            else GoalRelation.NONE
+        )
+        decision = decide_request(
+            goal_relation,
+            analysis.signals,
+            directive,
+            RuntimeMode.SKILL_ONLY,
+        )
+        if decision.routing is None:
+            raise RuntimeError("planning-routing-profile-unavailable")
+
         routing_envelope = decision.routing.envelope.value
+        classification_source = resolve_classification_source(
+            goal_relation,
+            directive,
+            decision,
+        )
         route_source = "builtin-default"
         routing_profile_ids: tuple[str, ...] = ()
         routing_profile_digest = None
@@ -166,6 +185,8 @@ class LocalControlPlaneService:
                 ),
             )
             if resolved is not None:
+                if resolved.work_mode != routing_envelope:
+                    classification_source = "profile-route"
                 routing_envelope = resolved.work_mode
                 route_source = resolved.route_source
                 routing_profile_ids = resolved.applied_profile_ids
@@ -256,6 +277,8 @@ class LocalControlPlaneService:
                 "explicit_semantics", "route_source", "routing_profile_ids_json",
                 "routing_profile_digest", "matched_profile_rule_id", "planned_skill_ids_json",
                 "planned_skill_tree_json", "activation_status", "profile_warnings_json",
+                "classification_source", "classification_confidence",
+                "classifier_revision", "classification_reason_codes_json",
                 "created_work_items", "state_version", "created_at",
             )
             values = (
@@ -286,6 +309,10 @@ class LocalControlPlaneService:
                     canonical_json([phase.to_dict() for phase in planned_skill_tree]),
                     activation_status,
                     canonical_json(list(profile_warnings)),
+                    classification_source,
+                    analysis.confidence,
+                    analysis.classifier_revision,
+                    canonical_json(list(analysis.reason_codes)),
                     1,
                     1,
                     datetime.now(UTC).isoformat(),
@@ -634,6 +661,14 @@ class LocalControlPlaneService:
             planned_skill_tree=planned_tree,
             activation_status=row["activation_status"],
             profile_warnings=tuple(json.loads(row["profile_warnings_json"])),
+            classification=ClassificationDecisionView(
+                source=row["classification_source"],
+                confidence=row["classification_confidence"],
+                classifier_revision=row["classifier_revision"],
+                reason_codes=tuple(
+                    json.loads(row["classification_reason_codes_json"])
+                ),
+            ),
         )
 
     @staticmethod
