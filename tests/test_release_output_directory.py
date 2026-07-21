@@ -210,6 +210,63 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                     self.assertIn("unsafe allowlist path", result.stderr)
                     self.assertFalse(output.exists())
 
+    def test_cli_rejects_missing_required_plugin_runtime_file_before_writing_output(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "release-fixture"
+            scripts = repository / "scripts"
+            allowlists = repository / "release" / "allowlists"
+            scripts.mkdir(parents=True)
+            allowlists.mkdir(parents=True)
+            (repository / "plugins" / "workflow-skill-router" / "mcp").mkdir(
+                parents=True
+            )
+            shutil.copy2(BUILDER, scripts / BUILDER.name)
+            shutil.copy2(
+                ROOT / "scripts" / "release_path_safety.py",
+                scripts / "release_path_safety.py",
+            )
+            (repository / "release" / "version.json").write_text(
+                '{"v1_pinned_version":"1.3.1","v2_version":"2.0.0-beta.4"}\n',
+                encoding="utf-8",
+                newline="\n",
+            )
+            (allowlists / "plugin-runtime-files.json").write_text(
+                '{"files":["mcp/server.bundle.mjs"]}\n',
+                encoding="utf-8",
+                newline="\n",
+            )
+            (allowlists / "skill-package.json").write_text(
+                '{"files":[]}\n', encoding="utf-8", newline="\n"
+            )
+            output = repository / "output"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-S",
+                    "-B",
+                    str(scripts / BUILDER.name),
+                    "--output-dir",
+                    str(output),
+                    "--provenance-mode",
+                    "test",
+                ],
+                cwd=repository,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(
+                "required allowlist file is missing or not a regular file: "
+                "mcp/server.bundle.mjs",
+                result.stderr,
+            )
+            self.assertFalse(output.exists())
+
     def test_isolated_builder_help_cannot_import_a_scripts_zipfile_shadow(
         self,
     ) -> None:

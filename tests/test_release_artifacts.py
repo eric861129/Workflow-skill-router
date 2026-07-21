@@ -1,4 +1,6 @@
+import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -10,6 +12,19 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER = ROOT / "scripts" / "build-release-artifacts.py"
+
+
+def load_builder_module():
+    specification = importlib.util.spec_from_file_location(
+        "workflow_skill_router_release_builder_test",
+        BUILDER,
+    )
+    if specification is None or specification.loader is None:
+        raise AssertionError("release builder module could not be loaded")
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[specification.name] = module
+    specification.loader.exec_module(module)
+    return module
 
 
 class ReleaseArtifactTests(unittest.TestCase):
@@ -74,7 +89,7 @@ class ReleaseArtifactTests(unittest.TestCase):
                 archive.read("workflow-skill-router/SKILL.md"),
             )
 
-    def test_plugin_archive_contains_only_existing_runtime_allowlist_files(self) -> None:
+    def test_plugin_archive_contains_every_runtime_allowlist_file(self) -> None:
         allowlist = json.loads(
             (
                 ROOT / "release" / "allowlists" / "plugin-runtime-files.json"
@@ -84,7 +99,6 @@ class ReleaseArtifactTests(unittest.TestCase):
         expected = {
             f"workflow-skill-router/{path}"
             for path in allowlist
-            if (plugin_root / path).is_file()
         }
 
         archive_path = (
@@ -98,6 +112,41 @@ class ReleaseArtifactTests(unittest.TestCase):
         self.assertTrue(all("/mcp/src/" not in name for name in names))
         self.assertTrue(all("/mcp/test/" not in name for name in names))
         self.assertTrue(all("/scripts/" not in name for name in names))
+
+    def test_plugin_artifact_fails_closed_when_required_runtime_file_is_missing(
+        self,
+    ) -> None:
+        builder = load_builder_module()
+        allowlist = json.loads(
+            (
+                ROOT / "release" / "allowlists" / "plugin-runtime-files.json"
+            ).read_text(encoding="utf-8")
+        )["files"]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            plugin_root = Path(temporary) / "plugin"
+            source_root = ROOT / "plugins" / "workflow-skill-router"
+            for relative in allowlist:
+                if relative == "mcp/server.bundle.mjs":
+                    continue
+                source = source_root / relative
+                destination = plugin_root / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+
+            original_plugin_root = builder.PLUGIN_ROOT
+            builder.PLUGIN_ROOT = plugin_root
+            try:
+                with self.assertRaisesRegex(
+                    FileNotFoundError,
+                    r"mcp[\\/]server\.bundle\.mjs",
+                ):
+                    builder.artifacts(
+                        Path(temporary) / "release",
+                        builder.BuildProvenance("test", None, None),
+                    )
+            finally:
+                builder.PLUGIN_ROOT = original_plugin_root
 
     def test_sbom_and_provenance_describe_real_runtime_dependencies(self) -> None:
         sbom = json.loads(

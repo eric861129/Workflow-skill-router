@@ -132,7 +132,10 @@ def safe_allowlist_entries(
             raise ValueError(f"unsafe allowlist path: {relative_name!r}") from error
         if not path.is_file():
             if require_all:
-                raise FileNotFoundError(path)
+                raise FileNotFoundError(
+                    "required allowlist file is missing or not a regular file: "
+                    f"{relative_name}"
+                )
             continue
         if path.is_symlink():
             raise ValueError(f"symlink forbidden: {path.relative_to(ROOT)}")
@@ -213,7 +216,7 @@ def artifacts(
             PLUGIN_ROOT,
             "workflow-skill-router",
             RELEASE / "allowlists" / "plugin-runtime-files.json",
-            require_all=False,
+            require_all=True,
         )
     )
     skill = zip_bytes(
