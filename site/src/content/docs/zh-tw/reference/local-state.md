@@ -23,7 +23,9 @@ Bundled local R0 會儲存 durable plan records、state versions、idempotency k
 
 ## Upgrade 與移除
 
-Plugin upgrade 不會清除 state，因為 state root 位於安裝目錄外；`codex plugin remove` 也會保留它。仍需要 audit history 或 resumable work 時，請勿移除。
+state root 會解析到 Plugin 安裝／快取邊界之外。自動化的 local-root replacement 演練已驗證：保留這個外部路徑時，resolver 能持續找到相同的 state；但它不代表已驗證真實 `codex plugin remove` 後再重新安裝仍會保留 state。Windows/macOS/Linux 的完整生命週期驗證仍是尚未完成的 release-candidate migration evidence。
+
+仍需要 audit history 或 resumable work 時，請保留這個外部 state path。進行 upgrade 或移除流程前，記錄明確路徑；在完成對應的生命週期證據前，請將任何 state 保留結果視為未驗證。
 
 移除任何 state file 前，先停止 active Router processes，並確認沒有 Goal 依賴該狀態。只移除已檢查過的明確檔案或目錄；專案不會把 uninstall 視為靜默遞迴刪除的授權。
 

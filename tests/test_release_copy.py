@@ -115,6 +115,71 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("transition_support_consent", text)
                 self.assertIn("get_router_status", text)
 
+    def test_local_state_docs_do_not_claim_unverified_plugin_uninstall_continuity(self) -> None:
+        pages = (
+            "plugins/workflow-skill-router/README.md",
+            "site/src/content/docs/guides/install-plugin.md",
+            "site/src/content/docs/reference/local-state.md",
+            "site/src/content/docs/zh-tw/reference/local-state.md",
+            "site/src/content/docs/zh-tw/guides/install-plugin.md",
+        )
+        unsupported_claims = (
+            "Uninstalling the Plugin does not silently delete Router state.",
+            "Uninstalling does not delete external Router state.",
+            "`codex plugin remove` also leaves state intact.",
+            "`codex plugin remove` 也會保留它。",
+            "移除 Plugin 不會刪除外部 Router state。",
+            "remove/reinstall preserves state",
+            "移除後重新安裝仍會保留 state。",
+        )
+        required_boundaries = {
+            "plugins/workflow-skill-router/README.md": (
+                "outside the Plugin installation/cache boundary",
+                "local-root replacement",
+                "`codex plugin remove` followed by reinstall",
+                "Windows/macOS/Linux",
+                "has not yet been completed",
+            ),
+            "site/src/content/docs/guides/install-plugin.md": (
+                "outside the Plugin installation/cache boundary",
+                "local-root replacement",
+                "`codex plugin remove` followed by reinstall",
+                "Windows/macOS/Linux",
+                "has not yet been completed",
+            ),
+            "site/src/content/docs/reference/local-state.md": (
+                "outside the Plugin installation/cache boundary",
+                "local-root replacement",
+                "`codex plugin remove` followed by reinstall",
+                "Windows/macOS/Linux",
+                "has not yet been completed",
+            ),
+            "site/src/content/docs/zh-tw/reference/local-state.md": (
+                "Plugin 安裝／快取邊界之外",
+                "local-root replacement",
+                "`codex plugin remove` 後再重新安裝",
+                "Windows/macOS/Linux",
+                "尚未完成",
+            ),
+            "site/src/content/docs/zh-tw/guides/install-plugin.md": (
+                "Plugin 安裝／快取邊界之外",
+                "local-root replacement",
+                "`codex plugin remove` 後再重新安裝",
+                "Windows/macOS/Linux",
+                "尚未完成",
+            ),
+        }
+
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("Plugin", text)
+                self.assertIn("state", text.lower())
+                for boundary in required_boundaries[relative]:
+                    self.assertIn(boundary, text)
+                for claim in unsupported_claims:
+                    self.assertNotIn(claim, text)
+
     def test_public_contract_distinguishes_always_local_from_conditional_local(self) -> None:
         pages = (
             "README.md",

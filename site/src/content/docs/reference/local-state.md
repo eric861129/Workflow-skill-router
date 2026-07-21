@@ -23,7 +23,9 @@ Bundled local R0 stores durable plan records, state versions, idempotency keys, 
 
 ## Upgrade and uninstall
 
-Plugin upgrades do not erase state because the state root is external. `codex plugin remove` also leaves state intact. Keep it while you need audit history or resumable work.
+The state root resolves outside the Plugin installation/cache boundary. The automated local-root replacement rehearsal verifies resolver continuity while that external path is retained. It does not prove that a real `codex plugin remove` followed by reinstall preserves state, and Windows/macOS/Linux lifecycle verification remains release-candidate migration evidence that has not yet been completed.
+
+Keep the external state path while you need audit history or resumable work. Before an upgrade or uninstall workflow, record the exact path and treat any state preservation outcome as unverified until the corresponding lifecycle evidence exists.
 
 Before removing any state file, stop active Router processes and verify that no Goal depends on it. Remove only the explicit file or directory you have reviewed; the project never treats uninstall as permission for silent recursive deletion.
 
