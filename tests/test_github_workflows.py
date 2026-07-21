@@ -358,15 +358,24 @@ class GitHubWorkflowTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("verify-remote-governance.py", template)
+        self.assertIn(
+            "python scripts/verify-remote-governance.py "
+            "--repo eric861129/Workflow-skill-router",
+            template,
+        )
         self.assertIn("does not change GitHub configuration", template)
+        self.assertIn(
+            "does not prove a\nrelease workflow has successfully exercised "
+            "the GitHub Actions bypass",
+            template,
+        )
 
     def test_bilingual_release_processes_define_remote_governance_boundary(self) -> None:
         command = (
             "python scripts/verify-remote-governance.py "
             "--repo eric861129/Workflow-skill-router"
         )
-        for path, rehearsal_boundary in (
+        for path, required_boundaries in (
             (
                 ROOT
                 / "site"
@@ -375,7 +384,13 @@ class GitHubWorkflowTests(unittest.TestCase):
                 / "docs"
                 / "contributing"
                 / "release-process.md",
-                "not a live release-workflow rehearsal",
+                (
+                    "This command is read-only and does not change GitHub configuration",
+                    "pass confirms the captured configuration meets the checked-in contract",
+                    "blocks the release checklist",
+                    "privileged external work",
+                    "not a live release-workflow rehearsal",
+                ),
             ),
             (
                 ROOT
@@ -386,13 +401,39 @@ class GitHubWorkflowTests(unittest.TestCase):
                 / "zh-tw"
                 / "contributing"
                 / "release-process.md",
-                "不是實際發行工作流程的演練",
+                (
+                    "此命令為唯讀，不會變更 GitHub 設定",
+                    "通過僅確認擷取到的設定符合已納入版控的契約",
+                    "必須阻擋本次發行清單",
+                    "需要權限的外部作業",
+                    "不是實際發行工作流程的演練",
+                ),
             ),
         ):
             content = path.read_text(encoding="utf-8")
             with self.subTest(path=path):
                 self.assertIn(command, content)
-                self.assertIn(rehearsal_boundary, content)
+                for boundary in required_boundaries:
+                    with self.subTest(boundary=boundary):
+                        self.assertIn(boundary, content)
+
+    def test_remote_release_governance_guide_defines_targets_and_apply_boundaries(
+        self,
+    ) -> None:
+        guide = (ROOT / "docs" / "governance" / "remote-release-governance.md").read_text(
+            encoding="utf-8"
+        )
+
+        for required in (
+            "The protected branch is `main`.",
+            "targets `refs/tags/v2.*`",
+            "## Apply through the GitHub UI",
+            "## Apply through the GitHub API",
+            "Applying these settings is privileged external work.",
+            "API application is also privileged external work.",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, guide)
 
 
 if __name__ == "__main__":
