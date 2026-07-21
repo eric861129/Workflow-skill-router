@@ -38,6 +38,11 @@ forged receipt, wrong session, CAS conflict, idempotent replay, native Goal
 resume refresh, and artifact protection failure. It does not certify a real
 Host deployment or `hybrid-full`.
 
+The runner records the same `RouterCompositionPorts` delivered to
+`composition.open`; a probe may provide inputs but cannot substitute shadow
+ports. A manifest claim remains declared metadata, so every development report
+keeps `production_authority_verified=false`.
+
 For a production adapter, replace every in-memory port with a Host-owned
 implementation, keep the same `RouterCompositionPorts` composition boundary,
 run the suite, and then complete a separate real-environment pilot.

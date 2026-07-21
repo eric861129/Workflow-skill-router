@@ -10,7 +10,7 @@ from workflow_skill_router.composition import RouterCompositionPorts
 from workflow_skill_router.host_integration import (
     HOST_MANIFEST_SCHEMA,
     REFERENCE_AUTHORITY_LABEL,
-    HostConformanceFixture,
+    HostConformanceProbeInputs,
     HostIntegrationConformanceError,
     HostIntegrationManifest,
     HostPortRequirement,
@@ -71,6 +71,16 @@ class _ActivationPreflight:
 class _RejectingArtifactProtector:
     def protect(self, content: bytes, purpose: str):
         del content, purpose
+        raise HostIntegrationConformanceError("artifact-protection-failed")
+
+    def put_bytes(
+        self,
+        content: bytes,
+        media_type: str,
+        classification: str,
+        purpose: str,
+    ):
+        del content, media_type, classification, purpose
         raise HostIntegrationConformanceError("artifact-protection-failed")
 
 
@@ -216,7 +226,6 @@ class ReferenceHostAdapter:
     def __init__(self) -> None:
         self.build_count = 0
         self.last_ports: RouterCompositionPorts | None = None
-        self._fixture: HostConformanceFixture | None = None
 
     def host_manifest(self) -> HostIntegrationManifest:
         return _manifest()
@@ -244,7 +253,7 @@ class ReferenceHostAdapter:
             authorizer=request_authorizer,
             runtime_authority=noop,
             runtime_context=noop,
-            artifacts=noop,
+            artifacts=artifact_protector,
             snapshot_codec=noop,
             runtime_sync=noop,
             projections=noop,
@@ -264,26 +273,18 @@ class ReferenceHostAdapter:
             evaluation=evaluation_ports,
         )
         self.last_ports = ports
-        self._fixture = HostConformanceFixture(
-            snapshots=snapshots,
-            activation_preflight=activation_preflight,
-            coordinator=coordinator,
-            scheduler=scheduler,
-            artifact_protector=artifact_protector,
-            fresh_snapshot_ref=snapshots.fresh_ref,
-            stale_snapshot_ref=snapshots.stale_ref,
-            valid_receipt_ref=activation_preflight.valid_receipt_ref,
+        return ports
+
+    def build_conformance_probe(self) -> HostConformanceProbeInputs:
+        return HostConformanceProbeInputs(
+            fresh_snapshot_ref=_SnapshotRepository.fresh_ref,
+            stale_snapshot_ref=_SnapshotRepository.stale_ref,
+            valid_receipt_ref=_ActivationPreflight.valid_receipt_ref,
             forged_receipt_ref="receipt:reference-forged",
             valid_session_id=VALID_SESSION,
             wrong_session_id="session:wrong",
             native_goal_id="native-goal:reference",
         )
-        return ports
-
-    def build_conformance_fixture(self) -> HostConformanceFixture:
-        if self._fixture is None:
-            raise HostIntegrationConformanceError("composition-required")
-        return self._fixture
 
 
 def create_reference_adapter() -> ReferenceHostAdapter:
@@ -309,7 +310,8 @@ def public_reference_identity() -> dict[str, object]:
     return {
         "adapter_id": manifest.adapter_id,
         "authority_label": manifest.authority_label,
-        "production_authority": manifest.production_authority,
+        "production_authority_declared": manifest.production_authority,
+        "production_authority_verified": False,
         "host_pilot_verified": False,
         "hybrid_full": False,
         "manifest_digest": "sha256:" + sha256(

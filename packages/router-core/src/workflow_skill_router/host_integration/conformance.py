@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from workflow_skill_router.composition import open as open_router
+from workflow_skill_router.composition import RouterCompositionPorts, open as open_router
 from workflow_skill_router.host_integration.contracts import (
     EventAppendProbe,
     HostConformanceCase,
@@ -13,7 +13,29 @@ from workflow_skill_router.host_integration.contracts import (
     ServerOwnedHostResources,
     validate_host_manifest,
 )
+from workflow_skill_router.ports import HostConformanceAdapterPort
 from workflow_skill_router.service_models import RequestContext
+
+
+class _RecordingAdapter:
+    """委派正式 adapter，並捕捉送入 production composition root 的同一組 ports。"""
+
+    def __init__(self, delegate) -> None:
+        self._delegate = delegate
+        self.captured_ports: RouterCompositionPorts | None = None
+
+    def host_manifest(self):
+        return self._delegate.host_manifest()
+
+    def build_router_ports(self, **server_owned_resources):
+        ports = self._delegate.build_router_ports(**server_owned_resources)
+        self.captured_ports = ports
+        return ports
+
+    def require_captured_ports(self) -> RouterCompositionPorts:
+        if self.captured_ports is None:
+            raise HostIntegrationConformanceError("composition-ports-not-captured")
+        return self.captured_ports
 
 
 def _expected_failure(
@@ -34,14 +56,18 @@ def _expected_failure(
     return HostConformanceCase(name, False, "fail-closed-not-enforced")
 
 
-def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostConformanceReport:
+def run_host_conformance(
+    adapter: HostConformanceAdapterPort,
+    resources: ServerOwnedHostResources,
+) -> HostConformanceReport:
     """透過 production composition root 執行離線、vendor-neutral Host conformance。"""
 
     manifest = validate_host_manifest(adapter.host_manifest())
+    recording_adapter = _RecordingAdapter(adapter)
     service = open_router(
         resources.database,
         resources.artifact_root,
-        adapter,
+        recording_adapter,
         resources.request_authorizer,
         resources.instruction_content_resolver,
         resources.artifact_protector,
@@ -50,12 +76,13 @@ def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostCo
         resources.clock,
         resources.id_factory,
     )
-    fixture = adapter.build_conformance_fixture()
+    ports = recording_adapter.require_captured_ports()
+    probe = adapter.build_conformance_probe()
     valid_context = RequestContext(
-        fixture.valid_session_id, "conformance-runner", "policy:conformance",
+        probe.valid_session_id, "conformance-runner", "policy:conformance",
     )
     wrong_context = RequestContext(
-        fixture.wrong_session_id, "conformance-runner", "policy:conformance",
+        probe.wrong_session_id, "conformance-runner", "policy:conformance",
     )
     cases: list[HostConformanceCase] = [
         HostConformanceCase(
@@ -66,32 +93,32 @@ def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostCo
         _expected_failure(
             "snapshot-stale",
             "snapshot-stale",
-            lambda: fixture.snapshots.require(fixture.stale_snapshot_ref),
+            lambda: ports.snapshots.require(probe.stale_snapshot_ref),
         ),
         _expected_failure(
             "receipt-forged",
             "activation-receipt-invalid",
-            lambda: fixture.activation_preflight.verify_consumption_receipt(
-                ReceiptProbe(valid_context, fixture.forged_receipt_ref)
+            lambda: ports.activation_preflight.verify_consumption_receipt(
+                ReceiptProbe(valid_context, probe.forged_receipt_ref)
             ),
         ),
         _expected_failure(
             "session-mismatch",
             "request-session-mismatch",
-            lambda: fixture.activation_preflight.verify_consumption_receipt(
-                ReceiptProbe(wrong_context, fixture.valid_receipt_ref)
+            lambda: ports.activation_preflight.verify_consumption_receipt(
+                ReceiptProbe(wrong_context, probe.valid_receipt_ref)
             ),
         ),
     ]
 
-    first = fixture.coordinator.record(EventAppendProbe(
-        fixture.valid_session_id,
+    first = ports.coordinator.record(EventAppendProbe(
+        probe.valid_session_id,
         0,
         "conformance-idempotent",
         "sha256:" + "a" * 64,
     ))
-    replay = fixture.coordinator.record(EventAppendProbe(
-        fixture.valid_session_id,
+    replay = ports.coordinator.record(EventAppendProbe(
+        probe.valid_session_id,
         0,
         "conformance-idempotent",
         "sha256:" + "a" * 64,
@@ -105,8 +132,8 @@ def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostCo
     cases.append(_expected_failure(
         "cas-conflict",
         "state-version-conflict",
-        lambda: fixture.coordinator.record(EventAppendProbe(
-            fixture.valid_session_id,
+        lambda: ports.coordinator.record(EventAppendProbe(
+            probe.valid_session_id,
             0,
             "conformance-cas-conflict",
             "sha256:" + "b" * 64,
@@ -115,15 +142,15 @@ def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostCo
     cases.append(_expected_failure(
         "native-goal-refresh",
         "goal-resume-refresh-required",
-        lambda: fixture.scheduler.next(
-            NativeGoalResumeProbe(valid_context, fixture.native_goal_id, ()),
+        lambda: ports.scheduler.next(
+            NativeGoalResumeProbe(valid_context, probe.native_goal_id, ()),
             require_resume_refresh=True,
         ),
     ))
     cases.append(_expected_failure(
         "artifact-protection-failure",
         "artifact-protection-failed",
-        lambda: fixture.artifact_protector.protect(
+        lambda: ports.artifacts.protect(
             b"conformance-payload", "host-conformance",
         ),
     ))
@@ -135,7 +162,8 @@ def run_host_conformance(adapter, resources: ServerOwnedHostResources) -> HostCo
             "passed-development-conformance" if passed
             else "failed-development-conformance"
         ),
-        production_authority=manifest.production_authority,
+        production_authority_declared=manifest.production_authority,
+        production_authority_verified=False,
         host_pilot_verified=False,
         hybrid_full=False,
         composition_root="workflow_skill_router.composition.open",

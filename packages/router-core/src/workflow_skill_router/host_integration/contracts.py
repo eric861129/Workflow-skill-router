@@ -116,12 +116,9 @@ class NativeGoalResumeProbe:
 
 
 @dataclass(frozen=True, slots=True)
-class HostConformanceFixture:
-    snapshots: object
-    activation_preflight: object
-    coordinator: object
-    scheduler: object
-    artifact_protector: object
+class HostConformanceProbeInputs:
+    """只提供 conformance 輸入；不得攜帶可被探測的 port 或 service。"""
+
     fresh_snapshot_ref: str
     stale_snapshot_ref: str
     valid_receipt_ref: str
@@ -150,7 +147,8 @@ class HostConformanceReport:
     adapter_id: str
     authority_label: str
     status: str
-    production_authority: bool
+    production_authority_declared: bool
+    production_authority_verified: bool
     host_pilot_verified: bool
     hybrid_full: bool
     composition_root: str
@@ -168,7 +166,8 @@ class HostConformanceReport:
             "adapter_id": self.adapter_id,
             "authority_label": self.authority_label,
             "status": self.status,
-            "production_authority": self.production_authority,
+            "production_authority_declared": self.production_authority_declared,
+            "production_authority_verified": self.production_authority_verified,
             "host_pilot_verified": self.host_pilot_verified,
             "hybrid_full": self.hybrid_full,
             "composition_root": self.composition_root,

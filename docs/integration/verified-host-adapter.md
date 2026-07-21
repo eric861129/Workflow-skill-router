@@ -51,3 +51,9 @@ The development suite checks happy composition, stale snapshot, forged
 activation receipt, wrong session, CAS conflict, idempotent replay, native Goal
 resume refresh, and artifact protection failure. It intentionally does not
 exercise a vendor Host, external state, or a live evaluation model.
+
+The conformance runner captures the same `RouterCompositionPorts` returned to
+`composition.open` and probes only those ports. Probe inputs cannot supply a
+set of shadow ports or a shadow service. A manifest may declare production authority, but this
+development suite cannot verify it; the report therefore keeps
+`production_authority_verified=false`.

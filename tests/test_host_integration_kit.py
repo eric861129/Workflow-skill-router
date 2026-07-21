@@ -30,6 +30,9 @@ class HostIntegrationKitDocumentationTests(unittest.TestCase):
             "freshness",
             "fail closed",
             "public-safe diagnostic",
+            "production_authority_verified=false",
+            "routercompositionports",
+            "shadow ports",
             "hybrid-full",
         )
 

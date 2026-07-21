@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib.util
 import sys
 import json
+from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 
@@ -14,7 +16,10 @@ from workflow_skill_router.host_integration import (
     run_host_conformance,
     validate_host_manifest,
 )
-from workflow_skill_router.ports import HostIntegrationAdapterPort
+from workflow_skill_router.ports import (
+    HostConformanceAdapterPort,
+    HostIntegrationAdapterPort,
+)
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -68,6 +73,7 @@ class HostIntegrationConformanceTests(unittest.TestCase):
 
     def test_happy_path_composes_only_through_production_composition_root(self) -> None:
         self.assertIsInstance(self.adapter, HostIntegrationAdapterPort)
+        self.assertIsInstance(self.adapter, HostConformanceAdapterPort)
 
         report = self.report()
 
@@ -156,9 +162,109 @@ class HostIntegrationConformanceTests(unittest.TestCase):
         report = self.report()
 
         self.assertEqual("reference-not-production-authority", report.authority_label)
-        self.assertFalse(report.production_authority)
+        self.assertFalse(report.production_authority_declared)
+        self.assertFalse(report.production_authority_verified)
         self.assertFalse(report.host_pilot_verified)
         self.assertFalse(report.hybrid_full)
+
+    def test_shadow_fixture_cannot_hide_unsafe_composed_ports(self) -> None:
+        delegate = self.reference.create_reference_adapter()
+
+        class PermissiveSnapshot:
+            def require(self, snapshot_id):
+                return {"snapshot_id": snapshot_id, "fresh": True}
+
+        class PermissiveActivation:
+            def verify_consumption_receipt(self, command):
+                del command
+
+        class NonIdempotentCoordinator:
+            sequence = 0
+
+            def record(self, command):
+                del command
+                self.sequence += 1
+                return SimpleNamespace(
+                    event_id=f"unsafe:{self.sequence}",
+                    resulting_state_version=self.sequence,
+                    replayed=False,
+                )
+
+        class PermissiveScheduler:
+            def next(self, query, require_resume_refresh=True):
+                del query, require_resume_refresh
+                return SimpleNamespace(status="ready")
+
+        class PermissiveArtifactStore:
+            def protect(self, content, purpose):
+                del content, purpose
+                return "artifact:unsafe"
+
+        class ShadowFixtureAdapter:
+            def host_manifest(self):
+                return delegate.host_manifest()
+
+            def build_router_ports(self, **kwargs):
+                safe_ports = delegate.build_router_ports(**kwargs)
+                return replace(
+                    safe_ports,
+                    snapshots=PermissiveSnapshot(),
+                    activation_preflight=PermissiveActivation(),
+                    coordinator=NonIdempotentCoordinator(),
+                    scheduler=PermissiveScheduler(),
+                    artifacts=PermissiveArtifactStore(),
+                )
+
+            def build_conformance_fixture(self):
+                safe_ports = delegate.last_ports
+                return SimpleNamespace(
+                    snapshots=safe_ports.snapshots,
+                    activation_preflight=safe_ports.activation_preflight,
+                    coordinator=safe_ports.coordinator,
+                    scheduler=safe_ports.scheduler,
+                    artifact_protector=safe_ports.artifacts,
+                )
+
+            def build_conformance_probe(self):
+                return delegate.build_conformance_probe()
+
+        report = run_host_conformance(ShadowFixtureAdapter(), self.resources)
+
+        self.assertEqual("failed-development-conformance", report.status)
+        self.assertFalse(report.case("snapshot-stale").passed)
+        self.assertFalse(report.case("receipt-forged").passed)
+        self.assertFalse(report.case("cas-conflict").passed)
+        self.assertFalse(report.case("native-goal-refresh").passed)
+        self.assertFalse(report.case("artifact-protection-failure").passed)
+
+    def test_self_declared_production_authority_is_never_reported_as_verified(self) -> None:
+        delegate = self.reference.create_reference_adapter()
+
+        class SelfDeclaredProductionAdapter:
+            def host_manifest(self):
+                return replace(
+                    delegate.host_manifest(),
+                    authority_label="self-declared-production-authority",
+                    production_authority=True,
+                )
+
+            def build_router_ports(self, **kwargs):
+                return delegate.build_router_ports(**kwargs)
+
+            def build_conformance_probe(self):
+                return delegate.build_conformance_probe()
+
+        report = run_host_conformance(SelfDeclaredProductionAdapter(), self.resources)
+
+        self.assertEqual("passed-development-conformance", report.status)
+        self.assertTrue(report.production_authority_declared)
+        self.assertFalse(report.production_authority_verified)
+        self.assertFalse(report.host_pilot_verified)
+        self.assertFalse(report.hybrid_full)
+        public = report.to_public_dict()
+        self.assertNotIn("production_authority", public)
+        self.assertTrue(public["production_authority_declared"])
+        self.assertFalse(public["production_authority_verified"])
 
 
 if __name__ == "__main__":

@@ -46,6 +46,11 @@ session, CAS conflict, idempotent replay, native Goal resume refresh, and
 artifact protection failure. Then replace the in-memory ports with Host-owned
 implementations and run the same suite in CI.
 
+The runner probes the same `RouterCompositionPorts` returned to
+`composition.open`; probe inputs cannot replace them with shadow ports. A
+manifest authority flag is only declared metadata, so development conformance
+always reports `production_authority_verified=false`.
+
 Conformance is an engineering gate, not deployment attestation. Complete a
 separate real Host pilot before describing the integration as production-ready
 or `hybrid-full`.

@@ -44,5 +44,10 @@ CAS conflict、idempotent replay、native Goal resume refresh，以及 artifact
 protection failure。之後再將記憶體內 ports 換成 Host-owned implementations，
 並在 CI 執行同一套測試。
 
+Runner 只會探測送入 `composition.open` 的 same `RouterCompositionPorts`；
+probe inputs 不能用 shadow ports 取代它們。Manifest 的 authority flag 只是
+declared metadata，因此 development conformance 一律回報
+`production_authority_verified=false`。
+
 Conformance 是工程 gate，不是 deployment attestation。宣稱 production-ready
 或 `hybrid-full` 前，仍須另外完成真實 Host pilot。
