@@ -23,7 +23,7 @@ Each rule matches objective keywords, domains, tags, or work modes. Its route se
     "rule_id": "api-delivery",
     "priority": 100,
     "match": {
-      "objective_keywords": ["api", "openapi"],
+      "objective_keywords": ["api", "應用程式介面", "openapi"],
       "domains": ["api"],
       "tags": [],
       "work_modes": []
@@ -73,11 +73,21 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile v
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api --explain
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile lint .\my-profile.json
 ```
 
 `plan_work` accepts an optional `routing_context` with `workspace_root`, `domains`, `tags`, and `current_phase_id`. Existing beta.1 calls can omit it. Only the current Phase Primary and immediate support become `planned_skill_ids`; the full tree remains visible as planning data.
 
 In MCP mode, `workspace_root` must be inside a root advertised by the Client or explicitly configured by the operator through `WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS`. If exactly one Client root exists, the Plugin binds it for a legacy caller that omitted `routing_context`. Multiple roots require an explicit matching root. A model-supplied arbitrary local path returns `workspace-root-untrusted` and is never opened.
+
+## Explain and lint deterministic rules
+
+Add `--explain` to `profile preview` to receive one stable trace for every candidate rule in enabled Profiles. Each record contains only the rule ID, match result, matched and unmatched dimensions, and reason codes. It never echoes the full objective, a local absolute path, or a SKILL instruction body. Explain is observability for the existing matcher; it does not grant authority or execute Profile content.
+
+Run `profile lint <path>` before installing a Profile. It reports duplicate or permanently shadowed rules, conflicts with equal priority and specificity, and a Primary SKILL repeated as support. For a phased route, add `--current-phase <phase-id>` to verify that the current Phase exists in every applicable phased tree. Errors exit with code `2`; advisory-only results exit with code `0`.
+
+Matching remains schema `1.0.0` deterministic lexical matching. There is no embedding, executable matcher, semantic retrieval, or implicit alias expansion. To match both `API` and `應用程式介面`, list both strings in `objective_keywords`. The linter may advise that a common alias is missing, but never edits or expands the rule.
 
 ## Runtime Capability Discovery still decides activation
 

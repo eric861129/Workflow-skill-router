@@ -23,7 +23,7 @@ Personal Routing Profile 把個人偏好的工程流程變成 deterministic rout
     "rule_id": "api-delivery",
     "priority": 100,
     "match": {
-      "objective_keywords": ["api", "openapi"],
+      "objective_keywords": ["api", "應用程式介面", "openapi"],
       "domains": ["api"],
       "tags": [],
       "work_modes": []
@@ -73,11 +73,21 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile v
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付 API" --work-mode phased --domain api
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付應用程式介面" --work-mode phased --domain api --explain
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile lint .\my-profile.json
 ```
 
 `plan_work` 可接收 optional `routing_context`：`workspace_root`、`domains`、`tags`、`current_phase_id`。既有 beta.1 caller 可以省略。只有目前 Phase 的 Primary 與 immediate support 會進入 `planned_skill_ids`；完整 tree 只作規劃資料。
 
 MCP 模式下，`workspace_root` 必須位於 Client 公告的 root，或維護者透過 `WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS` 明確設定的 root 之內。只有一個 Client root 時，Plugin 會替省略 `routing_context` 的舊 caller 綁定該 root；多個 roots 則必須明確選擇其中一個。模型任意提供的其他本機路徑會回 `workspace-root-untrusted`，而且不會被開啟。
+
+## 說明與檢查 deterministic rules
+
+在 `profile preview` 加上 `--explain`，可取得每個已啟用 Profile 候選 rule 的固定格式 trace。每筆資料只包含 rule ID、是否命中、命中與未命中的維度，以及 reason codes；不會回傳完整 objective、本機絕對路徑或 SKILL instruction body。Explain 只增加既有 matcher 的可觀測性，不會授權操作，也不會執行 Profile 內容。
+
+安裝前請執行 `profile lint <path>`。它會回報重複或永遠被遮蔽的 rules、相同 priority 與 specificity 的衝突，以及 Primary SKILL 同時出現在 support 的問題。若是 phased route，可加上 `--current-phase <phase-id>`，確認目前 Phase 存在於適用的 phased tree。Error 固定使用 exit code `2`；只有 advisory 時仍回 `0`。
+
+Matcher 維持 schema `1.0.0` 的 deterministic lexical matching，不使用 embedding、executable matcher、semantic retrieval，也不會隱含展開同義詞。若要同時匹配 `API` 與 `應用程式介面`，必須把兩個字串都明確列入 `objective_keywords`。Linter 可以提醒常見 lexical alias 遺漏，但不會修改或展開 rule。
 
 ## Runtime Capability Discovery 仍決定是否可啟用
 
