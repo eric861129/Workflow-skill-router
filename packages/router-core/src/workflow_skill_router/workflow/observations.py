@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from workflow_skill_router.workflow.local_observations import LocalProgressObservation
+
 
 @dataclass(frozen=True, slots=True)
 class ActivationObservation:
@@ -42,5 +44,5 @@ Observation: TypeAlias = (
     | SideEffectIntentObservation
     | SideEffectOutcomeObservation
     | PauseRequestObservation
+    | LocalProgressObservation
 )
-

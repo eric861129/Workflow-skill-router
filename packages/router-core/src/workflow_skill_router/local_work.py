@@ -4,8 +4,14 @@ from dataclasses import dataclass, replace
 import hashlib
 import json
 import sqlite3
+from typing import Mapping
 
+from workflow_skill_router.persistence.sqlite_store import (
+    ConcurrencyConflict,
+    IdempotencyConflict,
+)
 from workflow_skill_router.schemas.artifacts import canonical_json
+from workflow_skill_router.workflow.local_observations import LocalObservationPolicyError
 
 
 LOCAL_WORK_STATUSES = frozenset({
@@ -37,6 +43,16 @@ class LocalWorkItem:
     authority_mode: str = "router-local"
 
 
+@dataclass(frozen=True, slots=True)
+class LocalTransitionAppend:
+    transition_id: str
+    resulting_state_version: int
+    replayed: bool
+    observation_document: dict[str, object]
+    from_status: str
+    to_status: str
+
+
 def _digest(document: object) -> str:
     return "sha256:" + hashlib.sha256(
         canonical_json(document).encode("utf-8")
@@ -59,8 +75,9 @@ def local_transition_request_digest(
     to_status: str,
     expected_state_version: int,
     resulting_state_version: int,
+    observation_document: object | None = None,
 ) -> str:
-    return _digest({
+    document = {
         "actor": actor,
         "from_status": from_status,
         "to_status": to_status,
@@ -70,7 +87,274 @@ def local_transition_request_digest(
         "session_id": session_id,
         "work_item_id": work_item_id,
         "workflow_run_id": workflow_run_id,
+    }
+    if observation_document is not None:
+        document["local_observation"] = observation_document
+    return _digest(document)
+
+
+def local_evidence_digest(check_ids: tuple[str, ...]) -> str:
+    return _digest({
+        "evidence_class": "user-or-agent-reported-local",
+        "persisted_check_ids": sorted(check_ids),
     })
+
+
+def local_transition_target(from_status: str, transition: str) -> str:
+    targets = {
+        ("ready", "start"): "active",
+        ("active", "submit"): "verifying",
+        ("active", "pause"): "paused",
+        ("verifying", "pause"): "paused",
+        ("paused", "resume"): "active",
+        ("ready", "fail"): "failed",
+        ("active", "fail"): "failed",
+        ("verifying", "fail"): "failed",
+        ("paused", "fail"): "failed",
+    }
+    target = targets.get((from_status, transition))
+    if target is None:
+        raise LocalObservationPolicyError(
+            f"local-transition-not-allowed:{from_status}:{transition}"
+        )
+    return target
+
+
+def replay_local_transition(
+    connection: sqlite3.Connection,
+    *,
+    session_id: str,
+    actor: str,
+    workflow_run_id: str,
+    work_item_id: str,
+    expected_state_version: int,
+    idempotency_key: str,
+    observation_document: dict[str, object],
+) -> LocalTransitionAppend | None:
+    row = connection.execute(
+        "SELECT * FROM local_work_transitions WHERE session_id=? AND idempotency_key=?",
+        (session_id, idempotency_key),
+    ).fetchone()
+    if row is None:
+        return None
+    expected_digest = local_transition_request_digest(
+        session_id=session_id,
+        actor=actor,
+        workflow_run_id=workflow_run_id,
+        work_item_id=work_item_id,
+        transition_kind=str(row["transition_kind"]),
+        from_status=row["from_status"],
+        to_status=str(row["to_status"]),
+        expected_state_version=expected_state_version,
+        resulting_state_version=int(row["resulting_state_version"]),
+        observation_document=observation_document,
+    )
+    if (
+        row["request_digest"] != expected_digest
+        or row["actor"] != actor
+        or row["workflow_run_id"] != workflow_run_id
+        or row["work_item_id"] != work_item_id
+    ):
+        raise IdempotencyConflict(
+            "相同 idempotency key 不得對應不同 Router-local observation"
+        )
+    try:
+        stored_document = json.loads(row["observation_json"])
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        raise LocalWorkGraphCorruption(
+            "local-work-graph-corruption: replay-observation"
+        ) from error
+    if stored_document != observation_document:
+        raise IdempotencyConflict(
+            "相同 idempotency key 不得對應不同 Router-local observation"
+        )
+    return LocalTransitionAppend(
+        transition_id=row["transition_id"],
+        resulting_state_version=int(row["resulting_state_version"]),
+        replayed=True,
+        observation_document=stored_document,
+        from_status=row["from_status"],
+        to_status=row["to_status"],
+    )
+
+
+def append_local_transition(
+    connection: sqlite3.Connection,
+    *,
+    session_id: str,
+    actor: str,
+    workflow_run_id: str,
+    work_item_id: str,
+    transition_kind: str,
+    from_status: str,
+    to_status: str,
+    expected_state_version: int,
+    idempotency_key: str,
+    observation_document: dict[str, object],
+    created_at: str,
+) -> LocalTransitionAppend:
+    resulting_state_version = expected_state_version + 1
+    transition_id = _public_id(
+        "work-transition", work_item_id, str(resulting_state_version)
+    )
+    request_digest = local_transition_request_digest(
+        session_id=session_id,
+        actor=actor,
+        workflow_run_id=workflow_run_id,
+        work_item_id=work_item_id,
+        transition_kind=transition_kind,
+        from_status=from_status,
+        to_status=to_status,
+        expected_state_version=expected_state_version,
+        resulting_state_version=resulting_state_version,
+        observation_document=observation_document,
+    )
+    changed = connection.execute(
+        "UPDATE local_work_items SET status=?,state_version=? "
+        "WHERE work_item_id=? AND workflow_run_id=? AND status=? AND state_version=?",
+        (
+            to_status,
+            resulting_state_version,
+            work_item_id,
+            workflow_run_id,
+            from_status,
+            expected_state_version,
+        ),
+    ).rowcount
+    if changed != 1:
+        raise ConcurrencyConflict(
+            f"expected={expected_state_version}, local work item changed"
+        )
+    connection.execute(
+        "INSERT INTO local_work_transitions("
+        "transition_id,session_id,workflow_run_id,work_item_id,transition_kind,"
+        "from_status,to_status,expected_state_version,resulting_state_version,"
+        "idempotency_key,request_digest,actor,created_at,observation_json) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            transition_id,
+            session_id,
+            workflow_run_id,
+            work_item_id,
+            transition_kind,
+            from_status,
+            to_status,
+            expected_state_version,
+            resulting_state_version,
+            idempotency_key,
+            request_digest,
+            actor,
+            created_at,
+            canonical_json(observation_document),
+        ),
+    )
+    return LocalTransitionAppend(
+        transition_id,
+        resulting_state_version,
+        False,
+        observation_document,
+        from_status,
+        to_status,
+    )
+
+
+def _validate_transition_document(
+    transition: sqlite3.Row,
+    document: object,
+) -> None:
+    if not isinstance(document, dict):
+        raise LocalWorkGraphCorruption(
+            "local-work-graph-corruption: observation-shape"
+        )
+    common = {
+        "authority_mode": "router-local",
+        "evidence_class": "user-or-agent-reported-local",
+        "host_transition_authorized": False,
+    }
+    if any(document.get(key) != value for key, value in common.items()):
+        raise LocalWorkGraphCorruption(
+            "local-work-graph-corruption: observation-authority"
+        )
+    if document.get("work_item_id") != transition["work_item_id"]:
+        raise LocalWorkGraphCorruption(
+            "local-work-graph-corruption: observation-item"
+        )
+
+    if document.get("kind") == "local-progress":
+        expected_fields = {
+            "kind", "work_item_id", "transition", "check_ids",
+            "reported_outcome", *common,
+        }
+        if set(document) != expected_fields:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: progress-fields"
+            )
+        check_ids = document["check_ids"]
+        outcome = document["reported_outcome"]
+        if (
+            not isinstance(check_ids, list)
+            or any(not isinstance(item, str) for item in check_ids)
+            or len(set(check_ids)) != len(check_ids)
+            or (outcome is not None and not isinstance(outcome, str))
+            or transition["transition_kind"] != document["transition"]
+        ):
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: progress-payload"
+            )
+        try:
+            target = local_transition_target(
+                transition["from_status"], str(document["transition"])
+            )
+        except LocalObservationPolicyError as error:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: progress-transition"
+            ) from error
+        if target != transition["to_status"]:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: progress-target"
+            )
+        if document["transition"] != "submit" and check_ids:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: progress-check-scope"
+            )
+        return
+
+    if document.get("kind") == "local-gate":
+        expected_fields = {
+            "kind", "work_item_id", "phase_id", "required_check_ids",
+            "persisted_check_ids", "passed", "failures", "evidence_digest",
+            "expected_plan_revision", *common,
+        }
+        if set(document) != expected_fields:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: gate-fields"
+            )
+        required = document["required_check_ids"]
+        persisted = document["persisted_check_ids"]
+        failures = document["failures"]
+        passed = document["passed"]
+        if (
+            not isinstance(required, list)
+            or not isinstance(persisted, list)
+            or not isinstance(failures, list)
+            or any(not isinstance(item, str) for item in (*required, *persisted, *failures))
+            or len(set(required)) != len(required)
+            or len(set(persisted)) != len(persisted)
+            or not isinstance(passed, bool)
+            or document["evidence_digest"] != local_evidence_digest(tuple(persisted))
+            or transition["from_status"] != "verifying"
+            or transition["transition_kind"] != ("gate-pass" if passed else "gate-fail")
+            or transition["to_status"] != ("completed" if passed else "verifying")
+            or passed != (not failures)
+        ):
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: gate-payload"
+            )
+        return
+
+    raise LocalWorkGraphCorruption(
+        "local-work-graph-corruption: observation-kind"
+    )
 
 
 def build_local_work_items(
@@ -278,6 +562,7 @@ def validate_local_work_graph(
     expected_items: tuple[LocalWorkItem, ...],
     session_id: str,
     expected_actor: str,
+    expected_check_ids_by_phase: Mapping[str, tuple[str, ...]],
 ) -> tuple[LocalWorkItem, ...]:
     rows = connection.execute(
         "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
@@ -336,9 +621,55 @@ def validate_local_work_graph(
         ).fetchall()
         if len(transitions) != int(row["state_version"]):
             raise LocalWorkGraphCorruption("local-work-graph-corruption: transition-count")
+        required_check_ids = expected_check_ids_by_phase.get(row["phase_id"], ())
+        persisted_check_ids: set[str] = set()
         previous_status = None
         for version, transition in enumerate(transitions, start=1):
             expected_from = previous_status
+            observation_document = None
+            if version == 1:
+                if transition["observation_json"] is not None:
+                    raise LocalWorkGraphCorruption(
+                        "local-work-graph-corruption: create-observation"
+                    )
+            else:
+                try:
+                    observation_document = json.loads(transition["observation_json"])
+                except (TypeError, ValueError, json.JSONDecodeError) as error:
+                    raise LocalWorkGraphCorruption(
+                        "local-work-graph-corruption: transition-observation"
+                    ) from error
+                if canonical_json(observation_document) != transition["observation_json"]:
+                    raise LocalWorkGraphCorruption(
+                        "local-work-graph-corruption: observation-canonical"
+                    )
+                _validate_transition_document(transition, observation_document)
+                if observation_document["kind"] == "local-progress":
+                    check_ids = tuple(observation_document["check_ids"])
+                    if not set(check_ids).issubset(required_check_ids):
+                        raise LocalWorkGraphCorruption(
+                            "local-work-graph-corruption: unknown-local-check"
+                        )
+                    if observation_document["transition"] == "submit":
+                        persisted_check_ids.update(check_ids)
+                elif observation_document["kind"] == "local-gate":
+                    failures = tuple(
+                        f"missing-local-check:{check_id}"
+                        for check_id in required_check_ids
+                        if check_id not in persisted_check_ids
+                    )
+                    if (
+                        observation_document["phase_id"] != row["phase_id"]
+                        or tuple(observation_document["required_check_ids"])
+                        != required_check_ids
+                        or tuple(observation_document["persisted_check_ids"])
+                        != tuple(sorted(persisted_check_ids))
+                        or tuple(observation_document["failures"]) != failures
+                        or observation_document["passed"] != (not failures)
+                    ):
+                        raise LocalWorkGraphCorruption(
+                            "local-work-graph-corruption: gate-binding"
+                        )
             expected_digest = local_transition_request_digest(
                 session_id=session_id,
                 actor=expected_actor,
@@ -349,6 +680,7 @@ def validate_local_work_graph(
                 to_status=transition["to_status"],
                 expected_state_version=int(transition["expected_state_version"]),
                 resulting_state_version=int(transition["resulting_state_version"]),
+                observation_document=observation_document,
             )
             if (
                 transition["session_id"] != session_id

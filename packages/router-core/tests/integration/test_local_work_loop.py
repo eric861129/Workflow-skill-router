@@ -19,14 +19,25 @@ from workflow_skill_router.local_work import (
 )
 from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 from workflow_skill_router.persistence.migrator import iter_complete_statements, migrate
+from workflow_skill_router.persistence.sqlite_store import (
+    ConcurrencyConflict,
+    IdempotencyConflict,
+)
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
+    EvaluateGate,
     NextWorkQuery,
     PlanWork,
+    RecordWorkEvent,
     RequestContext,
     RoutingContextInput,
 )
 from workflow_skill_router.tool_dispatch import ToolDispatcher
+from workflow_skill_router.workflow.local_observations import (
+    LocalObservationPolicyError,
+    LocalProgressObservation,
+)
+from workflow_skill_router.workflow.observations import ActivationObservation
 
 
 class LocalWorkLoopTests(unittest.TestCase):
@@ -69,64 +80,62 @@ class LocalWorkLoopTests(unittest.TestCase):
     def query(self, workflow_run_id: str) -> NextWorkQuery:
         return NextWorkQuery(self.context, workflow_run_id)
 
-    def complete_item_through_storage_seam(
+    @staticmethod
+    def local_evidence_digest(check_ids: tuple[str, ...]) -> str:
+        return "sha256:" + hashlib.sha256(canonical_json({
+            "evidence_class": "user-or-agent-reported-local",
+            "persisted_check_ids": sorted(check_ids),
+        }).encode("utf-8")).hexdigest()
+
+    def record_command(
         self,
-        workflow_run_id: str,
-        item_order: int,
-    ) -> None:
-        with closing(sqlite3.connect(self.database)) as connection:
-            connection.row_factory = sqlite3.Row
-            row = connection.execute(
-                "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=?",
-                (workflow_run_id, item_order),
-            ).fetchone()
-            self.assertIsNotNone(row)
-            version = int(row["state_version"])
-            resulting_version = version + 1
-            transition_kind = "test-fixture-complete"
-            request_digest = local_transition_request_digest(
-                session_id=self.context.session_id,
-                actor=self.context.actor,
-                workflow_run_id=workflow_run_id,
-                work_item_id=row["work_item_id"],
-                transition_kind=transition_kind,
-                from_status=row["status"],
-                to_status="completed",
-                expected_state_version=version,
-                resulting_state_version=resulting_version,
-            )
-            connection.execute(
-                "INSERT INTO local_work_transitions("
-                "transition_id,session_id,workflow_run_id,work_item_id,transition_kind,"
-                "from_status,to_status,expected_state_version,resulting_state_version,"
-                "idempotency_key,request_digest,actor,created_at) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    self.public_id(
-                        "work-transition", row["work_item_id"], str(resulting_version)
-                    ),
-                    self.context.session_id,
-                    workflow_run_id,
-                    row["work_item_id"],
-                    transition_kind,
-                    row["status"],
-                    "completed",
-                    version,
-                    resulting_version,
-                    self.public_id(
-                        "test-complete", workflow_run_id, row["work_item_id"]
-                    ),
-                    request_digest,
-                    self.context.actor,
-                    "2026-07-21T00:00:00+00:00",
-                ),
-            )
-            connection.execute(
-                "UPDATE local_work_items SET status='completed',state_version=? "
-                "WHERE work_item_id=? AND state_version=?",
-                (resulting_version, row["work_item_id"], version),
-            )
-            connection.commit()
+        plan,
+        item: sqlite3.Row,
+        *,
+        transition: str,
+        check_ids: tuple[str, ...] = (),
+        reported_outcome: str | None = None,
+        expected_state_version: int,
+        idempotency_key: str,
+        workflow_run_id: str | None = None,
+        phase_id: str | None = None,
+        activation_receipt_ref: str | None = None,
+    ) -> RecordWorkEvent:
+        return RecordWorkEvent(
+            context=self.context,
+            workflow_run_id=workflow_run_id or plan.workflow_run_id,
+            phase_id=phase_id or item["phase_id"],
+            observation=LocalProgressObservation(
+                item["work_item_id"], transition, check_ids, reported_outcome,
+            ),
+            activation_receipt_ref=activation_receipt_ref,
+            expected_state_version=expected_state_version,
+            idempotency_key=idempotency_key,
+            correlation_id=f"correlation-{idempotency_key}",
+        )
+
+    def gate_command(
+        self,
+        plan,
+        item: sqlite3.Row,
+        *,
+        expected_state_version: int,
+        expected_evidence_digest: str,
+        evidence_refs: tuple[str, ...] = (),
+        idempotency_key: str = "gate-local",
+        phase_id: str | None = None,
+    ) -> EvaluateGate:
+        return EvaluateGate(
+            context=self.context,
+            workflow_run_id=plan.workflow_run_id,
+            phase_id=phase_id or item["phase_id"],
+            expected_state_version=expected_state_version,
+            expected_plan_revision=1,
+            expected_evidence_digest=expected_evidence_digest,
+            evidence_refs=evidence_refs,
+            idempotency_key=idempotency_key,
+            correlation_id=f"correlation-{idempotency_key}",
+        )
 
     def mark_graph_as_v0(self, workflow_run_id: str, *, keep_rows: bool) -> None:
         with closing(sqlite3.connect(self.database)) as connection:
@@ -318,7 +327,23 @@ class LocalWorkLoopTests(unittest.TestCase):
             requested_work_mode="phased",
             routing_context=RoutingContextInput(domains=("api",)),
         ))
-        self.complete_item_through_storage_seam(plan.workflow_run_id, 0)
+        first_item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, first_item, transition="start", expected_state_version=1,
+            idempotency_key="dependency-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, first_item, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=2, idempotency_key="dependency-submit",
+        ))
+        self.service.evaluate_gate(self.gate_command(
+            plan, first_item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(("contract-ready",)),
+            idempotency_key="dependency-gate",
+        ))
 
         result = self.service.get_next_work(self.query(plan.workflow_run_id))
 
@@ -897,6 +922,465 @@ class LocalWorkLoopTests(unittest.TestCase):
             connection.commit()
         with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
             self.service.plan_work(command)
+
+    def test_local_start_submit_and_gate_complete_only_router_owned_phase(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="local-progress-happy",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+
+        started = self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="local-start",
+        ))
+        submitted = self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", check_ids=("contract-ready",),
+            reported_outcome="Contract drafted locally", expected_state_version=2,
+            idempotency_key="local-submit",
+        ))
+        gated = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(("contract-ready",)),
+        ))
+
+        self.assertEqual("router-local", started.authority_mode)
+        self.assertEqual("user-or-agent-reported-local", started.evidence_class)
+        self.assertFalse(started.host_transition_authorized)
+        self.assertEqual(2, started.resulting_state_version)
+        self.assertEqual(3, submitted.resulting_state_version)
+        self.assertEqual("router-local", gated.gate_scope)
+        self.assertEqual("router-local", gated.authority_mode)
+        self.assertEqual("user-or-agent-reported-local", gated.evidence_class)
+        self.assertFalse(gated.host_transition_authorized)
+        self.assertTrue(gated.passed)
+        self.assertEqual(4, gated.resulting_state_version)
+        current = self.rows(
+            "SELECT status,state_version FROM local_work_items WHERE work_item_id=?",
+            (item["work_item_id"],),
+        )[0]
+        self.assertEqual(("completed", 4), (current["status"], current["state_version"]))
+        transitions = self.rows(
+            "SELECT transition_kind,observation_json FROM local_work_transitions "
+            "WHERE work_item_id=? ORDER BY resulting_state_version",
+            (item["work_item_id"],),
+        )
+        self.assertEqual(
+            ["create", "start", "submit", "gate-pass"],
+            [row["transition_kind"] for row in transitions],
+        )
+        self.assertIn("contract-ready", transitions[2]["observation_json"])
+        self.assertNotIn("activation_receipt", transitions[2]["observation_json"])
+
+    def test_local_gate_reports_missing_required_check_without_host_authority(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="local-missing-check",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="missing-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", reported_outcome="Looks done",
+            expected_state_version=2, idempotency_key="missing-submit",
+        ))
+
+        result = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(()),
+            idempotency_key="missing-gate",
+        ))
+
+        self.assertFalse(result.passed)
+        self.assertEqual(("missing-local-check:contract-ready",), result.failures)
+        self.assertFalse(result.host_transition_authorized)
+        self.assertEqual("verifying", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (item["work_item_id"],),
+        )[0]["status"])
+
+    def test_local_record_rejects_forged_receipt_formal_observation_and_native_goal(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="reject-local-input"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        forged = self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="forged-receipt", activation_receipt_ref="receipt:forged",
+        )
+        formal = RecordWorkEvent(
+            self.context, plan.workflow_run_id, item["phase_id"],
+            ActivationObservation("skill:test", "receipt:forged"), None, 1,
+            "formal-observation", "correlation-formal",
+        )
+        native = self.service.plan_work(self.command(
+            objective="Continue the native Goal", idempotency_key="native-local-event",
+            requested_work_mode="managed-goal", goal_binding_id="goal-native-event",
+        ))
+        native_item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (native.workflow_run_id,),
+        )[0]
+
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(forged)
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(formal)
+        with self.assertRaises(CapabilityUnavailable):
+            self.service.record_work_event(self.record_command(
+                native, native_item, transition="start", expected_state_version=1,
+                idempotency_key="native-start",
+            ))
+
+    def test_local_record_rejects_cross_workflow_phase_drift_and_unknown_check(self) -> None:
+        self.write_phased_profile()
+        first = self.service.plan_work(self.command(
+            objective="Design and verify the API", idempotency_key="first-workflow",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        second = self.service.plan_work(self.command(idempotency_key="second-workflow"))
+        first_item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (first.workflow_run_id,),
+        )[0]
+
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                second, first_item, transition="start", expected_state_version=1,
+                idempotency_key="cross-workflow",
+            ))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                first, first_item, transition="start", expected_state_version=1,
+                idempotency_key="phase-drift", phase_id="verify",
+            ))
+        self.service.record_work_event(self.record_command(
+            first, first_item, transition="start", expected_state_version=1,
+            idempotency_key="unknown-start",
+        ))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                first, first_item, transition="submit", check_ids=("fabricated-check",),
+                expected_state_version=2, idempotency_key="unknown-submit",
+            ))
+
+    def test_local_record_enforces_stale_version_idempotency_and_transition_matrix(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="record-cas"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        command = self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="record-once",
+        )
+        first = self.service.record_work_event(command)
+        replay = self.service.record_work_event(command)
+        self.assertEqual(first.event_ids, replay.event_ids)
+        self.assertTrue(replay.replayed)
+        with self.assertRaises(IdempotencyConflict):
+            self.service.record_work_event(self.record_command(
+                plan, item, transition="fail", expected_state_version=1,
+                idempotency_key="record-once",
+            ))
+        with self.assertRaises(ConcurrencyConflict):
+            self.service.record_work_event(self.record_command(
+                plan, item, transition="submit", expected_state_version=1,
+                idempotency_key="record-stale",
+            ))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(self.record_command(
+                plan, item, transition="resume", expected_state_version=2,
+                idempotency_key="record-illegal-transition",
+            ))
+
+    def test_local_pause_resume_and_fail_follow_deterministic_matrix(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="record-matrix"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        sequence = (
+            ("start", 1, "active"),
+            ("pause", 2, "paused"),
+            ("resume", 3, "active"),
+            ("submit", 4, "verifying"),
+            ("pause", 5, "paused"),
+            ("resume", 6, "active"),
+            ("fail", 7, "failed"),
+        )
+        for transition, expected_version, expected_status in sequence:
+            result = self.service.record_work_event(self.record_command(
+                plan, item, transition=transition,
+                expected_state_version=expected_version,
+                idempotency_key=f"matrix-{transition}-{expected_version}",
+            ))
+            self.assertEqual(expected_version + 1, result.resulting_state_version)
+            self.assertEqual(expected_status, self.rows(
+                "SELECT status FROM local_work_items WHERE work_item_id=?",
+                (item["work_item_id"],),
+            )[0]["status"])
+
+    def test_local_gate_rejects_fabricated_refs_phase_drift_and_unconfigured_gate(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="gate-boundaries"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="gate-boundary-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", expected_state_version=2,
+            idempotency_key="gate-boundary-submit",
+        ))
+
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.evaluate_gate(self.gate_command(
+                plan, item, expected_state_version=3,
+                expected_evidence_digest=self.local_evidence_digest(()),
+                evidence_refs=("evidence:forged",), idempotency_key="forged-gate-ref",
+            ))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.evaluate_gate(self.gate_command(
+                plan, item, expected_state_version=3,
+                expected_evidence_digest=self.local_evidence_digest(()),
+                phase_id="other-phase", idempotency_key="gate-phase-drift",
+            ))
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.evaluate_gate(self.gate_command(
+                plan, item, expected_state_version=3,
+                expected_evidence_digest=self.local_evidence_digest(()),
+                idempotency_key="gate-unconfigured",
+            ))
+
+    def test_local_record_rejects_v0_marker_when_graph_rows_exist(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="record-v0-rows"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        self.mark_graph_as_v0(plan.workflow_run_id, keep_rows=True)
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: version-marker",
+        ):
+            self.service.record_work_event(self.record_command(
+                plan, item, transition="start", expected_state_version=1,
+                idempotency_key="record-v0-start",
+            ))
+
+    def test_local_gate_rejects_recomputed_unknown_persisted_check(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="forged-persisted-check",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="forged-check-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=2, idempotency_key="forged-check-submit",
+        ))
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE work_item_id=? "
+                "AND transition_kind='submit'",
+                (item["work_item_id"],),
+            ).fetchone()
+            document = json.loads(transition["observation_json"])
+            document["check_ids"] = ["fabricated-check"]
+            forged_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=transition["actor"],
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=transition["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+                observation_document=document,
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_work_transitions SET observation_json=?,request_digest=? "
+                "WHERE transition_id=?",
+                (canonical_json(document), forged_digest, transition["transition_id"]),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: unknown-local-check",
+        ):
+            self.service.evaluate_gate(self.gate_command(
+                plan, item, expected_state_version=3,
+                expected_evidence_digest=self.local_evidence_digest(("fabricated-check",)),
+                idempotency_key="forged-check-gate",
+            ))
+
+    def test_plan_replay_rejects_recomputed_local_gate_phase_binding(self) -> None:
+        self.write_phased_profile()
+        command = self.command(
+            objective="Design and verify the API",
+            idempotency_key="forged-gate-phase",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        )
+        plan = self.service.plan_work(command)
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="forged-phase-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=2, idempotency_key="forged-phase-submit",
+        ))
+        self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(("contract-ready",)),
+            idempotency_key="forged-phase-gate",
+        ))
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            transition = connection.execute(
+                "SELECT * FROM local_work_transitions WHERE work_item_id=? "
+                "AND transition_kind='gate-pass'",
+                (item["work_item_id"],),
+            ).fetchone()
+            document = json.loads(transition["observation_json"])
+            document["phase_id"] = "verify"
+            forged_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=transition["actor"],
+                workflow_run_id=transition["workflow_run_id"],
+                work_item_id=transition["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=transition["expected_state_version"],
+                resulting_state_version=transition["resulting_state_version"],
+                observation_document=document,
+            )
+            connection.execute("DROP TRIGGER local_work_transitions_no_update")
+            connection.execute(
+                "UPDATE local_work_transitions SET observation_json=?,request_digest=? "
+                "WHERE transition_id=?",
+                (canonical_json(document), forged_digest, transition["transition_id"]),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: gate-binding",
+        ):
+            self.service.plan_work(command)
+
+    def test_local_commands_reject_boolean_versions_from_direct_callers(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="bool-version"))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+        invalid_record = self.record_command(
+            plan, item, transition="start", expected_state_version=True,
+            idempotency_key="bool-record",
+        )
+        invalid_gate = EvaluateGate(
+            self.context, plan.workflow_run_id, item["phase_id"], True, True,
+            self.local_evidence_digest(()), (), "bool-gate", "correlation-bool-gate",
+        )
+
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.record_work_event(invalid_record)
+        with self.assertRaises(LocalObservationPolicyError):
+            self.service.evaluate_gate(invalid_gate)
+
+    def test_local_gate_replay_returns_original_result_after_later_evidence_changes(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="gate-replay-stable",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=0",
+            (plan.workflow_run_id,),
+        )[0]
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="gate-replay-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", expected_state_version=2,
+            idempotency_key="gate-replay-empty-submit",
+        ))
+        original_command = self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(()),
+            idempotency_key="gate-replay-original",
+        )
+        original = self.service.evaluate_gate(original_command)
+        self.assertFalse(original.passed)
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="pause", expected_state_version=4,
+            idempotency_key="gate-replay-pause",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="resume", expected_state_version=5,
+            idempotency_key="gate-replay-resume",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit", check_ids=("contract-ready",),
+            expected_state_version=6, idempotency_key="gate-replay-checked-submit",
+        ))
+        passed = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=7,
+            expected_evidence_digest=self.local_evidence_digest(("contract-ready",)),
+            idempotency_key="gate-replay-pass",
+        ))
+        self.assertTrue(passed.passed)
+
+        replay = self.service.evaluate_gate(original_command)
+
+        self.assertTrue(replay.replayed)
+        self.assertFalse(replay.passed)
+        self.assertEqual(original.failures, replay.failures)
+        self.assertEqual(original.evidence_digest, replay.evidence_digest)
+        self.assertEqual(original.resulting_state_version, replay.resulting_state_version)
 
 
 if __name__ == "__main__":

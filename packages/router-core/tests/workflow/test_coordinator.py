@@ -12,6 +12,7 @@ from workflow_skill_router.workflow.coordinator import (
     ObservationIntegrityError, RecordObservationCommand, WorkEventContext,
     WorkEventCoordinator, decode_record_observation,
 )
+from workflow_skill_router.workflow.local_observations import LocalProgressObservation
 from workflow_skill_router.workflow.observations import (
     EvidenceObservation, SideEffectOutcomeObservation,
 )
@@ -80,6 +81,14 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual("EVIDENCE_RECORDED", append.events[0].event_type)
         self.assertEqual("passed", append.events[0].inline_payload["verified_status"])
         self.assertFalse(hasattr(command.observation, "status"))
+
+    def test_verified_host_coordinator_rejects_router_local_observation(self) -> None:
+        command = self.command(LocalProgressObservation(
+            "local-item-1", "start", (), None,
+        ))
+
+        with self.assertRaisesRegex(TypeError, "unsupported typed observation"):
+            self.coordinator.record(command)
 
 
 if __name__ == "__main__": unittest.main()
