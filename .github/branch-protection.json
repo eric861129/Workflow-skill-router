@@ -23,5 +23,23 @@
         "app_id": 15368
       }
     ]
+  },
+  "required_branch_controls": {
+    "pull_request": true,
+    "conversation_resolution": true,
+    "force_pushes": false,
+    "deletions": false
+  },
+  "tag_protection": {
+    "name": "Immutable V2 release tags",
+    "target": "tag",
+    "enforcement": "active",
+    "ref_name_include": "refs/tags/v2.*",
+    "required_rules": ["creation", "update", "deletion"],
+    "required_bypass_actor": {
+      "actor_id": 15368,
+      "actor_type": "Integration",
+      "bypass_mode": "always"
+    }
   }
 }
