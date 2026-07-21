@@ -156,11 +156,18 @@ class DemoDataTests(unittest.TestCase):
                 self.assertNotIn("planned_skill_ids", evidence)
                 for branch in preset["branches"]:
                     branch_evidence = branch["routing_evidence"]
-                    expected = [
+                    route_selections = [
                         branch["route"]["primary_selection"],
                         *branch["route"]["support_selections"],
                     ]
-                    self.assertEqual(expected, branch_evidence["planned_skill_ids"])
+                    self.assertEqual(
+                        [item for item in route_selections if item.startswith("skill:")],
+                        branch_evidence["planned_skill_ids"],
+                    )
+                    self.assertEqual(
+                        [item for item in route_selections if not item.startswith("skill:")],
+                        branch_evidence["planned_non_skill_selection_ids"],
+                    )
                     self.assertEqual("unverified", branch_evidence["actual_activation"])
 
         by_id = {item["id"]: item for item in data["presets"]}
@@ -239,6 +246,44 @@ class DemoDataTests(unittest.TestCase):
             {"status": "not-applied", "skill_ids": []},
             automatic["routing_evidence"]["explicit_skill_lock"],
         )
+
+        evaluation = by_id["real-model-evaluation"]["branches"][0]
+        self.assertEqual([], evaluation["routing_evidence"]["planned_skill_ids"])
+        self.assertEqual(
+            ["evaluation:runner"],
+            evaluation["routing_evidence"]["planned_non_skill_selection_ids"],
+        )
+
+    def test_routing_evidence_rejects_misclassified_or_lost_selections(self):
+        data = build_demo_data(ROOT)
+        evaluation_index = next(
+            index for index, preset in enumerate(data["presets"])
+            if preset["id"] == "real-model-evaluation"
+        )
+
+        misclassified = json.loads(json.dumps(data))
+        evidence = misclassified["presets"][evaluation_index]["branches"][0][
+            "routing_evidence"
+        ]
+        evidence["planned_skill_ids"] = ["evaluation:runner"]
+        evidence["planned_non_skill_selection_ids"] = []
+        with self.assertRaisesRegex(ValueError, "planned selection"):
+            validate_routing_evidence(misclassified)
+
+        lost = json.loads(json.dumps(data))
+        lost_evidence = lost["presets"][evaluation_index]["branches"][0][
+            "routing_evidence"
+        ]
+        lost_evidence["planned_non_skill_selection_ids"] = []
+        with self.assertRaisesRegex(ValueError, "planned selection"):
+            validate_routing_evidence(lost)
+
+        invalid_skill_namespace = json.loads(json.dumps(data))
+        invalid_branch = invalid_skill_namespace["presets"][0]["branches"][0]
+        invalid_branch["route"]["primary_selection"] = "skill:"
+        invalid_branch["routing_evidence"]["planned_skill_ids"] = ["skill:"]
+        with self.assertRaisesRegex(ValueError, "selection identifier"):
+            validate_routing_evidence(invalid_skill_namespace)
 
     def test_authority_evidence_requires_exact_false_booleans(self):
         data = build_demo_data(ROOT)

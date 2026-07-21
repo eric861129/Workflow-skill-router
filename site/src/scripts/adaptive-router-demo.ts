@@ -133,7 +133,8 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         <div><dt>CLASSIFICATION SOURCE</dt><dd data-testid="demo-classification-source">${escapeHtml(routing.classification.source)}</dd></div>
         <div><dt>CLASSIFICATION CONFIDENCE</dt><dd>${escapeHtml(routing.classification.confidence)}</dd></div>
         <div><dt>PROFILE MATCH</dt><dd data-testid="demo-profile-source">${escapeHtml(profileMatch)}</dd></div>
-        <div><dt>PLANNED SKILLS</dt><dd data-testid="demo-planned-skills">${escapeHtml(branchRouting.planned_skill_ids.join(', '))}</dd></div>
+        <div><dt>PLANNED SKILLS</dt><dd data-testid="demo-planned-skills">${escapeHtml(branchRouting.planned_skill_ids.join(', ') || 'none')}</dd></div>
+        <div><dt>PLANNED NON-SKILL SELECTIONS</dt><dd data-testid="demo-planned-non-skill-selections">${escapeHtml(branchRouting.planned_non_skill_selection_ids.join(', ') || 'none')}</dd></div>
         <div><dt>ACTUAL ACTIVATION</dt><dd data-testid="demo-actual-activation">${escapeHtml(branchRouting.actual_activation)}</dd></div>
         <div><dt>EXPLICIT SKILL LOCK</dt><dd data-testid="demo-explicit-lock">${escapeHtml(explicitLock)}</dd></div>
         <div><dt>CONSENT BOUNDARY</dt><dd>${escapeHtml(branchRouting.consent_boundary)}</dd></div>

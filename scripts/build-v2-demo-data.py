@@ -9,7 +9,10 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "packages/router-core/src"))
-from workflow_skill_router.demo_export import build_demo_artifact
+from workflow_skill_router.demo_export import (
+    _split_planned_selection_ids,
+    build_demo_artifact,
+)
 
 
 def _validate_public_evaluation(evaluation: object) -> dict[str, object]:
@@ -107,12 +110,21 @@ def _validate_routing_evidence(output: dict[str, object]) -> None:
             branch_evidence = branch.get("routing_evidence")
             if not isinstance(branch_evidence, dict):
                 raise ValueError("demo branch routing evidence is required")
-            expected_skills = [
+            route_selections = [
                 branch["route"]["primary_selection"],
                 *branch["route"]["support_selections"],
             ]
-            if branch_evidence.get("planned_skill_ids") != expected_skills:
-                raise ValueError("demo branch planned Skills do not match its route")
+            expected_skills, expected_non_skills = _split_planned_selection_ids(
+                route_selections
+            )
+            if (
+                branch_evidence.get("planned_skill_ids") != expected_skills
+                or branch_evidence.get("planned_non_skill_selection_ids")
+                != expected_non_skills
+            ):
+                raise ValueError(
+                    "demo branch planned selection evidence does not match its route"
+                )
             if branch_evidence.get("actual_activation") != "unverified":
                 raise ValueError("demo must not claim actual Skill activation")
 

@@ -4,8 +4,9 @@ from hashlib import sha256
 from io import StringIO
 import json
 from pathlib import Path
+import re
 from tempfile import TemporaryDirectory
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 from workflow_skill_router.bridge import serve
 from workflow_skill_router.capabilities.models import RiskLevel
@@ -36,6 +37,28 @@ _SERVICE_SEMANTICS = {
     "allowed-set": "only",
     "required-all": "all",
 }
+
+_PLANNED_SELECTION_ID = re.compile(
+    r"^(?P<namespace>[a-z][a-z0-9-]*):(?P<local_id>[a-z0-9][a-z0-9._/-]*)$"
+)
+
+
+def _split_planned_selection_ids(
+    selection_ids: Iterable[object],
+) -> tuple[list[str], list[str]]:
+    """依識別碼 namespace 分離 Skill 與非 Skill 的規劃選項。"""
+
+    skill_ids: list[str] = []
+    non_skill_ids: list[str] = []
+    for selection_id in selection_ids:
+        if not isinstance(selection_id, str):
+            raise ValueError("demo planned selection identifier is invalid")
+        match = _PLANNED_SELECTION_ID.fullmatch(selection_id)
+        if match is None:
+            raise ValueError("demo planned selection identifier is invalid")
+        target = skill_ids if match.group("namespace") == "skill" else non_skill_ids
+        target.append(selection_id)
+    return skill_ids, non_skill_ids
 
 
 def _stable_id(prefix: str, *parts: str) -> str:
@@ -630,15 +653,19 @@ class DemoScenarioExporter:
         explicit_skill_ids,
         consent_boundary,
     ):
+        planned_skill_ids, planned_non_skill_selection_ids = (
+            _split_planned_selection_ids([
+                route["primary_selection"],
+                *route["support_selections"],
+            ])
+        )
         return {
             "branch_id": branch_id,
             "route": route,
             "events": events,
             "routing_evidence": {
-                "planned_skill_ids": [
-                    route["primary_selection"],
-                    *route["support_selections"],
-                ],
+                "planned_skill_ids": planned_skill_ids,
+                "planned_non_skill_selection_ids": planned_non_skill_selection_ids,
                 "actual_activation": "unverified",
                 "explicit_skill_lock": {
                     "status": "locked" if explicit_skill_ids else "not-applied",

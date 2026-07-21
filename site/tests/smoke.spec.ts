@@ -176,6 +176,9 @@ test('verified host fixture exposes the complete scheduler flow and fixture boun
 test('real evaluation reports its evidence and review gate without reference-driver claims', async ({ page }) => {
   await page.goto('./');
   await page.getByTestId('demo-preset-real-model-evaluation').click();
+  await expect(page.getByTestId('demo-planned-skills')).toHaveText('none');
+  await expect(page.getByTestId('demo-planned-non-skill-selections')).toHaveText('evaluation:runner');
+  await expect(page.getByTestId('demo-actual-activation')).toHaveText('unverified');
   await expect(page.getByTestId('demo-evaluation-status')).toContainText(/manual-required|review-required/);
   await expect(page.getByTestId('demo-evaluation-gate')).toContainText('review-required');
   await expect(page.getByTestId('demo-evaluation-class')).toContainText('behavior');
