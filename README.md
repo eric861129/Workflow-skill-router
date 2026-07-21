@@ -100,6 +100,8 @@ Maintainers can start with [the V2 architecture overview](docs/architecture/v2-o
 
 The Router does not force every task into Goal orchestration. Work shape comes from the request, dependencies, risk, and current Goal relation.
 
+`plan_work` combines **deterministic automatic classification** for the work envelope with an **optional deterministic Profile** for a user-owned Skill Tree. The classifier is a bounded structural and lexical ruleset, not a semantic model; its source, confidence, revision, and reason codes are returned separately from the Profile match source. Planned Skills remain intent only and actual activation stays `unverified`. Explicit Skill Lock and consent boundaries still apply. The local Router does not activate Skills, mutate a native Codex Goal, or grant deployment/production authority.
+
 ## Explicit Skill Lock
 
 When the user names a SKILL, that choice becomes authoritative. The Router may recommend support, but it must explain the purpose, scope, refusal consequence, and context cost before activation. Rejected support stays out of active selections.
@@ -122,9 +124,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile v
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "Deliver the API" --work-mode phased --domain api --explain
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile lint .\my-profile.json
 ```
 
-Plugin + MCP mode loads and validates profiles deterministically. Skill-only reads the same contract as `skill-only-fallback` only when the Host grants filesystem access to the fixed Profile locations; otherwise the user must provide the Profile content in the conversation. It cannot claim durable loading or enforcement. In both modes, a profile result is `intended-unverified`: Runtime Capability Discovery still decides whether each SKILL is installed, exposed, compatible, authorized, and eligible. A profile never installs a SKILL or grants permission. See [Personal Routing Profiles](site/src/content/docs/concepts/personal-routing-profiles.md).
+The generated Plugin runtime supports `profile preview --explain` and `profile lint`; both are deterministic diagnostics and expose no SKILL instruction body or authority. Plugin + MCP mode loads and validates profiles deterministically. Skill-only reads the same contract as `skill-only-fallback` only when the Host grants filesystem access to the fixed Profile locations; otherwise the user must provide the Profile content in the conversation. It cannot claim durable loading or enforcement. In both modes, a profile result is `intended-unverified`: Runtime Capability Discovery still decides whether each SKILL is installed, exposed, compatible, authorized, and eligible. A profile never installs a SKILL or grants permission. See [Personal Routing Profiles](site/src/content/docs/concepts/personal-routing-profiles.md).
 
 ## MCP tool surface
 

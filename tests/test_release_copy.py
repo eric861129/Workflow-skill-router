@@ -1,4 +1,7 @@
 import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -295,6 +298,82 @@ class ReleaseCopyTests(unittest.TestCase):
             skill_only.index("只想讓 Codex 在工作前選擇合適的 SKILL"),
             skill_only.index("durable resume"),
         )
+
+    def test_beta4_public_surfaces_preserve_routing_and_authority_boundaries(self) -> None:
+        pages = (
+            "README.md",
+            "README.zh-TW.md",
+            "site/src/content/docs/guides/v2-routing.md",
+            "site/src/content/docs/zh-tw/guides/v2-routing.md",
+            "site/src/content/docs/reference/mcp-tools.mdx",
+            "site/src/content/docs/zh-tw/reference/mcp-tools.mdx",
+        )
+        required = (
+            "deterministic automatic classification",
+            "optional deterministic Profile",
+            "unverified",
+            "Explicit Skill Lock",
+            "consent",
+            "native Codex Goal",
+            "deployment/production authority",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                for phrase in required:
+                    self.assertIn(phrase, text)
+
+    def test_generated_plugin_runtime_executes_profile_explain_and_lint(self) -> None:
+        runtime = (
+            ROOT
+            / "plugins/workflow-skill-router/runtime/workflow_skill_router.pyz"
+        )
+        profile = (
+            ROOT
+            / "starter/v2/workflow-skill-router/assets/"
+            "personal-routing-profile.example.json"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / "state"
+
+            def run(*arguments: str) -> subprocess.CompletedProcess[str]:
+                return subprocess.run(
+                    [sys.executable, str(runtime), "profile", *arguments],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                    capture_output=True,
+                    timeout=30,
+                )
+
+            installed = run("install", str(profile), "--data-dir", str(state))
+            self.assertEqual(0, installed.returncode, installed.stderr)
+
+            explained = run(
+                "preview",
+                "--data-dir",
+                str(state),
+                "--objective",
+                "Deliver the API",
+                "--work-mode",
+                "phased",
+                "--domain",
+                "api",
+                "--explain",
+            )
+            self.assertEqual(0, explained.returncode, explained.stderr)
+            self.assertTrue(json.loads(explained.stdout)["rule_traces"])
+
+            linted = run("lint", str(profile), "--current-phase", "contract")
+            self.assertEqual(0, linted.returncode, linted.stderr)
+            self.assertEqual("valid", json.loads(linted.stdout)["status"])
+
+    def test_demo_labels_planned_support_without_claiming_activation(self) -> None:
+        source = (
+            ROOT / "site/src/scripts/adaptive-router-demo.ts"
+        ).read_text(encoding="utf-8")
+        self.assertIn("planned-unverified", source)
+        self.assertNotIn("router-approved", source)
 
 
 if __name__ == "__main__":

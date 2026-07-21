@@ -39,6 +39,7 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         response: 'RESPONSE',
         hostRequired: '需要已驗證 Host 能力',
         localBoundary: '此 Runtime 未提供排程能力；結果未被偽造。',
+        classificationLimit: '分類只決定工作包絡，不代表 Skill 啟用或權限。',
       }
     : {
         noGraph: 'No work graph for this scenario.',
@@ -48,6 +49,7 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         response: 'RESPONSE',
         hostRequired: 'Requires verified host capabilities',
         localBoundary: 'This runtime has no scheduler capability; no result was fabricated.',
+        classificationLimit: 'Classification selects only the work envelope; it proves no Skill activation or authority.',
       };
 
   let preset = demo.presets.find((item) => item.id === root.dataset.initial) || demo.presets[0];
@@ -111,13 +113,21 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
     const unavailable = preset.mcp_results.find(
       (result: any) => !result.ok && result.error?.code === 'capability-unavailable',
     );
+    const routing = preset.routing_evidence;
     target.innerHTML = `
       <dl class="router-demo-evidence-grid">
         <div><dt>RUNTIME PROFILE</dt><dd data-testid="demo-runtime-profile">${escapeHtml(preset.runtime_profile)}</dd></div>
         <div><dt>EVIDENCE CLASS</dt><dd data-testid="demo-evidence-class">${escapeHtml(preset.evidence_class)}</dd></div>
         <div><dt>TRACE SOURCE</dt><dd>${escapeHtml(preset.trace_source)}</dd></div>
         <div><dt>TRACE STATUS</dt><dd>${escapeHtml(preset.trace_status)}</dd></div>
+        <div><dt>CLASSIFICATION SOURCE</dt><dd data-testid="demo-classification-source">${escapeHtml(routing.classification.source)}</dd></div>
+        <div><dt>CLASSIFICATION CONFIDENCE</dt><dd>${escapeHtml(routing.classification.confidence)}</dd></div>
+        <div><dt>PROFILE MATCH SOURCE</dt><dd data-testid="demo-profile-source">${escapeHtml(routing.profile_match_source)}</dd></div>
+        <div><dt>PLANNED SKILLS</dt><dd>${escapeHtml(routing.planned_skill_ids.join(', ') || 'none')}</dd></div>
+        <div><dt>ACTUAL ACTIVATION</dt><dd data-testid="demo-actual-activation">${escapeHtml(routing.actual_activation)}</dd></div>
+        <div><dt>CONSENT BOUNDARY</dt><dd>${escapeHtml(routing.consent_boundary)}</dd></div>
       </dl>
+      <div class="router-demo-boundary is-unavailable">${localized.classificationLimit}</div>
       ${preset.requires_host_capabilities ? `<div class="router-demo-boundary is-fixture">${localized.hostRequired}</div>` : ''}
       ${unavailable ? `<div class="router-demo-boundary is-unavailable" data-testid="demo-capability-unavailable"><b>${escapeHtml(unavailable.error.code)}</b><span>${localized.localBoundary}</span><small>${escapeHtml(unavailable.error.fallback_action)}</small></div>` : ''}`;
   };
@@ -152,7 +162,7 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
     if (route) {
       route.innerHTML = `
         <p><span>PRIMARY</span><b>${escapeHtml(branch.route.primary_selection)}</b><small>${escapeHtml(branch.route.primary_selection_source)}</small></p>
-        ${branch.route.support_selections.map((id: string) => `<p data-testid="demo-active-support"><span>SUPPORT</span><b>${escapeHtml(id)}</b><small>router-approved</small></p>`).join('')}`;
+        ${branch.route.support_selections.map((id: string) => `<p data-testid="demo-active-support"><span>SUPPORT</span><b>${escapeHtml(id)}</b><small>planned-unverified</small></p>`).join('')}`;
     }
 
     const events = root.querySelector<HTMLOListElement>('[data-demo-events]');

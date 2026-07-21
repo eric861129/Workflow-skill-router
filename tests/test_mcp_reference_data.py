@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -52,6 +53,70 @@ class McpReferenceDataTests(unittest.TestCase):
             timeout=30,
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_plan_work_contract_exposes_deterministic_sources_and_boundaries(self) -> None:
+        document = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        plan_work = next(tool for tool in document["tools"] if tool["name"] == "plan_work")
+        description = plan_work["description"]
+        self.assertIn("deterministic automatic classification", description)
+        self.assertIn("optional deterministic Profile", description)
+        self.assertIn("Explicit Skill Lock", description)
+        self.assertIn("consent", description)
+        self.assertIn("activation remains unverified", description)
+
+        input_properties = plan_work["inputSchema"]["properties"]
+        self.assertIn(
+            "deterministic automatic classification",
+            input_properties["requested_work_mode"]["description"],
+        )
+        self.assertIn(
+            "optional deterministic Profile",
+            input_properties["routing_context"]["description"],
+        )
+
+        output_schema = plan_work["outputSchema"]
+        output_properties = output_schema["properties"]
+        self.assertIn("classification", output_schema["required"])
+        self.assertFalse(output_properties["classification"]["additionalProperties"])
+        self.assertEqual(
+            {
+                "native-goal-binding",
+                "caller-work-mode-hint",
+                "deterministic-analyzer",
+                "profile-route",
+                "builtin-fallback",
+                "legacy-replay",
+            },
+            set(output_properties["classification"]["properties"]["source"]["enum"]),
+        )
+        self.assertIn(
+            "does not prove runtime activation",
+            output_properties["planned_skill_ids"]["description"],
+        )
+        self.assertIn(
+            "never proves actual activation",
+            output_properties["activation_status"]["description"],
+        )
+
+    def test_committed_server_bundle_matches_mcp_source(self) -> None:
+        plugin = ROOT / "plugins/workflow-skill-router"
+        committed = plugin / "mcp/server.bundle.mjs"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = Path(directory) / "server.bundle.mjs"
+            result = subprocess.run(
+                [
+                    "node",
+                    str(plugin / "scripts/build-mcp.mjs"),
+                    "--output",
+                    str(generated),
+                ],
+                cwd=plugin,
+                text=True,
+                capture_output=True,
+                timeout=60,
+            )
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual(committed.read_bytes(), generated.read_bytes())
 
 
 if __name__ == "__main__":

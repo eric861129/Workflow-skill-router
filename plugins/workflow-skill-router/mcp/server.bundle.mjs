@@ -29192,13 +29192,13 @@ var TOOL_INPUT_SHAPES = {
   }).strict().shape,
   plan_work: external_exports3.object({
     ...mutation,
-    objective: external_exports3.string().min(1).describe("The user-visible outcome this workflow must achieve."),
+    objective: external_exports3.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
     goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
-    requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
-    explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
+    requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
+    explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
     explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
     routing_context: routingContext.optional().describe(
-      "Optional user-owned routing profile context. Omission preserves the V2 beta.1 request contract."
+      "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
     )
   }).strict().shape,
   propose_support_consent: external_exports3.object({
@@ -29305,6 +29305,21 @@ var plannedSkillPhase = external_exports3.object({
   exit_gate: external_exports3.string()
 }).strict();
 var sha256Digest = external_exports3.string().regex(/^sha256:[0-9a-f]{64}$/);
+var classificationDecision = external_exports3.object({
+  source: external_exports3.enum([
+    "native-goal-binding",
+    "caller-work-mode-hint",
+    "deterministic-analyzer",
+    "profile-route",
+    "builtin-fallback",
+    "legacy-replay"
+  ]).describe("Authoritative source for the deterministic work-envelope decision."),
+  confidence: external_exports3.enum(["high", "medium", "low"]),
+  classifier_revision: external_exports3.string(),
+  reason_codes: external_exports3.array(external_exports3.string())
+}).strict().describe(
+  "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority."
+);
 var TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: external_exports3.object({
     snapshot: unknownObject,
@@ -29321,20 +29336,25 @@ var TOOL_OUTPUT_SCHEMAS = {
     routing_envelope: external_exports3.string(),
     selection_mode: external_exports3.string(),
     support_consent_required: external_exports3.boolean(),
-    planned_skill_ids: external_exports3.array(external_exports3.string()),
+    planned_skill_ids: external_exports3.array(external_exports3.string()).describe(
+      "Planned Skill intent from an explicit lock or deterministic Profile; it does not prove runtime activation."
+    ),
     runtime_mode: external_exports3.string(),
     route_source: external_exports3.enum([
       "user-explicit",
       "workspace-profile",
       "personal-profile",
       "builtin-default"
-    ]),
+    ]).describe("Source of planned Skill intent, distinct from work-envelope classification."),
     routing_profile_ids: external_exports3.array(external_exports3.string()),
     routing_profile_digest: sha256Digest.nullable(),
     matched_profile_rule_id: external_exports3.string().nullable(),
     planned_skill_tree: external_exports3.array(plannedSkillPhase),
-    activation_status: external_exports3.enum(["not-planned", "intended-unverified"]),
-    profile_warnings: external_exports3.array(external_exports3.string())
+    activation_status: external_exports3.enum(["not-planned", "intended-unverified"]).describe(
+      "Planning evidence only; intended-unverified never proves actual activation."
+    ),
+    profile_warnings: external_exports3.array(external_exports3.string()),
+    classification: classificationDecision
   }).strict(),
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,
@@ -29434,7 +29454,7 @@ var TITLES = {
 };
 var DESCRIPTIONS = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime can apply strict user-owned personal and trusted-root workspace routing profiles while preserving explicit Skill locks. Profile choices remain intended routes until Runtime Discovery validates activation, and no speculative support-consent prompt is created.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
   get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",

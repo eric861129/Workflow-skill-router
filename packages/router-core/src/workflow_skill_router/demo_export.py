@@ -84,7 +84,11 @@ class _VerifiedPlanner:
             command.context.session_id,
             command.idempotency_key,
         )
-        envelope = command.requested_work_mode or "single"
+        envelope = (
+            "managed-goal"
+            if command.goal_binding_id is not None
+            else command.requested_work_mode or "single"
+        )
         result = PlanWorkResult(
             status="planned-verified-host-fixture",
             workflow_run_id=workflow_run_id,
@@ -106,14 +110,18 @@ class _VerifiedPlanner:
             profile_warnings=(),
             classification=ClassificationDecisionView(
                 source=(
-                    "caller-work-mode-hint"
+                    "native-goal-binding"
+                    if command.goal_binding_id is not None
+                    else "caller-work-mode-hint"
                     if command.requested_work_mode is not None
                     else "builtin-fallback"
                 ),
                 confidence="low",
                 classifier_revision="verified-host-fixture-v1",
                 reason_codes=(
-                    ("caller-work-mode-hint",)
+                    ("native-goal-binding",)
+                    if command.goal_binding_id is not None
+                    else ("caller-work-mode-hint",)
                     if command.requested_work_mode is not None
                     else ("single-default",)
                 ),
@@ -263,6 +271,27 @@ class DemoScenarioExporter:
             "support_selections": planned_skill_ids[1:] if profile_applied else [],
             "selection_mode": plan_result["selection_mode"],
         }
+        routing_evidence = {
+            "classification": plan_result["classification"],
+            "classification_limit": "work-envelope-only",
+            "profile_match_source": plan_result["route_source"],
+            "planned_skill_ids": planned_skill_ids,
+            "activation_status": plan_result["activation_status"],
+            "actual_activation": "unverified",
+            "explicit_skill_lock": bool(explicit),
+            "consent_boundary": (
+                "phase-scoped-user-decision"
+                if support_policy is SupportPolicy.ASK
+                else "explicit-set-closed"
+                if support_policy is SupportPolicy.FORBID
+                else "router-owned-recommendation"
+            ),
+            "authority": {
+                "native_goal_mutation": False,
+                "deployment": False,
+                "production": False,
+            },
+        }
         events = [{
             "event_type": "ROUTE_DECIDED",
             "payload": {
@@ -293,6 +322,7 @@ class DemoScenarioExporter:
             "branches": branches,
             "phases": item.get("phases", []),
             "work_items": item.get("work_items", []),
+            "routing_evidence": routing_evidence,
             **trace,
         }
         if item["id"] == "real-model-evaluation":
@@ -326,7 +356,11 @@ class DemoScenarioExporter:
                 "context": context,
                 "objective": item["request"]["en"],
                 "goal_binding_id": goal_binding_id,
-                "requested_work_mode": envelope,
+                "requested_work_mode": (
+                    None
+                    if item.get("explicit_skills")
+                    else envelope
+                ),
                 "explicit_skill_ids": list(item.get("explicit_skills", ())),
                 "explicit_semantics": _SERVICE_SEMANTICS.get(item.get("explicit_semantics")),
                 "expected_state_version": 0,

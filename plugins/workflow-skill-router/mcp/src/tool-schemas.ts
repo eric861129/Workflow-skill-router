@@ -56,13 +56,13 @@ export const TOOL_INPUT_SHAPES = {
   }).strict().shape,
   plan_work: z.object({
     ...mutation,
-    objective: z.string().min(1).describe("The user-visible outcome this workflow must achieve."),
+    objective: z.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
     goal_binding_id: z.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
-    requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
-    explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
+    requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
+    explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
     explicit_semantics: z.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
     routing_context: routingContext.optional().describe(
-      "Optional user-owned routing profile context. Omission preserves the V2 beta.1 request contract.",
+      "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority.",
     ),
   }).strict().shape,
   propose_support_consent: z.object({

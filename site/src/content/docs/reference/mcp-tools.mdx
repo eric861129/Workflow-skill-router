@@ -7,6 +7,8 @@ import toolData from '../../../data/mcp-tools.generated.json';
 
 This page renders `site/src/data/mcp-tools.generated.json`, which is generated from the MCP server contracts. Descriptions and readiness are not duplicated by hand.
 
+`plan_work` exposes **deterministic automatic classification** plus an **optional deterministic Profile** as two distinct sources. Planned Skill intent and actual activation remain separate: activation is `unverified` until Runtime Capability Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. The bundled local R0 core is not a semantic model, cannot activate Skills or mutate a native Codex Goal, and grants no deployment/production authority.
+
 ## Runtime profile
 
 Current generated profile: **{toolData.runtime_profile}**

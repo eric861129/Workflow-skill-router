@@ -34,11 +34,13 @@ const classificationDecision = z.object({
     "profile-route",
     "builtin-fallback",
     "legacy-replay",
-  ]),
+  ]).describe("Authoritative source for the deterministic work-envelope decision."),
   confidence: z.enum(["high", "medium", "low"]),
   classifier_revision: z.string(),
   reason_codes: z.array(z.string()),
-}).strict();
+}).strict().describe(
+  "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority.",
+);
 
 export const TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: z.object({
@@ -56,16 +58,20 @@ export const TOOL_OUTPUT_SCHEMAS = {
     routing_envelope: z.string(),
     selection_mode: z.string(),
     support_consent_required: z.boolean(),
-    planned_skill_ids: z.array(z.string()),
+    planned_skill_ids: z.array(z.string()).describe(
+      "Planned Skill intent from an explicit lock or deterministic Profile; it does not prove runtime activation.",
+    ),
     runtime_mode: z.string(),
     route_source: z.enum([
       "user-explicit", "workspace-profile", "personal-profile", "builtin-default",
-    ]),
+    ]).describe("Source of planned Skill intent, distinct from work-envelope classification."),
     routing_profile_ids: z.array(z.string()),
     routing_profile_digest: sha256Digest.nullable(),
     matched_profile_rule_id: z.string().nullable(),
     planned_skill_tree: z.array(plannedSkillPhase),
-    activation_status: z.enum(["not-planned", "intended-unverified"]),
+    activation_status: z.enum(["not-planned", "intended-unverified"]).describe(
+      "Planning evidence only; intended-unverified never proves actual activation.",
+    ),
     profile_warnings: z.array(z.string()),
     classification: classificationDecision,
   }).strict(),

@@ -1,6 +1,7 @@
 import json
 import importlib.util
 from pathlib import Path
+import subprocess
 import sys
 import unittest
 
@@ -131,6 +132,70 @@ class DemoDataTests(unittest.TestCase):
         self.assertTrue(preset["evaluation"]["source_digest"].startswith("sha256:"))
         self.assertNotIn("score",preset["evaluation"])
         self.assertNotIn("raw_traces",preset["evaluation"])
+
+    def test_demo_exposes_classification_profile_and_activation_evidence(self):
+        data = build_demo_data(ROOT)
+        allowed_sources = {
+            "native-goal-binding",
+            "caller-work-mode-hint",
+            "deterministic-analyzer",
+            "profile-route",
+            "builtin-fallback",
+            "legacy-replay",
+        }
+        for preset in data["presets"]:
+            with self.subTest(preset=preset["id"]):
+                plan = preset["mcp_results"][0]["result"]
+                evidence = preset["routing_evidence"]
+                self.assertEqual(plan["classification"], evidence["classification"])
+                self.assertIn(evidence["classification"]["source"], allowed_sources)
+                self.assertEqual(plan["route_source"], evidence["profile_match_source"])
+                self.assertEqual(plan["planned_skill_ids"], evidence["planned_skill_ids"])
+                self.assertEqual("unverified", evidence["actual_activation"])
+                self.assertFalse(evidence["authority"]["native_goal_mutation"])
+                self.assertFalse(evidence["authority"]["deployment"])
+                self.assertFalse(evidence["authority"]["production"])
+
+        by_id = {item["id"]: item for item in data["presets"]}
+        self.assertEqual(
+            "deterministic-analyzer",
+            by_id["medium-explicit-phase-consent"]["routing_evidence"]
+            ["classification"]["source"],
+        )
+        self.assertEqual(
+            "caller-work-mode-hint",
+            by_id["personal-skill-tree"]["routing_evidence"]
+            ["classification"]["source"],
+        )
+        self.assertEqual(
+            "personal-profile",
+            by_id["personal-skill-tree"]["routing_evidence"]
+            ["profile_match_source"],
+        )
+        self.assertEqual(
+            "native-goal-binding",
+            by_id["goal-work-graph"]["routing_evidence"]
+            ["classification"]["source"],
+        )
+        self.assertTrue(
+            by_id["medium-explicit-phase-consent"]["routing_evidence"]
+            ["explicit_skill_lock"]
+        )
+        self.assertEqual(
+            "phase-scoped-user-decision",
+            by_id["medium-explicit-phase-consent"]["routing_evidence"]
+            ["consent_boundary"],
+        )
+
+    def test_committed_demo_matches_the_generator(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/build-v2-demo-data.py"), "--check"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=60,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__=="__main__":unittest.main()

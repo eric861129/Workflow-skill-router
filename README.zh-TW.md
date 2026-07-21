@@ -100,6 +100,8 @@ Maintainer 可先閱讀 [V2 架構總覽](docs/architecture/v2-overview.md)。
 
 Router 不會把每個任務都塞進 Goal 流程。工作形狀由需求、依賴、風險與目前 Goal relation 共同決定。
 
+`plan_work` 會結合工作包絡的 **deterministic automatic classification**，以及使用者 Skill Tree 的 **optional deterministic Profile**。Classifier 是有界的結構與詞彙規則，不是 semantic model；回應會把分類來源、信心、revision、reason codes 與 Profile match source 分開呈現。Planned Skills 只代表規劃意圖，actual activation 仍是 `unverified`。Explicit Skill Lock 與 consent 邊界持續有效；本機 Router 不會啟用 Skills、不會修改 native Codex Goal，也不會授予 deployment/production authority。
+
 ## Explicit Skill Lock
 
 使用者指定 SKILL 時，該選擇具有權威性。Router 可以建議支援能力，但啟用前必須說明用途、scope、拒絕後果與 context cost。被拒絕的支援不得進入 active selections。
@@ -122,9 +124,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile v
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付 API" --work-mode phased --domain api
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付 API" --work-mode phased --domain api --explain
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile lint .\my-profile.json
 ```
 
-Plugin + MCP 會 deterministic 載入與驗證 Profile。Skill-only 只有在 Host 授權讀取固定 Profile 位置時，才能依相同契約做 `skill-only-fallback` advisory routing；否則必須由使用者在對話中提供 Profile 內容。Skill-only 不能宣稱 durable loading 或 enforcement。兩種模式下，Profile 結果都只是 `intended-unverified`；Runtime Capability Discovery 仍決定 SKILL 是否 installed、exposed、compatible、authorized 與 eligible。Profile 不會安裝 SKILL，也不會授予權限。完整說明請看 [Personal Routing Profiles](site/src/content/docs/zh-tw/concepts/personal-routing-profiles.md)。
+Generated Plugin runtime 支援 `profile preview --explain` 與 `profile lint`；兩者都只是 deterministic diagnostics，不會公開 SKILL instruction body，也不會授予 authority。Plugin + MCP 會 deterministic 載入與驗證 Profile。Skill-only 只有在 Host 授權讀取固定 Profile 位置時，才能依相同契約做 `skill-only-fallback` advisory routing；否則必須由使用者在對話中提供 Profile 內容。Skill-only 不能宣稱 durable loading 或 enforcement。兩種模式下，Profile 結果都只是 `intended-unverified`；Runtime Capability Discovery 仍決定 SKILL 是否 installed、exposed、compatible、authorized 與 eligible。Profile 不會安裝 SKILL，也不會授予權限。完整說明請看 [Personal Routing Profiles](site/src/content/docs/zh-tw/concepts/personal-routing-profiles.md)。
 
 ## MCP tool surface
 

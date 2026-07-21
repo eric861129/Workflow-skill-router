@@ -53,12 +53,41 @@ def _pending_public_evaluation() -> dict[str, object]:
     }
 
 
+def _validate_routing_evidence(output: dict[str, object]) -> None:
+    """驗證公開 Demo 只呈現規劃證據，不把規劃誤稱為實際啟用或權限。"""
+
+    allowed_sources = {
+        "native-goal-binding",
+        "caller-work-mode-hint",
+        "deterministic-analyzer",
+        "profile-route",
+        "builtin-fallback",
+        "legacy-replay",
+    }
+    for preset in output["presets"]:
+        evidence = preset.get("routing_evidence")
+        if not isinstance(evidence, dict):
+            raise ValueError("demo routing evidence is required")
+        classification = evidence.get("classification")
+        if (
+            not isinstance(classification, dict)
+            or classification.get("source") not in allowed_sources
+        ):
+            raise ValueError("demo classification source is invalid")
+        if evidence.get("actual_activation") != "unverified":
+            raise ValueError("demo must not claim actual Skill activation")
+        authority = evidence.get("authority")
+        if not isinstance(authority, dict) or any(authority.values()):
+            raise ValueError("demo must not claim Goal or deployment authority")
+
+
 def build_demo_data(root: Path) -> dict[str, object]:
     source = json.loads((root / "demo/v2-scenarios/inputs.json").read_text("utf-8"))
     forbidden = {"request_decision","route","active_selections","policy_result","events"}
     if any(forbidden.intersection(item) for item in source["presets"]): raise ValueError("demo input contains policy output")
     evaluation = _validate_public_evaluation(_pending_public_evaluation())
     output = build_demo_artifact(source, evaluation)
+    _validate_routing_evidence(output)
     encoded = json.dumps(output, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     if re.search(r"[A-Za-z]:\\Users\\|/Users/|/home/|sk-[A-Za-z0-9]", encoded): raise ValueError("demo output is not public safe")
     return output
