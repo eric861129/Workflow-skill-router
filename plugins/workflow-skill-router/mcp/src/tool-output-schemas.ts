@@ -41,6 +41,80 @@ const classificationDecision = z.object({
 }).strict().describe(
   "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority.",
 );
+const nextWorkFields = {
+  status: z.string(),
+  refresh_requirements: z.array(z.string()),
+  work_item: z.unknown().nullable(),
+};
+const recordWorkEvent = z.object({
+  event_ids: z.array(z.string()),
+  resulting_state_version: z.number().int().nonnegative(),
+  replayed: z.boolean(),
+  authority_mode: z.literal("router-local").optional(),
+  evidence_class: z.literal("user-or-agent-reported-local").optional(),
+  host_transition_authorized: z.literal(false).optional(),
+}).strict().superRefine((value, context) => {
+  const isLocal = value.authority_mode === "router-local";
+  if (isLocal && (
+    value.evidence_class !== "user-or-agent-reported-local"
+    || value.host_transition_authorized !== false
+  )) {
+    context.addIssue({
+      code: "custom",
+      message: "Router-local records require local evidence and deny Host transition authority.",
+    });
+  }
+  if (!isLocal && (
+    value.evidence_class !== undefined
+    || value.host_transition_authorized !== undefined
+  )) {
+    context.addIssue({
+      code: "custom",
+      message: "Verified-Host records cannot carry Router-local-only fields.",
+    });
+  }
+});
+const gateEvaluation = z.object({
+  status: z.string(),
+  passed: z.boolean(),
+  failures: z.array(z.string()).optional(),
+  mandatory_failures: z.array(z.string()).optional(),
+  evidence_digest: sha256Digest,
+  resulting_state_version: z.number().int().nonnegative().optional(),
+  replayed: z.boolean().optional(),
+  gate_scope: z.literal("router-local").optional(),
+  authority_mode: z.literal("router-local").optional(),
+  evidence_class: z.literal("user-or-agent-reported-local").optional(),
+  host_transition_authorized: z.literal(false).optional(),
+}).strict().superRefine((value, context) => {
+  const isLocal = value.authority_mode === "router-local";
+  const localFieldsComplete = value.status === "evaluated-local"
+    && value.failures !== undefined
+    && value.resulting_state_version !== undefined
+    && value.replayed !== undefined
+    && value.gate_scope === "router-local"
+    && value.evidence_class === "user-or-agent-reported-local"
+    && value.host_transition_authorized === false
+    && value.mandatory_failures === undefined;
+  if (isLocal && !localFieldsComplete) {
+    context.addIssue({
+      code: "custom",
+      message: "Router-local gates require the complete local evidence boundary and no Host-only fields.",
+    });
+  }
+  const carriesLocalOnlyField = value.failures !== undefined
+    || value.resulting_state_version !== undefined
+    || value.replayed !== undefined
+    || value.gate_scope !== undefined
+    || value.evidence_class !== undefined
+    || value.host_transition_authorized !== undefined;
+  if (!isLocal && (value.mandatory_failures === undefined || carriesLocalOnlyField)) {
+    context.addIssue({
+      code: "custom",
+      message: "Verified-Host gates require mandatory_failures and cannot carry Router-local-only fields.",
+    });
+  }
+});
 
 export const TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: z.object({
@@ -78,10 +152,17 @@ export const TOOL_OUTPUT_SCHEMAS = {
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,
   get_next_work: z.object({
-    status: z.string(),
-    refresh_requirements: z.array(z.string()),
-    work_item: z.unknown().nullable(),
-  }).strict(),
+    ...nextWorkFields,
+    authority_mode: z.enum(["router-local", "verified-host"]),
+    host_goal_mutated: z.boolean(),
+  }).strict().superRefine((value, context) => {
+    if (value.authority_mode === "router-local" && value.host_goal_mutated) {
+      context.addIssue({
+        code: "custom",
+        message: "Router-local scheduling cannot claim a Host Goal mutation.",
+      });
+    }
+  }),
   validate_route: z.object({
     valid: z.boolean(),
     violations: z.array(unknownObject),
@@ -91,17 +172,8 @@ export const TOOL_OUTPUT_SCHEMAS = {
     outcome_mode: z.string(),
     exit_gate: z.string().nullable(),
   }).strict(),
-  record_work_event: z.object({
-    event_ids: z.array(z.string()),
-    resulting_state_version: z.number().int().nonnegative(),
-    replayed: z.boolean(),
-  }).strict(),
-  evaluate_gate: z.object({
-    status: z.string(),
-    passed: z.boolean(),
-    mandatory_failures: z.array(z.string()),
-    evidence_digest: z.string(),
-  }).strict(),
+  record_work_event: recordWorkEvent,
+  evaluate_gate: gateEvaluation,
   get_router_status: z.object({
     goal_binding_id: nullableIdentifier,
     workflow_run_id: nullableIdentifier,

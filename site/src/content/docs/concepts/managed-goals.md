@@ -15,6 +15,8 @@ Managed Goal planning creates a dependency Work Graph. Each Work Item has its ow
 
 The Router can emit `complete` or `blocked` status candidates. Codex owns the actual Goal state transition. A blocked candidate needs three countable turns with the same blocker and no runnable required item.
 
+Bundled R0 exposes **4 always local-ready + 3 Router-owned conditional-local** tools. For a validated Router-owned graph with no Native Goal authority, `get_next_work`, reported progress, and an advisory local gate can complete the Router-local loop. This is not `7/12 local-ready`: Explicit Skill Lock and consent are unchanged, and a local gate pass does not prove Skill activation, Host evidence, deployment, or production approval. A native Codex Goal, missing graph, or corrupt graph must fail closed to the verified Host path.
+
 <a id="example"></a>
 ## State, input, and output example
 
@@ -36,7 +38,7 @@ The Router can emit `complete` or `blocked` status candidates. Codex owns the ac
 - Cycles and overlapping ready write scopes are rejected.
 - Status questions do not increment semantic revision.
 - Completed items survive a Goal edit; unstarted items may be replaced.
-- Bundled local R0 reports `capability-unavailable` for `get_next_work`; it does not fake a scheduler.
+- Router-owned graphs can return a Router-local next item; Native Goal scheduling reports `capability-unavailable` and never fakes Host authority.
 
 <a id="security-boundary"></a>
 ## Security and authority boundary

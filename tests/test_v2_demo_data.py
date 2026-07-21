@@ -40,6 +40,7 @@ class DemoDataTests(unittest.TestCase):
             "medium-explicit-phase-consent",
             "medium-auto",
             "personal-skill-tree",
+            "router-local-work-loop",
             "goal-work-graph",
             "verified-host-flow",
             "real-model-evaluation",
@@ -91,6 +92,43 @@ class DemoDataTests(unittest.TestCase):
         self.assertFalse(preset["mcp_results"][1]["ok"])
         self.assertEqual("capability-unavailable",preset["mcp_results"][1]["error"]["code"])
         self.assertEqual("get_next_work",preset["mcp_results"][1]["error"]["tool_name"])
+        self.assertEqual("conditional-local",preset["mcp_results"][1]["error"]["availability"])
+        self.assertEqual(
+            ["verified-host-scheduler"],
+            preset["mcp_results"][1]["error"]["required_capabilities"],
+        )
+
+    def test_router_owned_demo_exposes_sanitized_local_work_loop_success(self):
+        preset = next(
+            item
+            for item in build_demo_data(ROOT)["presets"]
+            if item["id"] == "router-local-work-loop"
+        )
+        self.assertEqual("bundled-local-r0", preset["runtime_profile"])
+        self.assertEqual(
+            [
+                "plan_work",
+                "get_next_work",
+                "record_work_event",
+                "record_work_event",
+                "evaluate_gate",
+                "get_router_status",
+            ],
+            [call["tool"] for call in preset["mcp_calls"]],
+        )
+        self.assertTrue(all(result["ok"] for result in preset["mcp_results"]))
+        next_work = preset["mcp_results"][1]["result"]
+        started = preset["mcp_results"][2]["result"]
+        gated = preset["mcp_results"][4]["result"]
+        self.assertEqual("router-local", next_work["authority_mode"])
+        self.assertFalse(next_work["host_goal_mutated"])
+        self.assertEqual("user-or-agent-reported-local", started["evidence_class"])
+        self.assertFalse(started["host_transition_authorized"])
+        self.assertEqual("router-local", gated["gate_scope"])
+        self.assertFalse(gated["host_transition_authorized"])
+        serialized = json.dumps(preset, ensure_ascii=False)
+        self.assertNotIn(str(ROOT), serialized)
+        self.assertNotIn("WORKFLOW_SKILL_ROUTER_DATA_DIR", serialized)
 
     def test_verified_host_fixture_is_separate_and_requires_host_capabilities(self):
         preset=next(item for item in build_demo_data(ROOT)["presets"] if item["id"]=="verified-host-flow")
@@ -100,6 +138,9 @@ class DemoDataTests(unittest.TestCase):
         self.assertTrue(preset["requires_host_capabilities"])
         self.assertEqual(["plan_work","get_next_work","get_router_status"],[call["tool"] for call in preset["mcp_calls"]])
         self.assertTrue(all(result["ok"] for result in preset["mcp_results"]))
+        next_work = preset["mcp_results"][1]["result"]
+        self.assertEqual("verified-host", next_work["authority_mode"])
+        self.assertFalse(next_work["host_goal_mutated"])
 
     def test_rejected_support_is_audited_but_never_activated(self):
         preset=next(item for item in build_demo_data(ROOT)["presets"] if item["id"]=="small-explicit-reject-support")
@@ -210,12 +251,21 @@ class DemoDataTests(unittest.TestCase):
             by_id["personal-skill-tree"]["routing_evidence"]["profile_match"],
         )
         self.assertEqual(
+            {
+                "status": "applied",
+                "source": "personal-profile",
+                "profile_ids": ["personal:demo-local-loop"],
+                "matched_rule_id": "demo-local-loop",
+            },
+            by_id["router-local-work-loop"]["routing_evidence"]["profile_match"],
+        )
+        self.assertEqual(
             "native-goal-binding",
             by_id["goal-work-graph"]["routing_evidence"]
             ["classification"]["source"],
         )
         for preset_id, preset in by_id.items():
-            if preset_id == "personal-skill-tree":
+            if preset_id in {"personal-skill-tree", "router-local-work-loop"}:
                 continue
             self.assertEqual(
                 {

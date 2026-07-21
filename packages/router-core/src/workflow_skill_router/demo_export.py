@@ -12,6 +12,7 @@ from workflow_skill_router.bridge import serve
 from workflow_skill_router.capabilities.models import RiskLevel
 from workflow_skill_router.composition import RouterCompositionPorts, compose_router_service
 from workflow_skill_router.local_control import LocalControlPlaneService
+from workflow_skill_router.local_work import local_evidence_digest
 from workflow_skill_router.profiles.contract import is_canonical_skill_id
 from workflow_skill_router.routing.models import (
     ExplicitSemantics,
@@ -397,6 +398,74 @@ class DemoScenarioExporter:
 
         workflow_run_id = results[0]["result"]["workflow_run_id"]
         follow_up_calls: list[dict[str, Any]] = []
+        if item.get("runtime_fixture") == "router-local-work-loop":
+            next_call = {
+                "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                "tool": "get_next_work",
+                "arguments": {
+                    "context": context,
+                    "workflow_run_id": workflow_run_id,
+                },
+            }
+            next_result = _execute_bridge(dispatcher, [next_call])[0]
+            calls.append(next_call)
+            results.append(next_result)
+            if not next_result["ok"]:
+                return self._trace_metadata(verified_host, calls, results)
+
+            work_item = next_result["result"]["work_item"]
+            phase_id = str(work_item["phase_id"])
+            work_item_id = str(work_item["work_item_id"])
+            check_id = str(
+                results[0]["result"]["planned_skill_tree"][0]["exit_gate"]
+            )
+            for transition, state_version, check_ids in (
+                ("start", 1, []),
+                ("submit", 2, [check_id]),
+            ):
+                record_call = {
+                    "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                    "tool": "record_work_event",
+                    "arguments": {
+                        "context": context,
+                        "workflow_run_id": workflow_run_id,
+                        "phase_id": phase_id,
+                        "observation": {
+                            "work_item_id": work_item_id,
+                            "transition": transition,
+                            "check_ids": check_ids,
+                            "reported_outcome": (
+                                "Local exit check reported."
+                                if transition == "submit"
+                                else None
+                            ),
+                        },
+                        "activation_receipt_ref": None,
+                        "expected_state_version": state_version,
+                        "idempotency_key": f"demo-local-{transition}-{scenario_id}",
+                        "correlation_id": f"demo-local-{transition}-{scenario_id}",
+                    },
+                }
+                calls.append(record_call)
+                results.extend(_execute_bridge(dispatcher, [record_call]))
+
+            gate_call = {
+                "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                "tool": "evaluate_gate",
+                "arguments": {
+                    "context": context,
+                    "workflow_run_id": workflow_run_id,
+                    "phase_id": phase_id,
+                    "expected_state_version": 3,
+                    "expected_plan_revision": 1,
+                    "expected_evidence_digest": local_evidence_digest((check_id,)),
+                    "evidence_refs": [],
+                    "idempotency_key": f"demo-local-gate-{scenario_id}",
+                    "correlation_id": f"demo-local-gate-{scenario_id}",
+                },
+            }
+            calls.append(gate_call)
+            results.extend(_execute_bridge(dispatcher, [gate_call]))
         support = item.get("support")
         explicit_semantics = item.get("explicit_semantics")
         if support and explicit_semantics in {"preferred-primary", "required-all"}:

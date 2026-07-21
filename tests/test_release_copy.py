@@ -115,6 +115,33 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("transition_support_consent", text)
                 self.assertIn("get_router_status", text)
 
+    def test_public_contract_distinguishes_always_local_from_conditional_local(self) -> None:
+        pages = (
+            "README.md",
+            "README.zh-TW.md",
+            "site/src/content/docs/reference/mcp-tools.mdx",
+            "site/src/content/docs/zh-tw/reference/mcp-tools.mdx",
+            "site/src/content/docs/concepts/managed-goals.md",
+            "site/src/content/docs/zh-tw/concepts/managed-goals.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("4 always local-ready", text)
+                self.assertIn("3 Router-owned conditional-local", text)
+                self.assertIn("Explicit Skill Lock", text)
+                self.assertIn("consent", text)
+                self.assertIn("Native Goal", text)
+                self.assertIn("fail closed", text)
+                self.assertIn("local gate", text.lower())
+                self.assertNotIn("all 7/12 tools are local-ready", text)
+
+        for relative in ("README.md", "README.zh-TW.md"):
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("latest", text)
+                self.assertIn("V1.3.1", text)
+
     def test_published_beta_is_described_in_the_present_tense(self) -> None:
         public_pages = (
             "README.md",

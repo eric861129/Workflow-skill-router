@@ -13,9 +13,12 @@ This page renders `site/src/data/mcp-tools.generated.json`, which is generated f
 
 Current generated profile: **{toolData.runtime_profile}**
 
+This profile exposes **4 always local-ready + 3 Router-owned conditional-local** tools. Conditional-local does not mean `7/12 local-ready`: it is available only for a validated Router-owned work graph with no Native Goal authority. Explicit Skill Lock and consent remain unchanged. Native Goal work and missing or corrupt graphs fail closed. A local gate is advisory and is not Skill activation, deployment, production approval, or Host evidence.
+
 | Availability | Meaning |
 | --- | --- |
 | `local-ready` | Executable in the bundled local R0 control plane |
+| `conditional-local` | Router-owned work graph only; local progress and local gate evidence remain advisory |
 | `verified-host-required` | Requires verified Host authority or stores |
 | `configured-adapter-required` | Requires a server-configured evaluation adapter |
 
@@ -29,6 +32,7 @@ Current generated profile: **{toolData.runtime_profile}**
       <li><strong>Risk:</strong> <code>{tool.risk_class}</code></li>
       <li><strong>Runtime requirement:</strong> <code>{tool.runtime_requirement}</code></li>
       <li><strong>Required capabilities:</strong> {tool.required_capabilities.join(', ') || 'none'}</li>
+      <li><strong>Local conditions:</strong> {tool.local_conditions.join(', ') || 'not conditional-local'}</li>
       <li><strong>Fallback:</strong> {tool.fallback_action}</li>
     </ul>
     <h3>Input schema</h3>

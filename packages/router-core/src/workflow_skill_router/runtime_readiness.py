@@ -83,17 +83,19 @@ RUNTIME_READINESS: Mapping[str, ToolRuntimeReadiness] = {
     ),
     "record_work_event": _entry(
         "record_work_event",
-        "verified-host-required",
-        "R1",
-        ("verified-event-store", "activation-receipt-verifier"),
-        "Retain the observation locally and report it only through a verified host.",
+        "conditional-local",
+        "R0",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
+        "Record advisory local progress or continue through the verified host event store.",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
     ),
     "evaluate_gate": _entry(
         "evaluate_gate",
-        "verified-host-required",
-        "R1",
-        ("verified-evidence-store", "gate-authority"),
-        "Keep the gate pending until verified evidence and state are available.",
+        "conditional-local",
+        "R0",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
+        "Evaluate an advisory local gate or continue through verified host evidence authority.",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
     ),
     "get_router_status": _entry(
         "get_router_status",
@@ -167,6 +169,7 @@ class CapabilityUnavailable(RuntimeError):
             "fallback_action": entry.fallback_action,
             "message": "The selected runtime cannot execute this tool.",
             "required_capabilities": list(entry.required_capabilities),
+            "local_conditions": list(entry.local_conditions),
             "tool_name": entry.tool_name,
         }
 

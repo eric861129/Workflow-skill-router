@@ -111,6 +111,97 @@ test("support consent output preserves the route binding", () => {
   }).success, true);
 });
 
+test("conditional-local outputs require explicit Router-local authority boundaries", () => {
+  const nextWork = {
+    status: "ready",
+    refresh_requirements: [],
+    work_item: { work_item_id: "work-item:1" },
+    authority_mode: "router-local",
+    host_goal_mutated: false,
+  };
+  assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse(nextWork).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse({
+    ...nextWork,
+    host_goal_mutated: true,
+  }).success, false);
+
+  const recorded = {
+    event_ids: ["local-transition:1"],
+    resulting_state_version: 2,
+    replayed: false,
+    authority_mode: "router-local",
+    evidence_class: "user-or-agent-reported-local",
+    host_transition_authorized: false,
+  };
+  assert.equal(TOOL_OUTPUT_SCHEMAS.record_work_event.safeParse(recorded).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.record_work_event.safeParse({
+    ...recorded,
+    host_transition_authorized: true,
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.record_work_event.safeParse({
+    event_ids: ["host-event:1"],
+    resulting_state_version: 3,
+    replayed: false,
+    evidence_class: "user-or-agent-reported-local",
+  }).success, false);
+
+  const gate = {
+    status: "evaluated-local",
+    passed: true,
+    failures: [],
+    evidence_digest: `sha256:${"a".repeat(64)}`,
+    resulting_state_version: 4,
+    replayed: false,
+    gate_scope: "router-local",
+    authority_mode: "router-local",
+    evidence_class: "user-or-agent-reported-local",
+    host_transition_authorized: false,
+  };
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse(gate).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    ...gate,
+    gate_scope: "production",
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    ...gate,
+    mandatory_failures: [],
+  }).success, false);
+});
+
+test("conditional-local output schemas retain strict verified-host variants", () => {
+  assert.equal(TOOL_OUTPUT_SCHEMAS.record_work_event.safeParse({
+    event_ids: ["event:1"],
+    resulting_state_version: 2,
+    replayed: false,
+  }).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    status: "passed",
+    passed: true,
+    mandatory_failures: [],
+    evidence_digest: `sha256:${"b".repeat(64)}`,
+  }).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.get_next_work.safeParse({
+    status: "ready",
+    refresh_requirements: [],
+    work_item: null,
+    authority_mode: "verified-host",
+    host_goal_mutated: true,
+  }).success, true);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.evaluate_gate.safeParse({
+    status: "passed",
+    passed: true,
+    mandatory_failures: [],
+    evidence_digest: `sha256:${"b".repeat(64)}`,
+    gate_scope: "router-local",
+  }).success, false);
+  assert.equal(TOOL_OUTPUT_SCHEMAS.record_work_event.safeParse({
+    event_ids: ["event:1"],
+    resulting_state_version: 2,
+    replayed: false,
+    authority_mode: "router-local",
+  }).success, false);
+});
+
 test("success schemas reject invented wrapper fields", () => {
   assert.equal(TOOL_OUTPUT_SCHEMAS.plan_work.safeParse({
     schema_id: "invented",

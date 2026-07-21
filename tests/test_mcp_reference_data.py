@@ -33,12 +33,45 @@ class McpReferenceDataTests(unittest.TestCase):
                 tool["required_capabilities"],
             )
             self.assertEqual(readiness.fallback_action, tool["fallback_action"])
+            self.assertEqual(
+                list(readiness.local_conditions),
+                tool["local_conditions"],
+            )
             self.assertGreaterEqual(len(tool["title"]), 8)
             self.assertGreaterEqual(len(tool["description"]), 80)
             self.assertIn("readOnlyHint", tool["annotations"])
             self.assertIn("idempotentHint", tool["annotations"])
             self.assertIsInstance(tool["inputSchema"], dict)
             self.assertIsInstance(tool["outputSchema"], dict)
+
+        by_name = {tool["name"]: tool for tool in document["tools"]}
+        self.assertEqual(
+            {
+                "get_next_work",
+                "record_work_event",
+                "evaluate_gate",
+            },
+            {
+                name
+                for name, tool in by_name.items()
+                if tool["runtime_requirement"] == "conditional-local"
+            },
+        )
+        for name in (
+            "get_next_work",
+            "record_work_event",
+            "evaluate_gate",
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    [
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ],
+                    by_name[name]["local_conditions"],
+                )
+                self.assertIn("Router-owned", by_name[name]["description"])
+                self.assertIn("Native Goal", by_name[name]["description"])
 
         serialized = OUTPUT.read_text(encoding="utf-8")
         self.assertNotIn(str(ROOT), serialized)

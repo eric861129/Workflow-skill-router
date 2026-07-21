@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import path from "node:path";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
+import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
 import {
   WorkspaceRootTrustError,
   bindPlanWorkWorkspaceRoot,
@@ -45,7 +46,10 @@ for (const definition of TOOL_DEFINITIONS) {
             await trustedWorkspaceRoots(),
           )
           : arguments_;
-        const result = await core.call(definition.name, boundArguments);
+        const rawResult = await core.call(definition.name, boundArguments);
+        // MCP SDK 1.29 registers object shapes, while this explicit parse preserves
+        // cross-field authority constraints defined with Zod superRefine.
+        const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
           structuredContent: result as Record<string, unknown>,

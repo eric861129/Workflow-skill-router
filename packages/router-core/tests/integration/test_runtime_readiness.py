@@ -41,6 +41,19 @@ class RuntimeReadinessTests(unittest.TestCase):
             ),
             RUNTIME_READINESS["get_next_work"].local_conditions,
         )
+        for tool_name in ("record_work_event", "evaluate_gate"):
+            with self.subTest(tool_name=tool_name):
+                self.assertEqual(
+                    "conditional-local",
+                    RUNTIME_READINESS[tool_name].availability,
+                )
+                self.assertEqual(
+                    (
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ),
+                    RUNTIME_READINESS[tool_name].local_conditions,
+                )
         self.assertEqual(
             "configured-adapter-required",
             RUNTIME_READINESS["run_model_evaluation"].availability,
@@ -128,6 +141,23 @@ class RuntimeReadinessTests(unittest.TestCase):
             "verified-host-required",
             document["tools"]["validate_route"]["availability"],
         )
+        for tool_name in (
+            "get_next_work",
+            "record_work_event",
+            "evaluate_gate",
+        ):
+            with self.subTest(tool_name=tool_name):
+                self.assertEqual(
+                    "conditional-local",
+                    document["tools"][tool_name]["availability"],
+                )
+                self.assertEqual(
+                    [
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ],
+                    document["tools"][tool_name]["local_conditions"],
+                )
 
 
 if __name__ == "__main__":

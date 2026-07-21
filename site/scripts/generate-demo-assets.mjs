@@ -24,7 +24,58 @@ const outputs = {
 
 const digest = (data) => createHash('sha256').update(data).digest('hex');
 
-function assetHtml() {
+function resultForTool(preset, toolName, occurrence = 0) {
+  const indexes = preset.mcp_calls
+    .map((call, index) => call.tool === toolName ? index : -1)
+    .filter(index => index >= 0);
+  const index = indexes[occurrence];
+  if (index === undefined) throw new Error(`Missing required public demo tool result: ${toolName}.`);
+  return preset.mcp_results[index];
+}
+
+async function selectPublicBoundaryData() {
+  const document = JSON.parse(await readFile(demoData, 'utf8'));
+  const byId = new Map(document.presets.map(preset => [preset.id, preset]));
+  const local = byId.get('router-local-work-loop');
+  const nativeGoal = byId.get('goal-work-graph');
+  if (!local || !nativeGoal) throw new Error('Required public boundary presets are unavailable.');
+
+  const localNext = resultForTool(local, 'get_next_work').result;
+  const localRecord = resultForTool(local, 'record_work_event').result;
+  const localGate = resultForTool(local, 'evaluate_gate').result;
+  const nativeNext = resultForTool(nativeGoal, 'get_next_work').error;
+  const presentation = {
+    source_preset_ids: ['router-local-work-loop', 'goal-work-graph'],
+    router_local: {
+      authority_mode: localNext.authority_mode,
+      host_goal_mutated: localNext.host_goal_mutated,
+      evidence_class: localRecord.evidence_class,
+      host_transition_authorized: localRecord.host_transition_authorized,
+      gate_scope: localGate.gate_scope,
+    },
+    native_goal: {
+      code: nativeNext.code,
+      availability: nativeNext.availability,
+      required_capabilities: nativeNext.required_capabilities,
+    },
+  };
+  const valid = presentation.router_local.authority_mode === 'router-local'
+    && presentation.router_local.host_goal_mutated === false
+    && presentation.router_local.evidence_class === 'user-or-agent-reported-local'
+    && presentation.router_local.host_transition_authorized === false
+    && presentation.router_local.gate_scope === 'router-local'
+    && presentation.native_goal.code === 'capability-unavailable'
+    && presentation.native_goal.availability === 'conditional-local'
+    && Array.isArray(presentation.native_goal.required_capabilities)
+    && presentation.native_goal.required_capabilities.length === 1
+    && presentation.native_goal.required_capabilities[0] === 'verified-host-scheduler';
+  if (!valid) throw new Error('Public boundary presets do not satisfy the safe visual contract.');
+  return presentation;
+}
+
+function assetHtml(boundary) {
+  const local = boundary.router_local;
+  const nativeGoal = boundary.native_goal;
   return `<!doctype html>
 <html>
   <head>
@@ -36,7 +87,7 @@ function assetHtml() {
         width: 1280px;
         height: 720px;
         box-sizing: border-box;
-        padding: 54px 64px;
+        padding: 40px 64px;
         color: #f2f0e7;
         font-family: "Courier New", monospace;
         background:
@@ -44,51 +95,52 @@ function assetHtml() {
           linear-gradient(135deg, #11120f 0%, #191b17 58%, #0d0e0c 100%);
       }
       .kicker { color: #c7ff37; font-size: 24px; font-weight: 760; letter-spacing: .12em; }
-      h1 { margin: 18px 0 16px; max-width: 940px; font-size: 78px; line-height: 1.02; letter-spacing: 0; }
-      .sub { max-width: 900px; color: #c5d6ea; font-size: 30px; line-height: 1.35; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 36px; }
+      h1 { margin: 12px 0 10px; max-width: 1120px; font-size: 60px; line-height: 1.02; letter-spacing: 0; }
+      .sub { max-width: 1000px; color: #c5d6ea; font-size: 25px; line-height: 1.25; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 22px; }
       .panel {
-        min-height: 184px;
+        min-height: 154px;
         border: 1px solid rgba(199, 221, 255, .22);
         border-radius: 8px;
         background: rgba(5, 13, 26, .72);
         box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
-        padding: 26px;
+        padding: 20px 24px;
       }
-      .panel h2 { margin: 0 0 18px; color: #e8f4ff; font-size: 24px; line-height: 1.1; }
+      .panel h2 { margin: 0 0 14px; color: #e8f4ff; font-size: 21px; line-height: 1.1; }
       .before { color: #fecaca; }
       .after { color: #bbf7d0; }
-      .line { margin-top: 12px; color: #d9e7f8; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 20px; line-height: 1.45; }
+      .line { margin-top: 9px; color: #d9e7f8; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 18px; line-height: 1.35; }
       .pill { display: inline-block; margin: 0 8px 8px 0; padding: 8px 12px; border-radius: 999px; background: rgba(125, 211, 252, .13); color: #bfdbfe; font-size: 18px; }
-      .footer { position: absolute; left: 64px; right: 64px; bottom: 34px; display: flex; justify-content: space-between; color: #96a9c3; font-size: 21px; }
+      .footer { position: absolute; left: 64px; right: 64px; bottom: 20px; display: flex; justify-content: space-between; color: #96a9c3; font-size: 17px; }
     </style>
   </head>
   <body>
     <main class="frame">
       <div class="kicker">V2 ROUTING FLIGHT RECORDER</div>
-      <h1>Single. Phased. Managed Goal.</h1>
-      <div class="sub">Runtime discovery, explicit SKILL consent, durable state, and evidence—visible before execution.</div>
+      <h1>Router-local advisory.<br />Native Goal fails closed.</h1>
+      <div class="sub">Runtime-derived boundaries without fabricated Host authority.</div>
       <section class="grid">
         <div class="panel">
-          <h2 class="before">INPUT / EXPLICIT LOCK</h2>
-          <div class="line">“Use api-designer.</div>
-          <div class="line">Ask before adding support.”</div>
+          <h2 class="after">ROUTER-OWNED WORK GRAPH</h2>
+          <div class="line">authority_mode: ${local.authority_mode}</div>
+          <div class="line">host_goal_mutated: ${local.host_goal_mutated}</div>
+          <div class="line">gate_scope: ${local.gate_scope}</div>
         </div>
         <div class="panel">
-          <h2 class="after">OUTPUT / AUDITABLE ROUTE</h2>
-          <span class="pill">primary: api-designer</span>
-          <span class="pill">envelope: single</span>
-          <span class="pill">support: rejected</span>
-          <div class="line">Requested SKILL only · coverage satisfied.</div>
+          <h2 class="before">Native Goal requires verified Host</h2>
+          <div class="line">code: ${nativeGoal.code}</div>
+          <div class="line">availability: ${nativeGoal.availability}</div>
+          <div class="line">requires: ${nativeGoal.required_capabilities[0]}</div>
         </div>
       </section>
-      <div class="footer"><span>core-derived · skill-only-fallback / hybrid-full</span><span>github.com/eric861129/Workflow-skill-router</span></div>
+      <div class="footer"><span>${local.evidence_class} · no Host transition</span><span>github.com/eric861129/Workflow-skill-router</span></div>
     </main>
   </body>
 </html>`;
 }
 
-function recordingPageHtml() {
+function recordingPageHtml(boundary) {
+  const safeBoundaryJson = JSON.stringify(boundary).replaceAll('<', '\\u003c');
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#07111f">
@@ -99,6 +151,7 @@ function recordingPageHtml() {
       const W = canvas.width;
       const H = canvas.height;
       const durationMs = 10000;
+      const boundary = ${safeBoundaryJson};
 
       function ease(value) {
         return 1 - Math.pow(1 - value, 3);
@@ -162,32 +215,42 @@ function recordingPageHtml() {
         ctx.fillText('Workflow Skill Router', 64, 82);
         ctx.fillStyle = '#eef6ff';
         ctx.font = '760 70px system-ui, sans-serif';
-        ctx.fillText('Fuzzy request in.', 64, 164);
-        ctx.fillText('Focused skills out.', 64, 244);
+        const nativeStage = progress >= .5;
+        ctx.fillText(nativeStage ? 'Native Goal requires' : 'Router-local advisory', 64, 164);
+        ctx.fillText(nativeStage ? 'verified Host.' : 'without Host mutation.', 64, 244);
 
-        const stage = Math.min(2, Math.floor(progress * 3));
-        const local = ease((progress * 3) % 1);
-        const leftX = 64 - (1 - local) * 28;
-        const rightX = 660 + (1 - local) * 28;
+        const motion = ease((progress * 2) % 1);
+        const leftX = 64 - (1 - motion) * 28;
+        const rightX = 660 + (1 - motion) * 28;
 
-        drawPanel(leftX, 318, 552, 238, 'Request', [
-          '“Add audit tables and keep',
-          'the admin query fast.”',
-          '',
-          stage === 0 ? 'Router is reading intent...' : 'Intent: API + database + QA',
-        ], '#fecaca');
-
-        drawPanel(rightX, 318, 552, 238, stage < 2 ? 'Route' : 'Validated route', [
-          'Primary: api-designer',
-          'Supporting: database-optimizer',
-          'Supporting: qa-test-planner',
-          stage < 2 ? 'Omit: frontend-design' : 'Validator: PASS',
-        ], stage < 2 ? '#bbf7d0' : '#86efac');
+        if (!nativeStage) {
+          drawPanel(leftX, 318, 552, 238, 'Router-owned work graph', [
+            'authority_mode: ' + boundary.router_local.authority_mode,
+            'evidence: ' + boundary.router_local.evidence_class,
+            'gate_scope: ' + boundary.router_local.gate_scope,
+          ], '#86efac');
+          drawPanel(rightX, 318, 552, 238, 'Advisory boundary', [
+            'host_goal_mutated: ' + boundary.router_local.host_goal_mutated,
+            'host_transition_authorized: ' + boundary.router_local.host_transition_authorized,
+            'No activation or production claim',
+          ], '#bbf7d0');
+        } else {
+          drawPanel(leftX, 318, 552, 238, 'Native Goal', [
+            'code: ' + boundary.native_goal.code,
+            'availability: ' + boundary.native_goal.availability,
+            'Local runtime: fail closed',
+          ], '#fecaca');
+          drawPanel(rightX, 318, 552, 238, 'Verified Host required', [
+            'requires: ' + boundary.native_goal.required_capabilities[0],
+            'No local Host mutation',
+            'No fabricated scheduler result',
+          ], '#fcd34d');
+        }
 
         let x = 64;
-        x += drawPill('bounded to 3 skills', x, 590) + 10;
-        x += drawPill('explicit omissions', x, 590) + 10;
-        drawPill(stage < 2 ? 'reviewable plan' : 'public-ready docs', x, 590);
+        x += drawPill(nativeStage ? boundary.native_goal.code : boundary.router_local.authority_mode, x, 590) + 10;
+        x += drawPill(nativeStage ? boundary.native_goal.required_capabilities[0] : boundary.router_local.gate_scope, x, 590) + 10;
+        drawPill(nativeStage ? 'verified Host path' : 'advisory evidence only', x, 590);
       }
 
       window.recordDemo = async () => {
@@ -241,23 +304,28 @@ async function checkAssets() {
   await assertFile(outputs.siteWebm, 12_000_000);
   await assertFile(outputs.siteMp4, 15_000_000);
   const manifest = JSON.parse(await readFile(outputs.siteManifest, 'utf8'));
+  const presentation = await selectPublicBoundaryData();
   for (const [key, filePath] of Object.entries({ poster: outputs.sitePoster, webm: outputs.siteWebm, mp4: outputs.siteMp4 })) {
     const actual = digest(await readFile(filePath));
     if (manifest.outputs[key].sha256 !== actual) throw new Error(`${key} digest does not match demo manifest.`);
   }
   if (manifest.source.sha256 !== digest(await readFile(demoData))) throw new Error('Demo data revision is stale.');
+  if (JSON.stringify(manifest.presentation) !== JSON.stringify(presentation)) {
+    throw new Error('Demo visual boundary presentation is stale.');
+  }
   console.log('OK: demo media assets passed');
 }
 
 async function generateAssets() {
   await mkdir(siteAssets, { recursive: true });
   await mkdir(path.dirname(outputs.posterSource), { recursive: true });
+  const presentation = await selectPublicBoundaryData();
 
   const browser = await chromium.launch({ headless: true });
   try {
     if (!ffmpegPath) throw new Error('ffmpeg-static executable is unavailable.');
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
-    await page.setContent(assetHtml());
+    await page.setContent(assetHtml(presentation));
     await page.screenshot({
       path: outputs.posterSource,
       clip: { x: 0, y: 0, width: 1280, height: 720 },
@@ -271,7 +339,7 @@ async function generateAssets() {
       outputs.sitePoster,
     ]);
 
-    await page.setContent(recordingPageHtml());
+    await page.setContent(recordingPageHtml(presentation));
     const bytes = await page.evaluate(() => window.recordDemo());
     await writeFile(outputs.siteWebm, Buffer.from(bytes));
     const revision = digest(await readFile(demoData));
@@ -279,6 +347,7 @@ async function generateAssets() {
       '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outputs.siteMp4]);
     const manifest = {
       schema_version: '1.0', source: { path: 'site/src/data/router-demo-v2.generated.json', sha256: revision },
+      presentation,
       outputs: {
         poster: { sha256: digest(await readFile(outputs.sitePoster)), width: 1280, height: 720, codec: 'webp' },
         webm: { sha256: digest(await readFile(outputs.siteWebm)), width: 1280, height: 720, codec: 'vp9' },

@@ -43,7 +43,7 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Open a new Codex task and ask it to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, and four local-ready tools.
+Open a new Codex task and ask it to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, **4 always local-ready** tools, and **3 Router-owned conditional-local** tools.
 
 For contributors who are changing or testing the Router:
 
@@ -148,10 +148,13 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 | Availability in bundled local R0 | Tools | Meaning |
 | --- | --- | --- |
 | `local-ready` | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Durable local R0 planning, scoped consent, and status |
-| `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Needs verified host authority and stores |
+| `conditional-local` | `get_next_work`, `record_work_event`, `evaluate_gate` | Router-owned graph scheduling, reported local progress, and advisory local gate evaluation only |
+| `verified-host-required` | `sync_runtime_context`, `validate_route` | Needs verified host authority and stores |
 | `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
 
-Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result.
+The readiness claim is deliberately **4 always local-ready + 3 Router-owned conditional-local**, never `7/12 local-ready`. A conditional-local call succeeds only for a validated Router-owned work graph with no Native Goal authority. `get_next_work` returns `authority_mode=router-local` and `host_goal_mutated=false`; progress and local gate results use `evidence_class=user-or-agent-reported-local` and `host_transition_authorized=false`. A local gate pass is advisory: it is not Skill activation, Native Goal completion, deployment approval, or production permission. Native Goal work and a missing or corrupt graph fail closed to the verified Host path. Explicit Skill Lock and consent behavior are unaffected.
+
+Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result. The `latest` compatibility channel remains on V1.3.1 until the V2 GA gate is passed.
 
 ## Real Model Evaluation
 

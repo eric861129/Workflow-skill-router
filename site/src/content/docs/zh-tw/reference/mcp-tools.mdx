@@ -13,9 +13,12 @@ import toolData from '../../../../data/mcp-tools.generated.json';
 
 目前產生的 profile：**{toolData.runtime_profile}**
 
+此 profile 清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Native Goal、缺少 graph 或 graph 損毀時會 fail closed。Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
+
 | Availability | 意義 |
 | --- | --- |
 | `local-ready` | 可在 bundled local R0 control plane 執行 |
+| `conditional-local` | 僅限 Router-owned work graph；local progress 與 local gate evidence 都是 advisory |
 | `verified-host-required` | 需要已驗證的 Host authority 或 stores |
 | `configured-adapter-required` | 需要 server 端已設定的 evaluation adapter |
 
@@ -29,6 +32,7 @@ import toolData from '../../../../data/mcp-tools.generated.json';
       <li><strong>Risk:</strong> <code>{tool.risk_class}</code></li>
       <li><strong>Runtime requirement:</strong> <code>{tool.runtime_requirement}</code></li>
       <li><strong>Required capabilities:</strong> {tool.required_capabilities.join(', ') || 'none'}</li>
+      <li><strong>Local conditions:</strong> {tool.local_conditions.join(', ') || 'not conditional-local'}</li>
       <li><strong>Fallback:</strong> {tool.fallback_action}</li>
     </ul>
     <h3>Input schema</h3>

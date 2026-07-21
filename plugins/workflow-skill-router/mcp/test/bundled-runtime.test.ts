@@ -181,7 +181,7 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
       ["skill:qa-test-planner"],
     );
 
-    const unavailableResponse = await request(7, "tools/call", {
+    const localNextResponse = await request(7, "tools/call", {
       name: "get_next_work",
       arguments: {
         context: {
@@ -192,6 +192,50 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
         workflow_run_id: String(planResult.structuredContent?.workflow_run_id),
       },
     });
+    assert.equal(localNextResponse.error, undefined);
+    const localNextResult = localNextResponse.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(localNextResult.isError, undefined, JSON.stringify(localNextResponse));
+    assert.equal(localNextResult.structuredContent?.authority_mode, "router-local");
+    assert.equal(localNextResult.structuredContent?.host_goal_mutated, false);
+
+    const nativeGoalPlanResponse = await request(8, "tools/call", {
+      name: "plan_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-native-goal",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 0,
+        idempotency_key: "bundled-runtime-native-goal-plan",
+        correlation_id: "bundled-runtime-native-goal-plan",
+        objective: "Continue a Host-managed Goal without granting local Host authority.",
+        goal_binding_id: "native-goal:test",
+        requested_work_mode: "managed-goal",
+        explicit_skill_ids: [],
+        explicit_semantics: null,
+      },
+    });
+    const nativeGoalPlan = nativeGoalPlanResponse.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(nativeGoalPlan.isError, undefined, JSON.stringify(nativeGoalPlanResponse));
+
+    const unavailableResponse = await request(9, "tools/call", {
+      name: "get_next_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-native-goal",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        workflow_run_id: String(nativeGoalPlan.structuredContent?.workflow_run_id),
+      },
+    });
     assert.equal(unavailableResponse.error, undefined);
     const unavailableResult = unavailableResponse.result as {
       isError?: boolean;
@@ -199,7 +243,7 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
     };
     assert.equal(unavailableResult.isError, true);
     assert.match(String(unavailableResult.content?.[0]?.text), /capability-unavailable/);
-    assert.match(String(unavailableResult.content?.[0]?.text), /verified-host-required/);
+    assert.match(String(unavailableResult.content?.[0]?.text), /verified-host-scheduler/);
   } finally {
     child.kill();
     await new Promise<void>((resolve) => {
