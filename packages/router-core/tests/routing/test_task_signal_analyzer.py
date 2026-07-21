@@ -181,10 +181,34 @@ class TaskSignalAnalyzerTests(unittest.TestCase):
 
         self.assertEqual(2, analysis.signals.distinct_stages)
         self.assertEqual(
-            ("negated-action-ignored", "multi-stage-sequence"),
+            ("negated-action-ignored", "multi-action-family"),
             analysis.reason_codes,
         )
         self.assert_envelope(analysis, RoutingEnvelope.PHASED)
+
+    def test_chinese_coordinated_negation_is_occurrence_specific(self) -> None:
+        analysis = analyze_task_signals("規劃釋出，但不要測試或更新文件")
+
+        self.assertEqual(1, analysis.signals.distinct_stages)
+        self.assertEqual(("negated-action-ignored", "single-default"), analysis.reason_codes)
+        self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
+
+    def test_positive_chinese_action_survives_later_coordinated_negation(self) -> None:
+        analysis = analyze_task_signals("規劃、測試 staging，但不要測試或更新文件")
+
+        self.assertEqual(2, analysis.signals.distinct_stages)
+        self.assertEqual(
+            ("negated-action-ignored", "multi-action-family"),
+            analysis.reason_codes,
+        )
+        self.assert_envelope(analysis, RoutingEnvelope.PHASED)
+
+    def test_leading_sequence_marker_does_not_inflate_repeated_action(self) -> None:
+        analysis = analyze_task_signals("Then plan backend and plan frontend")
+
+        self.assertEqual(1, analysis.signals.distinct_stages)
+        self.assertEqual(("single-default",), analysis.reason_codes)
+        self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
 
     def test_empty_or_overlong_objective_is_rejected(self) -> None:
         with self.assertRaises(ValueError):

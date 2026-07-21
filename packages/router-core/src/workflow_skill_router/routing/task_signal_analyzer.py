@@ -36,6 +36,9 @@ _COORDINATED_ENGLISH_NEGATION = re.compile(
     r"\b(?:do\s+not|don't|skip)(?:\s+[a-z-]+){1,3}\s+(?:or|and)\s*$"
 )
 _CHINESE_NEGATION_PREFIX = re.compile(r"(?:不要|不需要|不|勿)\s*$")
+_COORDINATED_CHINESE_NEGATION = re.compile(
+    r"(?:不要|不需要|不|勿)[^,，;；]{0,16}(?:或|和|及)\s*$"
+)
 _SEQUENCE_PATTERN = re.compile(r"\b(?:then|after\s+that|finally|next)\b|(?:先|再|接著|最後)")
 _NUMBERED_STAGE_PATTERN = re.compile(r"(?:^|[;\n])\s*\d{1,2}[.)、]")
 
@@ -79,7 +82,7 @@ def analyze_task_signals(
     )
     if distinct_stages > 1:
         if numbered_action_entries > 1 or (
-            _SEQUENCE_PATTERN.search(normalized_objective) and len(positive_actions) > 1
+            _has_sequence_between_actions(normalized_objective, positive_actions)
         ):
             reason_codes.append("multi-stage-sequence")
         else:
@@ -155,6 +158,7 @@ def _is_negated_occurrence(objective: str, occurrence: _ActionOccurrence) -> boo
         _ENGLISH_NEGATION_PREFIX.search(preceding_text)
         or _COORDINATED_ENGLISH_NEGATION.search(preceding_text)
         or _CHINESE_NEGATION_PREFIX.search(preceding_text)
+        or _COORDINATED_CHINESE_NEGATION.search(preceding_text)
     )
 
 
@@ -164,12 +168,21 @@ def _count_distinct_stages(
 ) -> tuple[int, int]:
     action_families = {action.family for action in positive_actions}
     numbered_action_entries = _count_numbered_action_entries(objective, positive_actions)
-    sequenced_occurrences = (
-        len(positive_actions)
-        if _SEQUENCE_PATTERN.search(objective) and len(positive_actions) > 1
-        else 1
-    )
+    sequenced_occurrences = len(positive_actions) if _has_sequence_between_actions(
+        objective,
+        positive_actions,
+    ) else 1
     return max(1, len(action_families), numbered_action_entries, sequenced_occurrences), numbered_action_entries
+
+
+def _has_sequence_between_actions(
+    objective: str,
+    positive_actions: tuple[_ActionOccurrence, ...],
+) -> bool:
+    return any(
+        _SEQUENCE_PATTERN.search(objective[left.end:right.start])
+        for left, right in zip(positive_actions, positive_actions[1:])
+    )
 
 
 def _count_numbered_action_entries(
