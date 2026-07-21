@@ -664,6 +664,15 @@ class GitHubWorkflowTests(unittest.TestCase):
             r"\rooted\escape.txt",
             "/rooted/escape.txt",
             "//server/share/escape.txt",
+            "nested/.. /.. /escape.txt",
+            "nested/... /... /... ",
+            ". /escape.txt",
+            "nested/.. ./escape.txt",
+            "nested/..../escape.txt",
+            "nested./escape.txt",
+            "nested /escape.txt",
+            "nested/CON.txt",
+            "nested/name?.txt",
         )
 
         for unsafe_path in unsafe_paths:

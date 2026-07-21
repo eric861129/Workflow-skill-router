@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -58,6 +59,101 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                             allowlist_path,
                             require_all=True,
                         )
+
+    def test_allowlist_rejects_win32_normalized_segments_before_file_access(
+        self,
+    ) -> None:
+        unsafe_paths = (
+            "nested/.. /.. /escape.txt",
+            "nested/... /... /... ",
+            ". /escape.txt",
+            "nested/.. ./escape.txt",
+            "nested/..../escape.txt",
+            "nested./escape.txt",
+            "nested /escape.txt",
+            "nested/CON.txt",
+            "nested/name?.txt",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source_root = Path(temporary) / "package"
+            source_root.mkdir()
+            allowlist_path = Path(temporary) / "allowlist.json"
+
+            for unsafe_path in unsafe_paths:
+                with self.subTest(unsafe_path=unsafe_path):
+                    allowlist_path.write_text(
+                        json.dumps({"files": [unsafe_path]}) + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+
+                    with patch.object(
+                        Path,
+                        "is_file",
+                        side_effect=AssertionError("unsafe path was accessed"),
+                    ), self.assertRaisesRegex(ValueError, "unsafe allowlist path"):
+                        builder.safe_allowlist_entries(
+                            source_root,
+                            "workflow-skill-router",
+                            allowlist_path,
+                            require_all=True,
+                        )
+
+    def test_cli_rejects_win32_normalized_allowlist_before_writing_output(
+        self,
+    ) -> None:
+        unsafe_paths = (
+            "nested/.. /.. /escape.txt",
+            "nested/... /... /... ",
+            ". /escape.txt",
+            "nested/.. ./escape.txt",
+            "nested/..../escape.txt",
+            "nested./escape.txt",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "release-fixture"
+            scripts = repository / "scripts"
+            allowlists = repository / "release" / "allowlists"
+            scripts.mkdir(parents=True)
+            allowlists.mkdir(parents=True)
+            shutil.copy2(BUILDER, scripts / BUILDER.name)
+            shutil.copy2(
+                ROOT / "scripts" / "release_path_safety.py",
+                scripts / "release_path_safety.py",
+            )
+            (repository / "release" / "version.json").write_text(
+                '{"v2_version":"2.0.0-beta.4"}\n',
+                encoding="utf-8",
+                newline="\n",
+            )
+
+            for unsafe_path in unsafe_paths:
+                with self.subTest(unsafe_path=unsafe_path):
+                    (allowlists / "plugin-runtime-files.json").write_text(
+                        json.dumps({"files": [unsafe_path]}) + "\n",
+                        encoding="utf-8",
+                        newline="\n",
+                    )
+                    output = repository / "output"
+                    result = subprocess.run(
+                        [
+                            sys.executable,
+                            str(scripts / BUILDER.name),
+                            "--output-dir",
+                            str(output),
+                            "--provenance-mode",
+                            "test",
+                        ],
+                        cwd=repository,
+                        text=True,
+                        capture_output=True,
+                    )
+
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("unsafe allowlist path", result.stderr)
+                    self.assertFalse(output.exists())
 
     def test_cli_writes_deterministic_v2_release_tree_to_explicit_output(self) -> None:
         downloads_before = snapshot(ROOT / "downloads")
