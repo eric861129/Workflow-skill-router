@@ -340,6 +340,37 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("GITHUB_TOKEN", text)
                 self.assertIn(denial_phrase, text)
 
+    def test_public_docs_explain_the_prepared_candidate_publication_guard(self) -> None:
+        pages = (
+            "README.md",
+            "README.zh-TW.md",
+            "release/notes/v2.0.0-beta.4.md",
+            "site/src/content/docs/contributing/release-process.md",
+            "site/src/content/docs/zh-tw/contributing/release-process.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("release_lifecycle", text)
+                self.assertIn("prepared-local-candidate", text)
+                self.assertIn("reviewed-attested-publishable", text)
+                self.assertIn("release_source_revision", text)
+                self.assertIn("CREATE_V2_RELEASE", text)
+
+        for relative in (
+            "site/src/content/docs/contributing/release-process.md",
+            "site/src/content/docs/zh-tw/contributing/release-process.md",
+        ):
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                for required_step in (
+                    "update lifecycle and source revision",
+                    "regenerate release copies and assets",
+                    "run required evidence and CI",
+                    "dispatch",
+                ):
+                    self.assertIn(required_step, text)
+
     def test_skill_only_docs_match_the_release_allowlist(self) -> None:
         allowlist = json.loads(
             (ROOT / "release/allowlists/skill-package.json").read_text(

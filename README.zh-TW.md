@@ -6,6 +6,8 @@ Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇
 
 > 已準備的 prerelease candidate：`2.0.0-beta.4`（尚未發布）。目前已發布的 V2 prerelease 仍是 `2.0.0-beta.3`；遷移期間仍可從 immutable V1.3.1 復原。
 
+目前納入版控的 `release_lifecycle` 是 `prepared-local-candidate`，因此受信任預設分支上的 workflow 會在 preflight、建立 tag 或發布前失敗；`CREATE_V2_RELEASE` 不能繞過此 guard。未來必須由經審查的 release-preparation commit 將 `release_lifecycle` 改為 `reviewed-attested-publishable`，並以 `release_source_revision` 綁定已審查的凍結原始碼，之後才允許 dispatch。
+
 ## 60-second outcome / 60 秒成果
 
 把需求交給 Router，它會回傳 execution envelope、能力計畫、同意邊界，以及安全繼續工作所需的證據。公開 Flight Recorder 顯示真正經清理的 MCP request／response，不在瀏覽器重算決策。

@@ -6,6 +6,8 @@ Workflow Skill Router is a runtime-aware planning and routing layer for Codex. I
 
 > Prepared prerelease candidate: `2.0.0-beta.4` (not yet published). The latest published V2 prerelease remains `2.0.0-beta.3`; immutable V1.3.1 recovery remains available during migration.
 
+The checked-in `release_lifecycle` is `prepared-local-candidate`, so the trusted default-branch workflow fails before preflight, tag creation, or publication. `CREATE_V2_RELEASE` cannot bypass this guard. A future reviewed release-preparation commit must set `release_lifecycle` to `reviewed-attested-publishable` and bind the reviewed frozen source through `release_source_revision` before dispatch is allowed.
+
 ## 60-second outcome
 
 Give the Router a request. It returns an execution envelope, a capability plan, the consent boundary, and the evidence needed to continue safely. The public Flight Recorder shows the exact sanitized MCP request and response instead of recreating the decision in the browser.

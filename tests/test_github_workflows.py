@@ -1,5 +1,8 @@
 import json
 import re
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -184,7 +187,8 @@ class GitHubWorkflowTests(unittest.TestCase):
             "github.event.repository.default_branch",
             "Verify trusted release dispatch",
             "Dispatch must run from the default branch with explicit confirmation.",
-            "release_source_revision",
+            "release/version.json",
+            "release-publication-gate.py",
             '["git", "cat-file", "-e",',
             "--provenance-mode release",
             '--source-revision "$SOURCE_REVISION"',
@@ -263,11 +267,16 @@ class GitHubWorkflowTests(unittest.TestCase):
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
         self.assertEqual("2.0.0-beta.4", metadata["v2_version"])
-        self.assertIn('declared_revision = metadata["release_source_revision"]', source_job)
-        self.assertIn("source_revision={declared_revision}", source_job)
+        self.assertEqual("prepared-local-candidate", metadata["release_lifecycle"])
+        publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('metadata, "release_source_revision"', publication_gate)
+        self.assertIn("source_revision={source_revision}", publication_gate)
+        self.assertIn("DECLARED_REVISION", source_job)
         self.assertIn("Declared release source is not a reachable trusted revision", source_job)
-        self.assertIn("release_tag={release_tag}", source_job)
-        self.assertIn("Release metadata V2 version is invalid", source_job)
+        self.assertIn("release_tag={release_tag}", publication_gate)
+        self.assertIn("Release metadata V2 version is invalid", publication_gate)
         self.assertIn('"git", "ls-remote", "origin"', source_job)
         self.assertIn("Existing release tag does not match declared release source revision", source_job)
         self.assertNotIn('metadata["release_source_revision"]', release_job)
@@ -275,6 +284,109 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("[\"git\", \"rev-parse\", \"HEAD\"]"),
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
+
+    def test_prepared_beta4_metadata_fails_the_executable_publication_gate(self) -> None:
+        metadata_path = ROOT / "release" / "version.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        trusted_revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+
+        self.assertEqual(
+            "prepared-local-candidate", metadata.get("release_lifecycle")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "github-output.txt"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "release-publication-gate.py"),
+                    "--metadata",
+                    str(metadata_path),
+                    "--trusted-revision",
+                    trusted_revision,
+                    "--github-output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+                capture_output=True,
+                timeout=30,
+            )
+
+            self.assertFalse(output_path.exists())
+
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertIn("prepared-local-candidate", result.stderr)
+        self.assertIn("reviewed-attested-publishable", result.stderr)
+
+    def test_only_reviewed_attested_metadata_emits_the_frozen_release_binding(
+        self,
+    ) -> None:
+        trusted_revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        metadata = {
+            "release_lifecycle": "reviewed-attested-publishable",
+            "release_source_revision": trusted_revision,
+            "v2_version": "2.0.0-beta.4",
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            directory_path = Path(directory)
+            metadata_path = directory_path / "version.json"
+            output_path = directory_path / "github-output.txt"
+            metadata_path.write_text(
+                json.dumps(metadata), encoding="utf-8", newline="\n"
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "release-publication-gate.py"),
+                    "--metadata",
+                    str(metadata_path),
+                    "--trusted-revision",
+                    trusted_revision,
+                    "--github-output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+                capture_output=True,
+                timeout=30,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                f"source_revision={trusted_revision}\nrelease_tag=v2.0.0-beta.4\n",
+                output_path.read_text(encoding="utf-8"),
+            )
+
+    def test_release_enforces_trusted_lifecycle_before_resolving_frozen_source(
+        self,
+    ) -> None:
+        source_job = workflow_job_body("release-v2.yml", "resolve-source")
+        gate_marker = "- name: Enforce trusted publication lifecycle"
+        resolve_marker = "- name: Verify declared frozen release source"
+
+        for required in (
+            gate_marker,
+            "python scripts/release-publication-gate.py",
+            "--metadata release/version.json",
+            "TRUSTED_METADATA_REVISION: ${{ github.sha }}",
+            '--trusted-revision "$TRUSTED_METADATA_REVISION"',
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, source_job)
+        gate_index = source_job.find(gate_marker)
+        resolve_index = source_job.find(resolve_marker)
+        self.assertGreaterEqual(gate_index, 0)
+        self.assertGreaterEqual(resolve_index, 0)
+        self.assertLess(gate_index, resolve_index)
+        if gate_index >= 0:
+            self.assertNotIn("CONFIRM_RELEASE", source_job[gate_index:])
 
     def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
         release_job = workflow_job_body("release-v2.yml", "release")

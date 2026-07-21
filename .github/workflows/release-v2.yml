@@ -48,23 +48,27 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Resolve declared frozen release source
+      - name: Enforce trusted publication lifecycle
         id: source
+        shell: bash
+        env:
+          TRUSTED_METADATA_REVISION: ${{ github.sha }}
+        run: >-
+          python scripts/release-publication-gate.py
+          --metadata release/version.json
+          --trusted-revision "$TRUSTED_METADATA_REVISION"
+          --github-output "$GITHUB_OUTPUT"
+      - name: Verify declared frozen release source
         shell: python
+        env:
+          DECLARED_REVISION: ${{ steps.source.outputs.source_revision }}
+          RELEASE_TAG: ${{ steps.source.outputs.release_tag }}
         run: |
-          import json
           import os
-          import re
           import subprocess
-          from pathlib import Path
 
-          metadata = json.loads(Path("release/version.json").read_text(encoding="utf-8"))
-          release_tag = f"v{metadata['v2_version']}"
-          if not re.fullmatch(r"v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?", release_tag):
-              raise SystemExit("Release metadata V2 version is invalid.")
-          declared_revision = metadata["release_source_revision"]
-          if not re.fullmatch(r"[0-9a-f]{40}", declared_revision):
-              raise SystemExit("Release metadata source revision is invalid.")
+          declared_revision = os.environ["DECLARED_REVISION"]
+          release_tag = os.environ["RELEASE_TAG"]
 
           try:
               subprocess.run(
@@ -100,12 +104,6 @@ jobs:
                   raise SystemExit(
                       "Existing release tag does not match declared release source revision."
                   )
-
-          output_path = Path(os.environ["GITHUB_OUTPUT"])
-          output_path.write_text(
-              f"source_revision={declared_revision}\nrelease_tag={release_tag}\n",
-              encoding="utf-8",
-          )
 
   preflight:
     name: V2 preflight (${{ matrix.os }})
