@@ -15,6 +15,12 @@
         "job": "site-visual",
         "context": "Site visual regression",
         "app_id": 15368
+      },
+      {
+        "workflow": ".github/workflows/validate.yml",
+        "job": "required-v2",
+        "context": "Required cross-platform V2 gate",
+        "app_id": 15368
       }
     ]
   }

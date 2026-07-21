@@ -22,13 +22,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build, attest, and publish V2
+  resolve-source:
+    name: Resolve tagged V2 source
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: read
+    outputs:
+      source_revision: ${{ steps.source.outputs.source_revision }}
     steps:
       - name: Validate V2 release tag
         shell: bash
@@ -44,6 +44,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Resolve tagged source revision
+        id: source
         shell: bash
         run: |
           source_revision="$(git rev-list -n 1 "$RELEASE_TAG")"
@@ -51,7 +52,85 @@ jobs:
             echo "Checked out source does not match $RELEASE_TAG."
             exit 1
           fi
-          echo "SOURCE_REVISION=$source_revision" >> "$GITHUB_ENV"
+          echo "source_revision=$source_revision" >> "$GITHUB_OUTPUT"
+
+  preflight:
+    name: V2 preflight (${{ matrix.os }})
+    needs: resolve-source
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
+      - name: Verify exact tagged source revision
+        shell: python
+        env:
+          EXPECTED_SOURCE_REVISION: ${{ needs.resolve-source.outputs.source_revision }}
+        run: |
+          import os
+          import subprocess
+
+          actual = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True
+          ).strip()
+          expected = os.environ["EXPECTED_SOURCE_REVISION"]
+          if actual != expected:
+              raise SystemExit(
+                  f"Checked out revision {actual!r} does not match resolved tag revision {expected!r}."
+              )
+      - name: Check deterministic source-built artifacts
+        run: python scripts/build-release-artifacts.py --check
+      - name: Test release and extracted installation contracts
+        run: python -m unittest tests/test_release_artifacts.py tests/test_installation_smoke.py -v
+      - name: Check deterministic Plugin runtime
+        run: python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Test Router Core
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+      - name: Install Plugin/MCP dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
+      - name: Type-check and test Plugin/MCP
+        working-directory: plugins/workflow-skill-router
+        run: npm run check
+
+  release:
+    name: Build, attest, and publish V2
+    needs: [resolve-source, preflight]
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_REVISION: ${{ needs.resolve-source.outputs.source_revision }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -64,30 +143,34 @@ jobs:
           cache-dependency-path: |
             plugins/workflow-skill-router/package-lock.json
             site/package-lock.json
-      - name: Match tag to release metadata
+      - name: Verify source revision and match tag to release metadata
         shell: python
         run: |
           import json
           import os
+          import subprocess
           from pathlib import Path
+
+          actual_revision = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True
+          ).strip()
+          expected_revision = os.environ["SOURCE_REVISION"]
+          if actual_revision != expected_revision:
+              raise SystemExit(
+                  f"checked out revision {actual_revision!r} does not match "
+                  f"resolved tag revision {expected_revision!r}"
+              )
 
           metadata = json.loads(Path("release/version.json").read_text(encoding="utf-8"))
           expected = f"v{metadata['v2_version']}"
           actual = os.environ["RELEASE_TAG"]
           if actual != expected:
               raise SystemExit(f"tag {actual!r} does not match release metadata {expected!r}")
-      - name: Test Router Core
-        env:
-          PYTHONPATH: packages/router-core/src
-        run: python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
       - name: Install Plugin/MCP dependencies
         working-directory: plugins/workflow-skill-router
         run: npm ci
       - name: Test repository contracts
         run: python -m unittest discover -s tests
-      - name: Build and test Plugin/MCP
-        working-directory: plugins/workflow-skill-router
-        run: npm run check && node ./scripts/smoke-plugin.mjs
       - name: Build documentation
         working-directory: site
         run: npm ci && npm run assets:demo:check && npm run assets:social:check && npm run build
@@ -104,6 +187,42 @@ jobs:
         run: |
           test -s "dist/release/sbom/workflow-skill-router-v${RELEASE_TAG#v}.spdx.json"
           (cd dist/release && sha256sum --check checksums.sha256)
+      - name: Verify remote tag still matches preflight revision
+        shell: bash
+        run: |
+          fail_tag_check() {
+            echo "Release tag could not be verified against the preflight source revision."
+            exit 1
+          }
+
+          remote_refs="$(git ls-remote origin "refs/tags/$RELEASE_TAG" "refs/tags/$RELEASE_TAG^{}")" \
+            || fail_tag_check
+          direct_revision=""
+          peeled_revision=""
+          while IFS=$'\t' read -r revision reference; do
+            if [[ -z "$revision" && -z "$reference" ]]; then
+              continue
+            fi
+            case "$reference" in
+              "refs/tags/$RELEASE_TAG")
+                [[ -z "$direct_revision" ]] || fail_tag_check
+                direct_revision="$revision"
+                ;;
+              "refs/tags/$RELEASE_TAG^{}")
+                [[ -z "$peeled_revision" ]] || fail_tag_check
+                peeled_revision="$revision"
+                ;;
+              *)
+                fail_tag_check
+                ;;
+            esac
+          done <<< "$remote_refs"
+
+          [[ -n "$direct_revision" ]] || fail_tag_check
+          remote_source_revision="${peeled_revision:-$direct_revision}"
+          if [[ "$remote_source_revision" != "$SOURCE_REVISION" ]]; then
+            fail_tag_check
+          fi
       - name: Attest release assets from checksums
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:

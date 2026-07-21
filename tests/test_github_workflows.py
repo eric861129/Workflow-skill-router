@@ -27,6 +27,13 @@ def workflow_job_names(name: str) -> dict[str, str]:
     return jobs
 
 
+def workflow_job_body(name: str, job: str) -> str:
+    for match in JOB_BLOCK_PATTERN.finditer(workflow_text(name)):
+        if match.group("job") == job:
+            return match.group("body")
+    raise AssertionError(f"workflow {name!r} does not define job {job!r}")
+
+
 class GitHubWorkflowTests(unittest.TestCase):
     def test_every_action_is_pinned_to_an_immutable_commit(self) -> None:
         action_count = 0
@@ -82,6 +89,48 @@ class GitHubWorkflowTests(unittest.TestCase):
         repository_tests = validate.index("Run repository unit tests")
         self.assertLess(plugin_install, repository_tests)
 
+    def test_validate_requires_one_fail_closed_cross_platform_v2_gate(self) -> None:
+        validate = workflow_text("validate.yml")
+        artifact_job = workflow_job_body("validate.yml", "release-artifacts")
+        required_job = workflow_job_body("validate.yml", "required-v2")
+        pages_job = workflow_job_body("validate.yml", "build-pages")
+
+        self.assertEqual(
+            "Required cross-platform V2 gate",
+            workflow_job_names("validate.yml")["required-v2"],
+        )
+        self.assertIn(
+            "os: [ubuntu-latest, macos-latest, windows-latest]",
+            artifact_job,
+        )
+        for required in (
+            "build-release-artifacts.py --check",
+            "test_release_artifacts.py tests/test_installation_smoke.py",
+            "build-runtime.py --check",
+            "PYTHONPATH: packages/router-core/src",
+            'discover -s packages/router-core/tests -p "test_*.py" -v',
+            "working-directory: plugins/workflow-skill-router",
+            "npm ci",
+            "npm run check",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, artifact_job)
+
+        self.assertIn(
+            "needs: [release-artifacts, validate, site-visual]",
+            required_job,
+        )
+        self.assertIn("if: ${{ always() }}", required_job)
+        for dependency in ("release-artifacts", "validate", "site-visual"):
+            with self.subTest(dependency=dependency):
+                self.assertIn(f"needs.{dependency}.result", required_job)
+        self.assertIn("'success'", required_job)
+        self.assertIn("needs: required-v2", pages_job)
+        self.assertNotIn(
+            "needs: [release-artifacts, validate, site-visual]",
+            pages_job,
+        )
+
     def test_digest_bound_text_is_checked_out_with_stable_lf_bytes(self) -> None:
         attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
         self.assertIn("* text=auto eol=lf", attributes.splitlines())
@@ -115,7 +164,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertFalse((WORKFLOWS / "deploy-site.yml").exists())
         self.assertNotIn("workflow_run:", all_workflows)
         self.assertNotIn("github.event.workflow_run.head_sha", all_workflows)
-        self.assertIn("needs: [release-artifacts, validate, site-visual]", validate)
+        pages_job = workflow_job_body("validate.yml", "build-pages")
+        self.assertIn("needs: required-v2", pages_job)
         self.assertIn(
             "github.event_name == 'push' && github.ref == 'refs/heads/main'",
             validate,
@@ -152,6 +202,87 @@ class GitHubWorkflowTests(unittest.TestCase):
         )
         self.assertNotIn("downloads/", content)
 
+    def test_release_requires_exact_tag_revision_on_three_platforms(self) -> None:
+        names = workflow_job_names("release-v2.yml")
+        source_job = workflow_job_body("release-v2.yml", "resolve-source")
+        preflight_job = workflow_job_body("release-v2.yml", "preflight")
+        release_job = workflow_job_body("release-v2.yml", "release")
+
+        self.assertEqual("Resolve tagged V2 source", names["resolve-source"])
+        self.assertEqual("V2 preflight (${{ matrix.os }})", names["preflight"])
+        self.assertIn("source_revision:", source_job)
+        self.assertNotIn("source-revision:", source_job)
+        self.assertIn("git rev-list -n 1 \"$RELEASE_TAG\"", source_job)
+        self.assertIn("ref: ${{ env.RELEASE_TAG }}", source_job)
+
+        self.assertIn("needs: resolve-source", preflight_job)
+        self.assertIn(
+            "os: [ubuntu-latest, macos-latest, windows-latest]",
+            preflight_job,
+        )
+        self.assertIn("ref: ${{ env.RELEASE_TAG }}", preflight_job)
+        self.assertIn(
+            "needs.resolve-source.outputs.source_revision",
+            preflight_job,
+        )
+        self.assertIn('["git", "rev-parse", "HEAD"]', preflight_job)
+        for required in (
+            "build-release-artifacts.py --check",
+            "test_release_artifacts.py tests/test_installation_smoke.py",
+            "build-runtime.py --check",
+            "PYTHONPATH: packages/router-core/src",
+            'discover -s packages/router-core/tests -p "test_*.py" -v',
+            "working-directory: plugins/workflow-skill-router",
+            "npm ci",
+            "npm run check",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, preflight_job)
+
+        self.assertIn("needs: [resolve-source, preflight]", release_job)
+        self.assertIn("ref: ${{ env.RELEASE_TAG }}", release_job)
+        self.assertIn(
+            "needs.resolve-source.outputs.source_revision",
+            release_job,
+        )
+
+    def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
+        release_job = workflow_job_body("release-v2.yml", "release")
+        guard_name = "Verify remote tag still matches preflight revision"
+        guard_marker = f"      - name: {guard_name}"
+        self.assertIn(guard_marker, release_job)
+
+        for required in (
+            'git ls-remote origin "refs/tags/$RELEASE_TAG" "refs/tags/$RELEASE_TAG^{}"',
+            '"refs/tags/$RELEASE_TAG")',
+            '"refs/tags/$RELEASE_TAG^{}")',
+            'remote_source_revision="${peeled_revision:-$direct_revision}"',
+            '"$remote_source_revision" != "$SOURCE_REVISION"',
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, release_job)
+
+        guard_index = release_job.index(guard_marker)
+        attestation_index = release_job.index(
+            "- name: Attest release assets from checksums"
+        )
+        artifact_upload_index = release_job.index(
+            "- name: Upload release bundle for workflow review"
+        )
+        release_create_index = release_job.index("gh release create")
+        self.assertLess(guard_index, attestation_index)
+        self.assertLess(attestation_index, artifact_upload_index)
+        self.assertLess(artifact_upload_index, release_create_index)
+
+        publish_tail_steps = re.findall(
+            r"(?m)^      - name:\s*(.+?)\s*$",
+            release_job[guard_index:],
+        )
+        self.assertEqual(
+            [guard_name, "Attest release assets from checksums"],
+            publish_tail_steps[:2],
+        )
+
     def test_dependabot_covers_both_node_projects_and_actions(self) -> None:
         content = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
         for required in ('directory: "/site"', 'directory: "/plugins/workflow-skill-router"'):
@@ -166,7 +297,10 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertTrue(contract["required_status_checks"]["strict"])
 
         required_checks = contract["required_status_checks"]["checks"]
-        self.assertEqual(2, len(required_checks))
+        self.assertEqual(
+            {"validate", "site-visual", "required-v2"},
+            {check["job"] for check in required_checks},
+        )
         for check in required_checks:
             with self.subTest(job=check["job"]):
                 names = workflow_job_names(Path(check["workflow"]).name)
