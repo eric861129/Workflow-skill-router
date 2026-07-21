@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -100,6 +101,15 @@ def v2_tag_ruleset() -> dict[str, object]:
     }
 
 
+def v2_tag_ruleset_summary() -> dict[str, object]:
+    return {
+        "id": 42,
+        "name": "Immutable V2 release tags",
+        "target": "tag",
+        "enforcement": "active",
+    }
+
+
 class RemoteGovernanceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -189,6 +199,20 @@ class RemoteGovernanceTests(unittest.TestCase):
 
         self.assertIn("v2-tag-bypass-missing", self.governance.evaluate_governance(contract(), protected_branch(), main_protection(), [ruleset]))
 
+    def test_extra_bypass_actor_is_rejected(self) -> None:
+        ruleset = v2_tag_ruleset()
+        ruleset["bypass_actors"].append(  # type: ignore[index]
+            {"actor_id": 1, "actor_type": "User", "bypass_mode": "always"}
+        )
+
+        self.assertIn("v2-tag-bypass-missing", self.governance.evaluate_governance(contract(), protected_branch(), main_protection(), [ruleset]))
+
+    def test_tag_ruleset_name_must_match_the_contract(self) -> None:
+        ruleset = v2_tag_ruleset()
+        ruleset["name"] = "Other immutable tags"
+
+        self.assertIn("v2-tag-ruleset-missing", self.governance.evaluate_governance(contract(), protected_branch(), main_protection(), [ruleset]))
+
     def test_later_eligible_tag_ruleset_can_satisfy_the_contract(self) -> None:
         incomplete = v2_tag_ruleset()
         incomplete["rules"] = [{"type": "creation"}]
@@ -237,6 +261,64 @@ class RemoteGovernanceTests(unittest.TestCase):
                     code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
                 self.assertEqual(1, code)
                 self.assertEqual("remote-governance-unavailable\n", output.getvalue())
+
+    def test_cli_fetches_full_detail_for_only_the_eligible_tag_ruleset(self) -> None:
+        unrelated = {
+            "id": 99,
+            "name": "Other release tags",
+            "target": "tag",
+            "enforcement": "active",
+        }
+        payloads = (protected_branch(), main_protection(), [unrelated, v2_tag_ruleset_summary()], v2_tag_ruleset())
+        output = io.StringIO()
+        with patch.object(self.cli, "_load_governance_module", return_value=self.governance), patch.object(
+            self.governance, "fetch_json", side_effect=payloads
+        ) as fetch_json, redirect_stdout(output):
+            code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
+
+        self.assertEqual(0, code)
+        self.assertEqual("PASS: remote release governance matches contract\n", output.getvalue())
+        self.assertEqual(
+            [
+                "repos/eric861129/Workflow-skill-router/branches/main",
+                "repos/eric861129/Workflow-skill-router/branches/main/protection",
+                "repos/eric861129/Workflow-skill-router/rulesets",
+                "repos/eric861129/Workflow-skill-router/rulesets/42",
+            ],
+            [call.args[1] for call in fetch_json.call_args_list],
+        )
+
+    def test_cli_returns_public_safe_failure_for_detail_fetch_failures_or_malformed_detail(self) -> None:
+        malformed_detail = v2_tag_ruleset()
+        malformed_detail["conditions"] = {"ref_name": {"include": "refs/tags/v2.*"}}
+        cases = (
+            (self.governance.RemoteGovernanceUnavailableError("remote-governance-unavailable"),),
+            ("not-a-ruleset",),
+            (malformed_detail,),
+        )
+        for detail in cases:
+            with self.subTest(detail=detail):
+                output = io.StringIO()
+                with patch.object(self.cli, "_load_governance_module", return_value=self.governance), patch.object(
+                    self.governance,
+                    "fetch_json",
+                    side_effect=(protected_branch(), main_protection(), [v2_tag_ruleset_summary()], *detail),
+                ), redirect_stdout(output):
+                    code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
+                self.assertEqual(1, code)
+                self.assertEqual("remote-governance-unavailable\n", output.getvalue())
+
+    def test_fetch_json_uses_no_mutation_flags_or_request_body(self) -> None:
+        completed = subprocess.CompletedProcess(["gh"], 0, stdout="{}", stderr="")
+        with patch.object(self.governance.subprocess, "run", return_value=completed) as run:
+            self.assertEqual({}, self.governance.fetch_json("owner/repo", "repos/owner/repo/rulesets/42"))
+
+        command = run.call_args.args[0]
+        options = run.call_args.kwargs
+        self.assertEqual(["gh", "api", "repos/owner/repo/rulesets/42"], command)
+        self.assertNotIn("--method", command)
+        self.assertNotIn("--raw-field", command)
+        self.assertNotIn("input", options)
 
 
 if __name__ == "__main__":

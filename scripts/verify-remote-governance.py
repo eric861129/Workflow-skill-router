@@ -26,18 +26,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--repo", required=True, metavar="OWNER/REPO")
     parser.add_argument("--contract", type=Path, default=Path(".github/branch-protection.json"))
     args = parser.parse_args(argv)
-    governance = _load_governance_module()
     try:
+        governance = _load_governance_module()
         contract = governance.load_contract(args.contract)
         branch_name = contract["branch"]
         branch = governance.fetch_json(args.repo, f"repos/{args.repo}/branches/{branch_name}")
         protection = governance.fetch_json(args.repo, f"repos/{args.repo}/branches/{branch_name}/protection")
-        rulesets = governance.fetch_json(args.repo, f"repos/{args.repo}/rulesets")
-        if not isinstance(branch, dict) or not isinstance(protection, dict) or not isinstance(rulesets, list):
+        ruleset_summaries = governance.fetch_json(args.repo, f"repos/{args.repo}/rulesets")
+        if not isinstance(branch, dict) or not isinstance(protection, dict) or not isinstance(ruleset_summaries, list):
             raise governance.RemoteGovernanceUnavailableError(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
+        ruleset_ids = governance.eligible_tag_ruleset_ids(contract, ruleset_summaries)
+        rulesets = []
+        for ruleset_id in ruleset_ids:
+            ruleset = governance.fetch_json(args.repo, f"repos/{args.repo}/rulesets/{ruleset_id}")
+            if not isinstance(ruleset, dict):
+                raise governance.RemoteGovernanceUnavailableError(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
+            rulesets.append(ruleset)
         violations = governance.evaluate_governance(contract, branch, protection, rulesets)
-    except (AttributeError, KeyError, TypeError, ValueError, governance.RemoteGovernanceUnavailableError):
-        print(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
+        print("remote-governance-unavailable")
         return 1
     if violations:
         print("\n".join(violations))

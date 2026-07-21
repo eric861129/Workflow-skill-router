@@ -81,23 +81,59 @@ def _explicitly_disabled(value: object) -> bool:
     return value is False or (isinstance(value, dict) and value == {"enabled": False})
 
 
+def eligible_tag_ruleset_ids(contract: dict[str, object], rulesets: list[dict[str, object]]) -> list[int]:
+    """回傳需要取得完整設定的啟用中標籤 ruleset 摘要 ID。
+
+    GitHub 的清單端點只回傳摘要，因此規則和 bypass 必須透過相應的詳情
+    端點評估。契約名稱會排除與此無關的標籤 ruleset 讀取。
+    """
+    tag = contract["tag_protection"]
+    assert isinstance(tag, dict)
+    wanted_name = tag["name"]
+    qualifying: list[int] = []
+    for ruleset in rulesets:
+        if not isinstance(ruleset, dict):
+            raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+        ruleset_id = ruleset.get("id")
+        if (
+            not isinstance(ruleset_id, int)
+            or not isinstance(ruleset.get("name"), str)
+            or not isinstance(ruleset.get("target"), str)
+            or not isinstance(ruleset.get("enforcement"), str)
+        ):
+            raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+        if (
+            ruleset.get("name") == wanted_name
+            and ruleset.get("target") == "tag"
+            and ruleset.get("enforcement") == "active"
+        ):
+            qualifying.append(ruleset_id)
+    return qualifying
+
+
 def _tag_rulesets(contract: dict[str, object], rulesets: list[dict[str, object]]) -> list[dict[str, object]]:
     tag = contract["tag_protection"]
     assert isinstance(tag, dict)
-    wanted = tag["ref_name_include"]
+    wanted_name = tag["name"]
+    wanted_ref = tag["ref_name_include"]
     qualifying: list[dict[str, object]] = []
     for ruleset in rulesets:
         if not isinstance(ruleset, dict):
+            raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+        if not all(isinstance(ruleset.get(field), str) for field in ("name", "target", "enforcement")):
             raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
         conditions = ruleset.get("conditions")
         ref_name = conditions.get("ref_name") if isinstance(conditions, dict) else None
         includes = ref_name.get("include") if isinstance(ref_name, dict) else None
         if (
-            ruleset.get("target") == "tag"
+            ruleset.get("name") == wanted_name
+            and ruleset.get("target") == "tag"
             and ruleset.get("enforcement") == "active"
-            and isinstance(includes, list)
-            and wanted in includes
         ):
+            if not isinstance(includes, list) or not all(isinstance(include, str) for include in includes):
+                raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+            if wanted_ref not in includes:
+                continue
             qualifying.append(ruleset)
     return qualifying
 
@@ -115,7 +151,7 @@ def _has_required_bypass(ruleset: dict[str, object], wanted_actor: dict[str, obj
     actors = ruleset.get("bypass_actors")
     if not isinstance(actors, list) or not all(isinstance(actor, dict) for actor in actors):
         raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
-    return any(all(actor.get(key) == value for key, value in wanted_actor.items()) for actor in actors)
+    return actors == [wanted_actor]
 
 
 def evaluate_governance(
