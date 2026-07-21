@@ -12,7 +12,7 @@ V2 separates deterministic regression fixtures from fresh-model evidence. A pass
 | `evaluation/v2/adapters/codex_cli_driver.py` | Fresh model transport | Run isolated Codex CLI attempts with user configuration disabled and a strict output schema. |
 | `dist/evaluation/` | Local evaluation output | Keep provider traces and attempt directories out of Git; raw/checkpoint files live only under a verified `restricted/` child while the output root contains the sanitized report. |
 
-Evaluation contract `2.2.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. It corrects the scoped-consent case so the proposed QA support is required by the current Phase's exit evidence instead of a future verification Phase. The six-case `beta-smoke` suite covers auto routing, explicit Skill lock, scoped consent, the current Phase boundary, managed Goal planning, and capability-unavailable behavior. The thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route. Reports produced under `2.1.0` remain diagnostic and are never rescored against this oracle.
+Evaluation contract `2.3.0` binds every public case, sanitized report, and beta profile to one explicit oracle revision. It covers deterministic envelope classification, Profile explain evidence, current-Phase scoped consent, managed Goal boundaries, and capability-unavailable behavior. The six-case `beta-smoke` suite keeps the frozen 36-attempt / 42-turn budget, while the thirteen-case `full` suite adds a stateful Phase transition and the broader V2 control surface. Multi-turn cases are scored turn by turn; a correct final route cannot hide an incorrect earlier route. Historical reports remain diagnostic and are never rescored against this oracle.
 
 ## Deterministic reference run
 
@@ -37,6 +37,10 @@ Resolve a native Codex executable that supports the selected model, then review 
 $Codex = (Resolve-Path "C:\path\to\native\codex.exe").Path
 $Python = (Get-Command python).Source
 $Driver = (Resolve-Path "evaluation/v2/adapters/codex_cli_driver.py").Path
+$SourceRevision = (git rev-parse HEAD).Trim()
+$WorkingTreeStatus = git status --porcelain=v1
+if ($WorkingTreeStatus) { throw "Behavior evidence requires a clean checkout." }
+$AdapterRevision = "sha256:" + (Get-FileHash -Algorithm SHA256 $Driver).Hash.ToLowerInvariant()
 $Schema = (Resolve-Path "evaluation/v2/schemas/codex-route-output.schema.json").Path
 $AuthSource = Join-Path ([Environment]::GetFolderPath('UserProfile')) ".codex\auth.json"
 $RunId = "beta1-" + (Get-Date -Format "yyyyMMdd-HHmmss")
@@ -63,10 +67,12 @@ python scripts/run-v2-benchmark.py `
   --repeats 3 `
   --timeout-seconds 180 `
   --output-dir $OutputRoot `
+  --authorized-source-revision $SourceRevision `
+  --authorized-adapter-revision $AdapterRevision `
   --confirm-live-run
 ```
 
-That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. Before the first attempt, the runner recomputes the canonical path-and-SHA-256 manifest and rejects any mismatch with the declared instruction digest. Attempt nonces bind the prompt, capability snapshot, and tool-inventory digests, so a changed case cannot resume an older transcript.
+That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. The Runner accepts only its current Python executable with the first argument identifying one readable `.py` entrypoint; module mode and ambiguous command forms fail closed. It revalidates the clean full Git commit and authorized adapter digest before every resume decision and before and after every adapter invocation. Attempt nonces bind those revisions together with the prompt, capability snapshot, tool-inventory, instruction, model, case, and scoring-spec digests, so changed source, adapter, or case evidence cannot resume an older transcript.
 
 Use a new `RunId` for every authorized run. The runner accepts only a missing or empty output root, rejects legacy public `checkpoint.json` or `raw-results.json`, verifies the Windows DACL or POSIX modes before accepting evidence, and exposes only `sanitized-report.json` at the output root. Do not reuse a superseded output or attempt root.
 

@@ -4,11 +4,12 @@ import argparse
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
 import statistics
 import subprocess
 import sys
 import time
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping, TypeVar
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,10 +61,26 @@ CONTRACT_2_3_HARD_VIOLATIONS = frozenset({
     "required-evaluation-evidence-missing",
     "required-evaluation-evidence-invalid",
 })
+FULL_GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
+SHA256_REVISION = re.compile(r"^sha256:[0-9a-f]{64}$")
+T = TypeVar("T")
 
 
 def digest(value: object) -> str:
     return "sha256:" + sha256(canonical_json_bytes(value)).hexdigest()
+
+
+def invoke_with_binding_checks(
+    operation: Callable[[], T],
+    verify_binding: Callable[[], None],
+) -> T:
+    """Run one adapter invocation between mandatory binding checks."""
+
+    verify_binding()
+    try:
+        return operation()
+    finally:
+        verify_binding()
 
 
 def load_cases(suite: str) -> list[dict[str, Any]]:
@@ -190,6 +207,8 @@ def make_attempt_nonce(
     public_case_digest: str,
     model_version: str,
     scoring_spec_digest: str,
+    source_revision: str | None = None,
+    adapter_revision: str | None = None,
 ) -> str:
     execution_binding = digest({
         "suite": suite,
@@ -202,11 +221,29 @@ def make_attempt_nonce(
         "public_case_digest": public_case_digest,
         "model_version": model_version,
     })
-    return ":".join((
+    parts = [
         "attempt",
         execution_binding.removeprefix("sha256:"),
         scoring_spec_digest.removeprefix("sha256:"),
-    ))
+    ]
+    if source_revision is not None or adapter_revision is not None:
+        if (
+            source_revision is None
+            or adapter_revision is None
+            or FULL_GIT_COMMIT.fullmatch(source_revision) is None
+            or SHA256_REVISION.fullmatch(adapter_revision) is None
+        ):
+            raise EvaluationIntegrityError("attempt_revision_binding_invalid")
+        revision_binding = digest({
+            "source_revision": source_revision,
+            "adapter_revision": adapter_revision,
+        })
+        parts.extend((
+            source_revision,
+            adapter_revision.removeprefix("sha256:"),
+            revision_binding.removeprefix("sha256:"),
+        ))
+    return ":".join(parts)
 
 
 def public_case_payload(case: Mapping[str, Any]) -> dict[str, Any]:
@@ -728,6 +765,137 @@ def adapter_option(adapter_arguments: list[str], name: str) -> str | None:
     return adapter_arguments[index] if index < len(adapter_arguments) else None
 
 
+def verify_behavior_source_revision(authorized_revision: str | None) -> str:
+    """Verify that Behavior evidence is running from one clean authorized commit."""
+
+    if authorized_revision is None:
+        raise EvaluationIntegrityError("behavior_source_revision_required")
+    if FULL_GIT_COMMIT.fullmatch(authorized_revision) is None:
+        raise EvaluationIntegrityError("behavior_source_revision_invalid")
+
+    try:
+        reachable = subprocess.run(
+            ["git", "cat-file", "-e", f"{authorized_revision}^{{commit}}"],
+            cwd=ROOT,
+            shell=False,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+        if reachable.returncode != 0:
+            raise EvaluationIntegrityError("behavior_source_revision_unreachable")
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            shell=False,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+        if head.returncode != 0:
+            raise EvaluationIntegrityError("behavior_source_revision_unavailable")
+        if head.stdout.strip() != authorized_revision:
+            raise EvaluationIntegrityError("behavior_source_revision_mismatch")
+        status = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=ROOT,
+            shell=False,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
+        if status.returncode != 0:
+            raise EvaluationIntegrityError("behavior_source_status_unavailable")
+        if status.stdout.strip():
+            raise EvaluationIntegrityError("behavior_source_checkout_dirty")
+    except OSError as error:
+        raise EvaluationIntegrityError("behavior_source_revision_unavailable") from error
+    return authorized_revision
+
+
+def adapter_entrypoint_path(
+    adapter_executable: str,
+    adapter_arguments: list[str],
+) -> Path | None:
+    """Resolve only the Python script that the configured command will execute."""
+
+    try:
+        executable = Path(adapter_executable)
+        if not executable.is_absolute():
+            return None
+        resolved_executable = executable.resolve(strict=True)
+        resolved_runner = Path(sys.executable).resolve(strict=True)
+        if (
+            not resolved_executable.is_file()
+            or resolved_executable != resolved_runner
+            or not adapter_arguments
+        ):
+            return None
+        entrypoint = Path(adapter_arguments[0])
+        if entrypoint.suffix.casefold() != ".py":
+            return None
+        resolved_entrypoint = (
+            entrypoint.resolve(strict=True)
+            if entrypoint.is_absolute()
+            else (ROOT / entrypoint).resolve(strict=True)
+        )
+        return resolved_entrypoint if resolved_entrypoint.is_file() else None
+    except (OSError, RuntimeError):
+        return None
+
+
+def adapter_source_revision(
+    adapter_executable: str,
+    adapter_arguments: list[str],
+) -> str | None:
+    """Return a stable digest for the command's actual Python entrypoint."""
+
+    entrypoint = adapter_entrypoint_path(adapter_executable, adapter_arguments)
+    if entrypoint is None:
+        return None
+    try:
+        return "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def verify_behavior_adapter_revision(
+    adapter_executable: str,
+    adapter_arguments: list[str],
+    authorized_revision: str | None,
+) -> str:
+    """Bind Behavior evidence to the exact configured adapter source digest."""
+
+    if authorized_revision is None:
+        raise EvaluationIntegrityError("behavior_adapter_revision_required")
+    if SHA256_REVISION.fullmatch(authorized_revision) is None:
+        raise EvaluationIntegrityError("behavior_adapter_revision_invalid")
+    if not adapter_arguments or not Path(adapter_arguments[0]).is_absolute():
+        raise EvaluationIntegrityError("behavior_adapter_revision_unavailable")
+    observed_revision = adapter_source_revision(
+        adapter_executable,
+        adapter_arguments,
+    )
+    if observed_revision is None:
+        raise EvaluationIntegrityError("behavior_adapter_revision_unavailable")
+    try:
+        reference_revision = "sha256:" + sha256(
+            (V2 / "reference_driver.py").read_bytes()
+        ).hexdigest()
+    except OSError as error:
+        raise EvaluationIntegrityError(
+            "behavior_adapter_revision_unavailable"
+        ) from error
+    if observed_revision == reference_revision:
+        raise EvaluationIntegrityError("behavior_reference_driver_forbidden")
+    if observed_revision != authorized_revision:
+        raise EvaluationIntegrityError("behavior_adapter_revision_mismatch")
+    return observed_revision
+
+
 def recover_attempt(
     attempt_root: Path | None,
     attempt_nonce: str,
@@ -739,10 +907,54 @@ def recover_attempt(
     protector = LocalEvidenceProtector()
     expected_parts = attempt_nonce.split(":")
     expected_sealed = (
-        len(expected_parts) == 3
+        len(expected_parts) in {3, 6}
         and expected_parts[0] == "attempt"
-        and all(len(part) == 64 for part in expected_parts[1:])
+        and all(len(part) == 64 for part in expected_parts[1:3])
     )
+    expected_behavior_binding = (
+        expected_sealed
+        and len(expected_parts) == 6
+        and len(expected_parts[3]) == 40
+        and all(len(part) == 64 for part in expected_parts[4:])
+    )
+    if expected_behavior_binding:
+        expected_source_revision = expected_parts[3]
+        expected_adapter_revision = "sha256:" + expected_parts[4]
+        expected_revision_binding = digest({
+            "source_revision": expected_source_revision,
+            "adapter_revision": expected_adapter_revision,
+        }).removeprefix("sha256:")
+        if expected_parts[5] != expected_revision_binding:
+            raise EvaluationIntegrityError("resume_attempt_binding_invalid")
+        checkpoint_paths = (
+            attempt_root / "checkpoint.json",
+            attempt_root / "restricted" / "checkpoint.json",
+        )
+        for candidate in checkpoint_paths:
+            if not candidate.is_file():
+                continue
+            if not protector.verify_file(candidate):
+                raise EvaluationIntegrityError("resume_checkpoint_unprotected")
+            try:
+                checkpoint = json.loads(candidate.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise EvaluationIntegrityError("resume_checkpoint_invalid") from error
+            if not isinstance(checkpoint, dict):
+                raise EvaluationIntegrityError("resume_checkpoint_invalid")
+            if checkpoint.get("source_revision") != expected_source_revision:
+                raise EvaluationIntegrityError("resume_source_revision_mismatch")
+            if checkpoint.get("adapter_revision") != expected_adapter_revision:
+                raise EvaluationIntegrityError("resume_adapter_revision_mismatch")
+            checkpoint_records = checkpoint.get("records")
+            if not isinstance(checkpoint_records, list):
+                raise EvaluationIntegrityError("resume_checkpoint_invalid")
+            for record in checkpoint_records:
+                if not isinstance(record, dict):
+                    raise EvaluationIntegrityError("resume_checkpoint_invalid")
+                if record.get("source_revision") != expected_source_revision:
+                    raise EvaluationIntegrityError("resume_source_revision_mismatch")
+                if record.get("adapter_revision") != expected_adapter_revision:
+                    raise EvaluationIntegrityError("resume_adapter_revision_mismatch")
     for transcript_path in attempt_root.glob("*/transcript.json"):
         if (
             not protector.verify_directory(transcript_path.parent)
@@ -753,6 +965,8 @@ def recover_attempt(
             transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        if not isinstance(transcript, dict):
+            raise EvaluationIntegrityError("resume_transcript_invalid")
         turns = transcript.get("turns")
         context_id = transcript_path.parent.name
         transcript_nonce = transcript.get("attempt_nonce")
@@ -762,13 +976,20 @@ def recover_attempt(
                 if isinstance(transcript_nonce, str)
                 else []
             )
-            if (
-                expected_sealed
-                and len(observed_parts) == 3
-                and observed_parts[:2] == expected_parts[:2]
-                and observed_parts[2] != expected_parts[2]
-            ):
-                raise EvaluationIntegrityError("resume_scoring_spec_mismatch")
+            if expected_sealed and observed_parts[:2] == expected_parts[:2]:
+                if len(observed_parts) >= 3 and observed_parts[2] != expected_parts[2]:
+                    raise EvaluationIntegrityError("resume_scoring_spec_mismatch")
+                if expected_behavior_binding and observed_parts[:3] == expected_parts[:3]:
+                    if len(observed_parts) == 3:
+                        raise EvaluationIntegrityError("resume_revision_binding_missing")
+                    if len(observed_parts) != 6:
+                        raise EvaluationIntegrityError("resume_revision_binding_invalid")
+                    if observed_parts[3] != expected_parts[3]:
+                        raise EvaluationIntegrityError("resume_source_revision_mismatch")
+                    if observed_parts[4] != expected_parts[4]:
+                        raise EvaluationIntegrityError("resume_adapter_revision_mismatch")
+                    if observed_parts[5] != expected_parts[5]:
+                        raise EvaluationIntegrityError("resume_attempt_binding_invalid")
             continue
         if not isinstance(turns, list):
             continue
@@ -814,6 +1035,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--confirm-live-run", action="store_true")
+    parser.add_argument("--authorized-source-revision")
+    parser.add_argument("--authorized-adapter-revision")
     parser.add_argument("--excluded-preflight-attempts", type=int, default=0)
     parser.add_argument("--resume-attempt-root", type=Path)
     parser.add_argument("--execution-resumed-attempts", type=int)
@@ -827,18 +1050,37 @@ def main(argv: list[str] | None = None) -> int:
     if args.evidence_class == "behavior" and not args.confirm_live_run:
         raise SystemExit("Behavior model execution requires --confirm-live-run.")
     adapter_names = [Path(item).name for item in args.adapter_arg]
-    if args.evidence_class == "behavior" and "reference_driver.py" in adapter_names:
-        raise SystemExit("The reference driver cannot be relabeled as Behavior evidence.")
+
+    source_revision = None
+    if args.evidence_class == "behavior":
+        source_revision = verify_behavior_source_revision(
+            args.authorized_source_revision
+        )
+        adapter_revision = verify_behavior_adapter_revision(
+            args.adapter_executable,
+            args.adapter_arg,
+            args.authorized_adapter_revision,
+        )
+    else:
+        adapter_revision = adapter_source_revision(
+            args.adapter_executable,
+            args.adapter_arg,
+        )
+
+    def revalidate_behavior_bindings() -> None:
+        if args.evidence_class != "behavior":
+            return
+        verify_behavior_source_revision(args.authorized_source_revision)
+        verify_behavior_adapter_revision(
+            args.adapter_executable,
+            args.adapter_arg,
+            args.authorized_adapter_revision,
+        )
 
     cases = load_cases(args.suite)
     profiles = load_profiles()
     command = (args.adapter_executable, *args.adapter_arg)
     adapter = SubprocessExecutionAdapter(command, timeout_seconds=args.timeout_seconds)
-    adapter_path = next((ROOT / item for item in args.adapter_arg if item.endswith(".py")), None)
-    adapter_revision = (
-        "sha256:" + sha256(adapter_path.read_bytes()).hexdigest()
-        if adapter_path is not None and adapter_path.is_file() else None
-    )
     configured_model = adapter_option(args.adapter_arg, "--model")
     model_version = (
         configured_model
@@ -872,6 +1114,7 @@ def main(argv: list[str] | None = None) -> int:
                 EvaluationExecutionMode(profile["execution"]["mode"]),
             )
             for repeat in range(args.repeats):
+                revalidate_behavior_bindings()
                 print(
                     f"benchmark attempt {len(records) + 1}/{expected_attempts} "
                     f"arm={arm} case={case['id']} repeat={repeat + 1}",
@@ -896,6 +1139,10 @@ def main(argv: list[str] | None = None) -> int:
                     public_case_digest=public_case_digest,
                     model_version=model_version,
                     scoring_spec_digest=case_scoring_spec_digest,
+                    source_revision=source_revision,
+                    adapter_revision=(
+                        adapter_revision if args.evidence_class == "behavior" else None
+                    ),
                 )
                 attempt_binding_digest = digest({
                     "attempt_nonce": nonce,
@@ -904,6 +1151,8 @@ def main(argv: list[str] | None = None) -> int:
                     "public_case_digest": public_case_digest,
                     "model_version": model_version,
                     "scoring_spec_digest": case_scoring_spec_digest,
+                    "source_revision": source_revision,
+                    "adapter_revision": adapter_revision,
                 })
                 prompts = (prompt, *case["interaction_script"])
                 recovered = recover_attempt(resume_root, nonce, len(prompts))
@@ -913,15 +1162,23 @@ def main(argv: list[str] | None = None) -> int:
                     resumed_attempt_count += 1
                 else:
                     started = time.perf_counter()
-                    context_id = adapter.start_attempt(payload, nonce)
+                    context_id = invoke_with_binding_checks(
+                        lambda: adapter.start_attempt(payload, nonce),
+                        revalidate_behavior_bindings,
+                    )
                     responses = []
                     for turn_index, turn_prompt in enumerate(prompts):
-                        responses.append(dict(adapter.execute_turn(ModelTurnRequest(
+                        request = ModelTurnRequest(
                             nonce,
                             turn_index,
                             turn_prompt,
                             tuple(case["allowed_tools"]),
-                        ))))
+                        )
+                        response = invoke_with_binding_checks(
+                            lambda: adapter.execute_turn(request),
+                            revalidate_behavior_bindings,
+                        )
+                        responses.append(dict(response))
                     elapsed_ms = (time.perf_counter() - started) * 1000
                     elapsed_values.append(elapsed_ms)
                 routes = [
@@ -951,6 +1208,8 @@ def main(argv: list[str] | None = None) -> int:
                     "instruction_digest": instruction_digest,
                     "model_version": model_version,
                     "scoring_spec_digest": case_scoring_spec_digest,
+                    "source_revision": source_revision,
+                    "adapter_revision": adapter_revision,
                     "attempt_binding_digest": attempt_binding_digest,
                     "trace_digest": trace_digest,
                     "elapsed_ms": elapsed_ms if args.evidence_class == "behavior" else None,
@@ -969,7 +1228,11 @@ def main(argv: list[str] | None = None) -> int:
                     "dimensions": dimensions,
                 })
                 checkpoint_path.write_text(
-                    json.dumps({"records": records}, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+                    json.dumps({
+                        "source_revision": source_revision,
+                        "adapter_revision": adapter_revision,
+                        "records": records,
+                    }, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
                     encoding="utf-8",
                 )
                 if not checkpoint_protected:
@@ -1039,6 +1302,8 @@ def main(argv: list[str] | None = None) -> int:
                 profiles[arm]["instruction_package"]["digest"]
                 if profiles[arm]["instruction_package"] else None
             ),
+            "source_revision": source_revision,
+            "adapter_revision": adapter_revision,
             "attempt_nonces": [record["attempt_nonce"] for record in arm_records],
             "fresh_context_ids": [record["fresh_context_id"] for record in arm_records],
             "trace_digests": [record["trace_digest"] for record in arm_records],
@@ -1129,6 +1394,7 @@ def main(argv: list[str] | None = None) -> int:
             "evaluation_contract_id": EVALUATION_CONTRACT_ID,
             "evaluation_contract_revision": cases[0]["contract_revision"],
             "adapter": adapter_names[0] if adapter_names else None,
+            "source_revision": source_revision,
             "adapter_revision": adapter_revision,
             "codex_cli_version": codex_version(args.adapter_arg),
             "model_identifier": adapter_option(args.adapter_arg, "--model"),
@@ -1168,6 +1434,7 @@ def main(argv: list[str] | None = None) -> int:
                 "prompt_digest", "public_case_digest", "tool_inventory_digest", "trace_digest", "elapsed_ms",
                 "instruction_digest", "model_version", "attempt_binding_digest",
                 "scoring_spec_digest",
+                "source_revision", "adapter_revision",
                 "turn_count", "turn_pass_count", "passed", "hard_violations",
                 "dimensions",
                 "model_consent_intent", "hybrid_transition_applied",
@@ -1191,6 +1458,8 @@ def main(argv: list[str] | None = None) -> int:
     raw_path = restricted_dir / "raw-results.json"
     raw_path.write_text(json.dumps({
         "adapter_command": list(command),
+        "source_revision": source_revision,
+        "adapter_revision": adapter_revision,
         "records": records,
     }, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
     protector.protect_file(raw_path)
@@ -1209,4 +1478,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except EvaluationIntegrityError as error:
+        raise SystemExit(str(error)) from None

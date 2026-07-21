@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,6 +75,451 @@ def canonical_package_digest(paths: list[Path]) -> str:
 
 
 class V2BenchmarkTests(unittest.TestCase):
+    def test_behavior_cli_requires_authorized_source_and_adapter_revisions(self):
+        destinations = {
+            action.dest for action in RUNNER.build_parser()._actions
+        }
+
+        self.assertIn("authorized_source_revision", destinations)
+        self.assertIn("authorized_adapter_revision", destinations)
+
+    def test_behavior_runbook_supplies_frozen_source_and_adapter_revisions(self):
+        runbook = (ROOT / "evaluation" / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("--authorized-source-revision $SourceRevision", runbook)
+        self.assertIn("--authorized-adapter-revision $AdapterRevision", runbook)
+        self.assertIn("git status --porcelain=v1", runbook)
+        self.assertIn("before and after every adapter invocation", runbook)
+
+    def test_behavior_cli_emits_only_public_safe_integrity_code(self):
+        result = subprocess.run([
+            sys.executable,
+            str(ROOT / "scripts" / "run-v2-benchmark.py"),
+            "--suite", "beta-smoke",
+            "--evidence-class", "behavior",
+            "--adapter-executable", sys.executable,
+            "--adapter-arg", str(V2 / "adapters" / "codex_cli_driver.py"),
+            "--adapter-arg=--model",
+            "--adapter-arg", "gpt-test",
+            "--repeats", "3",
+            "--output-dir", "unused-output",
+            "--confirm-live-run",
+            "--authorized-source-revision", "main",
+            "--authorized-adapter-revision", "sha256:" + "0" * 64,
+        ], cwd=ROOT, text=True, encoding="utf-8", capture_output=True)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(
+            "behavior_source_revision_invalid",
+            result.stderr.strip(),
+        )
+
+    def test_behavior_source_revision_validation_is_fail_closed_and_public_safe(self):
+        if not hasattr(RUNNER, "verify_behavior_source_revision"):
+            self.fail("behavior source revision verifier is missing")
+
+        full_revision = "a" * 40
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_source_revision_required",
+        ):
+            RUNNER.verify_behavior_source_revision(None)
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_source_revision_invalid",
+        ):
+            RUNNER.verify_behavior_source_revision("main")
+
+        with patch.object(
+            RUNNER.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 1, "", "private diagnostic"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_revision_unreachable",
+            ) as caught:
+                RUNNER.verify_behavior_source_revision(full_revision)
+        self.assertNotIn("private diagnostic", str(caught.exception))
+
+        def git_result(command, **_kwargs):
+            operation = tuple(command[1:3])
+            if operation == ("cat-file", "-e"):
+                return subprocess.CompletedProcess(command, 0, "", "")
+            if operation == ("rev-parse", "HEAD"):
+                return subprocess.CompletedProcess(command, 0, "b" * 40 + "\n", "")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with patch.object(RUNNER.subprocess, "run", side_effect=git_result):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_source_revision(full_revision)
+
+        def dirty_git_result(command, **_kwargs):
+            operation = tuple(command[1:3])
+            if operation == ("cat-file", "-e"):
+                return subprocess.CompletedProcess(command, 0, "", "")
+            if operation == ("rev-parse", "HEAD"):
+                return subprocess.CompletedProcess(command, 0, full_revision + "\n", "")
+            if operation == ("status", "--porcelain=v1"):
+                return subprocess.CompletedProcess(command, 0, " M private-file\n", "")
+            return subprocess.CompletedProcess(command, 1, "", "private diagnostic")
+
+        with patch.object(RUNNER.subprocess, "run", side_effect=dirty_git_result):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_checkout_dirty",
+            ) as caught:
+                RUNNER.verify_behavior_source_revision(full_revision)
+        self.assertNotIn("private-file", str(caught.exception))
+        self.assertNotIn("private diagnostic", str(caught.exception))
+
+    def test_behavior_adapter_revision_is_required_and_matches_source_digest(self):
+        if not hasattr(RUNNER, "verify_behavior_adapter_revision"):
+            self.fail("behavior adapter revision verifier is missing")
+
+        with tempfile.TemporaryDirectory() as directory:
+            adapter = Path(directory) / "driver.py"
+            adapter.write_text("print('adapter')\n", encoding="utf-8")
+            expected = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_required",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable, [str(adapter)], None
+                )
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_invalid",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable, [str(adapter)], "latest"
+                )
+
+            self.assertEqual(
+                expected,
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(adapter)],
+                    expected,
+                ),
+            )
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(adapter)],
+                    "sha256:" + "0" * 64,
+                )
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable, [], expected
+                )
+
+    def test_behavior_adapter_binds_actual_python_entrypoint_not_unrelated_argument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            entrypoint = Path(directory) / "driver.py"
+            unrelated = Path(directory) / "unrelated.py"
+            entrypoint.write_text("print('entrypoint')\n", encoding="utf-8")
+            unrelated.write_text("print('unrelated')\n", encoding="utf-8")
+            expected = "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
+
+            self.assertEqual(
+                expected,
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(entrypoint), "--fixture", str(unrelated)],
+                    expected,
+                ),
+            )
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    ["-m", "copied_driver", str(unrelated)],
+                    expected,
+                )
+
+        relative_entrypoint = Path("evaluation/v2/adapters/codex_cli_driver.py")
+        relative_revision = "sha256:" + sha256(
+            (ROOT / relative_entrypoint).read_bytes()
+        ).hexdigest()
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(relative_entrypoint)],
+                relative_revision,
+            )
+
+    def test_behavior_adapter_rejects_copied_reference_driver_by_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "renamed_live_driver.py"
+            copied.write_bytes((V2 / "reference_driver.py").read_bytes())
+            copied_revision = "sha256:" + sha256(copied.read_bytes()).hexdigest()
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_reference_driver_forbidden",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied)],
+                    copied_revision,
+                )
+
+    def test_behavior_reference_identity_is_content_not_filename(self):
+        source_revision = "a" * 40
+        with tempfile.TemporaryDirectory() as directory:
+            adapter = Path(directory) / "reference_driver.py"
+            adapter.write_text("print('real behavior adapter')\n", encoding="utf-8")
+            adapter_revision = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "load_cases",
+                    side_effect=EvaluationIntegrityError("adapter_identity_accepted"),
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "adapter_identity_accepted",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(adapter),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(Path(directory) / "unused"),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+    def test_behavior_adapter_filesystem_failures_are_public_safe(self):
+        with patch.object(
+            RUNNER.Path,
+            "resolve",
+            side_effect=OSError("C:\\private\\adapter.py"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ) as caught:
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    ["driver.py"],
+                    "sha256:" + "0" * 64,
+                )
+        self.assertNotIn("private", str(caught.exception))
+
+    def test_behavior_report_and_checkpoint_persist_source_and_adapter_bindings(self):
+        source_revision = "a" * 40
+        adapter_revision = "sha256:" + "b" * 64
+
+        class FakeAdapter:
+            def __init__(self, *_args, **_kwargs):
+                self._counter = 0
+                self._context_id = ""
+
+            def start_attempt(self, _payload, _nonce):
+                self._counter += 1
+                self._context_id = f"{self._counter:032x}"
+                return self._context_id
+
+            def execute_turn(self, request):
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": self._context_id,
+                    "route": {
+                        "envelope": "single",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:code-documenter",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "deterministic test adapter",
+                        "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ) as source_verifier,
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ) as adapter_verifier,
+                patch.object(RUNNER, "SubprocessExecutionAdapter", FakeAdapter),
+            ):
+                result = RUNNER.main([
+                    "--suite", "beta-smoke",
+                    "--evidence-class", "behavior",
+                    "--adapter-executable", sys.executable,
+                    "--adapter-arg", "test_driver.py",
+                    "--adapter-arg=--model",
+                    "--adapter-arg", "gpt-test",
+                    "--repeats", "3",
+                    "--output-dir", str(output),
+                    "--confirm-live-run",
+                    "--authorized-source-revision", source_revision,
+                    "--authorized-adapter-revision", adapter_revision,
+                ])
+            self.assertEqual(0, result)
+            self.assertEqual(193, source_verifier.call_count)
+            self.assertEqual(193, adapter_verifier.call_count)
+            report = json.loads(
+                (output / "sanitized-report.json").read_text(encoding="utf-8")
+            )
+            checkpoint = json.loads(
+                (output / "restricted" / "checkpoint.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(source_revision, report["provenance"]["source_revision"])
+        self.assertEqual(adapter_revision, report["provenance"]["adapter_revision"])
+        self.assertEqual(source_revision, checkpoint["source_revision"])
+        self.assertEqual(adapter_revision, checkpoint["adapter_revision"])
+        for manifest in report["arm_manifests"].values():
+            self.assertEqual(source_revision, manifest["source_revision"])
+            self.assertEqual(adapter_revision, manifest["adapter_revision"])
+        for attempt in report["attempts"]:
+            self.assertEqual(source_revision, attempt["source_revision"])
+            self.assertEqual(adapter_revision, attempt["adapter_revision"])
+            self.assertEqual(6, len(attempt["attempt_nonce"].split(":")))
+            self.assertEqual(
+                RUNNER.digest({
+                    "attempt_nonce": attempt["attempt_nonce"],
+                    "tool_inventory_digest": attempt["tool_inventory_digest"],
+                    "instruction_digest": attempt["instruction_digest"],
+                    "public_case_digest": attempt["public_case_digest"],
+                    "model_version": attempt["model_version"],
+                    "scoring_spec_digest": attempt["scoring_spec_digest"],
+                    "source_revision": source_revision,
+                    "adapter_revision": adapter_revision,
+                }),
+                attempt["attempt_binding_digest"],
+            )
+        self.assertTrue(all(
+            record["source_revision"] == source_revision
+            and record["adapter_revision"] == adapter_revision
+            for record in checkpoint["records"]
+        ))
+
+    def test_behavior_adapter_drift_during_turn_is_rejected_before_checkpoint(self):
+        source_revision = "a" * 40
+
+        class DriftingAdapter:
+            def __init__(self, *_args, **_kwargs):
+                self._context_id = "1" * 32
+
+            def start_attempt(self, _payload, _nonce):
+                return self._context_id
+
+            def execute_turn(self, request):
+                adapter.write_text("print('drifted')\n", encoding="utf-8")
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": self._context_id,
+                    "route": {
+                        "envelope": "single",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:code-documenter",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "drift test",
+                        "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            adapter = root / "driver.py"
+            adapter.write_text("print('bound')\n", encoding="utf-8")
+            adapter_revision = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+            output = root / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", DriftingAdapter),
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_revision_mismatch",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(adapter),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(output),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+            self.assertFalse((output / "restricted" / "checkpoint.json").exists())
+
+    def test_behavior_binding_is_rechecked_when_adapter_invocation_fails(self):
+        if not hasattr(RUNNER, "invoke_with_binding_checks"):
+            self.fail("bound adapter invocation helper is missing")
+        checks = []
+
+        def verify_binding():
+            checks.append("checked")
+            if len(checks) == 2:
+                raise EvaluationIntegrityError("behavior_adapter_revision_mismatch")
+
+        def failing_invocation():
+            raise EvaluationIntegrityError("subprocess_failed")
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_mismatch",
+        ):
+            RUNNER.invoke_with_binding_checks(
+                failing_invocation,
+                verify_binding,
+            )
+        self.assertEqual(["checked", "checked"], checks)
+
     def test_full_suite_has_thirteen_public_safe_behavior_cases(self):
         rows = [json.loads(line) for line in
                 (V2 / "cases" / "behavior-routing.jsonl").read_text(encoding="utf-8").splitlines()
@@ -797,6 +1243,23 @@ class V2BenchmarkTests(unittest.TestCase):
 
             self.assertIsNone(RUNNER.recover_attempt(Path(directory), "nonce-1", 1))
 
+    def test_resume_rejects_non_object_transcript_with_public_safe_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = Path(directory) / "invalid-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text("[]", encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_transcript_invalid",
+            ) as caught:
+                RUNNER.recover_attempt(Path(directory), "nonce-1", 1)
+        self.assertNotIn("invalid-context", str(caught.exception))
+
     def test_output_preflight_rejects_legacy_public_raw_artifacts(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
@@ -908,6 +1371,8 @@ class V2BenchmarkTests(unittest.TestCase):
                 "public_case_digest": "sha256:" + "1" * 64,
                 "model_version": "gpt-5.6-sol",
                 "scoring_spec_digest": "sha256:" + "4" * 64,
+                "source_revision": "a" * 40,
+                "adapter_revision": "sha256:" + "6" * 64,
             }
             values.update(overrides)
             return RUNNER.make_attempt_nonce(**values)
@@ -920,8 +1385,137 @@ class V2BenchmarkTests(unittest.TestCase):
             make(public_case_digest="sha256:" + "3" * 64),
             make(model_version="gpt-5.6-terra"),
             make(scoring_spec_digest="sha256:" + "5" * 64),
+            make(source_revision="b" * 40),
+            make(adapter_revision="sha256:" + "7" * 64),
         }
-        self.assertEqual(7, len(variants))
+        self.assertEqual(9, len(variants))
+
+    def test_behavior_resume_rejects_cross_source_and_cross_adapter_transcripts(self):
+        common = {
+            "suite": "full",
+            "arm": "baseline",
+            "case_id": "case",
+            "repeat": 0,
+            "prompt": "bound prompt",
+            "allowed_tools": [],
+            "instruction_digest": None,
+            "public_case_digest": "sha256:" + "1" * 64,
+            "model_version": "gpt-5.6-sol",
+            "scoring_spec_digest": "sha256:" + "2" * 64,
+        }
+        expected_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        changed_source_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="b" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        changed_adapter_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "4" * 64,
+        )
+        malformed_binding_nonce = ":".join(expected_nonce.split(":")[:5])
+
+        for nonce, error_code in (
+            (changed_source_nonce, "resume_source_revision_mismatch"),
+            (changed_adapter_nonce, "resume_adapter_revision_mismatch"),
+            (malformed_binding_nonce, "resume_revision_binding_invalid"),
+        ):
+            with self.subTest(error_code=error_code):
+                with tempfile.TemporaryDirectory() as directory:
+                    context = Path(directory) / "bound-context"
+                    context.mkdir()
+                    transcript = context / "transcript.json"
+                    transcript.write_text(json.dumps({
+                        "attempt_nonce": nonce,
+                        "turns": [{
+                            "user": "bound prompt",
+                            "assistant": {"envelope": "single"},
+                        }],
+                    }), encoding="utf-8")
+                    protector = LocalEvidenceProtector()
+                    protector.protect_directory(context)
+                    protector.protect_file(transcript)
+
+                    with self.assertRaisesRegex(
+                        EvaluationIntegrityError,
+                        error_code,
+                    ):
+                        RUNNER.recover_attempt(
+                            Path(directory),
+                            expected_nonce,
+                            1,
+                        )
+
+    def test_behavior_resume_accepts_same_source_and_adapter_binding(self):
+        nonce = RUNNER.make_attempt_nonce(
+            "full",
+            "baseline",
+            "case",
+            0,
+            "bound prompt",
+            [],
+            instruction_digest=None,
+            public_case_digest="sha256:" + "1" * 64,
+            model_version="gpt-5.6-sol",
+            scoring_spec_digest="sha256:" + "2" * 64,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            context = Path(directory) / "bound-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text(json.dumps({
+                "attempt_nonce": nonce,
+                "turns": [{
+                    "user": "bound prompt",
+                    "assistant": {"envelope": "single"},
+                }],
+            }), encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            recovered = RUNNER.recover_attempt(Path(directory), nonce, 1)
+
+        self.assertIsNotNone(recovered)
+        self.assertEqual("bound-context", recovered[0])
+
+    def test_behavior_resume_rejects_cross_revision_checkpoint(self):
+        expected_nonce = RUNNER.make_attempt_nonce(
+            "full",
+            "baseline",
+            "case",
+            0,
+            "bound prompt",
+            [],
+            instruction_digest=None,
+            public_case_digest="sha256:" + "1" * 64,
+            model_version="gpt-5.6-sol",
+            scoring_spec_digest="sha256:" + "2" * 64,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "checkpoint.json"
+            checkpoint.write_text(json.dumps({
+                "source_revision": "b" * 40,
+                "adapter_revision": "sha256:" + "3" * 64,
+                "records": [],
+            }), encoding="utf-8")
+            LocalEvidenceProtector().protect_file(checkpoint)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_source_revision_mismatch",
+            ):
+                RUNNER.recover_attempt(root, expected_nonce, 1)
 
     def test_public_case_payload_binds_profile_fixture_without_scoring_oracle(self):
         case = {
