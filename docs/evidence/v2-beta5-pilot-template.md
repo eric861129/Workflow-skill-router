@@ -40,10 +40,20 @@ inside reviewed restricted evidence.
 Schema: [`evaluation/v2/pilots/restricted-binding-manifest.schema.json`](../../evaluation/v2/pilots/restricted-binding-manifest.schema.json)
 
 Before task 1, create the restricted binding manifest with exactly one record
-for each of the 20 frozen slot IDs. Use a per-run secret HMAC-SHA-256 to commit
-to the task identity, its source identity, and each complete binding record.
-Never publish the secret, task input, source path, raw prompt, or restricted
-manifest.
+for each frozen slot, in this order: `single-01` through `single-06`,
+`phased-01` through `phased-08`, and `goal-01` through `goal-06`. Use the
+`wsr-beta5-pilot-hmac-v1` per-run secret HMAC-SHA-256 contract to commit to the
+task identity, its source identity, and each complete binding record. Raw task
+and source identities in the restricted manifest are reviewer-assigned opaque
+IDs, not objectives, prompts, or paths. Never publish the 32-byte secret, task
+input, source path, raw prompt, or restricted manifest.
+
+The commitment input is byte-exact: UTF-8
+`workflow-skill-router/beta5-pilot/v1`, one NUL byte, the UTF-8 domain label,
+one NUL byte, then every field as ASCII decimal UTF-8 byte length, `:`, and the
+unchanged UTF-8 field bytes. There is no implicit JSON serialization, Unicode
+normalization, or locale-dependent conversion. Booleans are lowercase `true`
+or `false`; output is `hmac-sha256:` plus 64 lowercase hexadecimal characters.
 
 Each record freezes:
 
@@ -67,6 +77,18 @@ manifest. The restricted manifest digest must match the frozen run metadata.
 Any missing, ambiguous, duplicate, digest-mismatched, or post-start-changed
 binding or record makes the entire run invalid, never ineligible.
 
+Run the executable verifier before task 1 and retain its safe result with the
+restricted review evidence:
+
+```powershell
+python evaluation/v2/pilots/verify_restricted_manifest.py `
+  --manifest <restricted-manifest.json> `
+  --secret-file <restricted-32-byte-secret.bin>
+```
+
+The command prints only `valid` and a safe diagnostic `code`; it never prints
+the secret or private identities. Only `pilot-binding-valid` may proceed.
+
 ## Local-work-loop evidence
 
 Protocol: [`evaluation/v2/pilots/local-work-loop-plan.json`](../../evaluation/v2/pilots/local-work-loop-plan.json)
@@ -80,10 +102,13 @@ Protocol: [`evaluation/v2/pilots/local-work-loop-plan.json`](../../evaluation/v2
 - Router-owned local resume success gate: `>= 95%`.
 
 Freeze metric membership before task 1. All 20 slots belong to
-`manual_envelope`; at least 10 belong to `no_explicit_skill`, at least 4 to
-`explicit_lock`, and at least 10 to `router_local_resume`. Populations may
-overlap. Every eligible slot requires a final record, and every resume-eligible
-slot must be attempted.
+`manual_envelope`. `no_explicit_skill` is true exactly for `single-01` through
+`single-06` and `goal-01` through `goal-04`; `explicit_lock` is true exactly
+for `phased-01` through `phased-04`; and `router_local_resume` is true exactly
+for `phased-01` through `phased-08` and `goal-05` through `goal-06`.
+`no_explicit_skill` and `explicit_lock` are mutually exclusive. Profile-backed
+is true exactly for all eight Phased slots. Every eligible slot requires a
+final record, and every resume-eligible slot must be attempted.
 
 The exact measurements are corrected envelopes divided by all 20 slots;
 unnecessary prompts divided by frozen no-explicit-Skill slots; unauthorized

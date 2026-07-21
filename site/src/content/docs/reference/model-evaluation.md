@@ -23,12 +23,29 @@ instruction bodies, secrets, raw transcripts, expected/actual Skill values,
 and unreviewed evidence remain restricted.
 
 Before task 1, an independent reviewer must approve a restricted binding
-manifest containing exactly 20 records. A per-run secret HMAC-SHA-256 commits
-to each task identity, source identity, Profile identity/revision when used,
-metric-population flags, and record integrity. Public evidence carries only
-the binding-manifest commitment, task-set commitment, and
-reviewer-attestation commitment; it cannot reverse task content and does not
-replace human review that each input is a real task.
+manifest containing exactly 20 records in order: `single-01..06`,
+`phased-01..08`, then `goal-01..06`. A per-run secret HMAC-SHA-256 using
+`wsr-beta5-pilot-hmac-v1` commits to each opaque task identity, opaque source
+identity, Profile identity/revision when used, metric-population flags, and
+record integrity. The restricted IDs are reviewer-assigned identifiers, not
+objectives, prompts, or paths. Public evidence carries only the
+binding-manifest commitment, task-set commitment, and reviewer-attestation
+commitment; it cannot reverse task content and does not replace human review
+that each input is a real task.
+
+The HMAC input is byte-exact: UTF-8
+`workflow-skill-router/beta5-pilot/v1`, NUL, the domain label, NUL, then every
+field as `ASCII(decimal byte_length) + 0x3A + UTF-8 field bytes`. There is no
+implicit JSON serialization, Unicode normalization, or locale-dependent
+conversion. Before task 1, run:
+
+```powershell
+python evaluation/v2/pilots/verify_restricted_manifest.py `
+  --manifest <restricted-manifest.json> `
+  --secret-file <restricted-32-byte-secret.bin>
+```
+
+The verifier prints only `valid` and a safe diagnostic `code`.
 
 All task commitments must be distinct, every source commitment must be
 present, exact slot IDs and the restricted manifest digest must match frozen
@@ -36,11 +53,14 @@ metadata, and no record may change after task 1 starts. Any missing, ambiguous,
 duplicate, changed, or digest-mismatched binding makes the run invalid, never
 ineligible.
 
-Metric flags are frozen before execution. The minimum populations are 20
-manual-envelope, 10 no-explicit-Skill, 4 Explicit Lock, and 10 resume-eligible
-slots; overlap is allowed. Every eligible slot needs a final record and every
-resume-eligible slot must be attempted. An under-minimum or zero denominator is
-invalid and cannot pass as `0/0`.
+Metric flags are frozen before execution. All 20 slots are manual-envelope;
+the 10 no-explicit-Skill slots are `single-01..06` and `goal-01..04`; the four
+Explicit Lock slots are `phased-01..04`; and the 10 resume-eligible slots are
+`phased-01..08` and `goal-05..06`. No-explicit-Skill and Explicit Lock are
+mutually exclusive, and exactly the eight Phased slots are Profile-backed.
+Every eligible slot needs a final record and every resume-eligible slot must be
+attempted. An under-minimum or zero denominator is invalid and cannot pass as
+`0/0`.
 
 Offline reference adapter conformance is development evidence only. A genuine
 verified Host Pilot requires actual Host-side authority and receipts plus human

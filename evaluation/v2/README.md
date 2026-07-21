@@ -13,6 +13,9 @@ The safe preparation artifacts are now frozen with
   secret HMAC-SHA-256 for task/source identity, Profile revision, population
   flags, and record integrity; the actual manifest and secret never become
   public.
+- [`pilots/verify_restricted_manifest.py`](pilots/verify_restricted_manifest.py)
+  independently recomputes the byte-exact `wsr-beta5-pilot-hmac-v1`
+  commitments and returns only a safe `valid`/`code` result before task 1.
 - [`pilots/host-conformance-plan.json`](pilots/host-conformance-plan.json) keeps
   offline reference conformance, a genuine verified Host Pilot, and reviewed
   `capability-unavailable` evidence in separate lanes.
@@ -32,6 +35,28 @@ review. Metric populations are also frozen: 20 manual-envelope slots, at least
 resume-eligible slots. Missing or changed records, duplicate commitments,
 digest mismatch, or an under-minimum denominator makes the run invalid, never
 ineligible; `0/0` never passes.
+
+The exact ordered slots are `single-01..06`, `phased-01..08`, and
+`goal-01..06`. Only the eight Phased slots are Profile-backed. Population
+membership is fixed at 20 manual-envelope, 10 no-explicit-Skill, 4 Explicit
+Lock, and 10 resume-eligible slots; no-explicit-Skill and Explicit Lock are
+mutually exclusive. Restricted raw task/source identities are opaque reviewer
+IDs, never objectives, prompts, or paths.
+
+The HMAC message is UTF-8 `workflow-skill-router/beta5-pilot/v1`, NUL, the
+domain label, NUL, then each field encoded as `ASCII(decimal byte_length) +
+0x3A + UTF-8 field bytes`. It performs no implicit JSON serialization, Unicode
+normalization, or locale-dependent conversion. Verify the frozen manifest
+before task 1:
+
+```powershell
+python evaluation/v2/pilots/verify_restricted_manifest.py `
+  --manifest <restricted-manifest.json> `
+  --secret-file <restricted-32-byte-secret.bin>
+```
+
+Commitments are non-reversible without the per-run secret and support later
+audit, but they do not replace human review that every input is a real task.
 
 The default remains
 `deterministic-default-no-semantic-recommender`. An experimental recommender is

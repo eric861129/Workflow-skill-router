@@ -4,26 +4,26 @@
   "execution_status": "protocol-frozen-awaiting-real-pilot",
   "purpose": "Freeze the task mix, scoring gates, and public evidence boundary before any real local task is counted.",
   "task_slots": [
-    {"task_id": "single-01", "envelope": "single", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "single-02", "envelope": "single", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "single-03", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "single-04", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "single-05", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "single-06", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-01", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-02", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-03", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-04", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-05", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-06", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-07", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "phased-08", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-01", "envelope": "goal-like", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-02", "envelope": "goal-like", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-03", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-04", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-05", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
-    {"task_id": "goal-like-06", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"}
+    {"task_id": "single-01", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-02", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-03", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-04", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-05", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-06", "envelope": "single", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-01", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": true, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-02", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": true, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-03", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": true, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-04", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": true, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-05", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-06", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-07", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-08", "envelope": "phased", "profile_backed": true, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-01", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-02", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-03", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-04", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": true, "explicit_lock": false, "router_local_resume": false}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-05", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-06", "envelope": "goal-like", "profile_backed": false, "metric_population_flags": {"manual_envelope": true, "no_explicit_skill": false, "explicit_lock": false, "router_local_resume": true}, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"}
   ],
   "task_binding_policy": {
     "distinct_real_task_per_slot": true,
@@ -35,7 +35,7 @@
     "created_before_task_1": true,
     "independently_reviewed_before_task_1": true,
     "exact_binding_records": 20,
-    "commitment_scheme": "per-run-secret-hmac-sha256",
+    "commitment_scheme": "wsr-beta5-pilot-hmac-v1",
     "secret_storage": "restricted-reviewer-access-only",
     "public_commitments_are_reversible": false,
     "human_review_of_real_task_status_required": true,
@@ -45,16 +45,25 @@
       "reviewer_attestation_commitment"
     ],
     "commitment_input_contract": {
-      "canonicalization": "RFC8785-JCS",
-      "domain_labels": {
-        "task_identity": "workflow-skill-router/pilot/task-identity/v1",
-        "source_identity": "workflow-skill-router/pilot/source-identity/v1",
-        "profile_identity": "workflow-skill-router/pilot/profile-identity/v1",
-        "record_integrity": "workflow-skill-router/pilot/record-integrity/v1",
-        "task_set": "workflow-skill-router/pilot/task-set/v1",
-        "binding_manifest": "workflow-skill-router/pilot/binding-manifest/v1",
-        "reviewer_attestation": "workflow-skill-router/pilot/reviewer-attestation/v1"
+      "specification": "wsr-beta5-pilot-hmac-v1",
+      "run_secret_bytes": 32,
+      "output": "hmac-sha256:<lowercase 64 hex>",
+      "message_prefix": "UTF-8 workflow-skill-router/beta5-pilot/v1",
+      "separator": "0x00",
+      "field_encoding": "ASCII(decimal byte_length) + 0x3A + UTF-8 field bytes",
+      "implicit_json_serialization": false,
+      "implicit_unicode_normalization": false,
+      "locale_dependent_behavior": false,
+      "domain_fields": {
+        "task-identity": ["run_id", "slot_id", "task_identity"],
+        "source-identity": ["run_id", "slot_id", "source_identity"],
+        "profile-identity": ["run_id", "slot_id", "profile_id", "profile_revision_digest"],
+        "binding-record": ["run_id", "slot_id", "task_commitment", "source_commitment", "profile_commitment_or_empty", "profile_revision_digest_or_empty", "manual_flag", "no_explicit_flag", "explicit_lock_flag", "resume_flag"],
+        "task-set": ["run_id", "20 binding_record_commitments in frozen order"],
+        "reviewer-attestation": ["run_id", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_id", "reviewed_before_task_1", "real_task_status_human_reviewed", "commitments_verified_with_run_secret"],
+        "binding-manifest": ["run_id", "source_revision", "runtime_package_digest", "protocol_digest", "task_set_commitment", "reviewer_attestation_commitment", "20 binding_record_commitments in frozen order"]
       },
+      "boolean_encoding": {"true": "true", "false": "false"},
       "task_set_order": [
         "single-01",
         "single-02",
@@ -70,23 +79,19 @@
         "phased-06",
         "phased-07",
         "phased-08",
-        "goal-like-01",
-        "goal-like-02",
-        "goal-like-03",
-        "goal-like-04",
-        "goal-like-05",
-        "goal-like-06"
-      ],
-      "record_integrity_excludes": [
-        "record_integrity_commitment"
-      ],
-      "manifest_commitment_excludes": [
-        "binding_manifest_commitment",
-        "reviewer_attestation.reviewer_attestation_commitment"
-      ],
-      "reviewer_attestation_commitment_excludes": [
-        "reviewer_attestation_commitment"
+        "goal-01",
+        "goal-02",
+        "goal-03",
+        "goal-04",
+        "goal-05",
+        "goal-06"
       ]
+    },
+    "verifier": {
+      "path": "pilots/verify_restricted_manifest.py",
+      "success_code": "pilot-binding-valid",
+      "public_output_fields": ["valid", "code"],
+      "required_before_task_1": true
     },
     "claim_boundary": "Commitments prove reviewed pre-binding and support later audit; they do not expose task content or replace human review that each input is a real task."
   },
@@ -107,14 +112,15 @@
       "phased-06",
       "phased-07",
       "phased-08",
-      "goal-like-01",
-      "goal-like-02",
-      "goal-like-03",
-      "goal-like-04",
-      "goal-like-05",
-      "goal-like-06"
+      "goal-01",
+      "goal-02",
+      "goal-03",
+      "goal-04",
+      "goal-05",
+      "goal-06"
     ],
     "all_task_commitments_distinct": true,
+    "all_restricted_task_identities_distinct": true,
     "all_source_commitments_present": true,
     "task_source_commitment_pairs_distinct": true,
     "profile_binding_matches_frozen_slot": true,

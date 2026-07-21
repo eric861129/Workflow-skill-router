@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "execution_status",
     "run_id",
     "protocol_digest",
     "source_revision",
@@ -20,6 +21,9 @@
   "properties": {
     "schema_version": {
       "const": "workflow-skill-router/restricted-pilot-binding-manifest/1.0"
+    },
+    "execution_status": {
+      "const": "restricted-binding-frozen-before-task-1"
     },
     "run_id": {
       "type": "string",
@@ -40,31 +44,23 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "algorithm",
-        "key_scope",
+        "specification",
+        "secret_length_bytes",
         "secret_storage",
-        "publicly_reversible",
-        "canonicalization",
-        "domain_separation"
+        "publicly_reversible"
       ],
       "properties": {
-        "algorithm": {
-          "const": "HMAC-SHA-256"
+        "specification": {
+          "const": "wsr-beta5-pilot-hmac-v1"
         },
-        "key_scope": {
-          "const": "one-secret-per-run"
+        "secret_length_bytes": {
+          "const": 32
         },
         "secret_storage": {
           "const": "restricted-reviewer-access-only"
         },
         "publicly_reversible": {
           "const": false
-        },
-        "canonicalization": {
-          "const": "RFC8785-JCS"
-        },
-        "domain_separation": {
-          "const": "workflow-skill-router-pilot-v1-labeled-inputs"
         }
       }
     },
@@ -73,95 +69,29 @@
       "minItems": 20,
       "maxItems": 20,
       "uniqueItems": true,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "slot_id",
-          "task_identity_commitment",
-          "source_identity_commitment",
-          "profile_binding",
-          "metric_population_flags",
-          "record_integrity_commitment"
-        ],
-        "properties": {
-          "slot_id": {
-            "type": "string",
-            "pattern": "^(single-0[1-6]|phased-0[1-8]|goal-like-0[1-6])$"
-          },
-          "task_identity_commitment": {
-            "type": "string",
-            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
-          },
-          "source_identity_commitment": {
-            "type": "string",
-            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
-          },
-          "profile_binding": {
-            "oneOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["profile_backed"],
-                "properties": {
-                  "profile_backed": {
-                    "const": false
-                  }
-                }
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "profile_backed",
-                  "profile_identity_commitment",
-                  "profile_revision_digest"
-                ],
-                "properties": {
-                  "profile_backed": {
-                    "const": true
-                  },
-                  "profile_identity_commitment": {
-                    "type": "string",
-                    "pattern": "^hmac-sha256:[0-9a-f]{64}$"
-                  },
-                  "profile_revision_digest": {
-                    "$ref": "#/$defs/sha256Digest"
-                  }
-                }
-              }
-            ]
-          },
-          "metric_population_flags": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "manual_envelope",
-              "no_explicit_skill",
-              "explicit_lock",
-              "router_local_resume"
-            ],
-            "properties": {
-              "manual_envelope": {
-                "const": true
-              },
-              "no_explicit_skill": {
-                "type": "boolean"
-              },
-              "explicit_lock": {
-                "type": "boolean"
-              },
-              "router_local_resume": {
-                "type": "boolean"
-              }
-            }
-          },
-          "record_integrity_commitment": {
-            "type": "string",
-            "pattern": "^hmac-sha256:[0-9a-f]{64}$"
-          }
-        }
-      }
+      "prefixItems": [
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-01"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-02"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-03"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-04"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-05"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "single-06"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-01"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsExplicitResume"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-02"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsExplicitResume"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-03"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsExplicitResume"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-04"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsExplicitResume"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-05"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-06"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-07"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "phased-08"}, "profile_binding": {"$ref": "#/$defs/profileOn"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-01"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-02"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-03"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-04"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsNoExplicit"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-05"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]},
+        {"allOf": [{"$ref": "#/$defs/bindingRecord"}, {"properties": {"slot_id": {"const": "goal-06"}, "profile_binding": {"$ref": "#/$defs/profileOff"}, "metric_population_flags": {"$ref": "#/$defs/flagsResumeOnly"}}}]}
+      ],
+      "items": false
     },
     "binding_manifest_commitment": {
       "$ref": "#/$defs/hmacCommitment"
@@ -173,7 +103,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "reviewer_identity",
+        "reviewer_id",
         "attested_at",
         "reviewed_before_task_1",
         "real_task_status_human_reviewed",
@@ -181,10 +111,9 @@
         "reviewer_attestation_commitment"
       ],
       "properties": {
-        "reviewer_identity": {
+        "reviewer_id": {
           "type": "string",
-          "minLength": 1,
-          "maxLength": 256
+          "pattern": "^reviewer:[A-Za-z0-9_-]{12,128}$"
         },
         "attested_at": {
           "type": "string",
@@ -213,6 +142,122 @@
     "hmacCommitment": {
       "type": "string",
       "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+    },
+    "profileOff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile_backed"],
+      "properties": {
+        "profile_backed": {"const": false}
+      }
+    },
+    "profileOn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_backed",
+        "profile_id",
+        "profile_revision_digest",
+        "profile_identity_commitment"
+      ],
+      "properties": {
+        "profile_backed": {"const": true},
+        "profile_id": {
+          "type": "string",
+          "pattern": "^profile:[A-Za-z0-9_-]{16,128}$"
+        },
+        "profile_revision_digest": {
+          "$ref": "#/$defs/sha256Digest"
+        },
+        "profile_identity_commitment": {
+          "$ref": "#/$defs/hmacCommitment"
+        }
+      }
+    },
+    "flagsNoExplicit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manual_envelope", "no_explicit_skill", "explicit_lock", "router_local_resume"],
+      "properties": {
+        "manual_envelope": {"const": true},
+        "no_explicit_skill": {"const": true},
+        "explicit_lock": {"const": false},
+        "router_local_resume": {"const": false}
+      }
+    },
+    "flagsExplicitResume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manual_envelope", "no_explicit_skill", "explicit_lock", "router_local_resume"],
+      "properties": {
+        "manual_envelope": {"const": true},
+        "no_explicit_skill": {"const": false},
+        "explicit_lock": {"const": true},
+        "router_local_resume": {"const": true}
+      }
+    },
+    "flagsResumeOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manual_envelope", "no_explicit_skill", "explicit_lock", "router_local_resume"],
+      "properties": {
+        "manual_envelope": {"const": true},
+        "no_explicit_skill": {"const": false},
+        "explicit_lock": {"const": false},
+        "router_local_resume": {"const": true}
+      }
+    },
+    "bindingRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slot_id",
+        "task_identity",
+        "task_identity_commitment",
+        "source_identity",
+        "source_identity_commitment",
+        "profile_binding",
+        "metric_population_flags",
+        "record_integrity_commitment"
+      ],
+      "properties": {
+        "slot_id": {
+          "type": "string"
+        },
+        "task_identity": {
+          "type": "string",
+          "pattern": "^task:[A-Za-z0-9_-]{16,128}$"
+        },
+      "task_identity_commitment": {
+        "type": "string",
+        "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+        },
+        "source_identity": {
+          "type": "string",
+          "pattern": "^source:[A-Za-z0-9_-]{16,128}$"
+        },
+      "source_identity_commitment": {
+        "type": "string",
+        "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+        },
+        "profile_binding": {
+          "oneOf": [
+            {"$ref": "#/$defs/profileOff"},
+            {"$ref": "#/$defs/profileOn"}
+          ]
+        },
+        "metric_population_flags": {
+          "oneOf": [
+            {"$ref": "#/$defs/flagsNoExplicit"},
+            {"$ref": "#/$defs/flagsExplicitResume"},
+            {"$ref": "#/$defs/flagsResumeOnly"}
+          ]
+        },
+      "record_integrity_commitment": {
+        "type": "string",
+        "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+        }
+      }
     }
   }
 }

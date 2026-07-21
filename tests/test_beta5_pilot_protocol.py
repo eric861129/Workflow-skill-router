@@ -18,6 +18,14 @@ CHINESE_PAGE = ROOT / "site/src/content/docs/zh-tw/reference/model-evaluation.md
 ADR = ROOT / "docs/adr/0004-explainable-classification-and-runtime-modes.md"
 
 
+def expected_slot_contracts() -> list[tuple[str, bool, bool, bool, bool]]:
+    return [
+        *((f"single-{index:02d}", False, True, False, False) for index in range(1, 7)),
+        *((f"phased-{index:02d}", True, False, index <= 4, True) for index in range(1, 9)),
+        *((f"goal-{index:02d}", False, index <= 4, False, index >= 5) for index in range(1, 7)),
+    ]
+
+
 class Beta5PilotProtocolTests(unittest.TestCase):
     def read_json(self, path: Path) -> dict:
         self.assertTrue(path.is_file(), f"missing protocol artifact: {path}")
@@ -37,6 +45,22 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         self.assertGreaterEqual(envelopes["goal-like"], 6)
         self.assertGreaterEqual(sum(task["profile_backed"] for task in tasks), 8)
         self.assertEqual(len(tasks), len({task["task_id"] for task in tasks}))
+        self.assertEqual(
+            expected_slot_contracts(),
+            [
+                (
+                    task["task_id"],
+                    task["profile_backed"],
+                    task["metric_population_flags"]["no_explicit_skill"],
+                    task["metric_population_flags"]["explicit_lock"],
+                    task["metric_population_flags"]["router_local_resume"],
+                )
+                for task in tasks
+            ],
+        )
+        self.assertTrue(
+            all(task["metric_population_flags"]["manual_envelope"] for task in tasks)
+        )
         self.assertIn("task_binding_policy", plan)
         binding = plan["task_binding_policy"]
         self.assertTrue(binding["distinct_real_task_per_slot"])
@@ -167,12 +191,16 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         self.assertEqual(20, bindings["minItems"])
         self.assertEqual(20, bindings["maxItems"])
         self.assertTrue(bindings.get("uniqueItems"))
-        record = bindings["items"]
+        self.assertIs(False, bindings["items"])
+        self.assertEqual(20, len(bindings["prefixItems"]))
+        record = schema["$defs"]["bindingRecord"]
         self.assertFalse(record["additionalProperties"])
         self.assertEqual(
             {
                 "slot_id",
+                "task_identity",
                 "task_identity_commitment",
+                "source_identity",
                 "source_identity_commitment",
                 "profile_binding",
                 "metric_population_flags",
@@ -196,10 +224,15 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "record_integrity_commitment",
         ):
             self.assertEqual(hmac_pattern, record["properties"][field]["pattern"])
-        flags = record["properties"]["metric_population_flags"]["properties"]
-        self.assertTrue(flags["manual_envelope"]["const"])
-        for flag in ("no_explicit_skill", "explicit_lock", "router_local_resume"):
-            self.assertEqual("boolean", flags[flag]["type"])
+        for definition in (
+            "flagsNoExplicit",
+            "flagsExplicitResume",
+            "flagsResumeOnly",
+        ):
+            flags = schema["$defs"][definition]["properties"]
+            self.assertIs(True, flags["manual_envelope"]["const"])
+            for flag in ("no_explicit_skill", "explicit_lock", "router_local_resume"):
+                self.assertIsInstance(flags[flag]["const"], bool)
         self.assertTrue(
             {
                 "binding_manifest_commitment",
@@ -216,12 +249,37 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             }.issubset(reviewer["required"])
         )
         scheme = schema["properties"]["commitment_scheme"]
-        self.assertTrue(
-            {"canonicalization", "domain_separation"}.issubset(scheme["required"])
-        )
         self.assertEqual(
-            "RFC8785-JCS", scheme["properties"]["canonicalization"]["const"]
+            "wsr-beta5-pilot-hmac-v1",
+            scheme["properties"]["specification"]["const"],
         )
+        self.assertEqual(32, scheme["properties"]["secret_length_bytes"]["const"])
+
+        expected_slots = [task["task_id"] for task in plan["task_slots"]]
+        schema_slots = [
+            item["allOf"][1]["properties"]["slot_id"]["const"]
+            for item in bindings["prefixItems"]
+        ]
+        self.assertEqual(expected_slots, schema_slots)
+        for item, (_, profile_backed, no_explicit, explicit_lock, _) in zip(
+            bindings["prefixItems"], expected_slot_contracts(), strict=True
+        ):
+            slot_contract = item["allOf"][1]["properties"]
+            self.assertEqual(
+                "#/$defs/profileOn" if profile_backed else "#/$defs/profileOff",
+                slot_contract["profile_binding"]["$ref"],
+            )
+            expected_flag_ref = (
+                "#/$defs/flagsNoExplicit"
+                if no_explicit
+                else "#/$defs/flagsExplicitResume"
+                if explicit_lock
+                else "#/$defs/flagsResumeOnly"
+            )
+            self.assertEqual(
+                expected_flag_ref,
+                slot_contract["metric_population_flags"]["$ref"],
+            )
 
         binding = plan["restricted_binding_manifest"]
         self.assertEqual(
@@ -229,7 +287,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         )
         self.assertTrue(binding["created_before_task_1"])
         self.assertTrue(binding["independently_reviewed_before_task_1"])
-        self.assertEqual("per-run-secret-hmac-sha256", binding["commitment_scheme"])
+        self.assertEqual("wsr-beta5-pilot-hmac-v1", binding["commitment_scheme"])
         self.assertFalse(binding["public_commitments_are_reversible"])
         self.assertTrue(binding["human_review_of_real_task_status_required"])
         self.assertEqual(
@@ -242,17 +300,31 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         )
         self.assertIn("commitment_input_contract", binding)
         contract = binding["commitment_input_contract"]
-        self.assertEqual("RFC8785-JCS", contract["canonicalization"])
+        self.assertEqual("wsr-beta5-pilot-hmac-v1", contract["specification"])
+        self.assertEqual(32, contract["run_secret_bytes"])
+        self.assertEqual(
+            "ASCII(decimal byte_length) + 0x3A + UTF-8 field bytes",
+            contract["field_encoding"],
+        )
         self.assertEqual(
             [task["task_id"] for task in plan["task_slots"]],
             contract["task_set_order"],
         )
         self.assertEqual(
+            ["run_id", "slot_id", "task_identity"],
+            contract["domain_fields"]["task-identity"],
+        )
+        self.assertEqual(
             [
-                "binding_manifest_commitment",
-                "reviewer_attestation.reviewer_attestation_commitment",
+                "run_id",
+                "source_revision",
+                "runtime_package_digest",
+                "protocol_digest",
+                "task_set_commitment",
+                "reviewer_attestation_commitment",
+                "20 binding_record_commitments in frozen order",
             ],
-            contract["manifest_commitment_excludes"],
+            contract["domain_fields"]["binding-manifest"],
         )
 
     def test_binding_integrity_and_metric_populations_fail_closed_non_vacuously(self) -> None:
@@ -268,6 +340,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             integrity["exact_slot_ids"],
         )
         self.assertTrue(integrity["all_task_commitments_distinct"])
+        self.assertTrue(integrity["all_restricted_task_identities_distinct"])
         self.assertTrue(integrity["all_source_commitments_present"])
         self.assertTrue(integrity["task_source_commitment_pairs_distinct"])
         self.assertTrue(integrity.get("profile_binding_matches_frozen_slot"))
@@ -340,6 +413,9 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         for phrase in (
             "restricted binding manifest",
             "per-run secret HMAC-SHA-256",
+            "wsr-beta5-pilot-hmac-v1",
+            "verify_restricted_manifest.py",
+            "goal-01",
             "binding-manifest commitment",
             "task-set commitment",
             "reviewer attestation before task 1",
