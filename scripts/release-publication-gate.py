@@ -8,7 +8,7 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -84,6 +84,35 @@ def _git_show(revision: str, path: str) -> str:
         ) from error
 
 
+def _verify_allowlist_schema(path: str, allowlist_text: str) -> None:
+    try:
+        allowlist = json.loads(allowlist_text)
+    except json.JSONDecodeError as error:
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} is invalid JSON."
+        ) from error
+    if not isinstance(allowlist, dict):
+        raise PublicationGateError(f"Frozen release allowlist {path!r} is invalid.")
+
+    raw_files = allowlist.get("files")
+    if not isinstance(raw_files, list) or not all(
+        isinstance(value, str) for value in raw_files
+    ):
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} must define string file paths."
+        )
+    if raw_files != sorted(set(raw_files)):
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} must be sorted and unique."
+        )
+    for relative_name in raw_files:
+        relative_path = PurePosixPath(relative_name)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise PublicationGateError(
+                f"Frozen release allowlist {path!r} contains an unsafe file path."
+            )
+
+
 def _verify_frozen_source_contract(
     source_revision: str, release_version: str, release_tag: str
 ) -> None:
@@ -144,6 +173,8 @@ def _verify_frozen_source_contract(
             "Frozen release artifact builder differs from trusted release contract."
         )
     required_builder_contract = (
+        'RELEASE / "allowlists" / "plugin-runtime-files.json"',
+        'RELEASE / "allowlists" / "skill-package.json"',
         'plugin_name = f"workflow-skill-router-plugin-v{version}.zip"',
         'skill_name = f"workflow-skill-router-skill-v{version}.zip"',
         'output_dir / "checksums.sha256"',
@@ -154,7 +185,7 @@ def _verify_frozen_source_contract(
         )
 
     for path in (
-        "release/allowlists/plugin-package.json",
+        "release/allowlists/plugin-runtime-files.json",
         "release/allowlists/skill-package.json",
     ):
         frozen_allowlist_text = _git_show(source_revision, path)
@@ -162,16 +193,7 @@ def _verify_frozen_source_contract(
             raise PublicationGateError(
                 f"Frozen release allowlist {path!r} differs from trusted release contract."
             )
-        try:
-            allowlist = json.loads(frozen_allowlist_text)
-        except json.JSONDecodeError as error:
-            raise PublicationGateError(
-                f"Frozen release allowlist {path!r} is invalid JSON."
-            ) from error
-        if not isinstance(allowlist, dict):
-            raise PublicationGateError(
-                f"Frozen release allowlist {path!r} is invalid."
-            )
+        _verify_allowlist_schema(path, frozen_allowlist_text)
 
 
 def main() -> int:

@@ -46,6 +46,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         trusted_version: str,
         notes_match: bool = True,
         trusted_notes_change: bool = False,
+        trusted_plugin_runtime_allowlist_change: bool = False,
     ) -> tuple[str, str]:
         subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
         subprocess.run(
@@ -95,6 +96,11 @@ class GitHubWorkflowTests(unittest.TestCase):
             encoding="utf-8",
             newline="\n",
         )
+        (allowlists / "plugin-runtime-files.json").write_text(
+            '{"files": ["runtime/workflow_skill_router.pyz"]}\n',
+            encoding="utf-8",
+            newline="\n",
+        )
         (allowlists / "plugin-package.json").write_text(
             '{"files": []}\n', encoding="utf-8", newline="\n"
         )
@@ -104,6 +110,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         (scripts / "build-release-artifacts.py").write_text(
             "\n".join(
                 (
+                    'RELEASE / "allowlists" / "plugin-runtime-files.json"',
+                    'RELEASE / "allowlists" / "skill-package.json"',
                     'plugin_name = f"workflow-skill-router-plugin-v{version}.zip"',
                     'skill_name = f"workflow-skill-router-skill-v{version}.zip"',
                     'files[output_dir / "checksums.sha256"] = checksums',
@@ -141,8 +149,14 @@ class GitHubWorkflowTests(unittest.TestCase):
                 encoding="utf-8",
                 newline="\n",
             )
+        if trusted_plugin_runtime_allowlist_change:
+            (allowlists / "plugin-runtime-files.json").write_text(
+                '{"files": ["runtime/tampered.pyz", "runtime/workflow_skill_router.pyz"]}\n',
+                encoding="utf-8",
+                newline="\n",
+            )
         subprocess.run(
-            ["git", "add", "release/version.json", "release/notes"],
+            ["git", "add", "release/version.json", "release/notes", "release/allowlists"],
             cwd=directory,
             check=True,
         )
@@ -535,7 +549,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             '["git", "show",',
             '["git", "cat-file", "-e",',
             "release/notes/{release_tag}.md",
-            "release/allowlists/plugin-package.json",
+            "release/allowlists/plugin-runtime-files.json",
             "release/allowlists/skill-package.json",
         ):
             with self.subTest(required=required):
@@ -611,6 +625,25 @@ class GitHubWorkflowTests(unittest.TestCase):
                 "Frozen release notes differ from trusted release contract",
                 result.stderr,
             )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_plugin_runtime_allowlist_changed_after_freeze(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                trusted_plugin_runtime_allowlist_change=True,
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn("plugin-runtime-files.json", result.stderr)
             self.assertFalse(output_path.exists())
 
     def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
