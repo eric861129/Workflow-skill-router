@@ -26,6 +26,8 @@ LOCAL_WORK_STATUSES = frozenset({
     "host-scheduler-required",
 })
 
+ROUTER_LOCAL_SINGLE_COMPLETION_CHECK_ID = "router-local-single-completed"
+
 
 class LocalWorkGraphCorruption(RuntimeError):
     """Raised when persisted Router-owned graph state cannot be trusted."""
@@ -418,6 +420,28 @@ def build_local_work_items(
         phase_id="decomposition-boundary",
         status="decomposition-required",
     ),)
+
+
+def expected_local_check_ids(
+    *,
+    routing_envelope: str,
+    goal_binding_id: str | None,
+    planned_skill_tree: tuple[object, ...],
+) -> dict[str, tuple[str, ...]]:
+    """Bind advisory checks to the Router-owned graph without granting Host authority."""
+
+    if goal_binding_id is not None:
+        return {}
+    if planned_skill_tree:
+        return {
+            phase.phase_id: ((phase.exit_gate,) if phase.exit_gate.strip() else ())
+            for phase in planned_skill_tree
+        }
+    if routing_envelope == "single":
+        return {
+            "single-work": (ROUTER_LOCAL_SINGLE_COMPLETION_CHECK_ID,),
+        }
+    return {}
 
 
 def _boundary_item(

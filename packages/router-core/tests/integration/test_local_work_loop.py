@@ -41,6 +41,8 @@ from workflow_skill_router.workflow.observations import ActivationObservation
 
 
 class LocalWorkLoopTests(unittest.TestCase):
+    SINGLE_COMPLETION_CHECK_ID = "router-local-single-completed"
+
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.database = Path(self.directory.name) / "router.db"
@@ -58,14 +60,16 @@ class LocalWorkLoopTests(unittest.TestCase):
         requested_work_mode: str | None = "single",
         goal_binding_id: str | None = None,
         routing_context: RoutingContextInput = RoutingContextInput(),
+        explicit_skill_ids: tuple[str, ...] = (),
+        explicit_semantics: str | None = None,
     ) -> PlanWork:
         return PlanWork(
             context=self.context,
             objective=objective,
             goal_binding_id=goal_binding_id,
             requested_work_mode=requested_work_mode,
-            explicit_skill_ids=(),
-            explicit_semantics=None,
+            explicit_skill_ids=explicit_skill_ids,
+            explicit_semantics=explicit_semantics,
             expected_state_version=0,
             idempotency_key=idempotency_key,
             correlation_id="correlation-local",
@@ -978,6 +982,87 @@ class LocalWorkLoopTests(unittest.TestCase):
         self.assertIn("contract-ready", transitions[2]["observation_json"])
         self.assertNotIn("activation_receipt", transitions[2]["observation_json"])
 
+    def test_profile_less_single_completes_with_bound_router_local_check(self) -> None:
+        plan = self.service.plan_work(self.command(
+            idempotency_key="profile-less-single-completion",
+            requested_work_mode=None,
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+
+        self.assertEqual("single", plan.routing_envelope)
+        self.assertEqual("builtin-fallback", plan.classification.source)
+        self.assertEqual(
+            "deterministic-objective-v1",
+            plan.classification.classifier_revision,
+        )
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="profile-less-single-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit",
+            check_ids=(self.SINGLE_COMPLETION_CHECK_ID,),
+            reported_outcome="Task completed locally",
+            expected_state_version=2,
+            idempotency_key="profile-less-single-submit",
+        ))
+        result = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(
+                (self.SINGLE_COMPLETION_CHECK_ID,)
+            ),
+            idempotency_key="profile-less-single-gate",
+        ))
+
+        self.assertTrue(result.passed)
+        self.assertEqual("router-local", result.authority_mode)
+        self.assertEqual("user-or-agent-reported-local", result.evidence_class)
+        self.assertFalse(result.host_transition_authorized)
+        self.assertEqual("completed", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (item["work_item_id"],),
+        )[0]["status"])
+
+    def test_explicit_skill_single_completes_with_same_bound_router_local_check(self) -> None:
+        plan = self.service.plan_work(self.command(
+            idempotency_key="explicit-single-completion",
+            explicit_skill_ids=("skill:security-review",),
+            explicit_semantics="only",
+        ))
+        item = self.rows(
+            "SELECT * FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]
+
+        self.assertEqual("explicit-locked", plan.selection_mode)
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="start", expected_state_version=1,
+            idempotency_key="explicit-single-start",
+        ))
+        self.service.record_work_event(self.record_command(
+            plan, item, transition="submit",
+            check_ids=(self.SINGLE_COMPLETION_CHECK_ID,),
+            reported_outcome="Explicit Skill task completed locally",
+            expected_state_version=2,
+            idempotency_key="explicit-single-submit",
+        ))
+        result = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(
+                (self.SINGLE_COMPLETION_CHECK_ID,)
+            ),
+            idempotency_key="explicit-single-gate",
+        ))
+
+        self.assertTrue(result.passed)
+        self.assertEqual("completed", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (item["work_item_id"],),
+        )[0]["status"])
+
     def test_local_gate_reports_missing_required_check_without_host_authority(self) -> None:
         self.write_phased_profile()
         plan = self.service.plan_work(self.command(
@@ -1137,7 +1222,7 @@ class LocalWorkLoopTests(unittest.TestCase):
                 (item["work_item_id"],),
             )[0]["status"])
 
-    def test_local_gate_rejects_fabricated_refs_phase_drift_and_unconfigured_gate(self) -> None:
+    def test_local_gate_rejects_fabricated_refs_phase_drift_and_missing_single_check(self) -> None:
         plan = self.service.plan_work(self.command(idempotency_key="gate-boundaries"))
         item = self.rows(
             "SELECT * FROM local_work_items WHERE workflow_run_id=?",
@@ -1164,12 +1249,21 @@ class LocalWorkLoopTests(unittest.TestCase):
                 expected_evidence_digest=self.local_evidence_digest(()),
                 phase_id="other-phase", idempotency_key="gate-phase-drift",
             ))
-        with self.assertRaises(LocalObservationPolicyError):
-            self.service.evaluate_gate(self.gate_command(
-                plan, item, expected_state_version=3,
-                expected_evidence_digest=self.local_evidence_digest(()),
-                idempotency_key="gate-unconfigured",
-            ))
+        missing = self.service.evaluate_gate(self.gate_command(
+            plan, item, expected_state_version=3,
+            expected_evidence_digest=self.local_evidence_digest(()),
+            idempotency_key="gate-missing-single-check",
+        ))
+        self.assertFalse(missing.passed)
+        self.assertEqual(
+            (f"missing-local-check:{self.SINGLE_COMPLETION_CHECK_ID}",),
+            missing.failures,
+        )
+        self.assertFalse(missing.host_transition_authorized)
+        self.assertEqual("verifying", self.rows(
+            "SELECT status FROM local_work_items WHERE work_item_id=?",
+            (item["work_item_id"],),
+        )[0]["status"])
 
     def test_local_record_rejects_v0_marker_when_graph_rows_exist(self) -> None:
         plan = self.service.plan_work(self.command(idempotency_key="record-v0-rows"))

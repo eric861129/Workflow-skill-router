@@ -14,6 +14,7 @@ from workflow_skill_router.local_work import (
     LocalWorkItem,
     LocalWorkGraphCorruption,
     build_local_work_items,
+    expected_local_check_ids,
     local_evidence_digest,
     local_transition_target,
     next_ready_local_work_item,
@@ -975,16 +976,9 @@ class LocalControlPlaneService:
         plan: sqlite3.Row,
         phase_id: str,
     ) -> tuple[str, ...]:
-        matches = tuple(
-            phase.exit_gate
-            for phase in LocalControlPlaneService._planned_tree(plan)
-            if phase.phase_id == phase_id and phase.exit_gate.strip()
+        return LocalControlPlaneService._expected_local_check_ids(plan).get(
+            phase_id, ()
         )
-        if len(matches) > 1:
-            raise LocalWorkGraphCorruption(
-                "local-work-graph-corruption: duplicate-phase-gate"
-            )
-        return matches
 
     @staticmethod
     def _persisted_local_check_ids(
@@ -1320,10 +1314,11 @@ class LocalControlPlaneService:
     def _expected_local_check_ids(
         row: sqlite3.Row,
     ) -> dict[str, tuple[str, ...]]:
-        return {
-            phase.phase_id: ((phase.exit_gate,) if phase.exit_gate.strip() else ())
-            for phase in LocalControlPlaneService._planned_tree(row)
-        }
+        return expected_local_check_ids(
+            routing_envelope=row["routing_envelope"],
+            goal_binding_id=row["goal_binding_id"],
+            planned_skill_tree=LocalControlPlaneService._planned_tree(row),
+        )
 
     @staticmethod
     def _result(row: sqlite3.Row) -> PlanWorkResult:
