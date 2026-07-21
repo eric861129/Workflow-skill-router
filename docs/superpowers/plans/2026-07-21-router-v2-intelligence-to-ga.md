@@ -114,7 +114,7 @@ flowchart LR
 
 **Files:**
 
-- Create: `docs/adr/0003-explainable-classification-and-runtime-modes.md`
+- Create: `docs/adr/0004-explainable-classification-and-runtime-modes.md`
 - Modify: `docs/architecture/v2-overview.md`
 - Modify: `site/src/content/docs/concepts/routing-envelopes.md`
 - Modify: `site/src/content/docs/zh-tw/concepts/routing-envelopes.md`
@@ -161,7 +161,7 @@ Expected: PASS。
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add docs/adr/0003-explainable-classification-and-runtime-modes.md docs/architecture/v2-overview.md site/src/content/docs/concepts/routing-envelopes.md site/src/content/docs/zh-tw/concepts/routing-envelopes.md tests/test_v2_documentation.py
+git add docs/adr/0004-explainable-classification-and-runtime-modes.md docs/architecture/v2-overview.md site/src/content/docs/concepts/routing-envelopes.md site/src/content/docs/zh-tw/concepts/routing-envelopes.md tests/test_v2_documentation.py
 git commit -m "docs: define explainable routing and runtime modes"
 ```
 

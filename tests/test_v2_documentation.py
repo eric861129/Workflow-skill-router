@@ -16,7 +16,7 @@ DOCS=(
 class V2DocumentationTests(unittest.TestCase):
     def test_explainable_classification_and_runtime_mode_contract(self):
         documents = (
-            "docs/adr/0003-explainable-classification-and-runtime-modes.md",
+            "docs/adr/0004-explainable-classification-and-runtime-modes.md",
             "docs/architecture/v2-overview.md",
             "site/src/content/docs/concepts/routing-envelopes.md",
             "site/src/content/docs/zh-tw/concepts/routing-envelopes.md",
@@ -27,6 +27,11 @@ class V2DocumentationTests(unittest.TestCase):
             "classification_reason_codes",
             "conditional-local",
             "host_transition_authorized",
+            "current-bundled-r0",
+            "target-beta.5",
+            "propose_support_consent",
+            "transition_support_consent",
+            "not available in current bundled R0",
         )
 
         for relative in documents:
@@ -36,6 +41,43 @@ class V2DocumentationTests(unittest.TestCase):
                 text = path.read_text("utf-8")
                 for term in required_terms:
                     self.assertIn(term, text, relative)
+
+                current_section = text.split("current-bundled-r0", 1)[1].split(
+                    "target-beta.5", 1
+                )[0]
+                target_section = text.split("target-beta.5", 1)[1]
+                for tool in (
+                    "plan_work",
+                    "propose_support_consent",
+                    "transition_support_consent",
+                    "get_router_status",
+                    "sync_runtime_context",
+                    "get_next_work",
+                    "validate_route",
+                    "record_work_event",
+                    "evaluate_gate",
+                    "run_model_evaluation",
+                    "compare_evaluations",
+                    "export_router_artifact",
+                ):
+                    self.assertIn(tool, current_section, relative)
+                self.assertNotIn("conditional-local", current_section, relative)
+                self.assertIn("conditional-local", target_section, relative)
+                self.assertIn(
+                    "not available in current bundled R0", target_section, relative
+                )
+
+        self.assertFalse(
+            (ROOT / "docs/adr/0003-explainable-classification-and-runtime-modes.md").exists()
+        )
+        self.assertTrue(
+            (ROOT / "docs/adr/0003-deterministic-support-consent-state-machine.md").is_file()
+        )
+        plan = (
+            ROOT / "docs/superpowers/plans/2026-07-21-router-v2-intelligence-to-ga.md"
+        ).read_text("utf-8")
+        self.assertIn("0004-explainable-classification-and-runtime-modes.md", plan)
+        self.assertNotIn("0003-explainable-classification-and-runtime-modes.md", plan)
 
     def test_required_claim_boundaries_exist(self):
         for relative in DOCS:

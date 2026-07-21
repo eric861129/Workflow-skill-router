@@ -1,4 +1,4 @@
-# ADR 0003: Explainable classification and runtime modes
+# ADR 0004: Explainable classification and runtime modes
 
 - Status: Accepted
 - Date: 2026-07-21
@@ -27,27 +27,40 @@ Profiles remain deterministic. A semantic adapter may return a reviewable candid
 
 Router-owned local state and Host-authoritative state use distinct `authority_mode` values:
 
-- `router-local` means a result applies only to the Router-owned work graph or local advisory evidence. Local transition and gate results set `host_transition_authorized=false`.
+- `router-local` means a result applies only to Router-owned state. In the current bundled runtime this covers planning, consent, and status; target beta.5 local transition and gate results would set `host_transition_authorized=false`.
 - `verified-host` means the Host supplied the required authoritative state, receipts, policy, and transition capability.
 - `configured-adapter` means a server-configured evaluation adapter and its authorization govern the operation.
 
-`conditional-local` is an availability class, not an authority upgrade. A conditionally local operation must fail closed when the target is a native Goal, formal evidence, Skill activation, or another Host-owned transition.
+`conditional-local` is a target availability class, not an authority upgrade. A conditionally local operation must fail closed when the target is a native Goal, formal evidence, Skill activation, or another Host-owned transition.
 
 ### Runtime readiness
 
-| Readiness | Operations | Boundary |
-| --- | --- | --- |
-| `local-ready` | `plan_work`, consent proposal/transition, `get_router_status` | Four bundled R0 operations are always available for their documented Router-local scope. |
-| `conditional-local` | `get_next_work`, `record_work_event`, `evaluate_gate` | Available only for a Router-owned graph and local advisory evidence; `authority_mode=router-local` and `host_transition_authorized=false`. |
-| `verified-host-required` | `sync_runtime_context`, `validate_route` | Requires Host-owned authority, current state, and receipts. |
-| `configured-adapter-required` | model evaluation, comparison, export | Requires a configured evaluation adapter, authorization, and applicable attestation. |
+#### Current bundled R0 (`current-bundled-r0`)
 
-GA is not defined as all 12 tools being locally usable. The honest readiness statement is four always `local-ready`, three Router-owned `conditional-local`, and five operations that retain verified-Host or configured-adapter boundaries.
+| Current class | Tools | Boundary |
+| --- | --- | --- |
+| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Bundled R0 supports only their documented Router-local scope. |
+| `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires Host-owned authority, current state, and receipts. |
+| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a configured evaluation adapter, authorization, and applicable attestation. |
+
+#### Target beta.5 (`target-beta.5`)
+
+`conditional-local` is a beta.5 target and is **not available in current bundled R0**.
+
+| Target class | Tools | Boundary |
+| --- | --- | --- |
+| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Unchanged Router-local R0 operations. |
+| `conditional-local` (3) | `get_next_work`, `record_work_event`, `evaluate_gate` | Router-owned graphs and local advisory evidence only; results use `authority_mode=router-local` and `host_transition_authorized=false`. |
+| `verified-host` (2) | `sync_runtime_context`, `validate_route` | Host authority remains mandatory. |
+| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Configured-adapter authority remains mandatory. |
+
+GA is not defined as all 12 tools being locally usable. Promoting three tools to the beta.5 target must not weaken verified-Host or configured-adapter authority to improve a tool-count metric.
 
 ## Fail-closed behavior
 
 - If a local request targets native Goal progress or steer, the Router returns a Host requirement and does not mutate Goal state.
-- If a Router-local gate passes, it proves only the local advisory gate; it does not claim Skill activation or grant deployment or production permission.
+- In current bundled R0, local `get_next_work`, `record_work_event`, and `evaluate_gate` requests return the verified-Host requirement without running the operation.
+- If the beta.5 Router-local gate target is implemented and a local gate passes, it proves only the local advisory gate; it does not claim Skill activation or grant deployment or production permission.
 - If a semantic adapter proposes a different envelope, the candidate remains advisory and cannot replace the persisted route.
 - If the required Host receipt, configured adapter, consent, or Explicit Skill Lock condition is absent, the protected operation does not run.
 
