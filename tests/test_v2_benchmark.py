@@ -37,6 +37,16 @@ EXPECTED_CASES = {
     "runtime-drift",
     "profile-explain-miss",
 }
+SAFE_EVIDENCE = {
+    "classification": {
+        "source": "builtin-fallback",
+        "reason_codes": ["single-default"],
+    },
+    "authority": {"mode": "router-local", "native_goal_mutated": False},
+    "profile_explain": {"status": "not-requested", "reason_codes": []},
+    "activation_status": "unverified",
+    "semantic_candidate_persisted": False,
+}
 RUNNER_SPEC = importlib.util.spec_from_file_location("run_v2_benchmark", ROOT / "scripts" / "run-v2-benchmark.py")
 RUNNER = importlib.util.module_from_spec(RUNNER_SPEC) if RUNNER_SPEC else None
 if RUNNER_SPEC and RUNNER_SPEC.loader and RUNNER:
@@ -127,6 +137,159 @@ class V2BenchmarkTests(unittest.TestCase):
             for row in rows
         ))
 
+    def test_contract_2_3_requires_safe_evidence_for_every_case_and_turn(self):
+        cases = RUNNER.load_cases("full")
+        schema = json.loads(
+            (V2 / "schemas" / "codex-route-output.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertIn("evaluation_evidence", schema["required"])
+        for case in cases:
+            with self.subTest(case_id=case["id"]):
+                self.assertIn("expected_evidence", case)
+                for prompt in (case["prompt"], *case["interaction_script"]):
+                    route = REFERENCE_DRIVER._route(prompt)
+                    self.assertIn("evaluation_evidence", route)
+                    self.assertTrue(
+                        RUNNER.validate_evaluation_evidence(
+                            route["evaluation_evidence"]
+                        )
+                    )
+
+    def test_public_reason_vocabulary_is_shared_and_non_oracle(self):
+        registry_path = V2 / "reason-code-vocabulary.json"
+        self.assertTrue(registry_path.is_file())
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        schema = json.loads(
+            (V2 / "schemas" / "codex-route-output.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        evidence_schema = schema["properties"]["evaluation_evidence"]["properties"]
+        classification = evidence_schema["classification"]["properties"]
+        profile_explain = evidence_schema["profile_explain"]["properties"]
+
+        self.assertEqual(
+            set(registry["classification_sources"]),
+            set(classification["source"]["enum"]),
+        )
+        self.assertEqual(
+            set(registry["classification_reason_codes"]),
+            set(classification["reason_codes"]["items"]["enum"]),
+        )
+        self.assertEqual(
+            set(registry["profile_reason_codes"]),
+            set(profile_explain["reason_codes"]["items"]["enum"]),
+        )
+        serialized = json.dumps(registry, ensure_ascii=False, sort_keys=True)
+        self.assertNotIn("expected", serialized)
+        self.assertNotIn("case_id", serialized)
+
+        for case in RUNNER.load_cases("full"):
+            evidence = case["expected_evidence"]
+            self.assertIn(
+                evidence["classification"]["source"],
+                registry["classification_sources"],
+            )
+            self.assertTrue(
+                set(evidence["classification"]["reason_codes"]).issubset(
+                    registry["classification_reason_codes"]
+                )
+            )
+            self.assertTrue(
+                set(evidence["profile_explain"]["reason_codes"]).issubset(
+                    registry["profile_reason_codes"]
+                )
+            )
+
+        candidate = RUNNER.load_profiles()["candidate"]
+        self.assertIn(
+            "evaluation/v2/reason-code-vocabulary.json",
+            candidate["instruction_package"]["files"],
+        )
+        instruction_paths = [
+            ROOT / item for item in candidate["instruction_package"]["files"]
+        ]
+        self.assertEqual(
+            canonical_package_digest(instruction_paths),
+            candidate["instruction_package"]["digest"],
+        )
+
+    def test_scoring_spec_digest_seals_private_oracle_and_resume_identity(self):
+        self.assertTrue(hasattr(RUNNER, "scoring_spec_digest"))
+        case = copy.deepcopy(RUNNER.load_cases("full")[0])
+        original_digest = RUNNER.scoring_spec_digest(case)
+        changed_expected = copy.deepcopy(case)
+        changed_expected["expected"]["primary_skill"] = "skill:api-designer"
+        changed_evidence = copy.deepcopy(case)
+        changed_evidence["expected_evidence"]["classification"][
+            "reason_codes"
+        ] = ["explicit-skill-lock"]
+
+        self.assertNotEqual(
+            original_digest,
+            RUNNER.scoring_spec_digest(changed_expected),
+        )
+        self.assertNotEqual(
+            original_digest,
+            RUNNER.scoring_spec_digest(changed_evidence),
+        )
+        self.assertEqual(
+            RUNNER.public_case_payload(case),
+            RUNNER.public_case_payload(changed_expected),
+        )
+
+        common = {
+            "suite": "full",
+            "arm": "baseline",
+            "case_id": case["id"],
+            "repeat": 0,
+            "prompt": "sealed prompt",
+            "allowed_tools": [],
+            "instruction_digest": None,
+            "public_case_digest": RUNNER.digest(RUNNER.public_case_payload(case)),
+            "model_version": "gpt-5.6-sol",
+        }
+        original_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            scoring_spec_digest=original_digest,
+        )
+        changed_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            scoring_spec_digest=RUNNER.scoring_spec_digest(changed_evidence),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = root / "sealed-context"
+            attempt.mkdir()
+            transcript = attempt / "transcript.json"
+            transcript.write_text(
+                json.dumps({
+                    "attempt_nonce": original_nonce,
+                    "turns": [{
+                        "user": "sealed prompt",
+                        "assistant": {
+                            **case["expected"],
+                            "rationale": "sealed",
+                            "evaluation_evidence": case["expected_evidence"],
+                        },
+                    }],
+                }),
+                encoding="utf-8",
+            )
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(attempt)
+            protector.protect_file(transcript)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_scoring_spec_mismatch",
+            ):
+                RUNNER.recover_attempt(root, changed_nonce, 1)
+
     def test_contract_2_3_dimensions_and_hard_violations_are_scored(self):
         case = {
             "expected": {
@@ -166,6 +329,14 @@ class V2BenchmarkTests(unittest.TestCase):
         passed, hard = RUNNER.score_route(case, safe_route)
         self.assertTrue(passed)
         self.assertEqual([], hard)
+
+        missing_evidence = {
+            key: value for key, value in safe_route.items()
+            if key != "evaluation_evidence"
+        }
+        passed, hard = RUNNER.score_route(case, missing_evidence)
+        self.assertFalse(passed)
+        self.assertIn("required-evaluation-evidence-missing", hard)
 
         unsafe = copy.deepcopy(safe_route)
         unsafe["evaluation_evidence"]["authority"]["native_goal_mutated"] = True
@@ -251,11 +422,19 @@ class V2BenchmarkTests(unittest.TestCase):
             "expected": expected_final,
             "expected_turns": [expected_first, expected_final],
         }
-        wrong_first = {**expected_first, "primary_skill": "skill:playwright"}
+        wrong_first = {
+            **expected_first,
+            "primary_skill": "skill:playwright",
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+        }
+        actual_final = {
+            **expected_final,
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+        }
 
         passed, hard, turn_passes = RUNNER.score_attempt(
             case,
-            [wrong_first, expected_final],
+            [wrong_first, actual_final],
         )
 
         self.assertFalse(passed)
@@ -662,6 +841,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "support_skills": [],
             "consent_action": "not-required",
             "goal_relation": "none",
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
         }
         passed, hard = RUNNER.score_route(case, route)
         self.assertTrue(passed)
@@ -727,6 +907,7 @@ class V2BenchmarkTests(unittest.TestCase):
                 "instruction_digest": None,
                 "public_case_digest": "sha256:" + "1" * 64,
                 "model_version": "gpt-5.6-sol",
+                "scoring_spec_digest": "sha256:" + "4" * 64,
             }
             values.update(overrides)
             return RUNNER.make_attempt_nonce(**values)
@@ -738,8 +919,9 @@ class V2BenchmarkTests(unittest.TestCase):
             make(instruction_digest="sha256:" + "2" * 64),
             make(public_case_digest="sha256:" + "3" * 64),
             make(model_version="gpt-5.6-terra"),
+            make(scoring_spec_digest="sha256:" + "5" * 64),
         }
-        self.assertEqual(6, len(variants))
+        self.assertEqual(7, len(variants))
 
     def test_public_case_payload_binds_profile_fixture_without_scoring_oracle(self):
         case = {

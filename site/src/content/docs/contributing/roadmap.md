@@ -38,7 +38,7 @@ description: Track evidence-backed milestones from alpha to GA.
 
 - [x] Add explainable no-hint classification for Single, Phased, and Managed Goal work
 - [x] Add deterministic Profile explain/lint and the Contract 2.3.0 Profile-miss case
-- [x] Seal attempt nonce, tool inventory, instruction digest, public case digest, and model version
+- [x] Seal attempt nonce, tool inventory, instruction digest, public case digest, model version, and private scoring-spec digest
 - [x] Prepare deterministic Plugin and Skill-only release artifacts locally
 - [ ] Obtain explicit authorization for the 36-attempt / 42-turn model run
 - [ ] Review sanitized evidence, attest zero hard violations, and publish the immutable prerelease

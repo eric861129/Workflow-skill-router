@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 from dataclasses import asdict
 from hashlib import sha256
 import json
@@ -62,9 +63,27 @@ _BASE_ROUTE_KEYS = {
     "goal_relation",
     "rationale",
 }
-_OPTIONAL_ROUTE_KEYS = {"evaluation_evidence"}
+_EVIDENCE_ROUTE_KEYS = {"evaluation_evidence"}
 _CONSENT_INTENT_KEYS = {"action", "rationale"}
 _EXECUTION_MODES = {"model-only", "hybrid-router"}
+_FORBIDDEN_ORACLE_KEYS = {
+    "expected",
+    "expected_turns",
+    "expected_evidence",
+    "expected_evidence_turns",
+    "scoring",
+    "scoring_key",
+}
+_VOCABULARY = json.loads(
+    (ROOT / "evaluation" / "v2" / "reason-code-vocabulary.json").read_text(
+        encoding="utf-8"
+    )
+)
+_CLASSIFICATION_SOURCES = frozenset(_VOCABULARY["classification_sources"])
+_CLASSIFICATION_REASON_CODES = frozenset(
+    _VOCABULARY["classification_reason_codes"]
+)
+_PROFILE_REASON_CODES = frozenset(_VOCABULARY["profile_reason_codes"])
 
 
 class CodexCliDriver:
@@ -100,7 +119,7 @@ class CodexCliDriver:
             raise EvaluationIntegrityError("codex_attempt_root_unprotected") from error
 
     def handle(self, request: Mapping[str, object]) -> dict[str, object]:
-        if {"expected", "scoring", "scoring_key"}.intersection(request):
+        if _FORBIDDEN_ORACLE_KEYS.intersection(request):
             raise EvaluationIntegrityError("codex_driver_oracle_material_forbidden")
         message_type = request.get("type")
         if message_type == "start_attempt":
@@ -245,12 +264,23 @@ class CodexCliDriver:
             self._validate_consent_intent(intent)
             model_consent_intent = intent["action"]
             if model_consent_intent in {"approved", "rejected"}:
+                previous = turns[-1].get("assistant") if turns else None
+                previous_evidence = (
+                    previous.get("evaluation_evidence")
+                    if isinstance(previous, dict)
+                    else None
+                )
+                if not self._validate_evaluation_evidence(previous_evidence):
+                    raise EvaluationIntegrityError(
+                        "hybrid_consent_evidence_missing"
+                    )
                 binding = HybridConsentBinding(**hybrid_binding)
                 controller = HybridConsentEvaluationController(
                     directory / "hybrid-router.sqlite3",
                     session_id=context_id,
                 )
                 route = controller.apply_intent(binding, str(model_consent_intent))
+                route["evaluation_evidence"] = deepcopy(previous_evidence)
             else:
                 previous = turns[-1].get("assistant") if turns else None
                 if not isinstance(previous, dict):
@@ -264,6 +294,7 @@ class CodexCliDriver:
                 transcript.get("execution_mode") == "hybrid-router"
                 and route.get("consent_action") == "proposal-required"
             ):
+                proposal_evidence = deepcopy(route["evaluation_evidence"])
                 fingerprint = "sha256:" + sha256(
                     str(request.get("prompt", "")).encode("utf-8")
                 ).hexdigest()
@@ -279,6 +310,7 @@ class CodexCliDriver:
                 except ValueError:
                     pass
                 else:
+                    route["evaluation_evidence"] = proposal_evidence
                     transcript["hybrid_binding"] = asdict(binding)
         self._validate_route(route)
         turn_record = {"user": request.get("prompt"), "assistant": route}
@@ -303,6 +335,8 @@ class CodexCliDriver:
         lines = [
             "Return one routing decision as JSON that conforms to the supplied output schema.",
             "Do not execute the task. Use only the capability names present in this conversation.",
+            "Every decision must include the required public-safe evaluation_evidence object; "
+            "use only reason codes declared by the supplied schema and public vocabulary.",
             "Allowed tools: " + json.dumps(request.get("allowed_tools", []), ensure_ascii=False),
             "Conversation so far:",
         ]
@@ -373,8 +407,7 @@ class CodexCliDriver:
     @staticmethod
     def _validate_route(route: Mapping[str, object]) -> None:
         valid = (
-            _BASE_ROUTE_KEYS.issubset(route)
-            and set(route).issubset(_BASE_ROUTE_KEYS | _OPTIONAL_ROUTE_KEYS)
+            set(route) == _BASE_ROUTE_KEYS | _EVIDENCE_ROUTE_KEYS
             and route.get("envelope") in {"single", "phased", "managed-goal"}
             and route.get("selection_mode") in {"auto", "explicit-locked"}
             and isinstance(route.get("primary_skill"), str)
@@ -390,7 +423,7 @@ class CodexCliDriver:
             and isinstance(route.get("rationale"), str)
             and bool(route.get("rationale"))
         )
-        if valid and "evaluation_evidence" in route:
+        if valid:
             valid = CodexCliDriver._validate_evaluation_evidence(
                 route["evaluation_evidence"]
             )
@@ -410,31 +443,22 @@ class CodexCliDriver:
         classification = value.get("classification")
         authority = value.get("authority")
         profile = value.get("profile_explain")
-        sources = {
-            "native-goal-binding",
-            "caller-work-mode-hint",
-            "deterministic-analyzer",
-            "profile-route",
-            "builtin-fallback",
-            "legacy-replay",
-        }
-
-        def valid_codes(codes: object) -> bool:
+        def valid_codes(codes: object, allowed: frozenset[str]) -> bool:
             return (
                 isinstance(codes, list)
                 and len(codes) <= 8
-                and all(
-                    isinstance(item, str)
-                    and re.fullmatch(r"[a-z0-9-]{1,64}", item) is not None
-                    for item in codes
-                )
+                and len(codes) == len(set(codes))
+                and all(isinstance(item, str) and item in allowed for item in codes)
             )
 
         return bool(
             isinstance(classification, dict)
             and set(classification) == {"source", "reason_codes"}
-            and classification.get("source") in sources
-            and valid_codes(classification.get("reason_codes"))
+            and classification.get("source") in _CLASSIFICATION_SOURCES
+            and valid_codes(
+                classification.get("reason_codes"),
+                _CLASSIFICATION_REASON_CODES,
+            )
             and isinstance(authority, dict)
             and set(authority) == {"mode", "native_goal_mutated"}
             and authority.get("mode") == "router-local"
@@ -442,7 +466,7 @@ class CodexCliDriver:
             and isinstance(profile, dict)
             and set(profile) == {"status", "reason_codes"}
             and profile.get("status") in {"not-requested", "match", "miss"}
-            and valid_codes(profile.get("reason_codes"))
+            and valid_codes(profile.get("reason_codes"), _PROFILE_REASON_CODES)
             and value.get("activation_status") in {"unverified", "claimed-activated"}
             and isinstance(value.get("semantic_candidate_persisted"), bool)
         )

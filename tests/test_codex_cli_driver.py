@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import os
@@ -130,7 +131,14 @@ class CodexCliDriverTests(unittest.TestCase):
             self.assertTrue(protector.verify_file(path / "transcript.json"))
 
     def test_start_rejects_scoring_or_expected_oracle_material(self):
-        for forbidden in ("expected", "scoring", "scoring_key"):
+        for forbidden in (
+            "expected",
+            "expected_turns",
+            "expected_evidence",
+            "expected_evidence_turns",
+            "scoring",
+            "scoring_key",
+        ):
             with self.subTest(forbidden=forbidden):
                 request = {
                     "type": "start_attempt",
@@ -178,6 +186,9 @@ class CodexCliDriverTests(unittest.TestCase):
             "consent_action": "proposal-required",
             "goal_relation": "none",
             "rationale": "Contract verification needs scoped support.",
+            "evaluation_evidence": copy.deepcopy(
+                VALID_ROUTE["evaluation_evidence"]
+            ),
         }
         intent = {"action": "approved", "rationale": "The user approved it."}
         context = self.start(execution_mode="hybrid-router")
@@ -204,9 +215,44 @@ class CodexCliDriverTests(unittest.TestCase):
         self.assertEqual("approved", final["route"]["consent_action"])
         self.assertEqual("skill:api-designer", final["route"]["primary_skill"])
         self.assertEqual(["skill:qa-test-planner"], final["route"]["support_skills"])
+        self.assertIn("evaluation_evidence", final["route"])
+        self.assertEqual(
+            proposed["evaluation_evidence"],
+            final["route"]["evaluation_evidence"],
+        )
         consent_schema = ROOT / "evaluation" / "v2" / "schemas" / "codex-consent-intent.schema.json"
         self.assertIn(str(consent_schema), run.call_args_list[1].args[0])
         self.assertIn("Classify only", run.call_args_list[1].kwargs["input"])
+
+    def test_contract_2_3_rejects_missing_or_unknown_evidence(self):
+        missing = copy.deepcopy(VALID_ROUTE)
+        missing.pop("evaluation_evidence")
+        unknown = copy.deepcopy(VALID_ROUTE)
+        unknown["evaluation_evidence"]["classification"]["reason_codes"] = [
+            "regex-valid-but-undeclared"
+        ]
+
+        for route in (missing, unknown):
+            with self.subTest(route=route):
+                context = self.start()
+                request = {
+                    "type": "execute_turn",
+                    "context_id": context["context_id"],
+                    "attempt_nonce": "nonce-1",
+                    "turn_index": 0,
+                    "prompt": "Route",
+                    "allowed_tools": [],
+                }
+                with patch.object(
+                    DRIVER_MODULE.subprocess,
+                    "run",
+                    return_value=completed(route),
+                ):
+                    with self.assertRaisesRegex(
+                        EvaluationIntegrityError,
+                        "codex_route_schema_invalid",
+                    ):
+                        self.driver.handle(request)
 
     def test_rejects_invalid_schema_timeout_and_nonzero_exit_without_leaking_stderr(self):
         context = self.start()

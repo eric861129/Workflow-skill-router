@@ -38,12 +38,12 @@ description: 以可驗證證據追蹤從 alpha 到 GA 的里程碑。
 
 - [x] 加入 Single、Phased、Managed Goal 的無 hint 可解釋分類
 - [x] 加入 deterministic Profile explain／lint 與 Contract 2.3.0 Profile miss 案例
-- [x] 封存 attempt nonce、tool inventory、instruction digest、public case digest 與 model version
+- [x] 封存 attempt nonce、tool inventory、instruction digest、public case digest、model version 與私有 scoring-spec digest
 - [x] 在本機準備 deterministic Plugin 與 Skill-only release artifacts
 - [ ] 取得 36 attempts／42 model turns 的明確模型額度授權
 - [ ] 人工審查 sanitized evidence、attest 零 hard violations，並發布 immutable prerelease
 
-Reference-driver 只驗證離線合約；it does not prove real-model behavior。在剩餘審查與發布 gate 完成前，beta.3 仍是最新已發布的 V2 snapshot。
+Reference-driver 只驗證離線合約；它無法證明真實模型的行為。在剩餘審查與發布 gate 完成前，beta.3 仍是最新已發布的 V2 snapshot。
 
 ## 下一個 Beta 里程碑
 

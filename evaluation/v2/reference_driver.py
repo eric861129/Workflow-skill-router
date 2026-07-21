@@ -11,7 +11,7 @@ def _public_task(prompt: str) -> str:
     return prompt.rsplit(marker, 1)[-1] if marker in prompt else prompt
 
 
-def _evaluation_evidence(lowered: str) -> dict[str, object] | None:
+def _evaluation_evidence(lowered: str) -> dict[str, object]:
     common: dict[str, object] = {
         "authority": {"mode": "router-local", "native_goal_mutated": False},
         "profile_explain": {"status": "not-requested", "reason_codes": []},
@@ -26,12 +26,40 @@ def _evaluation_evidence(lowered: str) -> dict[str, object] | None:
                 "reason_codes": ["single-default"],
             },
         }
+    if "review one endpoint response contract" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default", "explicit-skill-lock"],
+            },
+        }
     if "first plan the diagnosis" in lowered:
         return {
             **common,
             "classification": {
                 "source": "deterministic-analyzer",
                 "reason_codes": ["multi-stage-sequence"],
+            },
+        }
+    if "phase transition has entered browser verification" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": ["phase-transition-signal"],
+            },
+        }
+    if (
+        "api contract design and contract-test planning" in lowered
+        or "approve the proposed contract-testing support" in lowered
+        or "do not use the proposed supporting skill" in lowered
+    ):
+        return {
+            **common,
+            "classification": {
+                "source": "caller-work-mode-hint",
+                "reason_codes": ["explicit-phased-signal", "explicit-skill-lock"],
             },
         }
     if (
@@ -50,6 +78,46 @@ def _evaluation_evidence(lowered: str) -> dict[str, object] | None:
                 ],
             },
         }
+    if "report current progress and the next incomplete work item" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-status-query"],
+            },
+        }
+    if "steer the active migration goal" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-steer-request"],
+            },
+        }
+    if "answer this side question only" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-side-question"],
+            },
+        }
+    if "exact canonical capability identified by the verified snapshot" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default", "capability-unavailable"],
+            },
+        }
+    if "runtime capability snapshot changed after planning" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "caller-work-mode-hint",
+                "reason_codes": ["explicit-phased-signal", "runtime-drift-revalidation"],
+            },
+        }
     if "against the supplied routing profile" in lowered:
         return {
             **common,
@@ -62,7 +130,13 @@ def _evaluation_evidence(lowered: str) -> dict[str, object] | None:
                 "reason_codes": ["objective-keyword-miss"],
             },
         }
-    return None
+    return {
+        **common,
+        "classification": {
+            "source": "builtin-fallback",
+            "reason_codes": ["single-default"],
+        },
+    }
 
 
 def _route(prompt: str) -> dict[str, object]:
@@ -76,6 +150,7 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "not-required",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     if "i approve the proposed contract-testing support" in lowered:
         return {
@@ -86,6 +161,7 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "approved",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     if "do not use the proposed supporting skill" in lowered:
         return {
@@ -96,6 +172,7 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "rejected",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     skills = re.findall(r"skill:[a-z0-9-]+", lowered)
     explicit = "use skill:" in lowered
@@ -166,9 +243,7 @@ def _route(prompt: str) -> dict[str, object]:
         "goal_relation": relation,
         "rationale": "Deterministic protocol demonstration; this is not model evidence.",
     }
-    evidence = _evaluation_evidence(lowered)
-    if evidence is not None:
-        route["evaluation_evidence"] = evidence
+    route["evaluation_evidence"] = _evaluation_evidence(lowered)
     return route
 
 

@@ -185,9 +185,19 @@ class V2DocumentationTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertIn("2.3.0", text)
                 self.assertIn("reference-driver", text)
-                self.assertIn("does not prove real-model behavior", text)
+                if "/zh-tw/" in relative:
+                    self.assertNotIn("it does not prove real-model behavior", text)
+                    self.assertIn("無法證明真實模型的行為", text)
+                else:
+                    self.assertIn("does not prove real-model behavior", text)
                 self.assertIn("36 attempts", text)
                 self.assertIn("42", text)
+
+        roadmap_zh = (
+            ROOT / "site/src/content/docs/zh-tw/contributing/roadmap.md"
+        ).read_text("utf-8")
+        self.assertNotIn("it does not prove real-model behavior", roadmap_zh)
+        self.assertIn("無法證明真實模型的行為", roadmap_zh)
 
 
 if __name__=="__main__":unittest.main()

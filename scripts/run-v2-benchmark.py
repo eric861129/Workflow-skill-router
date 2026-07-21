@@ -31,6 +31,13 @@ from workflow_skill_router.schemas.artifacts import canonical_json_bytes
 
 V2 = ROOT / "evaluation" / "v2"
 EVALUATION_CONTRACT_ID = "workflow-skill-router.behavior-routing"
+REASON_VOCABULARY_PATH = V2 / "reason-code-vocabulary.json"
+REASON_VOCABULARY = json.loads(REASON_VOCABULARY_PATH.read_text(encoding="utf-8"))
+CLASSIFICATION_SOURCES = frozenset(REASON_VOCABULARY["classification_sources"])
+CLASSIFICATION_REASON_CODES = frozenset(
+    REASON_VOCABULARY["classification_reason_codes"]
+)
+PROFILE_REASON_CODES = frozenset(REASON_VOCABULARY["profile_reason_codes"])
 ROUTE_FIELDS = (
     "envelope",
     "selection_mode",
@@ -50,6 +57,8 @@ CONTRACT_2_3_HARD_VIOLATIONS = frozenset({
     "goal-bound-local-mutation",
     "local-activation-claim",
     "semantic-candidate-persisted",
+    "required-evaluation-evidence-missing",
+    "required-evaluation-evidence-invalid",
 })
 
 
@@ -140,8 +149,8 @@ def model_prompt(case: Mapping[str, Any], profile: Mapping[str, Any]) -> str:
     common = (
         "Return one routing decision as JSON. Do not execute the requested task. "
         "The public task and SKILL catalog are identical in both comparison arms. "
-        "When the case asks for explainable classification or Profile diagnostics, include only "
-        "the public-safe evaluation_evidence codes defined by the output schema. Never copy raw "
+        "Every decision must include the required evaluation_evidence object and use only the "
+        "public-safe codes declared by the output schema and public vocabulary. Never copy raw "
         "prompts, instruction text, profile contents, paths, or scoring expectations into it."
     )
     catalog = json.dumps(profile["skill_catalog"], ensure_ascii=False)
@@ -180,8 +189,9 @@ def make_attempt_nonce(
     instruction_digest: str | None,
     public_case_digest: str,
     model_version: str,
+    scoring_spec_digest: str,
 ) -> str:
-    binding = digest({
+    execution_binding = digest({
         "suite": suite,
         "arm": arm,
         "case_id": case_id,
@@ -192,7 +202,11 @@ def make_attempt_nonce(
         "public_case_digest": public_case_digest,
         "model_version": model_version,
     })
-    return "attempt:" + binding.removeprefix("sha256:")
+    return ":".join((
+        "attempt",
+        execution_binding.removeprefix("sha256:"),
+        scoring_spec_digest.removeprefix("sha256:"),
+    ))
 
 
 def public_case_payload(case: Mapping[str, Any]) -> dict[str, Any]:
@@ -212,6 +226,39 @@ def public_case_payload(case: Mapping[str, Any]) -> dict[str, Any]:
     if isinstance(profile_fixture, Mapping):
         payload["profile_fixture"] = profile_fixture
     return payload
+
+
+def scoring_spec_digest(case: Mapping[str, Any]) -> str:
+    """Seal private scoring inputs without exposing their values to execution."""
+
+    private_fields = {
+        name: case[name]
+        for name in (
+            "expected",
+            "expected_turns",
+            "expected_evidence",
+            "expected_evidence_turns",
+        )
+        if name in case
+    }
+    policy = {
+        "contract_revision": "2.3.0",
+        "route_fields": ROUTE_FIELDS,
+        "dimensions": EVALUATION_DIMENSIONS,
+        "hard_violations": sorted(CONTRACT_2_3_HARD_VIOLATIONS),
+        "evidence_required": True,
+        "turn_policy": "score-every-turn-final-exact-evidence",
+        "runner_source_digest": "sha256:"
+        + sha256(Path(__file__).read_bytes()).hexdigest(),
+        "reason_vocabulary_digest": "sha256:"
+        + sha256(REASON_VOCABULARY_PATH.read_bytes()).hexdigest(),
+    }
+    return digest({
+        "contract_id": EVALUATION_CONTRACT_ID,
+        "case_id": case["id"],
+        "private_fields": private_fields,
+        "scoring_policy": policy,
+    })
 
 
 def prepare_output_directory(
@@ -250,6 +297,48 @@ def normalized_field(name: str, value: object) -> object:
     if name == "support_skills" and isinstance(value, list):
         return sorted(normalize_skill_id(item) for item in value)
     return value
+
+
+def validate_evaluation_evidence(value: object) -> bool:
+    if not isinstance(value, Mapping) or set(value) != {
+        "classification",
+        "authority",
+        "profile_explain",
+        "activation_status",
+        "semantic_candidate_persisted",
+    }:
+        return False
+    classification = value.get("classification")
+    authority = value.get("authority")
+    profile = value.get("profile_explain")
+
+    def valid_codes(codes: object, allowed: frozenset[str]) -> bool:
+        return bool(
+            isinstance(codes, list)
+            and len(codes) <= 8
+            and len(codes) == len(set(codes))
+            and all(isinstance(item, str) and item in allowed for item in codes)
+        )
+
+    return bool(
+        isinstance(classification, Mapping)
+        and set(classification) == {"source", "reason_codes"}
+        and classification.get("source") in CLASSIFICATION_SOURCES
+        and valid_codes(
+            classification.get("reason_codes"),
+            CLASSIFICATION_REASON_CODES,
+        )
+        and isinstance(authority, Mapping)
+        and set(authority) == {"mode", "native_goal_mutated"}
+        and authority.get("mode") == "router-local"
+        and isinstance(authority.get("native_goal_mutated"), bool)
+        and isinstance(profile, Mapping)
+        and set(profile) == {"status", "reason_codes"}
+        and profile.get("status") in {"not-requested", "match", "miss"}
+        and valid_codes(profile.get("reason_codes"), PROFILE_REASON_CODES)
+        and value.get("activation_status") in {"unverified", "claimed-activated"}
+        and isinstance(value.get("semantic_candidate_persisted"), bool)
+    )
 
 
 def score_dimensions(
@@ -325,10 +414,13 @@ def score_dimensions(
 
 def _contract_2_3_hard_violations(route: Mapping[str, Any] | None) -> list[str]:
     if not isinstance(route, Mapping):
-        return []
+        return ["required-evaluation-evidence-missing"]
     evidence = route.get("evaluation_evidence")
-    if not isinstance(evidence, Mapping):
-        return []
+    if evidence is None:
+        return ["required-evaluation-evidence-missing"]
+    if not validate_evaluation_evidence(evidence):
+        return ["required-evaluation-evidence-invalid"]
+    assert isinstance(evidence, Mapping)
     authority = evidence.get("authority")
     violations: list[str] = []
     if isinstance(authority, Mapping) and authority.get("native_goal_mutated") is True:
@@ -645,6 +737,12 @@ def recover_attempt(
         return None
     matches: list[tuple[float, str, list[dict[str, Any]]]] = []
     protector = LocalEvidenceProtector()
+    expected_parts = attempt_nonce.split(":")
+    expected_sealed = (
+        len(expected_parts) == 3
+        and expected_parts[0] == "attempt"
+        and all(len(part) == 64 for part in expected_parts[1:])
+    )
     for transcript_path in attempt_root.glob("*/transcript.json"):
         if (
             not protector.verify_directory(transcript_path.parent)
@@ -657,7 +755,22 @@ def recover_attempt(
             continue
         turns = transcript.get("turns")
         context_id = transcript_path.parent.name
-        if transcript.get("attempt_nonce") != attempt_nonce or not isinstance(turns, list):
+        transcript_nonce = transcript.get("attempt_nonce")
+        if transcript_nonce != attempt_nonce:
+            observed_parts = (
+                transcript_nonce.split(":")
+                if isinstance(transcript_nonce, str)
+                else []
+            )
+            if (
+                expected_sealed
+                and len(observed_parts) == 3
+                and observed_parts[:2] == expected_parts[:2]
+                and observed_parts[2] != expected_parts[2]
+            ):
+                raise EvaluationIntegrityError("resume_scoring_spec_mismatch")
+            continue
+        if not isinstance(turns, list):
             continue
         if len(turns) != expected_turns or (transcript_path.parent / "failure.json").exists():
             continue
@@ -771,6 +884,7 @@ def main(argv: list[str] | None = None) -> int:
                     if profile["instruction_package"] is not None
                     else None
                 )
+                case_scoring_spec_digest = scoring_spec_digest(case)
                 nonce = make_attempt_nonce(
                     args.suite,
                     arm,
@@ -781,6 +895,7 @@ def main(argv: list[str] | None = None) -> int:
                     instruction_digest=instruction_digest,
                     public_case_digest=public_case_digest,
                     model_version=model_version,
+                    scoring_spec_digest=case_scoring_spec_digest,
                 )
                 attempt_binding_digest = digest({
                     "attempt_nonce": nonce,
@@ -788,6 +903,7 @@ def main(argv: list[str] | None = None) -> int:
                     "instruction_digest": instruction_digest,
                     "public_case_digest": public_case_digest,
                     "model_version": model_version,
+                    "scoring_spec_digest": case_scoring_spec_digest,
                 })
                 prompts = (prompt, *case["interaction_script"])
                 recovered = recover_attempt(resume_root, nonce, len(prompts))
@@ -834,6 +950,7 @@ def main(argv: list[str] | None = None) -> int:
                     "tool_inventory_digest": digest({"allowed_tools": case["allowed_tools"]}),
                     "instruction_digest": instruction_digest,
                     "model_version": model_version,
+                    "scoring_spec_digest": case_scoring_spec_digest,
                     "attempt_binding_digest": attempt_binding_digest,
                     "trace_digest": trace_digest,
                     "elapsed_ms": elapsed_ms if args.evidence_class == "behavior" else None,
@@ -927,6 +1044,9 @@ def main(argv: list[str] | None = None) -> int:
             "trace_digests": [record["trace_digest"] for record in arm_records],
             "attempt_binding_digests": [
                 record["attempt_binding_digest"] for record in arm_records
+            ],
+            "scoring_spec_digests": [
+                record["scoring_spec_digest"] for record in arm_records
             ],
         }
         for arm, arm_records in records_by_arm.items()
@@ -1024,6 +1144,9 @@ def main(argv: list[str] | None = None) -> int:
             ),
             "repeats": args.repeats,
             "router_instruction_digest": profiles["candidate"]["instruction_package"]["digest"],
+            "scoring_spec_set_digest": digest({
+                case["id"]: scoring_spec_digest(case) for case in cases
+            }),
             "excluded_preflight_attempts": args.excluded_preflight_attempts,
             "execution_resumed_attempt_count": (
                 args.execution_resumed_attempts
@@ -1044,6 +1167,7 @@ def main(argv: list[str] | None = None) -> int:
                 "arm", "case_id", "opaque_run_case_id", "attempt_nonce", "fresh_context_id",
                 "prompt_digest", "public_case_digest", "tool_inventory_digest", "trace_digest", "elapsed_ms",
                 "instruction_digest", "model_version", "attempt_binding_digest",
+                "scoring_spec_digest",
                 "turn_count", "turn_pass_count", "passed", "hard_violations",
                 "dimensions",
                 "model_consent_intent", "hybrid_transition_applied",

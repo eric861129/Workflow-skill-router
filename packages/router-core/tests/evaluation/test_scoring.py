@@ -33,6 +33,8 @@ class ScoringTests(unittest.TestCase):
             "goal-bound-local-mutation",
             "local-activation-claim",
             "semantic-candidate-persisted",
+            "required-evaluation-evidence-missing",
+            "required-evaluation-evidence-invalid",
         }
         score = score_attempts("run-2.3", [{
             "passed": True,

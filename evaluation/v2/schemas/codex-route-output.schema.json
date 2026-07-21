@@ -10,7 +10,8 @@
     "support_skills",
     "consent_action",
     "goal_relation",
-    "rationale"
+    "rationale",
+    "evaluation_evidence"
   ],
   "properties": {
     "envelope": { "enum": ["single", "phased", "managed-goal"] },
@@ -29,7 +30,7 @@
     },
     "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
     "evaluation_evidence": {
-      "description": "Optional public-safe Contract 2.3.0 observations. Never include prompts, instructions, profile contents, paths, or scoring expectations.",
+      "description": "Required public-safe Contract 2.3.0 observations. Never include prompts, instructions, profile contents, paths, or scoring expectations.",
       "type": "object",
       "required": [
         "classification",
@@ -56,7 +57,25 @@
             "reason_codes": {
               "type": "array",
               "maxItems": 8,
-              "items": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" }
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "single-default",
+                  "explicit-skill-lock",
+                  "multi-stage-sequence",
+                  "phase-transition-signal",
+                  "explicit-phased-signal",
+                  "cross-repository-signal",
+                  "resumable-signal",
+                  "dependency-signal",
+                  "managed-goal-evidence",
+                  "goal-status-query",
+                  "goal-steer-request",
+                  "goal-side-question",
+                  "capability-unavailable",
+                  "runtime-drift-revalidation"
+                ]
+              }
             }
           },
           "additionalProperties": false
@@ -78,7 +97,8 @@
             "reason_codes": {
               "type": "array",
               "maxItems": 8,
-              "items": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" }
+              "uniqueItems": true,
+              "items": { "enum": ["objective-keyword-miss"] }
             }
           },
           "additionalProperties": false

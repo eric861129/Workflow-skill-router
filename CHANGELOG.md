@@ -11,10 +11,11 @@ All notable changes to Workflow Skill Router are documented here.
 - Added deterministic no-hint classification evidence for Single, Phased, and Managed Goal work plus public-safe `profile preview --explain` miss evidence.
 - Added sealed Contract 2.3.0 dimensions for envelope source, classification reasons, local authority, Profile explain, and unnecessary consent.
 - Added hard-violation detection for native Goal mutation by local output, false local activation claims, and direct semantic-candidate persistence.
+- Added mandatory bounded evidence, a shared public non-oracle reason-code vocabulary, and attestation-blocking failures for missing or invalid evidence.
 
 ### Changed
 
-- Bound every evaluation attempt nonce to the tool inventory, instruction digest, public case payload, and configured model or reference-driver version.
+- Bound every evaluation attempt nonce to the tool inventory, instruction digest, public case payload, configured model or reference-driver version, and an irreversible scoring-spec digest covering the private oracle and scoring policy.
 - Kept the full suite at 13 cases and beta smoke at six cases with one two-turn consent case; `profile-explain-miss` replaces `evaluation-manual-required` to preserve the frozen 36-attempt / 42-turn beta budget.
 - Prepared local Plugin and Skill-only beta.4 metadata while keeping `latest` on V1.3.1 and the published V2 installation links on beta.3 until review and publication occur.
 
