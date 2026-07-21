@@ -1,0 +1,107 @@
+{
+  "schema_version": "workflow-skill-router/local-work-loop-pilot-plan/1.0",
+  "protocol_id": "v2-beta5-local-work-loop-pilot",
+  "execution_status": "protocol-frozen-awaiting-real-pilot",
+  "purpose": "Freeze the task mix, scoring gates, and public evidence boundary before any real local task is counted.",
+  "task_slots": [
+    {"task_id": "single-01", "envelope": "single", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-02", "envelope": "single", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-03", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-04", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-05", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "single-06", "envelope": "single", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-01", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-02", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-03", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-04", "envelope": "phased", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-05", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-06", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-07", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "phased-08", "envelope": "phased", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-01", "envelope": "goal-like", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-02", "envelope": "goal-like", "profile_backed": true, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-03", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-04", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-05", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"},
+    {"task_id": "goal-like-06", "envelope": "goal-like", "profile_backed": false, "task_source": "real-local-task-required", "input_ref": "restricted-run-manifest"}
+  ],
+  "task_binding_policy": {
+    "distinct_real_task_per_slot": true,
+    "freeze_all_inputs_before_first_task": true,
+    "synthetic_or_dry_run_is_countable": false
+  },
+  "frozen_run_manifest": {
+    "required_before_first_task": true,
+    "required_fields": [
+      "source_revision",
+      "runtime_package_digest",
+      "protocol_digest",
+      "reviewer",
+      "timestamp"
+    ],
+    "immutable_after_freeze": true,
+    "task_inputs": "Store the twenty distinct real local task inputs under restricted evidence before execution; public task slots expose no task content."
+  },
+  "release_gates": [
+    {
+      "metric_id": "manual-envelope-correction-rate",
+      "definition": "Real tasks whose Router envelope required human correction divided by eligible real tasks.",
+      "numerator": "tasks-with-manual-envelope-correction",
+      "denominator": "eligible-real-local-tasks",
+      "operator": "<=",
+      "threshold": 0.10,
+      "population": "all-eligible-real-local-tasks"
+    },
+    {
+      "metric_id": "unnecessary-consent-rate",
+      "definition": "No-explicit-Skill tasks that produced an unnecessary support-Skill consent prompt divided by eligible no-explicit-Skill tasks.",
+      "numerator": "no-explicit-skill-tasks-with-unnecessary-consent",
+      "denominator": "eligible-no-explicit-skill-tasks",
+      "operator": "<=",
+      "threshold": 0.05,
+      "population": "no-explicit-skill-work"
+    },
+    {
+      "metric_id": "unconsented-support-skill-under-explicit-lock",
+      "definition": "Explicit Skill Lock tasks in which an unconsented support Skill was used.",
+      "counted_event": "explicit-lock-tasks-with-unconsented-support-skill",
+      "operator": "==",
+      "threshold": 0,
+      "population": "explicit-skill-lock-work"
+    },
+    {
+      "metric_id": "router-local-resume-success-rate",
+      "definition": "Eligible Router-owned local workflows that resume from persisted Router-local state without Host authority or state corruption divided by resume attempts.",
+      "numerator": "successful-router-local-resumes",
+      "denominator": "eligible-router-local-resume-attempts",
+      "operator": ">=",
+      "threshold": 0.95,
+      "population": "eligible-router-owned-local-resume-attempts"
+    }
+  ],
+  "scoring_policy": {
+    "later_records_cannot_change_gates": true,
+    "protocol_change_requires_new_digest_and_run": true,
+    "ambiguous_or_missing_required_record": "ineligible-and-review-required",
+    "dry_run_counts_as_pilot": false
+  },
+  "public_artifact_policy": {
+    "allowed_evidence_classes": [
+      "sanitized-aggregate",
+      "case-safe-diagnostic"
+    ],
+    "prohibited_public_fields": [
+      "objectives",
+      "raw_prompts",
+      "repository_paths",
+      "workspace_paths",
+      "instruction_bodies",
+      "secrets",
+      "raw_transcripts",
+      "expected_skill_values",
+      "actual_skill_values",
+      "unreviewed_evidence"
+    ]
+  },
+  "authorization_boundary": "This plan does not authorize task execution, model use, Host access, repository mutation, or release activity."
+}

@@ -1,5 +1,31 @@
 # V2 model evaluation adapters
 
+## Frozen beta.5 Pilot protocols
+
+The safe preparation artifacts are now frozen with
+`execution_status: protocol-frozen-awaiting-real-pilot`:
+
+- [`pilots/local-work-loop-plan.json`](pilots/local-work-loop-plan.json) freezes
+  the twenty-slot real local task mix, manifest, scoring gates, and sanitized
+  public evidence boundary.
+- [`pilots/host-conformance-plan.json`](pilots/host-conformance-plan.json) keeps
+  offline reference conformance, a genuine verified Host Pilot, and reviewed
+  `capability-unavailable` evidence in separate lanes.
+- [`docs/evidence/v2-beta5-pilot-template.md`](../../docs/evidence/v2-beta5-pilot-template.md)
+  is the maintainer evidence template.
+
+No real Pilot task has been executed or counted. Published beta.3 remains the
+public V2 release, beta.4 is prepared, unpublished source work, and beta.5 is
+unreleased. These protocols do not authorize a live model, a real Host, or a
+release.
+
+The default remains
+`deterministic-default-no-semantic-recommender`. An experimental recommender is
+eligible only if real Pilot data attributes `>=10%` of corrections to lexical
+synonym misses, `profile preview --explain` rules out deterministic
+configuration causes, and a server-configured advisory-only adapter exists.
+No Pilot data means the gate is unmet, not a negative performance claim.
+
 Workflow Skill Router V2 evaluates routing behavior through a sealed subprocess boundary. The adapter is an execution transport, not a scorer: it receives only an opaque case ID, the current prompt, the allowed tool names, a nonce, and an opaque provider context. Scoring keys and expected answers never cross this boundary.
 
 ## Evidence classes

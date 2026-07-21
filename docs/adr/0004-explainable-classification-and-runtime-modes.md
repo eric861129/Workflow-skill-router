@@ -23,6 +23,26 @@ Every result records `classification_source` and `classification_reason_codes`. 
 
 Profiles remain deterministic. A semantic adapter may return a reviewable candidate, but it cannot directly rewrite a persisted route. Persisting a route requires the normal deterministic policy, Explicit Skill Lock, consent, capability, and authority checks.
 
+### Semantic recommender decision gate
+
+The default decision is
+`deterministic-default-no-semantic-recommender`. Deterministic Profiles,
+aliases, linting, and `profile preview --explain` remain the supported route.
+No Pilot data means the gate is unmet, not a negative performance claim about
+semantic routing.
+
+An experimental semantic recommender proposal may be reviewed only after real
+Pilot data proves all three conditions:
+
+1. `>=10%` of eligible manual envelope corrections are attributable to lexical
+   synonym misses;
+2. `profile preview --explain` rules out deterministic configuration causes;
+3. a server-configured advisory-only adapter exists and cannot activate a
+   Skill, persist a route, or grant authority.
+
+Meeting the gate authorizes a proposal review only. It does not authorize
+implementation, model quota, route mutation, a Host Pilot, or release.
+
 ### Authority modes
 
 Router-owned local state and Host-authoritative state use distinct `authority_mode` values:

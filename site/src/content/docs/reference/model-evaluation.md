@@ -4,6 +4,37 @@ title: Real model evaluation boundary
 
 # Evaluation evidence
 
+## Frozen beta.5 Pilot boundary
+
+The local-work-loop and Host conformance protocols are frozen as
+`protocol-frozen-awaiting-real-pilot`. No real Pilot task has been executed or
+counted. Published beta.3 remains public, beta.4 is prepared, unpublished source
+work, and beta.5 is unreleased source work.
+
+The local protocol requires at least twenty real tasks: 6 Single, 8 Phased, and
+6 Goal-like, including at least 8 Profile-backed tasks. Before the first task,
+the maintainer must freeze the source revision, runtime/package digest,
+protocol digest, reviewer, and timestamp. Later records cannot silently change
+the scoring gates.
+
+Public Pilot artifacts may contain sanitized aggregates and case-safe
+diagnostics only. Objectives, raw prompts, repository/workspace paths,
+instruction bodies, secrets, raw transcripts, expected/actual Skill values,
+and unreviewed evidence remain restricted.
+
+Offline reference adapter conformance is development evidence only. A genuine
+verified Host Pilot requires actual Host-side authority and receipts plus human
+review. If real Host APIs are unavailable, publish a reviewed
+`capability-unavailable` attestation; never count the reference adapter as a
+Host Pilot or claim `hybrid-full`.
+
+The semantic decision is
+`deterministic-default-no-semantic-recommender`. Consider an experimental
+proposal only when real Pilot data attributes `>=10%` of corrections to lexical
+synonym misses, `profile preview --explain` rules out deterministic
+configuration causes, and a server-configured advisory-only adapter exists.
+No Pilot data means the gate is unmet, not a negative performance claim.
+
 **Tier 0 Contract** checks deterministic compatibility. Behavior and Outcome require fresh isolated attempts, sealed scoring, paired manifests, and zero hard violations. Without an adapter the run is `manual-required`; without a trusted human attestation the export is `review-required` and contains no score.
 
 Neither `skill-only-fallback` nor `hybrid-full` may self-assert review authority.
