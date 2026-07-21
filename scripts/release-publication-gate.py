@@ -19,6 +19,7 @@ from release_path_safety import parse_safe_relative_posix_path
 
 
 PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
+V1_PINNED_VERSION = "1.3.1"
 REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 TAG_PATTERN = re.compile(r"v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?")
 ARTIFACT_BUILDER_PATH = "scripts/build-release-artifacts.py"
@@ -38,7 +39,7 @@ def _required_string(metadata: dict[str, Any], key: str) -> str:
     return value
 
 
-def _load_publication_binding(metadata_path: Path) -> tuple[str, str, str]:
+def _load_publication_binding(metadata_path: Path) -> tuple[str, str, str, str]:
     try:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -62,7 +63,11 @@ def _load_publication_binding(metadata_path: Path) -> tuple[str, str, str]:
     release_tag = f"v{release_version}"
     if not TAG_PATTERN.fullmatch(release_tag):
         raise PublicationGateError("Release metadata V2 version is invalid.")
-    return source_revision, release_version, release_tag
+
+    v1_pinned_version = _required_string(metadata, "v1_pinned_version")
+    if v1_pinned_version != V1_PINNED_VERSION:
+        raise PublicationGateError("Release metadata V1 pinned version is invalid.")
+    return source_revision, release_version, release_tag, v1_pinned_version
 
 
 def _verify_trusted_checkout(trusted_revision: str) -> None:
@@ -164,7 +169,10 @@ def _verify_frozen_builder_closure(source_revision: str) -> str:
 
 
 def _verify_frozen_source_contract(
-    source_revision: str, release_version: str, release_tag: str
+    source_revision: str,
+    release_version: str,
+    release_tag: str,
+    trusted_v1_pinned_version: str,
 ) -> None:
     try:
         subprocess.run(
@@ -200,6 +208,14 @@ def _verify_frozen_source_contract(
     ):
         raise PublicationGateError(
             "Frozen release metadata does not match trusted release version."
+        )
+    frozen_v1_pinned_version = frozen_metadata.get("v1_pinned_version")
+    if (
+        not isinstance(frozen_v1_pinned_version, str)
+        or frozen_v1_pinned_version != trusted_v1_pinned_version
+    ):
+        raise PublicationGateError(
+            "Frozen release metadata does not match trusted V1 channel contract."
         )
 
     notes_path = f"release/notes/{release_tag}.md"
@@ -262,11 +278,17 @@ def main() -> int:
 
     try:
         _verify_trusted_checkout(arguments.trusted_revision)
-        source_revision, release_version, release_tag = _load_publication_binding(
-            arguments.metadata
-        )
+        (
+            source_revision,
+            release_version,
+            release_tag,
+            trusted_v1_pinned_version,
+        ) = _load_publication_binding(arguments.metadata)
         _verify_frozen_source_contract(
-            source_revision, release_version, release_tag
+            source_revision,
+            release_version,
+            release_tag,
+            trusted_v1_pinned_version,
         )
         arguments.github_output.write_text(
             f"source_revision={source_revision}\nrelease_tag={release_tag}\n",

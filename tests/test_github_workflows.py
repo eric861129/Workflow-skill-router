@@ -44,6 +44,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         *,
         frozen_version: str,
         trusted_version: str,
+        frozen_v1_pinned_version: str = "1.3.1",
+        trusted_v1_pinned_version: str = "1.3.1",
         notes_match: bool = True,
         trusted_notes_change: bool = False,
         trusted_notes_newline: str | None = None,
@@ -82,6 +84,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             json.dumps(
                 {
                     "target_prerelease": frozen_version,
+                    "v1_pinned_version": frozen_v1_pinned_version,
                     "v2_version": frozen_version,
                 }
             ),
@@ -155,6 +158,7 @@ class GitHubWorkflowTests(unittest.TestCase):
                     "release_lifecycle": "reviewed-attested-publishable",
                     "release_source_revision": frozen_revision,
                     "target_prerelease": trusted_version,
+                    "v1_pinned_version": trusted_v1_pinned_version,
                     "v2_version": trusted_version,
                 }
             ),
@@ -566,6 +570,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         metadata = {
             "release_lifecycle": "reviewed-attested-publishable",
             "release_source_revision": trusted_revision,
+            "v1_pinned_version": "1.3.1",
             "v2_version": "2.0.0-beta.4",
         }
 
@@ -663,6 +668,48 @@ class GitHubWorkflowTests(unittest.TestCase):
                 result.stderr,
             )
             self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_a_rebound_frozen_v1_channel(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                frozen_v1_pinned_version="1.3.2",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release metadata does not match trusted V1 channel contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_accepts_the_pinned_frozen_v1_channel_contract(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            frozen_revision, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                f"source_revision={frozen_revision}\nrelease_tag=v2.0.0-beta.4\n",
+                output_path.read_text(encoding="utf-8"),
+            )
 
     def test_publishable_metadata_rejects_a_mismatched_frozen_artifact_contract(
         self,
