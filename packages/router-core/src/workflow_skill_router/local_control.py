@@ -9,6 +9,12 @@ from pathlib import Path
 import re
 import sqlite3
 
+from workflow_skill_router.local_work import (
+    LocalWorkGraphCorruption,
+    build_local_work_items,
+    persist_local_work_graph,
+    validate_local_work_graph,
+)
 from workflow_skill_router.persistence.migrator import migrate
 from workflow_skill_router.persistence.sqlite_store import (
     ConcurrencyConflict,
@@ -244,6 +250,14 @@ class LocalControlPlaneService:
         }
         request_digest = _digest(canonical_json(request_document))
         support_consent_required = False
+        created_at = datetime.now(UTC).isoformat()
+        local_work_items = build_local_work_items(
+            workflow_run_id=workflow_run_id,
+            work_graph_id=work_graph_id,
+            routing_envelope=routing_envelope,
+            goal_binding_id=command.goal_binding_id,
+            planned_skill_tree=planned_skill_tree,
+        )
 
         with closing(sqlite3.connect(self._database, timeout=30.0)) as connection:
             connection.row_factory = sqlite3.Row
@@ -256,19 +270,67 @@ class LocalControlPlaneService:
                 (command.context.session_id, command.idempotency_key),
             ).fetchone()
             if existing is not None:
-                if existing["request_digest"] != request_digest:
-                    legacy_digest = _legacy_plan_request_digest(
-                        command, directive, objective_digest
-                    )
-                    if (
-                        not _is_default_routing_context(routing_context)
-                        or existing["request_digest"] != legacy_digest
-                    ):
-                        connection.rollback()
-                        raise IdempotencyConflict(
-                            "相同 idempotency key 不得對應不同規劃請求"
+                try:
+                    if existing["request_digest"] != request_digest:
+                        legacy_digest = _legacy_plan_request_digest(
+                            command, directive, objective_digest
                         )
-                connection.commit()
+                        if (
+                            not _is_default_routing_context(routing_context)
+                            or existing["request_digest"] != legacy_digest
+                        ):
+                            raise IdempotencyConflict(
+                                "相同 idempotency key 不得對應不同規劃請求"
+                            )
+                    if int(existing["local_work_graph_version"]) == 0:
+                        existing_count = connection.execute(
+                            "SELECT COUNT(*) FROM local_work_items WHERE workflow_run_id=?",
+                            (existing["workflow_run_id"],),
+                        ).fetchone()
+                        if existing_count is None or int(existing_count[0]) != 0:
+                            raise LocalWorkGraphCorruption(
+                                "local-work-graph-corruption: legacy-marker"
+                            )
+                        legacy_items = build_local_work_items(
+                            workflow_run_id=existing["workflow_run_id"],
+                            work_graph_id=existing["work_graph_id"],
+                            routing_envelope=existing["routing_envelope"],
+                            goal_binding_id=existing["goal_binding_id"],
+                            planned_skill_tree=self._planned_tree(existing),
+                        )
+                        persisted_count = persist_local_work_graph(
+                            connection,
+                            session_id=existing["session_id"],
+                            work_graph_id=existing["work_graph_id"],
+                            items=legacy_items,
+                            actor=existing["actor"],
+                            created_at=created_at,
+                        )
+                        connection.execute(
+                            "UPDATE local_control_plans SET created_work_items=?,"
+                            "local_work_graph_version=1 WHERE plan_id=? "
+                            "AND local_work_graph_version=0",
+                            (persisted_count, existing["plan_id"]),
+                        )
+                        existing = connection.execute(
+                            "SELECT * FROM local_control_plans WHERE plan_id=?",
+                            (existing["plan_id"],),
+                        ).fetchone()
+                        if existing is None:
+                            raise LocalWorkGraphCorruption(
+                                "local-work-graph-corruption: legacy-plan"
+                            )
+                    validate_local_work_graph(
+                        connection,
+                        workflow_run_id=existing["workflow_run_id"],
+                        work_graph_id=existing["work_graph_id"],
+                        expected_count=int(existing["created_work_items"]),
+                        session_id=existing["session_id"],
+                    )
+                    connection.commit()
+                except Exception:
+                    connection.rollback()
+                    raise
                 return self._result(existing)
 
             columns = (
@@ -281,7 +343,7 @@ class LocalControlPlaneService:
                 "planned_skill_tree_json", "activation_status", "profile_warnings_json",
                 "classification_source", "classification_confidence",
                 "classifier_revision", "classification_reason_codes_json",
-                "created_work_items", "state_version", "created_at",
+                "created_work_items", "local_work_graph_version", "state_version", "created_at",
             )
             values = (
                     _stable_id("plan", command.context.session_id, command.idempotency_key),
@@ -317,18 +379,45 @@ class LocalControlPlaneService:
                     canonical_json(list(analysis.reason_codes)),
                     1,
                     1,
-                    datetime.now(UTC).isoformat(),
+                    1,
+                    created_at,
                 )
-            connection.execute(
-                f"INSERT INTO local_control_plans({','.join(columns)}) "
-                f"VALUES ({','.join('?' for _ in values)})",
-                values,
-            )
-            stored = connection.execute(
-                "SELECT * FROM local_control_plans WHERE workflow_run_id=?",
-                (workflow_run_id,),
-            ).fetchone()
-            connection.commit()
+            try:
+                connection.execute(
+                    f"INSERT INTO local_control_plans({','.join(columns)}) "
+                    f"VALUES ({','.join('?' for _ in values)})",
+                    values,
+                )
+                persisted_count = persist_local_work_graph(
+                    connection,
+                    session_id=command.context.session_id,
+                    work_graph_id=work_graph_id,
+                    items=local_work_items,
+                    actor=command.context.actor,
+                    created_at=created_at,
+                )
+                connection.execute(
+                    "UPDATE local_control_plans SET created_work_items=? "
+                    "WHERE workflow_run_id=? AND local_work_graph_version=1",
+                    (persisted_count, workflow_run_id),
+                )
+                stored = connection.execute(
+                    "SELECT * FROM local_control_plans WHERE workflow_run_id=?",
+                    (workflow_run_id,),
+                ).fetchone()
+                if stored is None:
+                    raise RuntimeError("persisted-plan-unavailable")
+                validate_local_work_graph(
+                    connection,
+                    workflow_run_id=workflow_run_id,
+                    work_graph_id=work_graph_id,
+                    expected_count=int(stored["created_work_items"]),
+                    session_id=command.context.session_id,
+                )
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         if stored is None:
             raise RuntimeError("persisted-plan-unavailable")
         return self._result(stored)
@@ -636,8 +725,8 @@ class LocalControlPlaneService:
         return unavailable
 
     @staticmethod
-    def _result(row: sqlite3.Row) -> PlanWorkResult:
-        planned_tree = tuple(
+    def _planned_tree(row: sqlite3.Row) -> tuple[PlannedSkillPhase, ...]:
+        return tuple(
             PlannedSkillPhase(
                 phase["phase_id"],
                 phase["primary_skill_id"],
@@ -646,6 +735,10 @@ class LocalControlPlaneService:
             )
             for phase in json.loads(row["planned_skill_tree_json"])
         )
+
+    @staticmethod
+    def _result(row: sqlite3.Row) -> PlanWorkResult:
+        planned_tree = LocalControlPlaneService._planned_tree(row)
         return PlanWorkResult(
             status="planned-local-control",
             workflow_run_id=row["workflow_run_id"],

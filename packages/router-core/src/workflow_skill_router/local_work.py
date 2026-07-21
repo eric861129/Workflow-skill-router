@@ -1,0 +1,362 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+import sqlite3
+
+from workflow_skill_router.schemas.artifacts import canonical_json
+
+
+LOCAL_WORK_STATUSES = frozenset({
+    "pending",
+    "ready",
+    "active",
+    "verifying",
+    "paused",
+    "completed",
+    "failed",
+    "decomposition-required",
+    "host-scheduler-required",
+})
+
+
+class LocalWorkGraphCorruption(RuntimeError):
+    """Raised when persisted Router-owned graph state cannot be trusted."""
+
+
+@dataclass(frozen=True, slots=True)
+class LocalWorkItem:
+    work_item_id: str
+    workflow_run_id: str
+    phase_id: str
+    dependency_ids: tuple[str, ...]
+    primary_skill_id: str | None
+    support_skill_ids: tuple[str, ...]
+    status: str
+    authority_mode: str = "router-local"
+
+
+def _digest(document: object) -> str:
+    return "sha256:" + hashlib.sha256(
+        canonical_json(document).encode("utf-8")
+    ).hexdigest()
+
+
+def _public_id(prefix: str, *parts: str) -> str:
+    identity = hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:32]
+    return f"{prefix}:{identity}"
+
+
+def local_transition_request_digest(
+    *,
+    session_id: str,
+    actor: str,
+    workflow_run_id: str,
+    work_item_id: str,
+    transition_kind: str,
+    from_status: str | None,
+    to_status: str,
+    expected_state_version: int,
+    resulting_state_version: int,
+) -> str:
+    return _digest({
+        "actor": actor,
+        "from_status": from_status,
+        "to_status": to_status,
+        "transition_kind": transition_kind,
+        "expected_state_version": expected_state_version,
+        "resulting_state_version": resulting_state_version,
+        "session_id": session_id,
+        "work_item_id": work_item_id,
+        "workflow_run_id": workflow_run_id,
+    })
+
+
+def build_local_work_items(
+    *,
+    workflow_run_id: str,
+    work_graph_id: str,
+    routing_envelope: str,
+    goal_binding_id: str | None,
+    planned_skill_tree: tuple[object, ...],
+) -> tuple[LocalWorkItem, ...]:
+    """Materialize only Router-owned planned work; never mirror a Host Goal graph."""
+
+    if goal_binding_id is not None:
+        return (_boundary_item(
+            workflow_run_id,
+            work_graph_id,
+            phase_id="host-scheduler-boundary",
+            status="host-scheduler-required",
+        ),)
+
+    if planned_skill_tree:
+        items: list[LocalWorkItem] = []
+        previous_id: str | None = None
+        for index, phase in enumerate(planned_skill_tree):
+            phase_id = phase.phase_id
+            work_item_id = _public_id(
+                "work-item", work_graph_id, str(index), phase_id
+            )
+            items.append(LocalWorkItem(
+                work_item_id=work_item_id,
+                workflow_run_id=workflow_run_id,
+                phase_id=phase_id,
+                dependency_ids=() if previous_id is None else (previous_id,),
+                primary_skill_id=phase.primary_skill_id,
+                support_skill_ids=tuple(phase.support_skill_ids),
+                status="ready" if previous_id is None else "pending",
+            ))
+            previous_id = work_item_id
+        if routing_envelope == "single" and len(items) != 1:
+            raise ValueError("single-local-work-graph-requires-one-item")
+        return tuple(items)
+
+    if routing_envelope == "single":
+        return (_boundary_item(
+            workflow_run_id,
+            work_graph_id,
+            phase_id="single-work",
+            status="ready",
+        ),)
+
+    return (_boundary_item(
+        workflow_run_id,
+        work_graph_id,
+        phase_id="decomposition-boundary",
+        status="decomposition-required",
+    ),)
+
+
+def _boundary_item(
+    workflow_run_id: str,
+    work_graph_id: str,
+    *,
+    phase_id: str,
+    status: str,
+) -> LocalWorkItem:
+    return LocalWorkItem(
+        work_item_id=_public_id("work-item", work_graph_id, "0", phase_id),
+        workflow_run_id=workflow_run_id,
+        phase_id=phase_id,
+        dependency_ids=(),
+        primary_skill_id=None,
+        support_skill_ids=(),
+        status=status,
+    )
+
+
+def persist_local_work_graph(
+    connection: sqlite3.Connection,
+    *,
+    session_id: str,
+    work_graph_id: str,
+    items: tuple[LocalWorkItem, ...],
+    actor: str,
+    created_at: str,
+) -> int:
+    if not items:
+        raise ValueError("local-work-graph-empty")
+
+    for item_order, item in enumerate(items):
+        if (
+            item.status not in LOCAL_WORK_STATUSES
+            or item.authority_mode != "router-local"
+        ):
+            raise ValueError("local-work-item-invalid")
+        connection.execute(
+            "INSERT INTO local_work_items("
+            "work_item_id,workflow_run_id,work_graph_id,item_order,phase_id,"
+            "dependency_ids_json,primary_skill_id,support_skill_ids_json,status,"
+            "authority_mode,state_version,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,1,?)",
+            (
+                item.work_item_id,
+                item.workflow_run_id,
+                work_graph_id,
+                item_order,
+                item.phase_id,
+                canonical_json(list(item.dependency_ids)),
+                item.primary_skill_id,
+                canonical_json(list(item.support_skill_ids)),
+                item.status,
+                item.authority_mode,
+                created_at,
+            ),
+        )
+        idempotency_key = _public_id(
+            "local-work-create", item.workflow_run_id, item.work_item_id
+        )
+        connection.execute(
+            "INSERT INTO local_work_transitions("
+            "transition_id,session_id,workflow_run_id,work_item_id,transition_kind,"
+            "from_status,to_status,expected_state_version,resulting_state_version,"
+            "idempotency_key,request_digest,actor,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,1,?,?,?,?)",
+            (
+                _public_id("work-transition", item.work_item_id, "1"),
+                session_id,
+                item.workflow_run_id,
+                item.work_item_id,
+                "create",
+                None,
+                item.status,
+                0,
+                idempotency_key,
+                local_transition_request_digest(
+                    session_id=session_id,
+                    actor=actor,
+                    workflow_run_id=item.workflow_run_id,
+                    work_item_id=item.work_item_id,
+                    transition_kind="create",
+                    from_status=None,
+                    to_status=item.status,
+                    expected_state_version=0,
+                    resulting_state_version=1,
+                ),
+                actor,
+                created_at,
+            ),
+        )
+
+    row = connection.execute(
+        "SELECT COUNT(*) FROM local_work_items WHERE workflow_run_id=?",
+        (items[0].workflow_run_id,),
+    ).fetchone()
+    return 0 if row is None else int(row[0])
+
+
+def load_local_work_items(
+    connection: sqlite3.Connection,
+    workflow_run_id: str,
+) -> tuple[LocalWorkItem, ...]:
+    rows = connection.execute(
+        "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
+        (workflow_run_id,),
+    ).fetchall()
+    return tuple(LocalWorkItem(
+        work_item_id=row["work_item_id"],
+        workflow_run_id=row["workflow_run_id"],
+        phase_id=row["phase_id"],
+        dependency_ids=tuple(json.loads(row["dependency_ids_json"])),
+        primary_skill_id=row["primary_skill_id"],
+        support_skill_ids=tuple(json.loads(row["support_skill_ids_json"])),
+        status=row["status"],
+        authority_mode=row["authority_mode"],
+    ) for row in rows)
+
+
+def validate_local_work_graph(
+    connection: sqlite3.Connection,
+    *,
+    workflow_run_id: str,
+    work_graph_id: str,
+    expected_count: int,
+    session_id: str,
+) -> tuple[LocalWorkItem, ...]:
+    rows = connection.execute(
+        "SELECT * FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
+        (workflow_run_id,),
+    ).fetchall()
+    if len(rows) != expected_count or not rows:
+        raise LocalWorkGraphCorruption("local-work-graph-corruption: item-count")
+
+    known_ids: list[str] = []
+    for expected_order, row in enumerate(rows):
+        try:
+            raw_dependencies = json.loads(row["dependency_ids_json"])
+            raw_support_skills = json.loads(row["support_skill_ids_json"])
+        except (TypeError, ValueError, json.JSONDecodeError) as error:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: invalid-json"
+            ) from error
+        if (
+            not isinstance(raw_dependencies, list)
+            or any(not isinstance(item, str) for item in raw_dependencies)
+            or not isinstance(raw_support_skills, list)
+            or any(not isinstance(item, str) for item in raw_support_skills)
+        ):
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: invalid-json-shape"
+            )
+        dependencies = tuple(raw_dependencies)
+        support_skills = tuple(raw_support_skills)
+        expected_dependencies = () if not known_ids else (known_ids[-1],)
+        expected_work_item_id = _public_id(
+            "work-item", work_graph_id, str(expected_order), row["phase_id"]
+        )
+        if (
+            row["work_item_id"] != expected_work_item_id
+            or row["work_graph_id"] != work_graph_id
+            or int(row["item_order"]) != expected_order
+            or row["authority_mode"] != "router-local"
+            or row["status"] not in LOCAL_WORK_STATUSES
+            or dependencies != expected_dependencies
+            or len(set(support_skills)) != len(support_skills)
+            or (
+                row["primary_skill_id"] is not None
+                and row["primary_skill_id"] in support_skills
+            )
+        ):
+            raise LocalWorkGraphCorruption("local-work-graph-corruption: item-state")
+
+        transitions = connection.execute(
+            "SELECT * FROM local_work_transitions WHERE work_item_id=? "
+            "ORDER BY resulting_state_version",
+            (row["work_item_id"],),
+        ).fetchall()
+        if len(transitions) != int(row["state_version"]):
+            raise LocalWorkGraphCorruption("local-work-graph-corruption: transition-count")
+        previous_status = None
+        for version, transition in enumerate(transitions, start=1):
+            expected_from = previous_status
+            expected_digest = local_transition_request_digest(
+                session_id=transition["session_id"],
+                actor=transition["actor"],
+                workflow_run_id=workflow_run_id,
+                work_item_id=row["work_item_id"],
+                transition_kind=transition["transition_kind"],
+                from_status=transition["from_status"],
+                to_status=transition["to_status"],
+                expected_state_version=int(transition["expected_state_version"]),
+                resulting_state_version=int(transition["resulting_state_version"]),
+            )
+            if (
+                transition["session_id"] != session_id
+                or transition["workflow_run_id"] != workflow_run_id
+                or transition["work_item_id"] != row["work_item_id"]
+                or transition["transition_id"] != _public_id(
+                    "work-transition", row["work_item_id"], str(version)
+                )
+                or transition["from_status"] != expected_from
+                or int(transition["expected_state_version"]) != version - 1
+                or int(transition["resulting_state_version"]) != version
+                or transition["request_digest"] != expected_digest
+                or transition["to_status"] not in LOCAL_WORK_STATUSES
+                or (version == 1 and transition["transition_kind"] != "create")
+                or (
+                    version == 1
+                    and transition["idempotency_key"] != _public_id(
+                        "local-work-create", workflow_run_id, row["work_item_id"]
+                    )
+                )
+            ):
+                raise LocalWorkGraphCorruption(
+                    "local-work-graph-corruption: transition-chain"
+                )
+            previous_status = transition["to_status"]
+        if previous_status != row["status"]:
+            raise LocalWorkGraphCorruption("local-work-graph-corruption: status-drift")
+
+        known_ids.append(row["work_item_id"])
+
+    return tuple(LocalWorkItem(
+        work_item_id=row["work_item_id"],
+        workflow_run_id=row["workflow_run_id"],
+        phase_id=row["phase_id"],
+        dependency_ids=tuple(json.loads(row["dependency_ids_json"])),
+        primary_skill_id=row["primary_skill_id"],
+        support_skill_ids=tuple(json.loads(row["support_skill_ids_json"])),
+        status=row["status"],
+        authority_mode=row["authority_mode"],
+    ) for row in rows)
