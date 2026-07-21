@@ -84,8 +84,8 @@ def _explicitly_disabled(value: object) -> bool:
 def eligible_tag_ruleset_ids(contract: dict[str, object], rulesets: list[dict[str, object]]) -> list[int]:
     """回傳需要取得完整設定的啟用中標籤 ruleset 摘要 ID。
 
-    GitHub 的清單端點只回傳摘要，因此規則和 bypass 必須透過相應的詳情
-    端點評估。契約名稱會排除與此無關的標籤 ruleset 讀取。
+    GitHub 清單端點的摘要可能不含 target；呼叫端以 targets=tag 取得摘要，
+    這裡只用契約名稱與啟用狀態篩選，target 則由完整詳情驗證。
     """
     tag = contract["tag_protection"]
     assert isinstance(tag, dict)
@@ -98,13 +98,11 @@ def eligible_tag_ruleset_ids(contract: dict[str, object], rulesets: list[dict[st
         if (
             not isinstance(ruleset_id, int)
             or not isinstance(ruleset.get("name"), str)
-            or not isinstance(ruleset.get("target"), str)
             or not isinstance(ruleset.get("enforcement"), str)
         ):
             raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
         if (
             ruleset.get("name") == wanted_name
-            and ruleset.get("target") == "tag"
             and ruleset.get("enforcement") == "active"
         ):
             qualifying.append(ruleset_id)

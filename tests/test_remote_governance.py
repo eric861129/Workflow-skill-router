@@ -105,7 +105,6 @@ def v2_tag_ruleset_summary() -> dict[str, object]:
     return {
         "id": 42,
         "name": "Immutable V2 release tags",
-        "target": "tag",
         "enforcement": "active",
     }
 
@@ -266,7 +265,6 @@ class RemoteGovernanceTests(unittest.TestCase):
         unrelated = {
             "id": 99,
             "name": "Other release tags",
-            "target": "tag",
             "enforcement": "active",
         }
         payloads = (protected_branch(), main_protection(), [unrelated, v2_tag_ruleset_summary()], v2_tag_ruleset())
@@ -282,11 +280,50 @@ class RemoteGovernanceTests(unittest.TestCase):
             [
                 "repos/eric861129/Workflow-skill-router/branches/main",
                 "repos/eric861129/Workflow-skill-router/branches/main/protection",
-                "repos/eric861129/Workflow-skill-router/rulesets",
+                "repos/eric861129/Workflow-skill-router/rulesets?targets=tag&per_page=100&page=1",
                 "repos/eric861129/Workflow-skill-router/rulesets/42",
             ],
             [call.args[1] for call in fetch_json.call_args_list],
         )
+
+    def test_cli_flattens_later_ruleset_pages_before_fetching_detail(self) -> None:
+        first_page = [
+            {"id": index, "name": f"Other tag ruleset {index}", "enforcement": "active"}
+            for index in range(1, 101)
+        ]
+        payloads = (protected_branch(), main_protection(), first_page, [v2_tag_ruleset_summary()], v2_tag_ruleset())
+        output = io.StringIO()
+        with patch.object(self.cli, "_load_governance_module", return_value=self.governance), patch.object(
+            self.governance, "fetch_json", side_effect=payloads
+        ) as fetch_json, redirect_stdout(output):
+            code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
+
+        self.assertEqual(0, code)
+        self.assertEqual("PASS: remote release governance matches contract\n", output.getvalue())
+        self.assertEqual(
+            [
+                "repos/eric861129/Workflow-skill-router/branches/main",
+                "repos/eric861129/Workflow-skill-router/branches/main/protection",
+                "repos/eric861129/Workflow-skill-router/rulesets?targets=tag&per_page=100&page=1",
+                "repos/eric861129/Workflow-skill-router/rulesets?targets=tag&per_page=100&page=2",
+                "repos/eric861129/Workflow-skill-router/rulesets/42",
+            ],
+            [call.args[1] for call in fetch_json.call_args_list],
+        )
+
+    def test_cli_returns_public_safe_failure_for_malformed_ruleset_page(self) -> None:
+        first_page = [
+            {"id": index, "name": f"Other tag ruleset {index}", "enforcement": "active"}
+            for index in range(1, 101)
+        ]
+        output = io.StringIO()
+        with patch.object(self.cli, "_load_governance_module", return_value=self.governance), patch.object(
+            self.governance, "fetch_json", side_effect=(protected_branch(), main_protection(), first_page, {"invalid": True})
+        ), redirect_stdout(output):
+            code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
+
+        self.assertEqual(1, code)
+        self.assertEqual("remote-governance-unavailable\n", output.getvalue())
 
     def test_cli_returns_public_safe_failure_for_detail_fetch_failures_or_malformed_detail(self) -> None:
         malformed_detail = v2_tag_ruleset()

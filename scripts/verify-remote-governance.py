@@ -10,6 +10,9 @@ import sys
 from typing import Sequence
 
 
+RULESETS_PAGE_SIZE = 100
+
+
 def _load_governance_module():
     module_path = Path(__file__).with_name("remote_governance.py")
     spec = importlib.util.spec_from_file_location("remote_governance", module_path)
@@ -19,6 +22,23 @@ def _load_governance_module():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _fetch_tag_ruleset_summaries(governance, repo: str) -> list[dict[str, object]]:
+    """讀取所有 tag ruleset 摘要頁面，不將不完整頁面視為完整結果。"""
+    summaries: list[dict[str, object]] = []
+    page = 1
+    while True:
+        endpoint = (
+            f"repos/{repo}/rulesets?targets=tag&per_page={RULESETS_PAGE_SIZE}&page={page}"
+        )
+        response = governance.fetch_json(repo, endpoint)
+        if not isinstance(response, list):
+            raise governance.RemoteGovernanceUnavailableError(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
+        summaries.extend(response)
+        if len(response) < RULESETS_PAGE_SIZE:
+            return summaries
+        page += 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -32,8 +52,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         branch_name = contract["branch"]
         branch = governance.fetch_json(args.repo, f"repos/{args.repo}/branches/{branch_name}")
         protection = governance.fetch_json(args.repo, f"repos/{args.repo}/branches/{branch_name}/protection")
-        ruleset_summaries = governance.fetch_json(args.repo, f"repos/{args.repo}/rulesets")
-        if not isinstance(branch, dict) or not isinstance(protection, dict) or not isinstance(ruleset_summaries, list):
+        ruleset_summaries = _fetch_tag_ruleset_summaries(governance, args.repo)
+        if not isinstance(branch, dict) or not isinstance(protection, dict):
             raise governance.RemoteGovernanceUnavailableError(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
         ruleset_ids = governance.eligible_tag_ruleset_ids(contract, ruleset_summaries)
         rulesets = []
