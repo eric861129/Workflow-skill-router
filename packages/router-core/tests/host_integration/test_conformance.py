@@ -151,12 +151,13 @@ class HostIntegrationConformanceTests(unittest.TestCase):
         self.assertEqual("goal-resume-refresh-required", case.diagnostic)
         self.assertEqual((), case.private_details)
 
-    def test_artifact_protection_failure_never_returns_an_artifact_location(self) -> None:
-        case = self.report().case("artifact-protection-failure")
+    def test_put_bytes_only_artifact_store_returns_a_protected_reference(self) -> None:
+        case = self.report().case("artifact-protection")
         self.assertTrue(case.passed)
-        self.assertEqual("artifact-protection-failed", case.diagnostic)
+        self.assertEqual("protected-artifact-reference-confirmed", case.diagnostic)
         self.assertEqual((), case.private_details)
-        self.assertNotIn("artifact", " ".join(case.evidence).lower())
+        self.assertFalse(hasattr(self.adapter.last_ports.artifacts, "protect"))
+        self.assertEqual(("restricted", "protected"), case.evidence)
 
     def test_reference_conformance_never_claims_host_pilot_or_hybrid_full(self) -> None:
         report = self.report()
@@ -196,9 +197,9 @@ class HostIntegrationConformanceTests(unittest.TestCase):
                 return SimpleNamespace(status="ready")
 
         class PermissiveArtifactStore:
-            def protect(self, content, purpose):
-                del content, purpose
-                return "artifact:unsafe"
+            def put_bytes(self, content, media_type, classification, purpose):
+                del content, media_type, classification, purpose
+                return "C:\\unsafe\\artifact.bin"
 
         class ShadowFixtureAdapter:
             def host_manifest(self):
@@ -235,7 +236,42 @@ class HostIntegrationConformanceTests(unittest.TestCase):
         self.assertFalse(report.case("receipt-forged").passed)
         self.assertFalse(report.case("cas-conflict").passed)
         self.assertFalse(report.case("native-goal-refresh").passed)
-        self.assertFalse(report.case("artifact-protection-failure").passed)
+        artifact_case = report.case("artifact-protection")
+        self.assertFalse(artifact_case.passed)
+        self.assertEqual("artifact-reference-invalid", artifact_case.diagnostic)
+
+    def test_artifact_store_rejection_is_a_public_safe_failed_case(self) -> None:
+        delegate = self.reference.create_reference_adapter()
+
+        reference = self.reference
+
+        class RejectingArtifactStore:
+            def put_bytes(self, content, media_type, classification, purpose):
+                del content, media_type, classification, purpose
+                raise reference.HostIntegrationConformanceError(
+                    "artifact-protection-failed"
+                )
+
+        class RejectingAdapter:
+            def host_manifest(self):
+                return delegate.host_manifest()
+
+            def build_router_ports(self, **kwargs):
+                return replace(
+                    delegate.build_router_ports(**kwargs),
+                    artifacts=RejectingArtifactStore(),
+                )
+
+            def build_conformance_probe(self):
+                return delegate.build_conformance_probe()
+
+        report = run_host_conformance(RejectingAdapter(), self.resources)
+        case = report.case("artifact-protection")
+
+        self.assertEqual("failed-development-conformance", report.status)
+        self.assertFalse(case.passed)
+        self.assertEqual("artifact-protection-failed", case.diagnostic)
+        self.assertEqual((), case.private_details)
 
     def test_self_declared_production_authority_is_never_reported_as_verified(self) -> None:
         delegate = self.reference.create_reference_adapter()

@@ -17,6 +17,7 @@ from workflow_skill_router.host_integration import (
     ServerOwnedHostResources,
     run_host_conformance,
 )
+from workflow_skill_router.persistence.artifacts import ArtifactRef
 from workflow_skill_router.service_models import NextWorkResult, RouterDiagnostics, RouterStatusView
 
 
@@ -68,11 +69,7 @@ class _ActivationPreflight:
             raise HostIntegrationConformanceError("activation-receipt-invalid")
 
 
-class _RejectingArtifactProtector:
-    def protect(self, content: bytes, purpose: str):
-        del content, purpose
-        raise HostIntegrationConformanceError("artifact-protection-failed")
-
+class _ReferenceArtifactStore:
     def put_bytes(
         self,
         content: bytes,
@@ -80,8 +77,15 @@ class _RejectingArtifactProtector:
         classification: str,
         purpose: str,
     ):
-        del content, media_type, classification, purpose
-        raise HostIntegrationConformanceError("artifact-protection-failed")
+        del purpose
+        digest = "sha256:" + sha256(content).hexdigest()
+        return ArtifactRef(
+            digest=digest,
+            media_type=media_type,
+            sensitivity=classification,
+            protection_kind="reference-envelope",
+            protection_ref="key:reference-conformance",
+        )
 
 
 class _EvaluationPorts:
@@ -297,7 +301,7 @@ def create_reference_server_resources(root: Path) -> ServerOwnedHostResources:
         artifact_root=root / "reference-artifacts",
         request_authorizer=_RequestAuthorizer(),
         instruction_content_resolver=_Noop(),
-        artifact_protector=_RejectingArtifactProtector(),
+        artifact_protector=_ReferenceArtifactStore(),
         activation_preflight=_ActivationPreflight(),
         evaluation_ports=_EvaluationPorts(),
         clock=_Clock(),

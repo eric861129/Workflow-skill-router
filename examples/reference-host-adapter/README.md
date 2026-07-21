@@ -43,6 +43,11 @@ The runner records the same `RouterCompositionPorts` delivered to
 ports. A manifest claim remains declared metadata, so every development report
 keeps `production_authority_verified=false`.
 
+Artifact conformance uses the real `ArtifactStorePort.put_bytes` contract. A
+restricted write must return an opaque protected reference with no path or URL;
+unsafe output fails with `artifact-reference-invalid`, while store rejection is
+sanitized as `artifact-protection-failed`.
+
 For a production adapter, replace every in-memory port with a Host-owned
 implementation, keep the same `RouterCompositionPorts` composition boundary,
 run the suite, and then complete a separate real-environment pilot.

@@ -51,6 +51,11 @@ The runner probes the same `RouterCompositionPorts` returned to
 manifest authority flag is only declared metadata, so development conformance
 always reports `production_authority_verified=false`.
 
+Artifact conformance calls `ArtifactStorePort.put_bytes`, exactly as
+`RouterService` does. A restricted write must return a digest-bound protected
+reference without a path, location, or URL. Unsafe output is
+`artifact-reference-invalid`; rejected storage is `artifact-protection-failed`.
+
 Conformance is an engineering gate, not deployment attestation. Complete a
 separate real Host pilot before describing the integration as production-ready
 or `hybrid-full`.

@@ -26,6 +26,8 @@ class HostIntegrationKitDocumentationTests(unittest.TestCase):
             "evidence",
             "gate",
             "artifact",
+            "put_bytes",
+            "artifact-reference-invalid",
             "evaluation",
             "freshness",
             "fail closed",

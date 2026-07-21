@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from hashlib import sha256
 
 from workflow_skill_router.composition import RouterCompositionPorts, open as open_router
 from workflow_skill_router.host_integration.contracts import (
@@ -54,6 +55,53 @@ def _expected_failure(
     except Exception:
         return HostConformanceCase(name, False, "unexpected-failure")
     return HostConformanceCase(name, False, "fail-closed-not-enforced")
+
+
+def _artifact_protection_case(artifacts) -> HostConformanceCase:
+    """只透過 ArtifactStorePort.put_bytes 驗證 restricted artifact 保護。"""
+
+    content = b"workflow-skill-router-host-conformance"
+    try:
+        reference = artifacts.put_bytes(
+            content,
+            "application/octet-stream",
+            "restricted",
+            "host-conformance",
+        )
+    except Exception:
+        return HostConformanceCase(
+            "artifact-protection", False, "artifact-protection-failed"
+        )
+
+    expected_digest = "sha256:" + sha256(content).hexdigest()
+    protection_kind = getattr(reference, "protection_kind", None)
+    protection_ref = getattr(reference, "protection_ref", None)
+    unsafe_location = any(
+        getattr(reference, field, None)
+        for field in ("path", "location", "relative_path", "url")
+    )
+    valid = (
+        getattr(reference, "digest", None) == expected_digest
+        and getattr(reference, "media_type", None) == "application/octet-stream"
+        and getattr(reference, "sensitivity", None) == "restricted"
+        and isinstance(protection_kind, str)
+        and protection_kind not in {"", "none"}
+        and isinstance(protection_ref, str)
+        and bool(protection_ref)
+        and not unsafe_location
+        and "/" not in protection_ref
+        and "\\" not in protection_ref
+    )
+    return HostConformanceCase(
+        "artifact-protection",
+        valid,
+        (
+            "protected-artifact-reference-confirmed"
+            if valid
+            else "artifact-reference-invalid"
+        ),
+        ("restricted", "protected") if valid else (),
+    )
 
 
 def run_host_conformance(
@@ -147,13 +195,7 @@ def run_host_conformance(
             require_resume_refresh=True,
         ),
     ))
-    cases.append(_expected_failure(
-        "artifact-protection-failure",
-        "artifact-protection-failed",
-        lambda: ports.artifacts.protect(
-            b"conformance-payload", "host-conformance",
-        ),
-    ))
+    cases.append(_artifact_protection_case(ports.artifacts))
     passed = all(item.passed for item in cases)
     return HostConformanceReport(
         adapter_id=manifest.adapter_id,

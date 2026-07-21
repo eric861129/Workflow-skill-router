@@ -57,3 +57,9 @@ The conformance runner captures the same `RouterCompositionPorts` returned to
 set of shadow ports or a shadow service. A manifest may declare production authority, but this
 development suite cannot verify it; the report therefore keeps
 `production_authority_verified=false`.
+
+Artifact protection is verified through `ArtifactStorePort.put_bytes`, the same
+method used by `RouterService`. A restricted artifact must return an opaque
+digest-bound protected reference, never a path, location, or URL. Unsafe output
+fails as `artifact-reference-invalid`; a rejected write is sanitized as
+`artifact-protection-failed`.
