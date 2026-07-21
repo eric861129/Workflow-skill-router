@@ -365,9 +365,9 @@ class GitHubWorkflowTests(unittest.TestCase):
         )
         self.assertIn("does not change GitHub configuration", template)
         self.assertIn(
-            "does not prove a\nrelease workflow has successfully exercised "
-            "the GitHub Actions bypass",
-            template,
+            "does not prove a release workflow has successfully exercised the "
+            "GitHub Actions bypass",
+            " ".join(template.split()),
         )
 
     def test_bilingual_release_processes_define_remote_governance_boundary(self) -> None:
