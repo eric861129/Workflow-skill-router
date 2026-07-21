@@ -73,6 +73,19 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
             "nested /escape.txt",
             "nested/CON.txt",
             "nested/name?.txt",
+            "nested/AUX.txt",
+            "nested/NUL.tar.gz",
+            "nested/PRN.json",
+            "nested/CONIN$.txt",
+            "nested/CONOUT$.json",
+            "nested/COM0.txt",
+            "nested/com9.tar.gz",
+            "nested/LPT0.txt",
+            "nested/lpt9.json",
+            "nested/COM\u00b9.txt",
+            "nested/com\u00b2.tar.gz",
+            "nested/LPT\u00b2.txt",
+            "nested/LPT\u00b3.json",
         )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -100,6 +113,24 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                             require_all=True,
                         )
 
+    def test_allowlist_accepts_non_reserved_device_like_components(self) -> None:
+        safe_paths = (
+            "nested/COM10.txt",
+            "nested/LPT10.txt",
+            "nested/COM\u2074.txt",
+            "nested/CONTEXT.txt",
+            "nested/CONIN.txt",
+            "nested/CONOUT.txt",
+            "nested/COM1PORT.txt",
+        )
+
+        for safe_path in safe_paths:
+            with self.subTest(safe_path=safe_path):
+                self.assertEqual(
+                    safe_path,
+                    builder.parse_safe_relative_posix_path(safe_path).as_posix(),
+                )
+
     def test_cli_rejects_win32_normalized_allowlist_before_writing_output(
         self,
     ) -> None:
@@ -110,6 +141,19 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
             "nested/.. ./escape.txt",
             "nested/..../escape.txt",
             "nested./escape.txt",
+            "nested/AUX.txt",
+            "nested/NUL.tar.gz",
+            "nested/PRN.json",
+            "nested/CONIN$.txt",
+            "nested/CONOUT$.json",
+            "nested/COM0.txt",
+            "nested/com9.tar.gz",
+            "nested/LPT0.txt",
+            "nested/lpt9.json",
+            "nested/COM\u00b9.txt",
+            "nested/com\u00b2.tar.gz",
+            "nested/LPT\u00b2.txt",
+            "nested/LPT\u00b3.json",
         )
 
         with tempfile.TemporaryDirectory() as temporary:

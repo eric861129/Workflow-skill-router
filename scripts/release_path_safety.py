@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import PurePosixPath, PureWindowsPath
 
 
 WINDOWS_FORBIDDEN_CHARACTERS = frozenset('<>"\\|?*')
-WINDOWS_RESERVED_BASENAMES = frozenset(
-    (
-        "aux",
-        "con",
-        "nul",
-        "prn",
-        *(f"com{number}" for number in range(1, 10)),
-        *(f"lpt{number}" for number in range(1, 10)),
-    )
+WINDOWS_RESERVED_DEVICE_PATTERN = re.compile(
+    r"^(?:aux|con|nul|prn|conin\$|conout\$|(?:com|lpt)[0-9\u00b9\u00b2\u00b3])$"
 )
 
 
@@ -26,8 +20,9 @@ def _is_safe_win32_component(component: str) -> bool:
         for character in component
     ):
         return False
+    # Win32 reserves device names even when the component adds an extension.
     base_name = component.split(".", maxsplit=1)[0].casefold()
-    return base_name not in WINDOWS_RESERVED_BASENAMES
+    return WINDOWS_RESERVED_DEVICE_PATTERN.fullmatch(base_name) is None
 
 
 def parse_safe_relative_posix_path(value: str) -> PurePosixPath:

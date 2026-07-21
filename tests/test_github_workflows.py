@@ -673,6 +673,19 @@ class GitHubWorkflowTests(unittest.TestCase):
             "nested /escape.txt",
             "nested/CON.txt",
             "nested/name?.txt",
+            "nested/AUX.txt",
+            "nested/NUL.tar.gz",
+            "nested/PRN.json",
+            "nested/CONIN$.txt",
+            "nested/CONOUT$.json",
+            "nested/COM0.txt",
+            "nested/com9.tar.gz",
+            "nested/LPT0.txt",
+            "nested/lpt9.json",
+            "nested/COM\u00b9.txt",
+            "nested/com\u00b2.tar.gz",
+            "nested/LPT\u00b2.txt",
+            "nested/LPT\u00b3.json",
         )
 
         for unsafe_path in unsafe_paths:
