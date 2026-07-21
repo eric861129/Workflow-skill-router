@@ -35,6 +35,23 @@ V2 = ROOT / "evaluation" / "v2"
 CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
 CANONICAL_BEHAVIOR_SCHEMA = V2 / "schemas" / "codex-route-output.schema.json"
 CANONICAL_CONSENT_SCHEMA = V2 / "schemas" / "codex-consent-intent.schema.json"
+BEHAVIOR_PYTHON_FLAGS = ("-I", "-S", "-B")
+BEHAVIOR_PROVIDER_ENV_ALLOWLIST = (
+    "APPDATA",
+    "HOME",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "LOCALAPPDATA",
+    "NO_PROXY",
+    "OPENAI_API_KEY",
+    "PATH",
+    "SSL_CERT_FILE",
+    "SystemRoot",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "WINDIR",
+)
 EVALUATION_CONTRACT_ID = "workflow-skill-router.behavior-routing"
 REASON_VOCABULARY_PATH = V2 / "reason-code-vocabulary.json"
 REASON_VOCABULARY = json.loads(REASON_VOCABULARY_PATH.read_text(encoding="utf-8"))
@@ -882,18 +899,23 @@ def _canonical_behavior_entrypoint(entrypoint_argument: str) -> Path | None:
         return None
 
 
+def _closure_relative_path_sort_key(path: Path, root: Path) -> tuple[str, str]:
+    relative = path.relative_to(root).as_posix()
+    return relative.casefold(), relative
+
+
 def behavior_adapter_closure_paths() -> tuple[Path, ...]:
     """Return the deterministic local code/data closure for the canonical driver."""
 
     router_package = CORE_SOURCE / "workflow_skill_router"
-    candidates = {
-        CANONICAL_BEHAVIOR_ADAPTER,
-        REASON_VOCABULARY_PATH,
-        CANONICAL_BEHAVIOR_SCHEMA,
-        CANONICAL_CONSENT_SCHEMA,
-        *router_package.rglob("*.py"),
-    }
     try:
+        candidates = {
+            CANONICAL_BEHAVIOR_ADAPTER,
+            REASON_VOCABULARY_PATH,
+            CANONICAL_BEHAVIOR_SCHEMA,
+            CANONICAL_CONSENT_SCHEMA,
+            *router_package.rglob("*.py"),
+        }
         root = ROOT.resolve(strict=True)
         paths: list[Path] = []
         for candidate in candidates:
@@ -908,14 +930,16 @@ def behavior_adapter_closure_paths() -> tuple[Path, ...]:
                     "behavior_adapter_revision_unavailable"
                 )
             paths.append(path)
+        return tuple(sorted(
+            paths,
+            key=lambda path: _closure_relative_path_sort_key(path, root),
+        ))
+    except EvaluationIntegrityError:
+        raise
     except (OSError, RuntimeError, ValueError) as error:
         raise EvaluationIntegrityError(
             "behavior_adapter_revision_unavailable"
         ) from error
-    return tuple(sorted(
-        paths,
-        key=lambda path: path.relative_to(root).as_posix().casefold(),
-    ))
 
 
 def behavior_adapter_closure_revision() -> str:
@@ -931,7 +955,87 @@ def behavior_adapter_closure_revision() -> str:
         raise EvaluationIntegrityError(
             "behavior_adapter_revision_unavailable"
         ) from error
-    return digest(records)
+    launch_policy = {
+        "environment_allowlist": BEHAVIOR_PROVIDER_ENV_ALLOWLIST,
+        "interpreter_flags": (
+            *BEHAVIOR_PYTHON_FLAGS,
+            "-X",
+            "pycache_prefix=<restricted-empty>",
+        ),
+        "provider_environment_mode": "exact-allowlist",
+    }
+    return digest({
+        "files": records,
+        "launch_policy": launch_policy,
+    })
+
+
+def behavior_provider_environment() -> dict[str, str]:
+    """Return the exact provider environment without Python import hooks."""
+
+    return {
+        name: os.environ[name]
+        for name in BEHAVIOR_PROVIDER_ENV_ALLOWLIST
+        if name in os.environ
+    }
+
+
+def behavior_adapter_command(
+    adapter_executable: str,
+    adapter_arguments: list[str],
+    controlled_cache: Path,
+) -> tuple[str, ...]:
+    """Build the only interpreter command authorized for Behavior evidence."""
+
+    entrypoint = (
+        _canonical_behavior_entrypoint(adapter_arguments[0])
+        if adapter_arguments
+        else None
+    )
+    actual_entrypoint = adapter_entrypoint_path(
+        adapter_executable,
+        adapter_arguments,
+    )
+    try:
+        cache = controlled_cache.resolve(strict=True)
+        executable = Path(sys.executable).resolve(strict=True)
+        if (
+            entrypoint is None
+            or actual_entrypoint != entrypoint
+            or not cache.is_dir()
+            or _path_is_alias(cache)
+        ):
+            raise EvaluationIntegrityError("behavior_adapter_runtime_unavailable")
+    except (OSError, RuntimeError) as error:
+        raise EvaluationIntegrityError(
+            "behavior_adapter_runtime_unavailable"
+        ) from error
+    return (
+        str(executable),
+        *BEHAVIOR_PYTHON_FLAGS,
+        "-X",
+        f"pycache_prefix={cache}",
+        str(entrypoint),
+        *adapter_arguments[1:],
+    )
+
+
+def verify_behavior_python_cache(
+    controlled_cache: Path,
+) -> None:
+    """Keep Python bytecode lookup in one protected, empty, non-writing root."""
+
+    try:
+        if (
+            _path_is_alias(controlled_cache)
+            or not controlled_cache.is_dir()
+            or any(controlled_cache.iterdir())
+        ):
+            raise EvaluationIntegrityError("behavior_adapter_runtime_unavailable")
+    except OSError as error:
+        raise EvaluationIntegrityError(
+            "behavior_adapter_runtime_unavailable"
+        ) from error
 
 
 def adapter_source_revision(
@@ -1168,6 +1272,8 @@ def main(argv: list[str] | None = None) -> int:
             args.adapter_arg,
         )
 
+    behavior_python_cache: Path | None = None
+
     def revalidate_behavior_bindings() -> None:
         if args.evidence_class != "behavior":
             return
@@ -1177,11 +1283,11 @@ def main(argv: list[str] | None = None) -> int:
             args.adapter_arg,
             args.authorized_adapter_revision,
         )
+        if behavior_python_cache is not None:
+            verify_behavior_python_cache(behavior_python_cache)
 
     cases = load_cases(args.suite)
     profiles = load_profiles()
-    command = (args.adapter_executable, *args.adapter_arg)
-    adapter = SubprocessExecutionAdapter(command, timeout_seconds=args.timeout_seconds)
     configured_model = adapter_option(args.adapter_arg, "--model")
     model_version = (
         configured_model
@@ -1196,6 +1302,25 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = args.output_dir.resolve()
     protector = LocalEvidenceProtector()
     restricted_dir = prepare_output_directory(output_dir, protector)
+    provider_environment = None
+    if args.evidence_class == "behavior":
+        behavior_python_cache = restricted_dir / "python-cache"
+        behavior_python_cache.mkdir()
+        protector.protect_directory(behavior_python_cache)
+        verify_behavior_python_cache(behavior_python_cache)
+        command = behavior_adapter_command(
+            args.adapter_executable,
+            args.adapter_arg,
+            behavior_python_cache,
+        )
+        provider_environment = behavior_provider_environment()
+    else:
+        command = (args.adapter_executable, *args.adapter_arg)
+    adapter = SubprocessExecutionAdapter(
+        command,
+        timeout_seconds=args.timeout_seconds,
+        environment=provider_environment,
+    )
     records: list[dict[str, Any]] = []
     elapsed_values: list[float] = []
     resumed_attempt_count = 0

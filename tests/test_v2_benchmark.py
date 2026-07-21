@@ -316,6 +316,96 @@ class V2BenchmarkTests(unittest.TestCase):
                     expected,
                 )
 
+    def test_behavior_launch_policy_ignores_python_hooks_and_external_bytecode_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            hostile = root / "hostile"
+            hostile.mkdir()
+            marker = root / "sitecustomize-loaded.txt"
+            (hostile / "sitecustomize.py").write_text(
+                "from pathlib import Path\n"
+                f"Path({str(marker)!r}).write_text('loaded', encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            hostile_cache = root / "hostile-cache"
+            hostile_cache.mkdir()
+            (hostile_cache / "sitecustomize.pyc").write_bytes(b"hostile bytecode")
+            controlled_cache = root / "controlled-cache"
+            controlled_cache.mkdir()
+
+            with patch.dict(os.environ, {
+                "PYTHONPATH": str(hostile),
+                "PYTHONPYCACHEPREFIX": str(hostile_cache),
+                "PYTHONUSERBASE": str(hostile),
+            }):
+                environment = RUNNER.behavior_provider_environment()
+                command = RUNNER.behavior_adapter_command(
+                    sys.executable,
+                    [str(CANONICAL_BEHAVIOR_ADAPTER.resolve()), "--help"],
+                    controlled_cache,
+                )
+                completed = subprocess.run(
+                    command,
+                    shell=False,
+                    capture_output=True,
+                    check=False,
+                    env=environment,
+                )
+
+            self.assertEqual(0, completed.returncode, completed.stderr.decode("utf-8"))
+            self.assertFalse(marker.exists())
+            self.assertFalse(any(controlled_cache.rglob("*.pyc")))
+            self.assertTrue(all(not name.startswith("PYTHON") for name in environment))
+            self.assertEqual(
+                ("-I", "-S", "-B", "-X"),
+                command[1:5],
+            )
+            self.assertEqual(
+                f"pycache_prefix={controlled_cache.resolve()}",
+                command[5],
+            )
+            self.assertEqual(str(CANONICAL_BEHAVIOR_ADAPTER.resolve()), command[6])
+
+    def test_behavior_adapter_revision_binds_isolated_launch_policy(self):
+        canonical = str(CANONICAL_BEHAVIOR_ADAPTER.resolve())
+        expected = RUNNER.adapter_source_revision(sys.executable, [canonical])
+
+        with patch.object(RUNNER, "BEHAVIOR_PYTHON_FLAGS", ("-I", "-S")):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [canonical, "--model", "gpt-test"],
+                    expected,
+                )
+
+    def test_behavior_adapter_closure_sort_has_case_sensitive_tie_breaker(self):
+        root = Path("repository")
+        paths = [root / "pkg" / "a.py", root / "pkg" / "A.py"]
+
+        ordered = sorted(
+            paths,
+            key=lambda path: RUNNER._closure_relative_path_sort_key(path, root),
+        )
+
+        self.assertEqual([root / "pkg" / "A.py", root / "pkg" / "a.py"], ordered)
+
+    def test_behavior_adapter_enumeration_failure_is_public_safe(self):
+        with patch.object(
+            RUNNER.Path,
+            "rglob",
+            side_effect=PermissionError("C:\\private\\router-core"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ) as caught:
+                RUNNER.behavior_adapter_closure_paths()
+
+        self.assertNotIn("private", str(caught.exception))
+
     def test_behavior_adapter_rejects_non_script_and_relative_entrypoints(self):
         canonical_revision = RUNNER.adapter_source_revision(
             sys.executable,
@@ -414,9 +504,12 @@ class V2BenchmarkTests(unittest.TestCase):
     def test_behavior_report_and_checkpoint_persist_source_and_adapter_bindings(self):
         source_revision = "a" * 40
         adapter_revision = "sha256:" + "b" * 64
+        constructed: dict[str, object] = {}
 
         class FakeAdapter:
-            def __init__(self, *_args, **_kwargs):
+            def __init__(self, command, **kwargs):
+                constructed["command"] = command
+                constructed["environment"] = kwargs.get("environment")
                 self._counter = 0
                 self._context_id = ""
 
@@ -460,7 +553,7 @@ class V2BenchmarkTests(unittest.TestCase):
                     "--suite", "beta-smoke",
                     "--evidence-class", "behavior",
                     "--adapter-executable", sys.executable,
-                    "--adapter-arg", "test_driver.py",
+                    "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
                     "--adapter-arg=--model",
                     "--adapter-arg", "gpt-test",
                     "--repeats", "3",
@@ -480,11 +573,26 @@ class V2BenchmarkTests(unittest.TestCase):
                     encoding="utf-8"
                 )
             )
+            raw = json.loads(
+                (output / "restricted" / "raw-results.json").read_text(
+                    encoding="utf-8"
+                )
+            )
 
         self.assertEqual(source_revision, report["provenance"]["source_revision"])
         self.assertEqual(adapter_revision, report["provenance"]["adapter_revision"])
         self.assertEqual(source_revision, checkpoint["source_revision"])
         self.assertEqual(adapter_revision, checkpoint["adapter_revision"])
+        command = tuple(constructed["command"])
+        self.assertEqual(("-I", "-S", "-B", "-X"), command[1:5])
+        self.assertIn("pycache_prefix=", command[5])
+        self.assertEqual(list(command), raw["adapter_command"])
+        environment = constructed["environment"]
+        self.assertIsInstance(environment, dict)
+        self.assertTrue(all(
+            not name.startswith("PYTHON")
+            for name in environment
+        ))
         for manifest in report["arm_manifests"].values():
             self.assertEqual(source_revision, manifest["source_revision"])
             self.assertEqual(adapter_revision, manifest["adapter_revision"])
