@@ -46,11 +46,13 @@ class GitHubWorkflowTests(unittest.TestCase):
         trusted_version: str,
         notes_match: bool = True,
         trusted_notes_change: bool = False,
+        trusted_notes_newline: str | None = None,
         trusted_plugin_runtime_allowlist_change: bool = False,
         frozen_plugin_runtime_allowlist_files: list[str] | None = None,
         frozen_release_path_safety_source: str | None = None,
         frozen_release_path_safety_exists: bool = True,
         trusted_release_path_safety_source: str | None = None,
+        trusted_release_path_safety_newline: str = "\n",
     ) -> tuple[str, str]:
         subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
         subprocess.run(
@@ -166,6 +168,13 @@ class GitHubWorkflowTests(unittest.TestCase):
                 encoding="utf-8",
                 newline="\n",
             )
+        if trusted_notes_newline is not None:
+            notes_path = notes / f"v{frozen_version}.md"
+            notes_path.write_text(
+                notes_path.read_text(encoding="utf-8"),
+                encoding="utf-8",
+                newline=trusted_notes_newline,
+            )
         if trusted_plugin_runtime_allowlist_change:
             (allowlists / "plugin-runtime-files.json").write_text(
                 '{"files": ["runtime/tampered.pyz", "runtime/workflow_skill_router.pyz"]}\n',
@@ -181,7 +190,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             (scripts / "release_path_safety.py").write_text(
                 trusted_release_path_safety_source,
                 encoding="utf-8",
-                newline="\n",
+                newline=trusted_release_path_safety_newline,
             )
             promotion_paths.append("scripts/release_path_safety.py")
         subprocess.run(
@@ -275,6 +284,49 @@ class GitHubWorkflowTests(unittest.TestCase):
         plugin_install = validate.index("Install plugin build dependencies")
         repository_tests = validate.index("Run repository unit tests")
         self.assertLess(plugin_install, repository_tests)
+
+    def test_every_workflow_release_builder_launch_is_isolated(self) -> None:
+        isolated_launch = "python -I -S -B scripts/build-release-artifacts.py"
+        for workflow_name in ("validate.yml", "release-v2.yml"):
+            content = workflow_text(workflow_name)
+            invocation_count = content.count("scripts/build-release-artifacts.py")
+            with self.subTest(workflow=workflow_name):
+                self.assertGreater(invocation_count, 0)
+                self.assertEqual(invocation_count, content.count(isolated_launch))
+
+    def test_release_builder_documentation_uses_the_isolated_launch(self) -> None:
+        isolated_launch = "python -I -S -B scripts/build-release-artifacts.py"
+        for path in (
+            ROOT / "README.md",
+            ROOT / "README.zh-TW.md",
+            ROOT / "CONTRIBUTING.md",
+            ROOT / "scripts" / "README.md",
+            ROOT
+            / "site"
+            / "src"
+            / "content"
+            / "docs"
+            / "contributing"
+            / "release-process.md",
+            ROOT
+            / "site"
+            / "src"
+            / "content"
+            / "docs"
+            / "zh-tw"
+            / "contributing"
+            / "release-process.md",
+            ROOT
+            / "docs"
+            / "superpowers"
+            / "plans"
+            / "2026-07-21-router-v2-intelligence-to-ga.md",
+        ):
+            with self.subTest(path=path):
+                content = path.read_text(encoding="utf-8")
+                invocation_count = content.count("scripts/build-release-artifacts.py")
+                self.assertGreater(invocation_count, 0)
+                self.assertEqual(invocation_count, content.count(isolated_launch))
 
     def test_validate_requires_one_fail_closed_cross_platform_v2_gate(self) -> None:
         validate = workflow_text("validate.yml")
@@ -656,6 +708,28 @@ class GitHubWorkflowTests(unittest.TestCase):
             )
             self.assertFalse(output_path.exists())
 
+    def test_publishable_metadata_rejects_release_notes_crlf_tamper_after_freeze(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                trusted_notes_newline="\r\n",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release notes differ from trusted release contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
     def test_publishable_metadata_rejects_plugin_runtime_allowlist_changed_after_freeze(
         self,
     ) -> None:
@@ -690,6 +764,30 @@ class GitHubWorkflowTests(unittest.TestCase):
                 trusted_release_path_safety_source=(
                     "def parse_safe_relative_posix_path(value):\n    return value\n"
                 ),
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release artifact builder dependency differs from trusted release contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_builder_helper_crlf_tamper_after_freeze(
+        self,
+    ) -> None:
+        helper_source = "def parse_safe_relative_posix_path(value):\n    return value\n"
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                trusted_release_path_safety_source=helper_source,
+                trusted_release_path_safety_newline="\r\n",
             )
             result, output_path = self._run_publication_gate(
                 repository, trusted_revision

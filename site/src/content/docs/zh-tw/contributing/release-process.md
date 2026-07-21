@@ -17,7 +17,7 @@ python scripts/check-markdown-links.py .
 ```powershell
 $Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
 $Output = Join-Path "dist" "release-$Version"
-python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 Builder 會讀取排序後的 allowlists、正規化 ZIP metadata、產生 checksums、SBOM、provenance 與 channel documents，並拒絕缺少或不安全的 path。應修改 source 或 allowlists；不得手動修補 generated archives。

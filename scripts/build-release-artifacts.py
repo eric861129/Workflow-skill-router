@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from hashlib import sha256
+import importlib.util
 import io
 import json
 import os
@@ -13,10 +14,31 @@ import sys
 import zipfile
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent
-if str(SCRIPT_DIRECTORY) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
-from release_path_safety import parse_safe_relative_posix_path
+
+def _load_release_path_safety():
+    """Load the release helper only from this builder's exact sibling path."""
+
+    helper_path = SCRIPT_DIRECTORY / "release_path_safety.py"
+    specification = importlib.util.spec_from_file_location(
+        "workflow_skill_router_release_path_safety",
+        helper_path,
+    )
+    if specification is None or specification.loader is None:
+        raise ImportError(f"cannot load release path safety helper: {helper_path}")
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    parser = getattr(module, "parse_safe_relative_posix_path", None)
+    if not callable(parser):
+        raise ImportError(
+            f"release path safety helper is missing its parser: {helper_path}"
+        )
+    return parser
+
+
+# The publication gate binds this exact helper's Git blob to the trusted contract
+# before a frozen release builder is allowed to execute in the release workflow.
+parse_safe_relative_posix_path = _load_release_path_safety()
 
 
 ROOT = Path(__file__).resolve().parents[1]

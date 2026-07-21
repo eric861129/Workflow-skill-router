@@ -80,18 +80,23 @@ def _verify_trusted_checkout(trusted_revision: str) -> None:
         )
 
 
-def _git_show(revision: str, path: str) -> str:
+def _git_show_bytes(revision: str, path: str) -> bytes:
     try:
         return subprocess.check_output(
             ["git", "show", f"{revision}:{path}"],
-            text=True,
-            encoding="utf-8",
             stderr=subprocess.PIPE,
         )
-    except (subprocess.CalledProcessError, UnicodeDecodeError) as error:
+    except subprocess.CalledProcessError as error:
         raise PublicationGateError(
-            f"Frozen release source is missing or cannot decode {path!r}."
+            f"Frozen release source is missing or cannot read {path!r}."
         ) from error
+
+
+def _decode_utf8(path: str, content: bytes, description: str) -> str:
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise PublicationGateError(f"{description} cannot decode as UTF-8.") from error
 
 
 def _verify_allowlist_schema(path: str, allowlist_text: str) -> None:
@@ -135,18 +140,12 @@ def _verify_frozen_builder_closure(source_revision: str) -> str:
     builder_source = ""
     closure_paths = (ARTIFACT_BUILDER_PATH, *ARTIFACT_BUILDER_DEPENDENCY_PATHS)
     for path in closure_paths:
-        frozen_source = _git_show(source_revision, path)
-        trusted_source = _git_show("HEAD", path)
+        frozen_source = _git_show_bytes(source_revision, path)
+        trusted_source = _git_show_bytes("HEAD", path)
         description = (
             "Frozen release artifact builder"
             if path == ARTIFACT_BUILDER_PATH
             else "Frozen release artifact builder dependency"
-        )
-        _verify_python_source(path, frozen_source, description)
-        _verify_python_source(
-            path,
-            trusted_source,
-            description.replace("Frozen", "Trusted", 1),
         )
         if frozen_source != trusted_source:
             if path == ARTIFACT_BUILDER_PATH:
@@ -157,8 +156,10 @@ def _verify_frozen_builder_closure(source_revision: str) -> str:
                 "Frozen release artifact builder dependency differs from trusted "
                 "release contract."
             )
+        decoded_source = _decode_utf8(path, frozen_source, description)
+        _verify_python_source(path, decoded_source, description)
         if path == ARTIFACT_BUILDER_PATH:
-            builder_source = frozen_source
+            builder_source = decoded_source
     return builder_source
 
 
@@ -185,7 +186,11 @@ def _verify_frozen_source_contract(
 
     try:
         frozen_metadata = json.loads(
-            _git_show(source_revision, "release/version.json")
+            _decode_utf8(
+                "release/version.json",
+                _git_show_bytes(source_revision, "release/version.json"),
+                "Frozen release metadata",
+            )
         )
     except json.JSONDecodeError as error:
         raise PublicationGateError("Frozen release metadata is invalid JSON.") from error
@@ -198,11 +203,13 @@ def _verify_frozen_source_contract(
         )
 
     notes_path = f"release/notes/{release_tag}.md"
-    notes = _git_show(source_revision, notes_path)
-    if notes != _git_show("HEAD", notes_path):
+    notes_bytes = _git_show_bytes(source_revision, notes_path)
+    trusted_notes_bytes = _git_show_bytes("HEAD", notes_path)
+    if notes_bytes != trusted_notes_bytes:
         raise PublicationGateError(
             "Frozen release notes differ from trusted release contract."
         )
+    notes = _decode_utf8(notes_path, notes_bytes, "Frozen release notes")
     required_notes = (
         f"# Workflow Skill Router {release_tag}",
         f"workflow-skill-router-plugin-v{release_version}.zip",
@@ -232,11 +239,17 @@ def _verify_frozen_source_contract(
         "release/allowlists/plugin-runtime-files.json",
         "release/allowlists/skill-package.json",
     ):
-        frozen_allowlist_text = _git_show(source_revision, path)
-        if frozen_allowlist_text != _git_show("HEAD", path):
+        frozen_allowlist_bytes = _git_show_bytes(source_revision, path)
+        trusted_allowlist_bytes = _git_show_bytes("HEAD", path)
+        if frozen_allowlist_bytes != trusted_allowlist_bytes:
             raise PublicationGateError(
                 f"Frozen release allowlist {path!r} differs from trusted release contract."
             )
+        frozen_allowlist_text = _decode_utf8(
+            path,
+            frozen_allowlist_bytes,
+            "Frozen release allowlist",
+        )
         _verify_allowlist_schema(path, frozen_allowlist_text)
 
 

@@ -212,7 +212,7 @@ python -m unittest discover -s tests -v
 python scripts/build-v2-demo-data.py --check
 $Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
 $Output = Join-Path "dist" "release-$Version"
-python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 The release builder allows repeatable overwrites only for the current manifest. It fails closed if the output directory contains a stale, unexpected, symlinked, or otherwise unmanifested path; use a version-specific directory instead of mixing release generations.

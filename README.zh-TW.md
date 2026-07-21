@@ -212,7 +212,7 @@ python -m unittest discover -s tests -v
 python scripts/build-v2-demo-data.py --check
 $Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
 $Output = Join-Path "dist" "release-$Version"
-python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 Release builder 只允許覆寫目前 manifest 內的既有產物。如果 output directory 含有 stale、非預期、symlink 或其他未列入 manifest 的 path，會直接 fail closed；請使用版本專屬目錄，不要混放不同 release generation。

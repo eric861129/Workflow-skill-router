@@ -17,7 +17,7 @@ python scripts/check-markdown-links.py .
 ```powershell
 $Version = (Get-Content -Raw -Encoding UTF8 release/version.json | ConvertFrom-Json).v2_version
 $Output = Join-Path "dist" "release-$Version"
-python scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir $Output --provenance-mode test --check-determinism
 ```
 
 The builder reads sorted allowlists, normalizes ZIP metadata, emits checksums, SBOM, provenance, and channel documents, and rejects missing or unsafe paths. Edit source or allowlists; never patch generated archives.

@@ -506,7 +506,7 @@ Expected: all PASS；Windows symlink skip 可接受但要記錄。
 - [ ] **Step 3: Build and verify beta.4 artifacts**
 
 ```powershell
-python scripts/build-release-artifacts.py --output-dir dist/release-2.0.0-beta.4 --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir dist/release-2.0.0-beta.4 --check-determinism
 Expand-Archive -LiteralPath dist/release-2.0.0-beta.4/workflow-skill-router-plugin-v2.0.0-beta.4.zip -DestinationPath dist/plugin-smoke-2.0.0-beta.4
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs dist/plugin-smoke-2.0.0-beta.4/workflow-skill-router
 ```
@@ -899,7 +899,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 python scripts/validate-router.py --public-readiness .
 python scripts/audit-public-readiness.py .
 python scripts/check-markdown-links.py .
-python scripts/build-release-artifacts.py --output-dir dist/release-2.0.0 --check-determinism
+python -I -S -B scripts/build-release-artifacts.py --output-dir dist/release-2.0.0 --check-determinism
 node scripts/build-mcp-reference-data.mjs --check
 Push-Location plugins/workflow-skill-router
 npm ci

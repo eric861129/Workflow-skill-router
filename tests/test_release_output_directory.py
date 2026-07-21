@@ -26,6 +26,14 @@ def snapshot(root: Path) -> dict[str, bytes]:
 
 
 class ReleaseOutputDirectoryTests(unittest.TestCase):
+    def test_builder_loads_its_bound_helper_without_mutating_sys_path(self) -> None:
+        source = BUILDER.read_text(encoding="utf-8")
+
+        self.assertIn("spec_from_file_location", source)
+        self.assertIn("release_path_safety.py", source)
+        self.assertNotIn("sys.path.insert", source)
+        self.assertNotIn("from release_path_safety import", source)
+
     def test_allowlist_rejects_windows_paths_that_can_escape_the_package_root(
         self,
     ) -> None:
@@ -184,6 +192,9 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                     result = subprocess.run(
                         [
                             sys.executable,
+                            "-I",
+                            "-S",
+                            "-B",
                             str(scripts / BUILDER.name),
                             "--output-dir",
                             str(output),
@@ -199,6 +210,45 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                     self.assertIn("unsafe allowlist path", result.stderr)
                     self.assertFalse(output.exists())
 
+    def test_isolated_builder_help_cannot_import_a_scripts_zipfile_shadow(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "release-fixture"
+            scripts = repository / "scripts"
+            scripts.mkdir(parents=True)
+            shutil.copy2(BUILDER, scripts / BUILDER.name)
+            shutil.copy2(
+                ROOT / "scripts" / "release_path_safety.py",
+                scripts / "release_path_safety.py",
+            )
+            sentinel = repository / "zipfile-shadow-executed.txt"
+            (scripts / "zipfile.py").write_text(
+                "from pathlib import Path\n"
+                f"Path({str(sentinel)!r}).write_text('executed', encoding='utf-8')\n"
+                "raise RuntimeError('unbound zipfile shadow executed')\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-S",
+                    "-B",
+                    str(scripts / BUILDER.name),
+                    "--help",
+                ],
+                cwd=repository,
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertIn("usage:", result.stdout)
+            self.assertFalse(sentinel.exists())
+
     def test_cli_writes_deterministic_v2_release_tree_to_explicit_output(self) -> None:
         downloads_before = snapshot(ROOT / "downloads")
         version = json.loads(
@@ -213,6 +263,9 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
                 result = subprocess.run(
                     [
                         sys.executable,
+                        "-I",
+                        "-S",
+                        "-B",
                         str(BUILDER),
                         "--output-dir",
                         str(output),
@@ -251,6 +304,9 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
+                "-I",
+                "-S",
+                "-B",
                 str(BUILDER),
                 "--output-dir",
                 str(ROOT / "downloads"),
@@ -274,6 +330,9 @@ class ReleaseOutputDirectoryTests(unittest.TestCase):
             result = subprocess.run(
                 [
                     sys.executable,
+                    "-I",
+                    "-S",
+                    "-B",
                     str(BUILDER),
                     "--output-dir",
                     str(output),

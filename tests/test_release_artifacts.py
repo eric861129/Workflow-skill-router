@@ -20,6 +20,9 @@ class ReleaseArtifactTests(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
+                "-I",
+                "-S",
+                "-B",
                 str(BUILDER),
                 "--output-dir",
                 str(cls.output),
