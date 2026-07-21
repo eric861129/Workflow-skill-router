@@ -7,9 +7,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = json.loads(
+VERSION_METADATA = json.loads(
     (ROOT / "release" / "version.json").read_text(encoding="utf-8")
-)["v2_version"]
+)
+VERSION = VERSION_METADATA["v2_version"]
+PUBLISHED_VERSION = VERSION_METADATA["published_v2_version"]
 
 
 class ReleaseCopyTests(unittest.TestCase):
@@ -204,7 +206,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            f"eric861129/Workflow-skill-router --ref v{VERSION}"
+            f"eric861129/Workflow-skill-router --ref v{PUBLISHED_VERSION}"
         )
 
         for relative in pages:
@@ -239,7 +241,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            f"eric861129/Workflow-skill-router --ref v{VERSION}"
+            f"eric861129/Workflow-skill-router --ref v{PUBLISHED_VERSION}"
         )
 
         for relative, task_phrase, contributor_marker in pages:
@@ -262,7 +264,7 @@ class ReleaseCopyTests(unittest.TestCase):
             "site/src/content/docs/guides/install-skill.md",
             "site/src/content/docs/zh-tw/guides/install-skill.md",
         )
-        asset = f"workflow-skill-router-skill-v{VERSION}.zip"
+        asset = f"workflow-skill-router-skill-v{PUBLISHED_VERSION}.zip"
 
         for relative in pages:
             text = (ROOT / relative).read_text(encoding="utf-8")

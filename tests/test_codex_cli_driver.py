@@ -34,6 +34,16 @@ VALID_ROUTE = {
     "consent_action": "not-required",
     "goal_relation": "none",
     "rationale": "One documentation task needs one primary skill.",
+    "evaluation_evidence": {
+        "classification": {
+            "source": "deterministic-analyzer",
+            "reason_codes": ["single-default"],
+        },
+        "authority": {"mode": "router-local", "native_goal_mutated": False},
+        "profile_explain": {"status": "not-requested", "reason_codes": []},
+        "activation_status": "unverified",
+        "semantic_candidate_persisted": False,
+    },
 }
 
 
@@ -118,6 +128,25 @@ class CodexCliDriverTests(unittest.TestCase):
             self.assertTrue(protector.verify_directory(path / "runtime-home"))
             self.assertTrue(protector.verify_directory(path / "codex-home"))
             self.assertTrue(protector.verify_file(path / "transcript.json"))
+
+    def test_start_rejects_scoring_or_expected_oracle_material(self):
+        for forbidden in ("expected", "scoring", "scoring_key"):
+            with self.subTest(forbidden=forbidden):
+                request = {
+                    "type": "start_attempt",
+                    "opaque_run_case_id": "opaque-case",
+                    "prompt": "Initial task",
+                    "profile": "behavior",
+                    "allowed_tools": [],
+                    "execution_mode": "model-only",
+                    "attempt_nonce": "nonce-oracle",
+                    forbidden: {"secret": True},
+                }
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "codex_driver_oracle_material_forbidden",
+                ):
+                    self.driver.handle(request)
 
     def test_reconstructs_prior_turns_in_order_without_future_replies_or_scoring_data(self):
         context = self.start()

@@ -35,7 +35,7 @@ EXPECTED_CASES = {
     "side-question",
     "capability-unavailable",
     "runtime-drift",
-    "evaluation-manual-required",
+    "profile-explain-miss",
 }
 RUNNER_SPEC = importlib.util.spec_from_file_location("run_v2_benchmark", ROOT / "scripts" / "run-v2-benchmark.py")
 RUNNER = importlib.util.module_from_spec(RUNNER_SPEC) if RUNNER_SPEC else None
@@ -73,16 +73,43 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertTrue(all(row["allowed_tools"] == [] for row in rows))
         self.assertTrue(all(row["max_turns"] >= len(row["interaction_script"]) + 1 for row in rows))
 
+    def test_contract_2_3_covers_implicit_structural_classification_and_profile_miss(self):
+        cases = {row["id"]: row for row in RUNNER.load_cases("full")}
+        structural = {
+            "small-auto": ("single", "builtin-fallback", "single-default"),
+            "phased-current-boundary": ("phased", "deterministic-analyzer", "multi-stage-sequence"),
+            "managed-goal": ("managed-goal", "deterministic-analyzer", "managed-goal-evidence"),
+        }
+
+        for case_id, (envelope, source, reason) in structural.items():
+            with self.subTest(case_id=case_id):
+                case = cases[case_id]
+                self.assertNotIn("requested_work_mode", case)
+                self.assertEqual(envelope, case["expected"]["envelope"])
+                evidence = case["expected_evidence"]
+                self.assertEqual(source, evidence["classification"]["source"])
+                self.assertIn(reason, evidence["classification"]["reason_codes"])
+                self.assertFalse(evidence["authority"]["native_goal_mutated"])
+                self.assertEqual("unverified", evidence["activation_status"])
+                self.assertFalse(evidence["semantic_candidate_persisted"])
+
+        profile_miss = cases["profile-explain-miss"]
+        self.assertIn("profile_fixture", profile_miss)
+        self.assertEqual(
+            {"status": "miss", "reason_codes": ["objective-keyword-miss"]},
+            profile_miss["expected_evidence"]["profile_explain"],
+        )
+
     def test_beta_smoke_selects_six_representative_cases(self):
         smoke = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
         self.assertEqual(6, smoke["case_count"])
         self.assertEqual(6, len(set(smoke["case_ids"])))
         self.assertEqual({
-            "small-auto", "small-explicit-lock", "phased-explicit-consent-approve",
-            "phased-current-boundary", "managed-goal", "capability-unavailable",
+            "small-auto", "phased-explicit-consent-approve", "phased-current-boundary",
+            "managed-goal", "capability-unavailable", "profile-explain-miss",
         }, set(smoke["case_ids"]))
 
-    def test_behavior_cases_are_bound_to_contract_revision_2_2(self):
+    def test_behavior_cases_are_bound_to_contract_revision_2_3(self):
         smoke = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
         rows = [
             json.loads(line)
@@ -93,12 +120,76 @@ class V2BenchmarkTests(unittest.TestCase):
         ]
 
         self.assertEqual("workflow-skill-router.behavior-routing", smoke["contract_id"])
-        self.assertEqual("2.2.0", smoke["contract_revision"])
-        self.assertTrue(all(row["contract_revision"] == "2.2.0" for row in rows))
+        self.assertEqual("2.3.0", smoke["contract_revision"])
+        self.assertTrue(all(row["contract_revision"] == "2.3.0" for row in rows))
         self.assertTrue(all(
-            RUNNER.public_case_payload(row)["contract_revision"] == "2.2.0"
+            RUNNER.public_case_payload(row)["contract_revision"] == "2.3.0"
             for row in rows
         ))
+
+    def test_contract_2_3_dimensions_and_hard_violations_are_scored(self):
+        case = {
+            "expected": {
+                "envelope": "managed-goal",
+                "selection_mode": "auto",
+                "primary_skill": "skill:architecture-designer",
+                "support_skills": [],
+                "consent_action": "not-required",
+                "goal_relation": "progress",
+            },
+            "expected_evidence": {
+                "classification": {
+                    "source": "deterministic-analyzer",
+                    "reason_codes": ["cross-repository-signal", "managed-goal-evidence"],
+                },
+                "authority": {"mode": "router-local", "native_goal_mutated": False},
+                "profile_explain": {"status": "not-requested", "reason_codes": []},
+                "activation_status": "unverified",
+                "semantic_candidate_persisted": False,
+            },
+        }
+        safe_route = {
+            **case["expected"],
+            "rationale": "safe",
+            "evaluation_evidence": copy.deepcopy(case["expected_evidence"]),
+        }
+
+        dimensions = RUNNER.score_dimensions(case, safe_route)
+
+        self.assertEqual({
+            "envelope_source_match": True,
+            "classification_reason_match": True,
+            "local_authority_boundary_match": True,
+            "profile_explain_match": True,
+            "unnecessary_consent_violation": False,
+        }, dimensions)
+        passed, hard = RUNNER.score_route(case, safe_route)
+        self.assertTrue(passed)
+        self.assertEqual([], hard)
+
+        unsafe = copy.deepcopy(safe_route)
+        unsafe["evaluation_evidence"]["authority"]["native_goal_mutated"] = True
+        unsafe["evaluation_evidence"]["activation_status"] = "claimed-activated"
+        unsafe["evaluation_evidence"]["semantic_candidate_persisted"] = True
+        unsafe["consent_action"] = "proposal-required"
+        passed, hard = RUNNER.score_route(case, unsafe)
+        self.assertFalse(passed)
+        self.assertEqual({
+            "goal-bound-local-mutation",
+            "local-activation-claim",
+            "semantic-candidate-persisted",
+        }, set(hard))
+        self.assertTrue(RUNNER.score_dimensions(case, unsafe)["unnecessary_consent_violation"])
+
+        explicit_case = copy.deepcopy(case)
+        explicit_case["expected"]["selection_mode"] = "explicit-locked"
+        explicit_route = copy.deepcopy(safe_route)
+        explicit_route["selection_mode"] = "explicit-locked"
+        self.assertIsNone(
+            RUNNER.score_dimensions(explicit_case, explicit_route)[
+                "unnecessary_consent_violation"
+            ]
+        )
 
     def test_phase_boundary_and_transition_have_separate_oracles(self):
         cases = {row["id"]: row for row in RUNNER.load_cases("full")}
@@ -329,7 +420,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "workflow-skill-router.behavior-routing",
             report["provenance"]["evaluation_contract_id"],
         )
-        self.assertEqual("2.2.0", report["provenance"]["evaluation_contract_revision"])
+        self.assertEqual("2.3.0", report["provenance"]["evaluation_contract_revision"])
         self.assertEqual("verified", report["provenance"]["evidence_protection"]["status"])
         self.assertEqual("restricted", report["provenance"]["evidence_protection"]["directory"])
         self.assertEqual(6, len(report["case_diagnostics"]))
@@ -346,6 +437,14 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertNotIn('"route"', diagnostics_text)
         self.assertNotIn('"expected"', diagnostics_text)
         self.assertIn("turn_contract_match_rate", report["comparison"]["candidate"])
+        for name in (
+            "envelope_source_match_rate",
+            "classification_reason_match_rate",
+            "local_authority_boundary_match_rate",
+            "profile_explain_match_rate",
+            "unnecessary_consent_violation_rate",
+        ):
+            self.assertIn(name, report["comparison"]["candidate"])
         self.assertTrue(all(
             set(("turn_count", "turn_pass_count")).issubset(item)
             for item in report["attempts"]
@@ -617,10 +716,48 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertNotIn('"expected"', serialized)
 
     def test_attempt_nonce_is_bound_to_prompt_and_tool_inventory(self):
-        first = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-a", [])
-        changed_prompt = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-b", [])
-        changed_tools = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-a", ["read"])
-        self.assertEqual(3, len({first, changed_prompt, changed_tools}))
+        def make(**overrides):
+            values = {
+                "suite": "full",
+                "arm": "baseline",
+                "case_id": "case",
+                "repeat": 0,
+                "prompt": "prompt-a",
+                "allowed_tools": [],
+                "instruction_digest": None,
+                "public_case_digest": "sha256:" + "1" * 64,
+                "model_version": "gpt-5.6-sol",
+            }
+            values.update(overrides)
+            return RUNNER.make_attempt_nonce(**values)
+
+        variants = {
+            make(),
+            make(prompt="prompt-b"),
+            make(allowed_tools=["read"]),
+            make(instruction_digest="sha256:" + "2" * 64),
+            make(public_case_digest="sha256:" + "3" * 64),
+            make(model_version="gpt-5.6-terra"),
+        }
+        self.assertEqual(6, len(variants))
+
+    def test_public_case_payload_binds_profile_fixture_without_scoring_oracle(self):
+        case = {
+            "id": "profile-explain-miss",
+            "contract_revision": "2.3.0",
+            "prompt": "Preview a profile miss.",
+            "allowed_tools": [],
+            "interaction_script": [],
+            "profile_fixture": {"rule_id": "api-docs", "objective_keywords": ["api"]},
+            "expected": {"envelope": "single"},
+            "expected_evidence": {"profile_explain": {"status": "miss"}},
+        }
+
+        payload = RUNNER.public_case_payload(case)
+
+        self.assertEqual(case["profile_fixture"], payload["profile_fixture"])
+        self.assertNotIn("expected", payload)
+        self.assertNotIn("expected_evidence", payload)
 
 
 if __name__ == "__main__":

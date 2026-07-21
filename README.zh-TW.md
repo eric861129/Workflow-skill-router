@@ -4,7 +4,7 @@
 
 Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 runtime-aware 規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。
 
-> 目前 prerelease：`2.0.0-beta.3`。V2 是公開產品主線；遷移期間仍可從 immutable V1.3.1 復原。
+> 已準備的 prerelease candidate：`2.0.0-beta.4`（尚未發布）。目前已發布的 V2 prerelease 仍是 `2.0.0-beta.3`；遷移期間仍可從 immutable V1.3.1 復原。
 
 ## 60-second outcome / 60 秒成果
 

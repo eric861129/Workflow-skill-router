@@ -53,7 +53,7 @@ _ENV_ALLOWLIST = (
     "USERPROFILE",
     "WINDIR",
 )
-_ROUTE_KEYS = {
+_BASE_ROUTE_KEYS = {
     "envelope",
     "selection_mode",
     "primary_skill",
@@ -62,6 +62,7 @@ _ROUTE_KEYS = {
     "goal_relation",
     "rationale",
 }
+_OPTIONAL_ROUTE_KEYS = {"evaluation_evidence"}
 _CONSENT_INTENT_KEYS = {"action", "rationale"}
 _EXECUTION_MODES = {"model-only", "hybrid-router"}
 
@@ -99,6 +100,8 @@ class CodexCliDriver:
             raise EvaluationIntegrityError("codex_attempt_root_unprotected") from error
 
     def handle(self, request: Mapping[str, object]) -> dict[str, object]:
+        if {"expected", "scoring", "scoring_key"}.intersection(request):
+            raise EvaluationIntegrityError("codex_driver_oracle_material_forbidden")
         message_type = request.get("type")
         if message_type == "start_attempt":
             return self._start(request)
@@ -255,7 +258,7 @@ class CodexCliDriver:
                 route = dict(previous)
                 route["rationale"] = str(intent["rationale"])
         else:
-            route = self._extract_object(completed.stdout, _ROUTE_KEYS)
+            route = self._extract_object(completed.stdout, _BASE_ROUTE_KEYS)
             self._validate_route(route)
             if (
                 transcript.get("execution_mode") == "hybrid-router"
@@ -370,7 +373,8 @@ class CodexCliDriver:
     @staticmethod
     def _validate_route(route: Mapping[str, object]) -> None:
         valid = (
-            set(route) == _ROUTE_KEYS
+            _BASE_ROUTE_KEYS.issubset(route)
+            and set(route).issubset(_BASE_ROUTE_KEYS | _OPTIONAL_ROUTE_KEYS)
             and route.get("envelope") in {"single", "phased", "managed-goal"}
             and route.get("selection_mode") in {"auto", "explicit-locked"}
             and isinstance(route.get("primary_skill"), str)
@@ -386,8 +390,62 @@ class CodexCliDriver:
             and isinstance(route.get("rationale"), str)
             and bool(route.get("rationale"))
         )
+        if valid and "evaluation_evidence" in route:
+            valid = CodexCliDriver._validate_evaluation_evidence(
+                route["evaluation_evidence"]
+            )
         if not valid:
             raise EvaluationIntegrityError("codex_route_schema_invalid")
+
+    @staticmethod
+    def _validate_evaluation_evidence(value: object) -> bool:
+        if not isinstance(value, dict) or set(value) != {
+            "classification",
+            "authority",
+            "profile_explain",
+            "activation_status",
+            "semantic_candidate_persisted",
+        }:
+            return False
+        classification = value.get("classification")
+        authority = value.get("authority")
+        profile = value.get("profile_explain")
+        sources = {
+            "native-goal-binding",
+            "caller-work-mode-hint",
+            "deterministic-analyzer",
+            "profile-route",
+            "builtin-fallback",
+            "legacy-replay",
+        }
+
+        def valid_codes(codes: object) -> bool:
+            return (
+                isinstance(codes, list)
+                and len(codes) <= 8
+                and all(
+                    isinstance(item, str)
+                    and re.fullmatch(r"[a-z0-9-]{1,64}", item) is not None
+                    for item in codes
+                )
+            )
+
+        return bool(
+            isinstance(classification, dict)
+            and set(classification) == {"source", "reason_codes"}
+            and classification.get("source") in sources
+            and valid_codes(classification.get("reason_codes"))
+            and isinstance(authority, dict)
+            and set(authority) == {"mode", "native_goal_mutated"}
+            and authority.get("mode") == "router-local"
+            and isinstance(authority.get("native_goal_mutated"), bool)
+            and isinstance(profile, dict)
+            and set(profile) == {"status", "reason_codes"}
+            and profile.get("status") in {"not-requested", "match", "miss"}
+            and valid_codes(profile.get("reason_codes"))
+            and value.get("activation_status") in {"unverified", "claimed-activated"}
+            and isinstance(value.get("semantic_candidate_persisted"), bool)
+        )
 
     def _write_transcript(self, path: Path, payload: Mapping[str, object]) -> None:
         path.write_text(

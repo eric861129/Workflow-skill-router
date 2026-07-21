@@ -34,6 +34,17 @@ description: Track evidence-backed milestones from alpha to GA.
 - [x] Bind Pages publication to the validated trusted `main` revision
 - [x] Publish a new immutable prerelease and move only `latest-v2`
 
+## Beta 2.0.0-beta.4 — local candidate
+
+- [x] Add explainable no-hint classification for Single, Phased, and Managed Goal work
+- [x] Add deterministic Profile explain/lint and the Contract 2.3.0 Profile-miss case
+- [x] Seal attempt nonce, tool inventory, instruction digest, public case digest, and model version
+- [x] Prepare deterministic Plugin and Skill-only release artifacts locally
+- [ ] Obtain explicit authorization for the 36-attempt / 42-turn model run
+- [ ] Review sanitized evidence, attest zero hard violations, and publish the immutable prerelease
+
+The reference-driver validates the offline contract but does not prove real-model behavior. Until the remaining review and publication gates finish, beta.3 remains the latest published V2 snapshot.
+
 ## Next beta milestone
 
 - [ ] Exercise a verified Host scheduler/evidence integration beyond fixtures

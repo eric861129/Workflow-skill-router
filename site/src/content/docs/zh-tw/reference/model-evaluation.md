@@ -14,6 +14,10 @@ Raw result 與 checkpoint 只能寫入已驗證的 `restricted/` 目錄。Window
 
 公開報告只提供安全的 case-level diagnostics：數量、match rate 與 paired delta。Prompt、expected／actual Skill、rationale 與 route payload 都保留在 restricted evidence。
 
-Contract `workflow-skill-router.behavior-routing@2.2.0` 將目前 Phase oracle 與有狀態的 Phase-transition oracle 分開綁定，並要求 scoped consent support 必須由目前 Phase 的具體 exit evidence 證成必要。多輪 consent 與 transition case 會逐 turn 評分，正確的最後 route 不能掩蓋前面 turn 的契約失敗。歷史報表（包含 revision `2.1.0`）保留原始 case／instruction digest，不得套用新版 oracle 事後重算。執行前 runner 會重新計算 canonical path-and-SHA-256 manifest；instruction package 與宣告 digest 不一致時會 fail closed。
+Contract `workflow-skill-router.behavior-routing@2.3.0` 維持完整套件 13 個案例、beta smoke 6 個案例。既有 Single、Phased 與 Managed Goal 結構案例不提供 `requested_work_mode`；`profile-explain-miss` 取代 `evaluation-manual-required`。Smoke 仍只有一個雙回合 scoped-consent 案例，因此維持 36 attempts 與 42 model turns。歷史 2.2.0 報表保留原始 case／instruction digest，不會套用新版 oracle 重算。
+
+本合約評分公開安全的分類來源／reason codes、本機 authority、Profile explain 與多餘 consent。Goal-bound 本機 mutation、本機輸出宣稱已 activation，以及把 semantic candidate 直接持久化，都屬於 hard violation。可選的 evidence object 僅允許穩定代碼與布林值，不包含原始 prompt、instruction body、Profile 內容、路徑或評分預期。Attempt identity 會綁定 nonce、tool inventory、instruction digest、公開 case payload digest 與 model／reference-driver version。
+
+Deterministic reference-driver 只驗證 protocol 與 scoring pipeline；it does not prove real-model behavior。Beta.4 在取得明確額度授權、完成 36 attempts／42 model turns、人工審查與 attestation 前，沒有新的真實模型證據。
 
 Paired arms 現在明確宣告不同的產品 execution mode，不再假裝兩邊都只是 instruction-only：baseline 是 `model-only`，candidate 是 `hybrid-router`。Candidate consent follow-up 中，fresh model 只回傳 `approved`、`rejected` 或 `unclear`，再由 deterministic Router 套用到 persisted proposal。Model behavior evidence 與 deterministic MCP integration evidence 必須綁定同一 source revision，才能 attestation。

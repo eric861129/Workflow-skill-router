@@ -14,7 +14,7 @@ try { await core.start(); } catch {
   process.stderr.write("Workflow Skill Router：Python runtime 不可用，切換為 skill-only-fallback。\n");
   process.exit(78);
 }
-const server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.3" });
+const server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.4" });
 const trustedWorkspaceRoots = async () => {
   let clientRoots: { uri: string }[] = [];
   if (server.server.getClientCapabilities()?.roots) {

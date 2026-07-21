@@ -11,6 +11,60 @@ def _public_task(prompt: str) -> str:
     return prompt.rsplit(marker, 1)[-1] if marker in prompt else prompt
 
 
+def _evaluation_evidence(lowered: str) -> dict[str, object] | None:
+    common: dict[str, object] = {
+        "authority": {"mode": "router-local", "native_goal_mutated": False},
+        "profile_explain": {"status": "not-requested", "reason_codes": []},
+        "activation_status": "unverified",
+        "semantic_candidate_persisted": False,
+    }
+    if "troubleshooting note" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default"],
+            },
+        }
+    if "first plan the diagnosis" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": ["multi-stage-sequence"],
+            },
+        }
+    if (
+        "resumable cross-repository migration" in lowered
+        and "dependency graph" in lowered
+    ):
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": [
+                    "cross-repository-signal",
+                    "resumable-signal",
+                    "dependency-signal",
+                    "managed-goal-evidence",
+                ],
+            },
+        }
+    if "against the supplied routing profile" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default"],
+            },
+            "profile_explain": {
+                "status": "miss",
+                "reason_codes": ["objective-keyword-miss"],
+            },
+        }
+    return None
+
+
 def _route(prompt: str) -> dict[str, object]:
     lowered = _public_task(prompt).lower()
     if "phase transition has entered browser verification" in lowered:
@@ -45,7 +99,14 @@ def _route(prompt: str) -> dict[str, object]:
         }
     skills = re.findall(r"skill:[a-z0-9-]+", lowered)
     explicit = "use skill:" in lowered
-    if "managed goal" in lowered or "active migration goal" in lowered:
+    if (
+        "managed goal" in lowered
+        or "active migration goal" in lowered
+        or (
+            "resumable cross-repository migration" in lowered
+            and "dependency graph" in lowered
+        )
+    ):
         envelope = "managed-goal"
     elif "design and verify" in lowered or any(
         term in lowered
@@ -63,7 +124,7 @@ def _route(prompt: str) -> dict[str, object]:
         primary = "skill:code-documenter"
     elif "frontend regression" in lowered or "phased frontend repair" in lowered:
         primary = "skill:systematic-debugging"
-    elif "managed goal" in lowered:
+    elif "managed goal" in lowered or "resumable cross-repository migration" in lowered:
         primary = "skill:architecture-designer"
     elif "browser runtime" in lowered or "exact canonical capability" in lowered:
         primary = "skill:playwright"
@@ -96,7 +157,7 @@ def _route(prompt: str) -> dict[str, object]:
         )
         else []
     )
-    return {
+    route = {
         "envelope": envelope,
         "selection_mode": "explicit-locked" if explicit else "auto",
         "primary_skill": primary,
@@ -105,6 +166,10 @@ def _route(prompt: str) -> dict[str, object]:
         "goal_relation": relation,
         "rationale": "Deterministic protocol demonstration; this is not model evidence.",
     }
+    evidence = _evaluation_evidence(lowered)
+    if evidence is not None:
+        route["evaluation_evidence"] = evidence
+    return route
 
 
 def handle(request: dict[str, object]) -> dict[str, object]:

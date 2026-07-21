@@ -160,7 +160,7 @@ class V2DocumentationTests(unittest.TestCase):
         self.assertIn("Host 授權", chinese)
         self.assertIn("不涵蓋", chinese)
 
-    def test_ga_evaluation_budget_matches_contract_2_1(self):
+    def test_ga_evaluation_budget_matches_contract_2_3(self):
         pages = (
             "site/src/content/docs/concepts/evaluation-evidence.md",
             "site/src/content/docs/contributing/roadmap.md",
@@ -173,6 +173,21 @@ class V2DocumentationTests(unittest.TestCase):
             self.assertIn("78", text, relative)
             self.assertIn("96", text, relative)
             self.assertNotIn("72", text, relative)
+
+    def test_contract_2_3_docs_preserve_offline_and_real_model_evidence_boundaries(self):
+        pages = (
+            "evaluation/v2/README.md",
+            "site/src/content/docs/reference/model-evaluation.md",
+            "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text("utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("2.3.0", text)
+                self.assertIn("reference-driver", text)
+                self.assertIn("does not prove real-model behavior", text)
+                self.assertIn("36 attempts", text)
+                self.assertIn("42", text)
 
 
 if __name__=="__main__":unittest.main()

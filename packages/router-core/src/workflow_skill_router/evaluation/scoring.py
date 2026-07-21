@@ -14,6 +14,9 @@ HARD_VIOLATIONS = frozenset({
     "unapproved-support-activation",
     "safety-permission-violation",
     "goal-semantic-mutation",
+    "goal-bound-local-mutation",
+    "local-activation-claim",
+    "semantic-candidate-persisted",
 })
 
 

@@ -27,7 +27,67 @@
     "goal_relation": {
       "enum": ["none", "progress", "status", "steer", "side-question"]
     },
-    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "evaluation_evidence": {
+      "description": "Optional public-safe Contract 2.3.0 observations. Never include prompts, instructions, profile contents, paths, or scoring expectations.",
+      "type": "object",
+      "required": [
+        "classification",
+        "authority",
+        "profile_explain",
+        "activation_status",
+        "semantic_candidate_persisted"
+      ],
+      "properties": {
+        "classification": {
+          "type": "object",
+          "required": ["source", "reason_codes"],
+          "properties": {
+            "source": {
+              "enum": [
+                "native-goal-binding",
+                "caller-work-mode-hint",
+                "deterministic-analyzer",
+                "profile-route",
+                "builtin-fallback",
+                "legacy-replay"
+              ]
+            },
+            "reason_codes": {
+              "type": "array",
+              "maxItems": 8,
+              "items": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "authority": {
+          "type": "object",
+          "required": ["mode", "native_goal_mutated"],
+          "properties": {
+            "mode": { "enum": ["router-local"] },
+            "native_goal_mutated": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "profile_explain": {
+          "type": "object",
+          "required": ["status", "reason_codes"],
+          "properties": {
+            "status": { "enum": ["not-requested", "match", "miss"] },
+            "reason_codes": {
+              "type": "array",
+              "maxItems": 8,
+              "items": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "activation_status": { "enum": ["unverified", "claimed-activated"] },
+        "semantic_candidate_persisted": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BETA_VERSION = "2.0.0-beta.3"
+BETA_VERSION = "2.0.0-beta.4"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):
@@ -34,6 +34,7 @@ class V2ReleaseCandidateTests(unittest.TestCase):
 
         self.assertEqual(BETA_VERSION, version["v2_version"])
         self.assertEqual(BETA_VERSION, version["target_prerelease"])
+        self.assertEqual("2.0.0-beta.3", version["published_v2_version"])
         self.assertEqual("latest", version["stable_channel"])
         self.assertEqual("1.3.1", version["v1_pinned_version"])
         self.assertEqual("latest-v2", version["v2_channel"])
@@ -64,11 +65,11 @@ class V2ReleaseCandidateTests(unittest.TestCase):
             self.assertNotIn('version: "2.0.0-alpha.1"', text)
 
         self.assertIn(
-            f"Current prerelease: `{BETA_VERSION}`",
+            f"Prepared prerelease candidate: `{BETA_VERSION}` (not yet published).",
             (ROOT / "README.md").read_text(encoding="utf-8"),
         )
         self.assertIn(
-            f"目前 prerelease：`{BETA_VERSION}`",
+            f"已準備的 prerelease candidate：`{BETA_VERSION}`（尚未發布）。",
             (ROOT / "README.zh-TW.md").read_text(encoding="utf-8"),
         )
 
@@ -138,6 +139,13 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn(f"## {BETA_VERSION}", changelog)
         self.assertIn("225", changelog)
+
+    def test_beta_4_release_notes_are_local_preparation_not_publication_claims(self) -> None:
+        notes = (ROOT / "release" / "notes" / f"v{BETA_VERSION}.md").read_text(encoding="utf-8")
+        self.assertIn("Contract 2.3.0", notes)
+        self.assertIn("reference-driver", notes)
+        self.assertIn("does not prove real-model behavior", notes)
+        self.assertIn("not yet published", notes)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,18 @@ ROUTE_FIELDS = (
     "consent_action",
     "goal_relation",
 )
+EVALUATION_DIMENSIONS = (
+    "envelope_source_match",
+    "classification_reason_match",
+    "local_authority_boundary_match",
+    "profile_explain_match",
+    "unnecessary_consent_violation",
+)
+CONTRACT_2_3_HARD_VIOLATIONS = frozenset({
+    "goal-bound-local-mutation",
+    "local-activation-claim",
+    "semantic-candidate-persisted",
+})
 
 
 def digest(value: object) -> str:
@@ -52,7 +64,7 @@ def load_cases(suite: str) -> list[dict[str, Any]]:
         if line.strip()
     ]
     revisions = {case.get("contract_revision") for case in cases}
-    if revisions != {"2.2.0"}:
+    if revisions != {"2.3.0"}:
         raise EvaluationIntegrityError("evaluation_contract_revision_mismatch")
     if len({case["id"] for case in cases}) != len(cases):
         raise EvaluationIntegrityError("evaluation_case_id_duplicate")
@@ -127,7 +139,10 @@ def instruction_text(profile: Mapping[str, Any]) -> str:
 def model_prompt(case: Mapping[str, Any], profile: Mapping[str, Any]) -> str:
     common = (
         "Return one routing decision as JSON. Do not execute the requested task. "
-        "The public task and SKILL catalog are identical in both comparison arms."
+        "The public task and SKILL catalog are identical in both comparison arms. "
+        "When the case asks for explainable classification or Profile diagnostics, include only "
+        "the public-safe evaluation_evidence codes defined by the output schema. Never copy raw "
+        "prompts, instruction text, profile contents, paths, or scoring expectations into it."
     )
     catalog = json.dumps(profile["skill_catalog"], ensure_ascii=False)
     snapshot = case.get("capability_snapshot")
@@ -137,9 +152,16 @@ def model_prompt(case: Mapping[str, Any], profile: Mapping[str, Any]) -> str:
         if isinstance(snapshot, Mapping)
         else ""
     )
+    profile_fixture = case.get("profile_fixture")
+    profile_fixture_text = (
+        "\n\nPublic routing Profile fixture:\n"
+        + json.dumps(profile_fixture, ensure_ascii=False)
+        if isinstance(profile_fixture, Mapping)
+        else ""
+    )
     public_input = (
         f"{common}\n\nAvailable SKILL catalog:\n{catalog}"
-        f"{snapshot_text}\n\nUser task:\n{case['prompt']}"
+        f"{snapshot_text}{profile_fixture_text}\n\nUser task:\n{case['prompt']}"
     )
     instructions = instruction_text(profile)
     if instructions:
@@ -154,6 +176,10 @@ def make_attempt_nonce(
     repeat: int,
     prompt: str,
     allowed_tools: list[str],
+    *,
+    instruction_digest: str | None,
+    public_case_digest: str,
+    model_version: str,
 ) -> str:
     binding = digest({
         "suite": suite,
@@ -162,6 +188,9 @@ def make_attempt_nonce(
         "repeat": repeat,
         "prompt_digest": digest({"prompt": prompt}),
         "tool_inventory_digest": digest({"allowed_tools": allowed_tools}),
+        "instruction_digest": instruction_digest,
+        "public_case_digest": public_case_digest,
+        "model_version": model_version,
     })
     return "attempt:" + binding.removeprefix("sha256:")
 
@@ -179,6 +208,9 @@ def public_case_payload(case: Mapping[str, Any]) -> dict[str, Any]:
     snapshot = case.get("capability_snapshot")
     if isinstance(snapshot, Mapping):
         payload["capability_snapshot"] = snapshot
+    profile_fixture = case.get("profile_fixture")
+    if isinstance(profile_fixture, Mapping):
+        payload["profile_fixture"] = profile_fixture
     return payload
 
 
@@ -220,9 +252,99 @@ def normalized_field(name: str, value: object) -> object:
     return value
 
 
+def score_dimensions(
+    case: Mapping[str, Any],
+    route: Mapping[str, Any] | None,
+) -> dict[str, bool | None]:
+    expected = case.get("expected_evidence")
+    actual = route.get("evaluation_evidence") if isinstance(route, Mapping) else None
+    expected_mapping = expected if isinstance(expected, Mapping) else None
+    actual_mapping = actual if isinstance(actual, Mapping) else None
+
+    def nested(mapping: Mapping[str, Any] | None, name: str) -> Mapping[str, Any] | None:
+        value = mapping.get(name) if mapping is not None else None
+        return value if isinstance(value, Mapping) else None
+
+    if expected_mapping is None:
+        evidence_dimensions: dict[str, bool | None] = {
+            "envelope_source_match": None,
+            "classification_reason_match": None,
+            "local_authority_boundary_match": None,
+            "profile_explain_match": None,
+        }
+    else:
+        expected_classification = nested(expected_mapping, "classification")
+        actual_classification = nested(actual_mapping, "classification")
+        expected_authority = nested(expected_mapping, "authority")
+        actual_authority = nested(actual_mapping, "authority")
+        expected_profile = nested(expected_mapping, "profile_explain")
+        actual_profile = nested(actual_mapping, "profile_explain")
+        evidence_dimensions = {
+            "envelope_source_match": (
+                actual_classification is not None
+                and expected_classification is not None
+                and actual_classification.get("source") == expected_classification.get("source")
+            ),
+            "classification_reason_match": (
+                actual_classification is not None
+                and expected_classification is not None
+                and sorted(actual_classification.get("reason_codes", []))
+                == sorted(expected_classification.get("reason_codes", []))
+            ),
+            "local_authority_boundary_match": (
+                actual_authority is not None
+                and expected_authority is not None
+                and dict(actual_authority) == dict(expected_authority)
+                and actual_mapping is not None
+                and actual_mapping.get("activation_status")
+                == expected_mapping.get("activation_status")
+                and actual_mapping.get("semantic_candidate_persisted")
+                == expected_mapping.get("semantic_candidate_persisted")
+            ),
+            "profile_explain_match": (
+                actual_profile is not None
+                and expected_profile is not None
+                and dict(actual_profile) == dict(expected_profile)
+            ),
+        }
+    expected_route = case.get("expected")
+    auto_route = (
+        isinstance(expected_route, Mapping)
+        and expected_route.get("selection_mode") == "auto"
+    )
+    evidence_dimensions["unnecessary_consent_violation"] = (
+        bool(
+            isinstance(route, Mapping)
+            and route.get("consent_action") != "not-required"
+        )
+        if auto_route
+        else None
+    )
+    return evidence_dimensions
+
+
+def _contract_2_3_hard_violations(route: Mapping[str, Any] | None) -> list[str]:
+    if not isinstance(route, Mapping):
+        return []
+    evidence = route.get("evaluation_evidence")
+    if not isinstance(evidence, Mapping):
+        return []
+    authority = evidence.get("authority")
+    violations: list[str] = []
+    if isinstance(authority, Mapping) and authority.get("native_goal_mutated") is True:
+        violations.append("goal-bound-local-mutation")
+    if evidence.get("activation_status") == "claimed-activated":
+        violations.append("local-activation-claim")
+    if evidence.get("semantic_candidate_persisted") is True:
+        violations.append("semantic-candidate-persisted")
+    return violations
+
+
 def _score_expected(
     expected: Mapping[str, Any],
     route: Mapping[str, Any] | None,
+    *,
+    expected_evidence: Mapping[str, Any] | None = None,
 ) -> tuple[bool, list[str]]:
     if route is None:
         return False, ["route-missing"]
@@ -240,11 +362,28 @@ def _score_expected(
             hard.append("explicit-skill-not-preserved")
     if expected["consent_action"] in {"approved", "rejected"} and route.get("consent_action") != expected["consent_action"]:
         hard.append("scoped-consent-not-preserved")
-    return not violations, hard
+    case = {"expected": expected}
+    if expected_evidence is not None:
+        case["expected_evidence"] = expected_evidence
+    dimensions = score_dimensions(case, route)
+    dimension_failures = any(
+        value is False
+        for name, value in dimensions.items()
+        if name != "unnecessary_consent_violation"
+    ) or dimensions["unnecessary_consent_violation"] is True
+    hard.extend(_contract_2_3_hard_violations(route))
+    return not violations and not dimension_failures and not hard, hard
 
 
 def score_route(case: Mapping[str, Any], route: Mapping[str, Any] | None) -> tuple[bool, list[str]]:
-    return _score_expected(case["expected"], route)
+    expected_evidence = case.get("expected_evidence")
+    return _score_expected(
+        case["expected"],
+        route,
+        expected_evidence=(
+            expected_evidence if isinstance(expected_evidence, Mapping) else None
+        ),
+    )
 
 
 def score_attempt(
@@ -264,9 +403,19 @@ def score_attempt(
     hard: list[str] = []
     for index, expected in enumerate(expected_turns):
         route = actual_turns[index] if index < len(actual_turns) else None
-        passed, turn_hard = _score_expected(expected, route)
+        expected_evidence = case.get("expected_evidence") if index == len(expected_turns) - 1 else None
+        passed, turn_hard = _score_expected(
+            expected,
+            route,
+            expected_evidence=(
+                expected_evidence if isinstance(expected_evidence, Mapping) else None
+            ),
+        )
         turn_passes.append(passed)
-        hard.extend(f"turn-{index + 1}:{item}" for item in turn_hard)
+        hard.extend(
+            item if item in CONTRACT_2_3_HARD_VIOLATIONS else f"turn-{index + 1}:{item}"
+            for item in turn_hard
+        )
     if len(actual_turns) != len(expected_turns):
         turn_passes.append(False)
     return all(turn_passes), hard, turn_passes
@@ -303,6 +452,20 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
         record.get("turn_pass_count", 1 if record["passed"] else 0)
         for record in records
     )
+    dimension_rates: dict[str, float | None] = {}
+    for name in EVALUATION_DIMENSIONS:
+        values = [
+            record.get("dimensions", {}).get(name)
+            for record in records
+            if isinstance(record.get("dimensions"), Mapping)
+            and isinstance(record["dimensions"].get(name), bool)
+        ]
+        if not values:
+            dimension_rates[f"{name}_rate"] = None
+        elif name == "unnecessary_consent_violation":
+            dimension_rates[f"{name}_rate"] = sum(1 for value in values if value) / len(values)
+        else:
+            dimension_rates[f"{name}_rate"] = sum(1 for value in values if value) / len(values)
     return {
         "attempt_count": total,
         "route_contract_match_rate": sum(1 for record in records if record["passed"]) / total,
@@ -320,6 +483,7 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
         "within_case_consistency_rate": (
             sum(1 for values in signatures.values() if len(values) == 1) / len(signatures)
         ),
+        **dimension_rates,
     }
 
 
@@ -346,6 +510,8 @@ def case_diagnostics(
                 for record in arm_records
             )
             matches = {name: 0 for name in ROUTE_FIELDS}
+            dimension_counts = {name: 0 for name in EVALUATION_DIMENSIONS}
+            dimension_totals = {name: 0 for name in EVALUATION_DIMENSIONS}
             for record in arm_records:
                 route = record.get("route")
                 route_mapping = route if isinstance(route, Mapping) else {}
@@ -355,6 +521,14 @@ def case_diagnostics(
                         expected.get(name),
                     ):
                         matches[name] += 1
+                dimensions = record.get("dimensions")
+                if isinstance(dimensions, Mapping):
+                    for name in EVALUATION_DIMENSIONS:
+                        value = dimensions.get(name)
+                        if isinstance(value, bool):
+                            dimension_totals[name] += 1
+                            if value:
+                                dimension_counts[name] += 1
             arms[arm] = {
                 "attempt_count": total,
                 "turn_count": turn_count,
@@ -377,6 +551,14 @@ def case_diagnostics(
                 "field_match_rates": {
                     name: matches[name] / total if total else None
                     for name in ROUTE_FIELDS
+                },
+                "dimension_rates": {
+                    name: (
+                        dimension_counts[name] / dimension_totals[name]
+                        if dimension_totals[name]
+                        else None
+                    )
+                    for name in EVALUATION_DIMENSIONS
                 },
             }
         baseline = arms["baseline"]
@@ -410,6 +592,16 @@ def case_diagnostics(
                         else None
                     )
                     for name in ROUTE_FIELDS
+                },
+                "dimension_rates": {
+                    name: (
+                        candidate["dimension_rates"][name]
+                        - baseline["dimension_rates"][name]
+                        if candidate["dimension_rates"][name] is not None
+                        and baseline["dimension_rates"][name] is not None
+                        else None
+                    )
+                    for name in EVALUATION_DIMENSIONS
                 },
             },
         })
@@ -529,6 +721,22 @@ def main(argv: list[str] | None = None) -> int:
     profiles = load_profiles()
     command = (args.adapter_executable, *args.adapter_arg)
     adapter = SubprocessExecutionAdapter(command, timeout_seconds=args.timeout_seconds)
+    adapter_path = next((ROOT / item for item in args.adapter_arg if item.endswith(".py")), None)
+    adapter_revision = (
+        "sha256:" + sha256(adapter_path.read_bytes()).hexdigest()
+        if adapter_path is not None and adapter_path.is_file() else None
+    )
+    configured_model = adapter_option(args.adapter_arg, "--model")
+    model_version = (
+        configured_model
+        or (
+            f"reference-driver@{adapter_revision}"
+            if args.evidence_class == "reference-driver" and adapter_revision is not None
+            else "unavailable"
+        )
+    )
+    if args.evidence_class == "behavior" and configured_model is None:
+        raise SystemExit("Behavior model execution requires a configured --model version.")
     output_dir = args.output_dir.resolve()
     protector = LocalEvidenceProtector()
     restricted_dir = prepare_output_directory(output_dir, protector)
@@ -557,6 +765,12 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                     flush=True,
                 )
+                public_case_digest = digest(public_case_payload(case))
+                instruction_digest = (
+                    profile["instruction_package"]["digest"]
+                    if profile["instruction_package"] is not None
+                    else None
+                )
                 nonce = make_attempt_nonce(
                     args.suite,
                     arm,
@@ -564,7 +778,17 @@ def main(argv: list[str] | None = None) -> int:
                     repeat,
                     prompt,
                     case["allowed_tools"],
+                    instruction_digest=instruction_digest,
+                    public_case_digest=public_case_digest,
+                    model_version=model_version,
                 )
+                attempt_binding_digest = digest({
+                    "attempt_nonce": nonce,
+                    "tool_inventory_digest": digest({"allowed_tools": case["allowed_tools"]}),
+                    "instruction_digest": instruction_digest,
+                    "public_case_digest": public_case_digest,
+                    "model_version": model_version,
+                })
                 prompts = (prompt, *case["interaction_script"])
                 recovered = recover_attempt(resume_root, nonce, len(prompts))
                 if recovered is not None:
@@ -597,6 +821,7 @@ def main(argv: list[str] | None = None) -> int:
                     if response.get("model_consent_intent") is not None
                 ), None)
                 passed, hard_violations, turn_passes = score_attempt(case, routes)
+                dimensions = score_dimensions(case, route)
                 trace_digest = digest({"responses": responses})
                 records.append({
                     "arm": arm,
@@ -605,8 +830,11 @@ def main(argv: list[str] | None = None) -> int:
                     "attempt_nonce": nonce,
                     "fresh_context_id": context_id,
                     "prompt_digest": digest({"prompt": prompt}),
-                    "public_case_digest": digest(public_case_payload(case)),
+                    "public_case_digest": public_case_digest,
                     "tool_inventory_digest": digest({"allowed_tools": case["allowed_tools"]}),
+                    "instruction_digest": instruction_digest,
+                    "model_version": model_version,
+                    "attempt_binding_digest": attempt_binding_digest,
                     "trace_digest": trace_digest,
                     "elapsed_ms": elapsed_ms if args.evidence_class == "behavior" else None,
                     "route": route,
@@ -621,6 +849,7 @@ def main(argv: list[str] | None = None) -> int:
                     "turn_pass_count": sum(1 for item in turn_passes if item),
                     "passed": passed,
                     "hard_violations": hard_violations,
+                    "dimensions": dimensions,
                 })
                 checkpoint_path.write_text(
                     json.dumps({"records": records}, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
@@ -645,11 +874,6 @@ def main(argv: list[str] | None = None) -> int:
     )["expected"]["selection_mode"] == "explicit-locked"]
     explicit_ok = [record for record in explicit if "explicit-skill-not-preserved" not in record["hard_violations"]]
     metric_status = "reference-only" if args.evidence_class == "reference-driver" else "observed"
-    adapter_path = next((ROOT / item for item in args.adapter_arg if item.endswith(".py")), None)
-    adapter_revision = (
-        "sha256:" + sha256(adapter_path.read_bytes()).hexdigest()
-        if adapter_path is not None and adapter_path.is_file() else None
-    )
     live_elapsed = elapsed_values if args.evidence_class == "behavior" else []
     records_by_arm = {
         arm: [record for record in records if record["arm"] == arm]
@@ -671,6 +895,11 @@ def main(argv: list[str] | None = None) -> int:
         "explicit_skill_preservation",
         "hard_violation_count",
         "within_case_consistency_rate",
+        "envelope_source_match_rate",
+        "classification_reason_match_rate",
+        "local_authority_boundary_match_rate",
+        "profile_explain_match_rate",
+        "unnecessary_consent_violation_rate",
     )
     comparison_deltas = {
         name: metrics_by_arm["candidate"][name] - metrics_by_arm["baseline"][name]
@@ -696,6 +925,9 @@ def main(argv: list[str] | None = None) -> int:
             "attempt_nonces": [record["attempt_nonce"] for record in arm_records],
             "fresh_context_ids": [record["fresh_context_id"] for record in arm_records],
             "trace_digests": [record["trace_digest"] for record in arm_records],
+            "attempt_binding_digests": [
+                record["attempt_binding_digest"] for record in arm_records
+            ],
         }
         for arm, arm_records in records_by_arm.items()
     }
@@ -780,6 +1012,7 @@ def main(argv: list[str] | None = None) -> int:
             "adapter_revision": adapter_revision,
             "codex_cli_version": codex_version(args.adapter_arg),
             "model_identifier": adapter_option(args.adapter_arg, "--model"),
+            "sealed_model_version": model_version,
             "model_identity_status": (
                 "configured" if adapter_option(args.adapter_arg, "--model") else "unavailable"
             ),
@@ -810,7 +1043,9 @@ def main(argv: list[str] | None = None) -> int:
             for key in (
                 "arm", "case_id", "opaque_run_case_id", "attempt_nonce", "fresh_context_id",
                 "prompt_digest", "public_case_digest", "tool_inventory_digest", "trace_digest", "elapsed_ms",
+                "instruction_digest", "model_version", "attempt_binding_digest",
                 "turn_count", "turn_pass_count", "passed", "hard_violations",
+                "dimensions",
                 "model_consent_intent", "hybrid_transition_applied",
             )
         } for record in records],

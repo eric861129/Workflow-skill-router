@@ -1,6 +1,6 @@
 {
   "name": "workflow-skill-router",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.4",
   "description": "Runtime-aware Skill routing for Single, Phased, and Managed Goal work in Codex.",
   "author": {
     "name": "ChiYu",
