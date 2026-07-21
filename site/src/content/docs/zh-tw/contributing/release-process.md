@@ -27,8 +27,8 @@ Builder 會讀取排序後的 allowlists、正規化 ZIP metadata、產生 check
 ## 3. 審查證據
 
 - Contract fixtures 與 compatibility tests 均通過。
-- 修正後的 Behavior evidence 已完成、成對且經過審查。
-- Hard violations 為零。
+- Deterministic fixtures、reference driver 與 Pilot preparation 都不構成當期 behavior-model evidence。
+- 只有 release 提出當期 behavior-model claims 時，Behavior evidence 才是必要 gate。需要此 gate 時，paired run 必須綁定 exact frozen candidate SHA、完成 trusted review，並在 promotion 前確認 hard violations 為零。
 - Public artifacts 不含 raw traces、local paths 或未受信任的 scores。
 - 從解壓後 release assets 執行的 Plugin 與 Skill-only install smoke tests 均通過。
 
@@ -44,7 +44,14 @@ python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-rout
 
 `Release V2` workflow 只能由受信任的預設分支透過 `workflow_dispatch` 執行，並且必須輸入完全相同的確認字串 `CREATE_V2_RELEASE`，但此字串不是發布 bypass。Workflow 會先 checkout 受信任的 dispatch revision，再從該 revision 的 `release/version.json` 同時讀取 `release_lifecycle` 與 `release_source_revision`。只有 `reviewed-attested-publishable` 可以執行；`prepared-local-candidate` 會讓 resolve-source job 在任何 preflight、建立 tag、asset attestation 或 GitHub Release 發布前失敗。凍結 source revision 也必須可從同一個受信任 checkout 到達。
 
-未來 promotion 的固定程序是：**update lifecycle and source revision**（在經審查的 release-preparation commit 中更新 lifecycle 與 source revision）、**regenerate release copies and assets**、**run required evidence and CI**、完成審查與 maintainer attestation，最後才 **dispatch** `Release V2`。不得只修改 `release_lifecycle`、沿用另一個 source revision 的 evidence，或把 `CREATE_V2_RELEASE` 當成核准。
+未來 promotion 的固定程序如下：
+
+1. **建置並凍結 candidate SHA。** 完成 source、release copies、版本化 notes、allowlists 與 deterministic assets，再記錄 candidate commit SHA。
+2. **針對該 exact SHA 執行必要 evidence 與 review。** 對 frozen candidate 執行必要 CI、解壓後 asset smoke checks、governance review；只有當期 behavior-model claims 需要時，才對該 SHA 執行 paired Behavior gate，不得改對後續 branch head 執行。
+3. **建立受信任的 metadata-only promotion commit。** 在預設分支更新 `release/version.json`，讓 `release_source_revision` 指向已審查 candidate SHA，並將 `release_lifecycle` 設為 `reviewed-attested-publishable`。不得把 metadata commit 當作 frozen source 重新建置或重新評估。
+4. **Dispatch `Release V2`。** Workflow 會先以唯讀 Git object inspection 重新讀取 candidate metadata、release notes、builder 與 allowlists，之後才輸出 outputs 或啟動 preflight。
+
+已審查且未變更的 candidate 可以直接進行步驟 3、4，不必重新建置或重新評估；前提是所有必要 evidence 仍綁定該 exact SHA。不得沿用另一個 source revision 的 evidence，或把 `CREATE_V2_RELEASE` 當成核准。
 
 三平台 preflight 與 release build 都會 checkout 該凍結 revision，而不是 checkout 觸發 workflow 的分支。只有全部通過後，workflow 才會以 `GITHUB_TOKEN` 建立或驗證 annotated V2 tag、確認遠端 tag 解析為同一個凍結 revision、attest assets，並發布 GitHub prerelease。重試只在既有 tag 已解析為相同 revision 時才有效。
 

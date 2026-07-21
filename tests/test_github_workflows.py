@@ -38,6 +38,147 @@ def workflow_job_body(name: str, job: str) -> str:
 
 
 class GitHubWorkflowTests(unittest.TestCase):
+    def _create_release_fixture(
+        self,
+        directory: Path,
+        *,
+        frozen_version: str,
+        trusted_version: str,
+        notes_match: bool = True,
+        trusted_notes_change: bool = False,
+    ) -> tuple[str, str]:
+        subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Release Test"],
+            cwd=directory,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "release-test@example.invalid"],
+            cwd=directory,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "core.autocrlf", "false"],
+            cwd=directory,
+            check=True,
+        )
+
+        release = directory / "release"
+        notes = release / "notes"
+        allowlists = release / "allowlists"
+        scripts = directory / "scripts"
+        notes.mkdir(parents=True)
+        allowlists.mkdir(parents=True)
+        scripts.mkdir(parents=True)
+        (release / "version.json").write_text(
+            json.dumps(
+                {
+                    "target_prerelease": frozen_version,
+                    "v2_version": frozen_version,
+                }
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        notes_version = frozen_version if notes_match else "2.0.0-beta.3"
+        (notes / f"v{frozen_version}.md").write_text(
+            "\n".join(
+                (
+                    f"# Workflow Skill Router v{frozen_version}",
+                    f"workflow-skill-router-plugin-v{notes_version}.zip",
+                    f"workflow-skill-router-skill-v{notes_version}.zip",
+                    "checksums.sha256",
+                    "maintainer-attestation",
+                )
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        (allowlists / "plugin-package.json").write_text(
+            '{"files": []}\n', encoding="utf-8", newline="\n"
+        )
+        (allowlists / "skill-package.json").write_text(
+            '{"files": []}\n', encoding="utf-8", newline="\n"
+        )
+        (scripts / "build-release-artifacts.py").write_text(
+            "\n".join(
+                (
+                    'plugin_name = f"workflow-skill-router-plugin-v{version}.zip"',
+                    'skill_name = f"workflow-skill-router-skill-v{version}.zip"',
+                    'files[output_dir / "checksums.sha256"] = checksums',
+                )
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        subprocess.run(["git", "add", "."], cwd=directory, check=True)
+        subprocess.run(
+            ["git", "commit", "--quiet", "-m", "candidate"],
+            cwd=directory,
+            check=True,
+        )
+        frozen_revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=directory, text=True
+        ).strip()
+
+        (release / "version.json").write_text(
+            json.dumps(
+                {
+                    "release_lifecycle": "reviewed-attested-publishable",
+                    "release_source_revision": frozen_revision,
+                    "target_prerelease": trusted_version,
+                    "v2_version": trusted_version,
+                }
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        if trusted_notes_change:
+            notes_path = notes / f"v{frozen_version}.md"
+            notes_path.write_text(
+                notes_path.read_text(encoding="utf-8") + "trusted note change\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+        subprocess.run(
+            ["git", "add", "release/version.json", "release/notes"],
+            cwd=directory,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "commit", "--quiet", "-m", "promote"],
+            cwd=directory,
+            check=True,
+        )
+        trusted_revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=directory, text=True
+        ).strip()
+        return frozen_revision, trusted_revision
+
+    def _run_publication_gate(
+        self, repository: Path, trusted_revision: str
+    ) -> tuple[subprocess.CompletedProcess[str], Path]:
+        output_path = repository / "github-output.txt"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "release-publication-gate.py"),
+                "--metadata",
+                str(repository / "release" / "version.json"),
+                "--trusted-revision",
+                trusted_revision,
+                "--github-output",
+                str(output_path),
+            ],
+            cwd=repository,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            timeout=30,
+        )
+        return result, output_path
+
     def test_every_action_is_pinned_to_an_immutable_commit(self) -> None:
         action_count = 0
         for path in sorted(WORKFLOWS.glob("*.y*ml")):
@@ -368,6 +509,9 @@ class GitHubWorkflowTests(unittest.TestCase):
         self,
     ) -> None:
         source_job = workflow_job_body("release-v2.yml", "resolve-source")
+        publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
+            encoding="utf-8"
+        )
         gate_marker = "- name: Enforce trusted publication lifecycle"
         resolve_marker = "- name: Verify declared frozen release source"
 
@@ -387,6 +531,87 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertLess(gate_index, resolve_index)
         if gate_index >= 0:
             self.assertNotIn("CONFIRM_RELEASE", source_job[gate_index:])
+        for required in (
+            '["git", "show",',
+            '["git", "cat-file", "-e",',
+            "release/notes/{release_tag}.md",
+            "release/allowlists/plugin-package.json",
+            "release/allowlists/skill-package.json",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, publication_gate)
+        main_block = publication_gate.split("def main() -> int:", maxsplit=1)[1]
+        contract_index = main_block.find("_verify_frozen_source_contract")
+        output_index = main_block.find("arguments.github_output.write_text")
+        self.assertGreaterEqual(contract_index, 0)
+        self.assertGreaterEqual(output_index, 0)
+        if contract_index >= 0 and output_index >= 0:
+            self.assertLess(contract_index, output_index)
+
+    def test_publishable_metadata_rejects_a_mismatched_frozen_source_version(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.3",
+                trusted_version="2.0.0-beta.4",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release metadata does not match trusted release version",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_a_mismatched_frozen_artifact_contract(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                notes_match=False,
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release notes do not match the trusted artifact contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_release_notes_changed_after_freeze(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                trusted_notes_change=True,
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release notes differ from trusted release contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
 
     def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
         release_job = workflow_job_body("release-v2.yml", "release")

@@ -27,8 +27,8 @@ The output directory may be reused only when every existing entry belongs to the
 ## 3. Review evidence
 
 - Contract fixtures and compatibility tests pass.
-- Corrected Behavior evidence is complete, paired, and reviewed.
-- Hard violations are zero.
+- Deterministic fixtures, the reference driver, and Pilot preparation do not constitute current behavior-model evidence.
+- Behavior evidence is required only when the release makes current behavior-model claims. When required, the paired run must target the exact frozen candidate SHA, complete trusted review, and report zero hard violations before promotion.
 - Public artifacts contain no raw traces, local paths, or untrusted scores.
 - Plugin and Skill-only install smoke tests pass from extracted release assets.
 
@@ -44,7 +44,14 @@ This command is read-only and does not change GitHub configuration. A pass confi
 
 The `Release V2` workflow runs only through a `workflow_dispatch` from the trusted default branch. It requires the exact confirmation `CREATE_V2_RELEASE`, but that string is not a publication bypass. The workflow first checks out the trusted dispatch revision and reads both `release_lifecycle` and `release_source_revision` from that revision's `release/version.json`. Only `reviewed-attested-publishable` is executable; `prepared-local-candidate` fails the resolve-source job before any preflight, tag, asset attestation, or GitHub Release publication begins. The frozen source revision must also be reachable from that same trusted checkout.
 
-The future promotion procedure is exact: **update lifecycle and source revision** in a reviewed release-preparation commit, **regenerate release copies and assets**, **run required evidence and CI**, complete review and maintainer attestation, then **dispatch** `Release V2`. Do not change only `release_lifecycle`, reuse evidence from another source revision, or treat `CREATE_V2_RELEASE` as approval.
+The future promotion procedure is exact:
+
+1. **Build and freeze a candidate SHA.** Finalize source, release copies, versioned notes, allowlists, and deterministic assets, then record that candidate commit SHA.
+2. **Run required evidence and review against that exact SHA.** Run required CI, extracted-asset smoke checks, governance review, and—only when current behavior-model claims require it—the paired Behavior gate against the frozen candidate, not a later branch head.
+3. **Create a trusted metadata-only promotion commit.** On the default branch, update `release/version.json` so `release_source_revision` names the reviewed candidate SHA and `release_lifecycle` is `reviewed-attested-publishable`. Do not rebuild or re-evaluate the metadata commit as though it were the frozen source.
+4. **Dispatch `Release V2`.** The workflow re-reads the candidate metadata, release notes, builder, and allowlists with read-only Git object inspection before it emits outputs or starts preflight.
+
+An already-reviewed unchanged candidate can be promoted through steps 3 and 4 without rebuilding or re-evaluating it, provided every required evidence record remains bound to that exact SHA. Do not reuse evidence from another source revision or treat `CREATE_V2_RELEASE` as approval.
 
 The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow create or verify the annotated V2 tag with `GITHUB_TOKEN`, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the GitHub prerelease. A retry is valid only when the existing tag already resolves to that same revision.
 

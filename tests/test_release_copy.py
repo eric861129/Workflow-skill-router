@@ -357,19 +357,62 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("release_source_revision", text)
                 self.assertIn("CREATE_V2_RELEASE", text)
 
-        for relative in (
-            "site/src/content/docs/contributing/release-process.md",
-            "site/src/content/docs/zh-tw/contributing/release-process.md",
+        for relative, ordered_steps, unchanged_candidate in (
+            (
+                "site/src/content/docs/contributing/release-process.md",
+                (
+                    "Build and freeze a candidate SHA",
+                    "Run required evidence and review against that exact SHA",
+                    "Create a trusted metadata-only promotion commit",
+                    "Dispatch `Release V2`",
+                ),
+                "already-reviewed unchanged candidate",
+            ),
+            (
+                "site/src/content/docs/zh-tw/contributing/release-process.md",
+                (
+                    "建置並凍結 candidate SHA",
+                    "針對該 exact SHA 執行必要 evidence 與 review",
+                    "建立受信任的 metadata-only promotion commit",
+                    "Dispatch `Release V2`",
+                ),
+                "已審查且未變更的 candidate",
+            ),
         ):
             text = (ROOT / relative).read_text(encoding="utf-8")
             with self.subTest(relative=relative):
-                for required_step in (
-                    "update lifecycle and source revision",
-                    "regenerate release copies and assets",
-                    "run required evidence and CI",
-                    "dispatch",
-                ):
-                    self.assertIn(required_step, text)
+                positions = [text.find(step) for step in ordered_steps]
+                for step, position in zip(ordered_steps, positions, strict=True):
+                    with self.subTest(step=step):
+                        self.assertGreaterEqual(position, 0)
+                if all(position >= 0 for position in positions):
+                    self.assertEqual(sorted(positions), positions)
+                self.assertIn(unchanged_candidate, text)
+                self.assertNotIn("update lifecycle and source revision", text)
+
+    def test_release_process_conditionally_scopes_current_behavior_evidence(
+        self,
+    ) -> None:
+        pages = (
+            (
+                "site/src/content/docs/contributing/release-process.md",
+                "Behavior evidence is required only when the release makes current behavior-model claims",
+                "Deterministic fixtures, the reference driver, and Pilot preparation do not constitute current behavior-model evidence",
+                "Corrected Behavior evidence is complete, paired, and reviewed.",
+            ),
+            (
+                "site/src/content/docs/zh-tw/contributing/release-process.md",
+                "只有 release 提出當期 behavior-model claims 時，Behavior evidence 才是必要 gate",
+                "Deterministic fixtures、reference driver 與 Pilot preparation 都不構成當期 behavior-model evidence",
+                "修正後的 Behavior evidence 已完成、成對且經過審查。",
+            ),
+        )
+        for relative, conditional_gate, non_evidence, false_completion in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn(conditional_gate, text)
+                self.assertIn(non_evidence, text)
+                self.assertNotIn(false_completion, text)
 
     def test_skill_only_docs_match_the_release_allowlist(self) -> None:
         allowlist = json.loads(
