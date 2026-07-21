@@ -19,22 +19,23 @@ _STRONG_TAGS = {
 }
 _STRONG_PATTERNS = {
     "cross-repo": re.compile(r"\bcross[-\s]?repositor(?:y|ies)\b|跨(?:儲存庫|倉庫)"),
-    "resumable": re.compile(r"\b(?:resumable|long[-\s]?running|resume)\b|(?:可續|長時間)"),
+    "resumable": re.compile(r"\b(?:resumable|long[-\s]?running|resume)\b|(?:可續|持續)"),
     "milestone": re.compile(r"\bmilestones?\b|里程碑"),
-    "dependency-dag": re.compile(r"\bdependency[-\s]?(?:dag|graph)\b|相依(?:性)?(?:圖|dag)"),
+    "dependency-dag": re.compile(r"\bdependency[-\s]?(?:dag|graph)\b|相依(?:性)?(?:圖|工作|dag)"),
 }
 _ACTION_PATTERNS = {
-    "plan": (re.compile(r"\b(?:plan|analyze|analyse)\b"), ("規劃", "分析")),
-    "implement": (re.compile(r"\b(?:implement|build|develop|code)\b"), ("實作", "開發")),
-    "test": (re.compile(r"\b(?:test|verify|validate)\b"), ("測試", "驗證")),
-    "document": (re.compile(r"\b(?:document|write)\b"), ("撰寫文件", "文件化")),
+    "plan": re.compile(r"\b(?:plan|analyze|analyse)\b|(?:規劃|分析|盤點)"),
+    "implement": re.compile(r"\b(?:implement|build|develop|code)\b|(?:實作|開發)"),
+    "test": re.compile(r"\b(?:test|verify|validate)\b|(?:測試|驗證)"),
+    "document": re.compile(
+        r"\b(?:document|write\s+(?:documentation|docs))\b|(?:撰寫文件|文件化|更新文件)"
+    ),
 }
-_NEGATED_ENGLISH_ACTION = re.compile(
-    r"\b(?:do\s+not|don't|skip)\s+(?:plan|analyze|analyse|implement|build|develop|code|test|verify|validate|document|write)\b"
+_ENGLISH_NEGATION_PREFIX = re.compile(r"\b(?:do\s+not|don't|skip)\s*$")
+_COORDINATED_ENGLISH_NEGATION = re.compile(
+    r"\b(?:do\s+not|don't|skip)(?:\s+[a-z-]+){1,3}\s+(?:or|and)\s*$"
 )
-_NEGATED_CHINESE_ACTION = re.compile(
-    r"(?:不要|不|勿)\s*(?:規劃|分析|實作|開發|測試|驗證|撰寫文件|文件化)"
-)
+_CHINESE_NEGATION_PREFIX = re.compile(r"(?:不要|不需要|不|勿)\s*$")
 _SEQUENCE_PATTERN = re.compile(r"\b(?:then|after\s+that|finally|next)\b|(?:先|再|接著|最後)")
 _NUMBERED_STAGE_PATTERN = re.compile(r"(?:^|[;\n])\s*\d{1,2}[.)、]")
 
@@ -49,6 +50,13 @@ class TaskSignalAnalysis:
     reason_codes: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _ActionOccurrence:
+    family: str
+    start: int
+    end: int
+
+
 def analyze_task_signals(
     objective: str,
     *,
@@ -61,14 +69,18 @@ def analyze_task_signals(
     normalized_tags = _normalize_values(trusted_tags)
 
     reason_codes: list[str] = []
-    action_families, ignored_negation = _find_action_families(normalized_objective)
+    positive_actions, ignored_negation = _find_positive_actions(normalized_objective)
     if ignored_negation:
         reason_codes.append("negated-action-ignored")
 
-    numbered_stages = len(_NUMBERED_STAGE_PATTERN.findall(normalized_objective))
-    distinct_stages = max(1, len(action_families), numbered_stages)
+    distinct_stages, numbered_action_entries = _count_distinct_stages(
+        normalized_objective,
+        positive_actions,
+    )
     if distinct_stages > 1:
-        if numbered_stages > 1 or _SEQUENCE_PATTERN.search(normalized_objective):
+        if numbered_action_entries > 1 or (
+            _SEQUENCE_PATTERN.search(normalized_objective) and len(positive_actions) > 1
+        ):
             reason_codes.append("multi-stage-sequence")
         else:
             reason_codes.append("multi-action-family")
@@ -124,31 +136,55 @@ def _normalize_values(values: tuple[str, ...]) -> frozenset[str]:
     )
 
 
-def _find_action_families(objective: str) -> tuple[frozenset[str], bool]:
-    negated_english = _NEGATED_ENGLISH_ACTION.findall(objective)
-    negated_chinese = _NEGATED_CHINESE_ACTION.findall(objective)
-    ignored_negation = bool(negated_english or negated_chinese)
-    families: set[str] = set()
-    for family, (english_pattern, chinese_terms) in _ACTION_PATTERNS.items():
-        if english_pattern.search(objective) and not _is_negated_english_action(objective, family):
-            families.add(family)
-        if any(term in objective for term in chinese_terms) and not _is_negated_chinese_action(objective, chinese_terms):
-            families.add(family)
-    return frozenset(families), ignored_negation
+def _find_positive_actions(objective: str) -> tuple[tuple[_ActionOccurrence, ...], bool]:
+    positive_actions: list[_ActionOccurrence] = []
+    ignored_negation = False
+    for family, pattern in _ACTION_PATTERNS.items():
+        for match in pattern.finditer(objective):
+            occurrence = _ActionOccurrence(family, match.start(), match.end())
+            if _is_negated_occurrence(objective, occurrence):
+                ignored_negation = True
+            else:
+                positive_actions.append(occurrence)
+    return tuple(sorted(positive_actions, key=lambda action: action.start)), ignored_negation
 
 
-def _is_negated_english_action(objective: str, family: str) -> bool:
-    words = {
-        "plan": "plan|analyze|analyse",
-        "implement": "implement|build|develop|code",
-        "test": "test|verify|validate",
-        "document": "document|write",
-    }[family]
-    return bool(re.search(rf"\b(?:do\s+not|don't|skip)\s+(?:{words})\b", objective))
+def _is_negated_occurrence(objective: str, occurrence: _ActionOccurrence) -> bool:
+    preceding_text = objective[max(0, occurrence.start - 48):occurrence.start]
+    return bool(
+        _ENGLISH_NEGATION_PREFIX.search(preceding_text)
+        or _COORDINATED_ENGLISH_NEGATION.search(preceding_text)
+        or _CHINESE_NEGATION_PREFIX.search(preceding_text)
+    )
 
 
-def _is_negated_chinese_action(objective: str, terms: tuple[str, ...]) -> bool:
-    return any(re.search(rf"(?:不要|不|勿)\s*{re.escape(term)}", objective) for term in terms)
+def _count_distinct_stages(
+    objective: str,
+    positive_actions: tuple[_ActionOccurrence, ...],
+) -> tuple[int, int]:
+    action_families = {action.family for action in positive_actions}
+    numbered_action_entries = _count_numbered_action_entries(objective, positive_actions)
+    sequenced_occurrences = (
+        len(positive_actions)
+        if _SEQUENCE_PATTERN.search(objective) and len(positive_actions) > 1
+        else 1
+    )
+    return max(1, len(action_families), numbered_action_entries, sequenced_occurrences), numbered_action_entries
+
+
+def _count_numbered_action_entries(
+    objective: str,
+    positive_actions: tuple[_ActionOccurrence, ...],
+) -> int:
+    markers = list(_NUMBERED_STAGE_PATTERN.finditer(objective))
+    if not markers:
+        return 0
+    count = 0
+    for index, marker in enumerate(markers):
+        entry_end = markers[index + 1].start() if index + 1 < len(markers) else len(objective)
+        if any(marker.end() <= action.start < entry_end for action in positive_actions):
+            count += 1
+    return count
 
 
 def _find_strong_evidence(objective: str, tags: frozenset[str]) -> frozenset[str]:
