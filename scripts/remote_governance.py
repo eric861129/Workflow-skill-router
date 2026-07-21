@@ -97,6 +97,8 @@ def eligible_tag_ruleset_ids(contract: dict[str, object], rulesets: list[dict[st
         ruleset_id = ruleset.get("id")
         if (
             not isinstance(ruleset_id, int)
+            or isinstance(ruleset_id, bool)
+            or ruleset_id <= 0
             or not isinstance(ruleset.get("name"), str)
             or not isinstance(ruleset.get("enforcement"), str)
         ):

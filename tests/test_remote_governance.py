@@ -325,6 +325,28 @@ class RemoteGovernanceTests(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertEqual("remote-governance-unavailable\n", output.getvalue())
 
+    def test_cli_rejects_boolean_summary_id_before_requesting_ruleset_detail(self) -> None:
+        invalid_summary = v2_tag_ruleset_summary()
+        invalid_summary["id"] = True
+        output = io.StringIO()
+        with patch.object(self.cli, "_load_governance_module", return_value=self.governance), patch.object(
+            self.governance,
+            "fetch_json",
+            side_effect=(protected_branch(), main_protection(), [invalid_summary]),
+        ) as fetch_json, redirect_stdout(output):
+            code = self.cli.main(["--repo", "eric861129/Workflow-skill-router"])
+
+        self.assertEqual(1, code)
+        self.assertEqual("remote-governance-unavailable\n", output.getvalue())
+        self.assertEqual(
+            [
+                "repos/eric861129/Workflow-skill-router/branches/main",
+                "repos/eric861129/Workflow-skill-router/branches/main/protection",
+                "repos/eric861129/Workflow-skill-router/rulesets?targets=tag&per_page=100&page=1",
+            ],
+            [call.args[1] for call in fetch_json.call_args_list],
+        )
+
     def test_cli_returns_public_safe_failure_for_detail_fetch_failures_or_malformed_detail(self) -> None:
         malformed_detail = v2_tag_ruleset()
         malformed_detail["conditions"] = {"ref_name": {"include": "refs/tags/v2.*"}}
