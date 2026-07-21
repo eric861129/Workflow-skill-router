@@ -48,6 +48,9 @@ class GitHubWorkflowTests(unittest.TestCase):
         trusted_notes_change: bool = False,
         trusted_plugin_runtime_allowlist_change: bool = False,
         frozen_plugin_runtime_allowlist_files: list[str] | None = None,
+        frozen_release_path_safety_source: str | None = None,
+        frozen_release_path_safety_exists: bool = True,
+        trusted_release_path_safety_source: str | None = None,
     ) -> tuple[str, str]:
         subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
         subprocess.run(
@@ -127,6 +130,13 @@ class GitHubWorkflowTests(unittest.TestCase):
             encoding="utf-8",
             newline="\n",
         )
+        if frozen_release_path_safety_exists:
+            (scripts / "release_path_safety.py").write_text(
+                frozen_release_path_safety_source
+                or "def parse_safe_relative_posix_path(value):\n    return value\n",
+                encoding="utf-8",
+                newline="\n",
+            )
         subprocess.run(["git", "add", "."], cwd=directory, check=True)
         subprocess.run(
             ["git", "commit", "--quiet", "-m", "candidate"],
@@ -162,8 +172,20 @@ class GitHubWorkflowTests(unittest.TestCase):
                 encoding="utf-8",
                 newline="\n",
             )
+        promotion_paths = [
+            "release/version.json",
+            "release/notes",
+            "release/allowlists",
+        ]
+        if trusted_release_path_safety_source is not None:
+            (scripts / "release_path_safety.py").write_text(
+                trusted_release_path_safety_source,
+                encoding="utf-8",
+                newline="\n",
+            )
+            promotion_paths.append("scripts/release_path_safety.py")
         subprocess.run(
-            ["git", "add", "release/version.json", "release/notes", "release/allowlists"],
+            ["git", "add", *promotion_paths],
             cwd=directory,
             check=True,
         )
@@ -651,6 +673,91 @@ class GitHubWorkflowTests(unittest.TestCase):
 
             self.assertEqual(1, result.returncode, result.stderr)
             self.assertIn("plugin-runtime-files.json", result.stderr)
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_frozen_builder_helper_changed_after_freeze(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                frozen_release_path_safety_source=(
+                    "def parse_safe_relative_posix_path(value):\n    return 'tampered'\n"
+                ),
+                trusted_release_path_safety_source=(
+                    "def parse_safe_relative_posix_path(value):\n    return value\n"
+                ),
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(
+                "Frozen release artifact builder dependency differs from trusted release contract",
+                result.stderr,
+            )
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_accepts_unchanged_frozen_builder_dependency_closure(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            frozen_revision, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                f"source_revision={frozen_revision}\nrelease_tag=v2.0.0-beta.4\n",
+                output_path.read_text(encoding="utf-8"),
+            )
+
+    def test_publishable_metadata_rejects_malformed_frozen_builder_helper(
+        self,
+    ) -> None:
+        malformed_helper = "def parse_safe_relative_posix_path(:\n    pass\n"
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                frozen_release_path_safety_source=malformed_helper,
+                trusted_release_path_safety_source=malformed_helper,
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn("Frozen release artifact builder dependency is invalid", result.stderr)
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_metadata_rejects_missing_frozen_builder_helper(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            _, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0-beta.4",
+                trusted_version="2.0.0-beta.4",
+                frozen_release_path_safety_exists=False,
+            )
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn("release_path_safety.py", result.stderr)
             self.assertFalse(output_path.exists())
 
     def test_publishable_metadata_rejects_windows_unsafe_frozen_allowlist_paths(

@@ -21,6 +21,10 @@ from release_path_safety import parse_safe_relative_posix_path
 PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
 REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 TAG_PATTERN = re.compile(r"v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?")
+ARTIFACT_BUILDER_PATH = "scripts/build-release-artifacts.py"
+ARTIFACT_BUILDER_DEPENDENCY_PATHS = (
+    "scripts/release_path_safety.py",
+)
 
 
 class PublicationGateError(ValueError):
@@ -120,6 +124,44 @@ def _verify_allowlist_schema(path: str, allowlist_text: str) -> None:
             ) from error
 
 
+def _verify_python_source(path: str, source: str, description: str) -> None:
+    try:
+        compile(source, path, "exec")
+    except (SyntaxError, ValueError) as error:
+        raise PublicationGateError(f"{description} is invalid.") from error
+
+
+def _verify_frozen_builder_closure(source_revision: str) -> str:
+    builder_source = ""
+    closure_paths = (ARTIFACT_BUILDER_PATH, *ARTIFACT_BUILDER_DEPENDENCY_PATHS)
+    for path in closure_paths:
+        frozen_source = _git_show(source_revision, path)
+        trusted_source = _git_show("HEAD", path)
+        description = (
+            "Frozen release artifact builder"
+            if path == ARTIFACT_BUILDER_PATH
+            else "Frozen release artifact builder dependency"
+        )
+        _verify_python_source(path, frozen_source, description)
+        _verify_python_source(
+            path,
+            trusted_source,
+            description.replace("Frozen", "Trusted", 1),
+        )
+        if frozen_source != trusted_source:
+            if path == ARTIFACT_BUILDER_PATH:
+                raise PublicationGateError(
+                    "Frozen release artifact builder differs from trusted release contract."
+                )
+            raise PublicationGateError(
+                "Frozen release artifact builder dependency differs from trusted "
+                "release contract."
+            )
+        if path == ARTIFACT_BUILDER_PATH:
+            builder_source = frozen_source
+    return builder_source
+
+
 def _verify_frozen_source_contract(
     source_revision: str, release_version: str, release_tag: str
 ) -> None:
@@ -173,12 +215,7 @@ def _verify_frozen_source_contract(
             "Frozen release notes do not match the trusted artifact contract."
         )
 
-    builder_path = "scripts/build-release-artifacts.py"
-    builder = _git_show(source_revision, builder_path)
-    if builder != _git_show("HEAD", builder_path):
-        raise PublicationGateError(
-            "Frozen release artifact builder differs from trusted release contract."
-        )
+    builder = _verify_frozen_builder_closure(source_revision)
     required_builder_contract = (
         'RELEASE / "allowlists" / "plugin-runtime-files.json"',
         'RELEASE / "allowlists" / "skill-package.json"',
