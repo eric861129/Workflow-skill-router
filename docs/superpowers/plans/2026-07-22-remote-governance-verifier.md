@@ -204,4 +204,3 @@ Expected: unit tests pass; the live verifier remains a non-zero, documented prec
 - [ ] **Step 3: Record only evidence actually produced**
 
 Record the current remote result as `governance-unconfigured`, with the source branch and UTC timestamp. Do not create an attestation, declare branch protection active, push, open a PR, tag, or publish a release.
-
