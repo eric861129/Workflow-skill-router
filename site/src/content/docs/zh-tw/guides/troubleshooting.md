@@ -33,7 +33,11 @@ Get-Content -Encoding UTF8 (Join-Path $Router "SKILL.md") | Select-Object -First
 
 ## Tool 回傳 `capability-unavailable`
 
-這是有型別、可預期的結果。閱讀 `runtime_requirement`、`required_capabilities` 與 `fallback_action`。不要虛構 Host authority，也不要把 tool 改標成 local-ready。`get_next_work`、受保護 route 驗證、events 與 gates 需要 verified Host ports；evaluation tools 需要 configured adapter。
+這是有型別、可預期的結果。閱讀 `runtime_requirement`、`required_capabilities` 與 `fallback_action`。不要虛構 Host authority，也不要把 tool 改標成 local-ready。
+
+在尚未發布的 source checkout 中，只有已驗證的 Router-owned graph 存在、且沒有 Native Goal authority 時，`get_next_work`、`record_work_event` 與 `evaluate_gate` 才可走 `conditional-local`。它們分別回傳 Router-local 排程、回報式本機進度或 advisory local gate；不會驗證 Skill activation，也不會授權 Host transition。Graph 缺少時回傳 `router-owned-work-graph`，呼叫端應建立或 replay 本機 graph；graph 損毀時則只回傳已清理的 `internal-error`，絕不捏造 Host fallback。Native Goal 工作改用各工具所需的 verified-host capabilities。
+
+`validate_route` 在所有分支都維持 `verified-host-required`。`sync_runtime_context` 也需要 verified Host authority；evaluation tools 則需要 configured adapter。
 
 ## Explicit Skill Lock 詢問太頻繁
 

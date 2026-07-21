@@ -28,6 +28,7 @@ The versioned contract currently requires these GitHub Actions checks:
 
 - `Core, documentation, and policy contracts`
 - `Site visual regression`
+- `Required cross-platform V2 gate`
 
 Audit the live rule before a release:
 

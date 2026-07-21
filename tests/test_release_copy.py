@@ -290,6 +290,56 @@ class ReleaseCopyTests(unittest.TestCase):
                 with self.subTest(relative=relative, stale=stale):
                     self.assertNotIn(stale, text)
 
+    def test_current_readmes_describe_the_sealed_contract_2_3_run_boundary(self) -> None:
+        pages = (
+            ("README.md", "source and adapter"),
+            ("README.zh-TW.md", "來源與 adapter"),
+        )
+        for relative, binding_phrase in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("Evaluation contract `2.3.0`", text)
+                self.assertIn(binding_phrase, text)
+                self.assertNotIn("Before a fresh authorized `2.2.0` run", text)
+
+    def test_troubleshooting_distinguishes_conditional_local_from_verified_host_paths(self) -> None:
+        pages = (
+            "site/src/content/docs/guides/troubleshooting.md",
+            "site/src/content/docs/zh-tw/guides/troubleshooting.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("conditional-local", text)
+                self.assertIn("get_next_work", text)
+                self.assertIn("record_work_event", text)
+                self.assertIn("evaluate_gate", text)
+                self.assertIn("validate_route", text)
+                self.assertIn("router-owned-work-graph", text)
+                self.assertIn("verified-host", text)
+
+    def test_release_process_documents_the_trusted_manual_tag_boundary(self) -> None:
+        pages = (
+            (
+                "site/src/content/docs/contributing/release-process.md",
+                "trusted default branch",
+                "Do not",
+            ),
+            (
+                "site/src/content/docs/zh-tw/contributing/release-process.md",
+                "受信任的預設分支",
+                "不得",
+            ),
+        )
+        for relative, trusted_branch_phrase, denial_phrase in pages:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("CREATE_V2_RELEASE", text)
+                self.assertIn("release_source_revision", text)
+                self.assertIn(trusted_branch_phrase, text)
+                self.assertIn("GITHUB_TOKEN", text)
+                self.assertIn(denial_phrase, text)
+
     def test_skill_only_docs_match_the_release_allowlist(self) -> None:
         allowlist = json.loads(
             (ROOT / "release/allowlists/skill-package.json").read_text(

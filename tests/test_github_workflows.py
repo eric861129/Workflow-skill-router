@@ -175,16 +175,17 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("actions/deploy-pages@", validate)
         self.assertIn("Smoke test public HTTPS URL", validate)
 
-    def test_release_only_accepts_v2_tags_and_supports_safe_tag_retries(self) -> None:
+    def test_release_runs_only_from_a_confirmed_trusted_branch_dispatch(self) -> None:
         content = workflow_text("release-v2.yml")
         for required in (
-            "tags:",
-            '"v2.*"',
             "workflow_dispatch:",
-            "release_tag:",
-            "RELEASE_TAG:",
-            "ref: ${{ env.RELEASE_TAG }}",
-            'git rev-list -n 1 "$RELEASE_TAG"',
+            "confirm_release:",
+            "CREATE_V2_RELEASE",
+            "github.event.repository.default_branch",
+            "Verify trusted release dispatch",
+            "Dispatch must run from the default branch with explicit confirmation.",
+            "release_source_revision",
+            '["git", "cat-file", "-e",',
             "--provenance-mode release",
             '--source-revision "$SOURCE_REVISION"',
             "--require-clean",
@@ -195,7 +196,8 @@ class GitHubWorkflowTests(unittest.TestCase):
             "id-token: write",
         ):
             self.assertIn(required, content)
-        self.assertIn(r"^v2\.[0-9]+\.[0-9]+", content)
+        self.assertNotIn("  push:\n", content)
+        self.assertNotIn("tags:\n", content)
         self.assertLess(
             content.index("- name: Install Plugin/MCP dependencies"),
             content.index("- name: Test repository contracts"),
@@ -208,19 +210,24 @@ class GitHubWorkflowTests(unittest.TestCase):
         preflight_job = workflow_job_body("release-v2.yml", "preflight")
         release_job = workflow_job_body("release-v2.yml", "release")
 
-        self.assertEqual("Resolve tagged V2 source", names["resolve-source"])
+        self.assertEqual("Resolve frozen V2 release source", names["resolve-source"])
         self.assertEqual("V2 preflight (${{ matrix.os }})", names["preflight"])
         self.assertIn("source_revision:", source_job)
         self.assertNotIn("source-revision:", source_job)
-        self.assertIn("git rev-list -n 1 \"$RELEASE_TAG\"", source_job)
-        self.assertIn("ref: ${{ env.RELEASE_TAG }}", source_job)
+        self.assertIn('["git", "cat-file", "-e",', source_job)
+        self.assertIn('["git", "merge-base", "--is-ancestor",', source_job)
+        self.assertIn("github.event.repository.default_branch", source_job)
+        self.assertIn("ref: ${{ github.sha }}", source_job)
+        self.assertIn("GITHUB_REF", source_job)
+        self.assertIn("CONFIRM_RELEASE", source_job)
+        self.assertNotIn("    if:", source_job)
 
         self.assertIn("needs: resolve-source", preflight_job)
         self.assertIn(
             "os: [ubuntu-latest, macos-latest, windows-latest]",
             preflight_job,
         )
-        self.assertIn("ref: ${{ env.RELEASE_TAG }}", preflight_job)
+        self.assertIn("ref: ${{ needs.resolve-source.outputs.source_revision }}", preflight_job)
         self.assertIn(
             "needs.resolve-source.outputs.source_revision",
             preflight_job,
@@ -240,19 +247,45 @@ class GitHubWorkflowTests(unittest.TestCase):
                 self.assertIn(required, preflight_job)
 
         self.assertIn("needs: [resolve-source, preflight]", release_job)
-        self.assertIn("ref: ${{ env.RELEASE_TAG }}", release_job)
+        self.assertIn("ref: ${{ needs.resolve-source.outputs.source_revision }}", release_job)
         self.assertIn(
             "needs.resolve-source.outputs.source_revision",
             release_job,
         )
 
+    def test_beta4_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
+        metadata = json.loads(
+            (ROOT / "release" / "version.json").read_text(encoding="utf-8")
+        )
+        source_job = workflow_job_body("release-v2.yml", "resolve-source")
+        release_job = workflow_job_body("release-v2.yml", "release")
+        declared_revision = metadata["release_source_revision"]
+
+        self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
+        self.assertEqual("2.0.0-beta.4", metadata["v2_version"])
+        self.assertIn('declared_revision = metadata["release_source_revision"]', source_job)
+        self.assertIn("source_revision={declared_revision}", source_job)
+        self.assertIn("Declared release source is not a reachable trusted revision", source_job)
+        self.assertIn("release_tag={release_tag}", source_job)
+        self.assertIn("Release metadata V2 version is invalid", source_job)
+        self.assertIn('"git", "ls-remote", "origin"', source_job)
+        self.assertIn("Existing release tag does not match declared release source revision", source_job)
+        self.assertNotIn('metadata["release_source_revision"]', release_job)
+        self.assertLess(
+            release_job.index("[\"git\", \"rev-parse\", \"HEAD\"]"),
+            release_job.index("- name: Install Plugin/MCP dependencies"),
+        )
+
     def test_release_rechecks_remote_tag_before_any_publish_side_effect(self) -> None:
         release_job = workflow_job_body("release-v2.yml", "release")
-        guard_name = "Verify remote tag still matches preflight revision"
+        guard_name = "Create or verify immutable release tag"
         guard_marker = f"      - name: {guard_name}"
         self.assertIn(guard_marker, release_job)
 
         for required in (
+            'git tag -a "$RELEASE_TAG" "$SOURCE_REVISION"',
+            'git push origin "refs/tags/$RELEASE_TAG"',
+            "GITHUB_TOKEN",
             'git ls-remote origin "refs/tags/$RELEASE_TAG" "refs/tags/$RELEASE_TAG^{}"',
             '"refs/tags/$RELEASE_TAG")',
             '"refs/tags/$RELEASE_TAG^{}")',
@@ -306,6 +339,19 @@ class GitHubWorkflowTests(unittest.TestCase):
                 names = workflow_job_names(Path(check["workflow"]).name)
                 self.assertEqual(names[check["job"]], check["context"])
                 self.assertEqual(15368, check["app_id"])
+
+    def test_release_template_lists_every_versioned_required_check_context(self) -> None:
+        contract = json.loads(
+            (ROOT / ".github" / "branch-protection.json").read_text(encoding="utf-8")
+        )
+        template = (ROOT / ".github" / "RELEASE_TEMPLATE.md").read_text(
+            encoding="utf-8"
+        )
+
+        for check in contract["required_status_checks"]["checks"]:
+            context = check["context"]
+            with self.subTest(context=context):
+                self.assertIn(f"`{context}`", template)
 
 
 if __name__ == "__main__":

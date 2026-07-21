@@ -33,7 +33,11 @@ Start a new task after installation. Skill-only must declare `skill-only-fallbac
 
 ## Tool returns `capability-unavailable`
 
-This is a typed, expected result. Read `runtime_requirement`, `required_capabilities`, and `fallback_action`. Do not fabricate Host authority or relabel the tool as local-ready. `get_next_work`, protected route validation, events, and gates need verified Host ports; evaluation tools need a configured adapter.
+This is a typed, expected result. Read `runtime_requirement`, `required_capabilities`, and `fallback_action`. Do not fabricate Host authority or relabel the tool as local-ready.
+
+In the unreleased source checkout, `get_next_work`, `record_work_event`, and `evaluate_gate` are `conditional-local` only when a validated Router-owned graph exists and no Native Goal authority is present. They return Router-local scheduling, reported local progress, or an advisory local gate; they do not verify Skill activation or authorize a Host transition. A missing graph returns `router-owned-work-graph` so the caller can create or replay that local graph. A corrupt graph returns a public-safe `internal-error`, never an invented Host fallback. Native Goal work uses its tool-specific verified-host capabilities instead.
+
+`validate_route` remains `verified-host-required` in every branch. `sync_runtime_context` also requires verified Host authority, while evaluation tools require a configured adapter.
 
 ## Explicit Skill Lock asks too often
 

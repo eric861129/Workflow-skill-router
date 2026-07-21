@@ -32,7 +32,13 @@ The output directory may be reused only when every existing entry belongs to the
 - Public artifacts contain no raw traces, local paths, or untrusted scores.
 - Plugin and Skill-only install smoke tests pass from extracted release assets.
 
-## 4. Promote deliberately
+## 4. Promote through the trusted release dispatch
+
+The `Release V2` workflow runs only through a `workflow_dispatch` from the trusted default branch. It requires the exact confirmation `CREATE_V2_RELEASE`, reads the `release_source_revision` from the trusted branch's `release/version.json`, and verifies that the frozen revision is reachable before any preflight work begins.
+
+The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow create or verify the annotated V2 tag with `GITHUB_TOKEN`, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the GitHub prerelease. A retry is valid only when the existing tag already resolves to that same revision.
+
+Do not manually push a `v2.*` tag. Protect that tag pattern so that the release workflow's `GITHUB_TOKEN` is the authorized creator; otherwise an older workflow stored at a frozen source revision could run before the trusted dispatch has completed its checks. This repository contract cannot configure the live ruleset for you, so verify that protection separately before release.
 
 `latest-v2` may track reviewed prereleases. `latest` remains V1.3.1 until V2 GA gates pass. Tag, GitHub Release publication, channel promotion, Pages deployment, and push are separate authorized actions; local validation does none of them automatically.
 
