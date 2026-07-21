@@ -23,6 +23,7 @@ from workflow_skill_router.evaluation.local_evidence import LocalEvidenceProtect
 
 
 V2 = ROOT / "evaluation" / "v2"
+CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
 EXPECTED_CASES = {
     "small-auto",
     "small-explicit-lock",
@@ -86,10 +87,23 @@ class V2BenchmarkTests(unittest.TestCase):
     def test_behavior_runbook_supplies_frozen_source_and_adapter_revisions(self):
         runbook = (ROOT / "evaluation" / "README.md").read_text(encoding="utf-8")
 
+        self.assertIn("--print-canonical-adapter-revision", runbook)
         self.assertIn("--authorized-source-revision $SourceRevision", runbook)
         self.assertIn("--authorized-adapter-revision $AdapterRevision", runbook)
         self.assertIn("git status --porcelain=v1", runbook)
         self.assertIn("before and after every adapter invocation", runbook)
+
+    def test_runner_prints_canonical_adapter_closure_revision(self):
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+
+        with patch("builtins.print") as printer:
+            result = RUNNER.main(["--print-canonical-adapter-revision"])
+
+        self.assertEqual(0, result)
+        printer.assert_called_once_with(expected)
 
     def test_behavior_cli_emits_only_public_safe_integrity_code(self):
         result = subprocess.run([
@@ -177,85 +191,146 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertNotIn("private-file", str(caught.exception))
         self.assertNotIn("private diagnostic", str(caught.exception))
 
-    def test_behavior_adapter_revision_is_required_and_matches_source_digest(self):
+    def test_behavior_adapter_revision_is_required_and_matches_canonical_execution_closure(self):
         if not hasattr(RUNNER, "verify_behavior_adapter_revision"):
             self.fail("behavior adapter revision verifier is missing")
 
-        with tempfile.TemporaryDirectory() as directory:
-            adapter = Path(directory) / "driver.py"
-            adapter.write_text("print('adapter')\n", encoding="utf-8")
-            expected = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+        self.assertRegex(expected or "", r"^sha256:[0-9a-f]{64}$")
 
-            with self.assertRaisesRegex(
-                EvaluationIntegrityError,
-                "behavior_adapter_revision_required",
-            ):
-                RUNNER.verify_behavior_adapter_revision(
-                    sys.executable, [str(adapter)], None
-                )
-            with self.assertRaisesRegex(
-                EvaluationIntegrityError,
-                "behavior_adapter_revision_invalid",
-            ):
-                RUNNER.verify_behavior_adapter_revision(
-                    sys.executable, [str(adapter)], "latest"
-                )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_required",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                None,
+            )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_invalid",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                "latest",
+            )
 
-            self.assertEqual(
+        self.assertEqual(
+            expected,
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
                 expected,
+            ),
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_mismatch",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                "sha256:" + "0" * 64,
+            )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [],
+                expected,
+            )
+
+    def test_behavior_adapter_rejects_identical_external_copy_before_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "codex_cli_driver.py"
+            copied.write_bytes(CANONICAL_BEHAVIOR_ADAPTER.read_bytes())
+            canonical_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+            )
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_entrypoint_untrusted",
+            ):
                 RUNNER.verify_behavior_adapter_revision(
                     sys.executable,
-                    [str(adapter)],
-                    expected,
-                ),
+                    [str(copied.resolve()), "--model", "gpt-test"],
+                    canonical_revision,
+                )
+
+    def test_behavior_adapter_rejects_renamed_copy_under_repository(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            copied = Path(directory) / "renamed_driver.py"
+            copied.write_bytes(CANONICAL_BEHAVIOR_ADAPTER.read_bytes())
+            canonical_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
             )
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_entrypoint_untrusted",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied.resolve()), "--model", "gpt-test"],
+                    canonical_revision,
+                )
+
+    def test_behavior_adapter_revision_changes_when_local_import_closure_changes(self):
+        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve()
+        imported_module = (
+            CORE_SOURCE
+            / "workflow_skill_router"
+            / "evaluation"
+            / "hybrid_consent.py"
+        ).resolve()
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(canonical)],
+        )
+        original_read_bytes = Path.read_bytes
+
+        def altered_read_bytes(path):
+            value = original_read_bytes(path)
+            if path.resolve() == imported_module:
+                return value + b"\n# altered import closure\n"
+            return value
+
+        with patch.object(Path, "read_bytes", altered_read_bytes):
             with self.assertRaisesRegex(
                 EvaluationIntegrityError,
                 "behavior_adapter_revision_mismatch",
             ):
                 RUNNER.verify_behavior_adapter_revision(
                     sys.executable,
-                    [str(adapter)],
-                    "sha256:" + "0" * 64,
-                )
-            with self.assertRaisesRegex(
-                EvaluationIntegrityError,
-                "behavior_adapter_revision_unavailable",
-            ):
-                RUNNER.verify_behavior_adapter_revision(
-                    sys.executable, [], expected
-                )
-
-    def test_behavior_adapter_binds_actual_python_entrypoint_not_unrelated_argument(self):
-        with tempfile.TemporaryDirectory() as directory:
-            entrypoint = Path(directory) / "driver.py"
-            unrelated = Path(directory) / "unrelated.py"
-            entrypoint.write_text("print('entrypoint')\n", encoding="utf-8")
-            unrelated.write_text("print('unrelated')\n", encoding="utf-8")
-            expected = "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
-
-            self.assertEqual(
-                expected,
-                RUNNER.verify_behavior_adapter_revision(
-                    sys.executable,
-                    [str(entrypoint), "--fixture", str(unrelated)],
+                    [str(canonical), "--model", "gpt-test"],
                     expected,
-                ),
+                )
+
+    def test_behavior_adapter_rejects_non_script_and_relative_entrypoints(self):
+        canonical_revision = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                ["-m", "copied_driver"],
+                canonical_revision,
             )
-            with self.assertRaisesRegex(
-                EvaluationIntegrityError,
-                "behavior_adapter_revision_unavailable",
-            ):
-                RUNNER.verify_behavior_adapter_revision(
-                    sys.executable,
-                    ["-m", "copied_driver", str(unrelated)],
-                    expected,
-                )
-
         relative_entrypoint = Path("evaluation/v2/adapters/codex_cli_driver.py")
-        relative_revision = "sha256:" + sha256(
-            (ROOT / relative_entrypoint).read_bytes()
-        ).hexdigest()
         with self.assertRaisesRegex(
             EvaluationIntegrityError,
             "behavior_adapter_revision_unavailable",
@@ -263,7 +338,7 @@ class V2BenchmarkTests(unittest.TestCase):
             RUNNER.verify_behavior_adapter_revision(
                 sys.executable,
                 [str(relative_entrypoint)],
-                relative_revision,
+                canonical_revision,
             )
 
     def test_behavior_adapter_rejects_copied_reference_driver_by_content(self):
@@ -282,7 +357,7 @@ class V2BenchmarkTests(unittest.TestCase):
                     copied_revision,
                 )
 
-    def test_behavior_reference_identity_is_content_not_filename(self):
+    def test_behavior_rejects_renamed_external_adapter_before_provider_construction(self):
         source_revision = "a" * 40
         with tempfile.TemporaryDirectory() as directory:
             adapter = Path(directory) / "reference_driver.py"
@@ -297,13 +372,13 @@ class V2BenchmarkTests(unittest.TestCase):
                 ),
                 patch.object(
                     RUNNER,
-                    "load_cases",
-                    side_effect=EvaluationIntegrityError("adapter_identity_accepted"),
+                    "SubprocessExecutionAdapter",
+                    side_effect=AssertionError("provider adapter constructed"),
                 ),
             ):
                 with self.assertRaisesRegex(
                     EvaluationIntegrityError,
-                    "adapter_identity_accepted",
+                    "behavior_adapter_entrypoint_untrusted",
                 ):
                     RUNNER.main([
                         "--suite", "beta-smoke",
@@ -395,8 +470,8 @@ class V2BenchmarkTests(unittest.TestCase):
                     "--authorized-adapter-revision", adapter_revision,
                 ])
             self.assertEqual(0, result)
-            self.assertEqual(193, source_verifier.call_count)
-            self.assertEqual(193, adapter_verifier.call_count)
+            self.assertEqual(301, source_verifier.call_count)
+            self.assertEqual(source_verifier.call_count, adapter_verifier.call_count)
             report = json.loads(
                 (output / "sanitized-report.json").read_text(encoding="utf-8")
             )
@@ -438,6 +513,20 @@ class V2BenchmarkTests(unittest.TestCase):
 
     def test_behavior_adapter_drift_during_turn_is_rejected_before_checkpoint(self):
         source_revision = "a" * 40
+        drifted = False
+        imported_module = (
+            CORE_SOURCE
+            / "workflow_skill_router"
+            / "evaluation"
+            / "hybrid_consent.py"
+        ).resolve()
+        original_read_bytes = Path.read_bytes
+
+        def drifted_read_bytes(path):
+            value = original_read_bytes(path)
+            if drifted and path.resolve() == imported_module:
+                return value + b"\n# drifted during provider turn\n"
+            return value
 
         class DriftingAdapter:
             def __init__(self, *_args, **_kwargs):
@@ -447,7 +536,8 @@ class V2BenchmarkTests(unittest.TestCase):
                 return self._context_id
 
             def execute_turn(self, request):
-                adapter.write_text("print('drifted')\n", encoding="utf-8")
+                nonlocal drifted
+                drifted = True
                 return {
                     "attempt_nonce": request.attempt_nonce,
                     "context_id": self._context_id,
@@ -465,9 +555,11 @@ class V2BenchmarkTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            adapter = root / "driver.py"
-            adapter.write_text("print('bound')\n", encoding="utf-8")
-            adapter_revision = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+            adapter = CANONICAL_BEHAVIOR_ADAPTER.resolve()
+            adapter_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(adapter)],
+            )
             output = root / "behavior-output"
             with (
                 patch.object(
@@ -475,6 +567,7 @@ class V2BenchmarkTests(unittest.TestCase):
                     "verify_behavior_source_revision",
                     return_value=source_revision,
                 ),
+                patch.object(Path, "read_bytes", drifted_read_bytes),
                 patch.object(RUNNER, "SubprocessExecutionAdapter", DriftingAdapter),
             ):
                 with self.assertRaisesRegex(

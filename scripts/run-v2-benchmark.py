@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import statistics
@@ -31,6 +32,9 @@ from workflow_skill_router.schemas.artifacts import canonical_json_bytes
 
 
 V2 = ROOT / "evaluation" / "v2"
+CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
+CANONICAL_BEHAVIOR_SCHEMA = V2 / "schemas" / "codex-route-output.schema.json"
+CANONICAL_CONSENT_SCHEMA = V2 / "schemas" / "codex-consent-intent.schema.json"
 EVALUATION_CONTRACT_ID = "workflow-skill-router.behavior-routing"
 REASON_VOCABULARY_PATH = V2 / "reason-code-vocabulary.json"
 REASON_VOCABULARY = json.loads(REASON_VOCABULARY_PATH.read_text(encoding="utf-8"))
@@ -847,6 +851,89 @@ def adapter_entrypoint_path(
         return None
 
 
+def _path_is_alias(path: Path) -> bool:
+    """Reject entrypoint aliases whose execution root can differ from the repository."""
+
+    if path.is_symlink():
+        return True
+    is_junction = getattr(path, "is_junction", None)
+    return bool(callable(is_junction) and is_junction())
+
+
+def _canonical_behavior_entrypoint(entrypoint_argument: str) -> Path | None:
+    """Accept only the canonical repository-relative Behavior adapter identity."""
+
+    try:
+        candidate = Path(entrypoint_argument)
+        if not candidate.is_absolute() or _path_is_alias(candidate):
+            return None
+        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve(strict=True)
+        lexical_candidate = os.path.normcase(os.path.abspath(str(candidate)))
+        lexical_canonical = os.path.normcase(str(canonical))
+        resolved_candidate = candidate.resolve(strict=True)
+        if (
+            lexical_candidate != lexical_canonical
+            or resolved_candidate != canonical
+            or not canonical.is_file()
+        ):
+            return None
+        return canonical
+    except (OSError, RuntimeError):
+        return None
+
+
+def behavior_adapter_closure_paths() -> tuple[Path, ...]:
+    """Return the deterministic local code/data closure for the canonical driver."""
+
+    router_package = CORE_SOURCE / "workflow_skill_router"
+    candidates = {
+        CANONICAL_BEHAVIOR_ADAPTER,
+        REASON_VOCABULARY_PATH,
+        CANONICAL_BEHAVIOR_SCHEMA,
+        CANONICAL_CONSENT_SCHEMA,
+        *router_package.rglob("*.py"),
+    }
+    try:
+        root = ROOT.resolve(strict=True)
+        paths: list[Path] = []
+        for candidate in candidates:
+            if _path_is_alias(candidate):
+                raise EvaluationIntegrityError(
+                    "behavior_adapter_revision_unavailable"
+                )
+            path = candidate.resolve(strict=True)
+            path.relative_to(root)
+            if not path.is_file():
+                raise EvaluationIntegrityError(
+                    "behavior_adapter_revision_unavailable"
+                )
+            paths.append(path)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise EvaluationIntegrityError(
+            "behavior_adapter_revision_unavailable"
+        ) from error
+    return tuple(sorted(
+        paths,
+        key=lambda path: path.relative_to(root).as_posix().casefold(),
+    ))
+
+
+def behavior_adapter_closure_revision() -> str:
+    """Digest canonical paths and bytes for every local driver dependency."""
+
+    try:
+        root = ROOT.resolve(strict=True)
+        records = [{
+            "path": path.relative_to(root).as_posix(),
+            "sha256": sha256(path.read_bytes()).hexdigest(),
+        } for path in behavior_adapter_closure_paths()]
+    except (OSError, RuntimeError, ValueError) as error:
+        raise EvaluationIntegrityError(
+            "behavior_adapter_revision_unavailable"
+        ) from error
+    return digest(records)
+
+
 def adapter_source_revision(
     adapter_executable: str,
     adapter_arguments: list[str],
@@ -857,8 +944,11 @@ def adapter_source_revision(
     if entrypoint is None:
         return None
     try:
+        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve(strict=True)
+        if entrypoint == canonical:
+            return behavior_adapter_closure_revision()
         return "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
-    except OSError:
+    except (EvaluationIntegrityError, OSError, RuntimeError):
         return None
 
 
@@ -875,13 +965,11 @@ def verify_behavior_adapter_revision(
         raise EvaluationIntegrityError("behavior_adapter_revision_invalid")
     if not adapter_arguments or not Path(adapter_arguments[0]).is_absolute():
         raise EvaluationIntegrityError("behavior_adapter_revision_unavailable")
-    observed_revision = adapter_source_revision(
-        adapter_executable,
-        adapter_arguments,
-    )
-    if observed_revision is None:
+    entrypoint = adapter_entrypoint_path(adapter_executable, adapter_arguments)
+    if entrypoint is None:
         raise EvaluationIntegrityError("behavior_adapter_revision_unavailable")
     try:
+        entrypoint_revision = "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
         reference_revision = "sha256:" + sha256(
             (V2 / "reference_driver.py").read_bytes()
         ).hexdigest()
@@ -889,8 +977,17 @@ def verify_behavior_adapter_revision(
         raise EvaluationIntegrityError(
             "behavior_adapter_revision_unavailable"
         ) from error
-    if observed_revision == reference_revision:
+    if entrypoint_revision == reference_revision:
         raise EvaluationIntegrityError("behavior_reference_driver_forbidden")
+    canonical_entrypoint = _canonical_behavior_entrypoint(adapter_arguments[0])
+    if canonical_entrypoint is None or entrypoint != canonical_entrypoint:
+        raise EvaluationIntegrityError("behavior_adapter_entrypoint_untrusted")
+    observed_revision = adapter_source_revision(
+        adapter_executable,
+        adapter_arguments,
+    )
+    if observed_revision is None:
+        raise EvaluationIntegrityError("behavior_adapter_revision_unavailable")
     if observed_revision != authorized_revision:
         raise EvaluationIntegrityError("behavior_adapter_revision_mismatch")
     return observed_revision
@@ -1044,7 +1141,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    effective_argv = sys.argv[1:] if argv is None else argv
+    if effective_argv == ["--print-canonical-adapter-revision"]:
+        print(behavior_adapter_closure_revision())
+        return 0
+    args = build_parser().parse_args(effective_argv)
     if args.repeats < 3:
         raise SystemExit("Behavior benchmark requires at least three repeats.")
     if args.evidence_class == "behavior" and not args.confirm_live_run:
@@ -1156,6 +1257,7 @@ def main(argv: list[str] | None = None) -> int:
                 })
                 prompts = (prompt, *case["interaction_script"])
                 recovered = recover_attempt(resume_root, nonce, len(prompts))
+                revalidate_behavior_bindings()
                 if recovered is not None:
                     context_id, responses = recovered
                     elapsed_ms = None
@@ -1227,6 +1329,7 @@ def main(argv: list[str] | None = None) -> int:
                     "hard_violations": hard_violations,
                     "dimensions": dimensions,
                 })
+                revalidate_behavior_bindings()
                 checkpoint_path.write_text(
                     json.dumps({
                         "source_revision": source_revision,
@@ -1238,6 +1341,7 @@ def main(argv: list[str] | None = None) -> int:
                 if not checkpoint_protected:
                     protector.protect_file(checkpoint_path)
                     checkpoint_protected = True
+                revalidate_behavior_bindings()
 
     nonces = [record["attempt_nonce"] for record in records]
     contexts = [record["fresh_context_id"] for record in records]

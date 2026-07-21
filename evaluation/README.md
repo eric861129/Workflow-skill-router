@@ -40,7 +40,7 @@ $Driver = (Resolve-Path "evaluation/v2/adapters/codex_cli_driver.py").Path
 $SourceRevision = (git rev-parse HEAD).Trim()
 $WorkingTreeStatus = git status --porcelain=v1
 if ($WorkingTreeStatus) { throw "Behavior evidence requires a clean checkout." }
-$AdapterRevision = "sha256:" + (Get-FileHash -Algorithm SHA256 $Driver).Hash.ToLowerInvariant()
+$AdapterRevision = (& $Python scripts/run-v2-benchmark.py --print-canonical-adapter-revision).Trim()
 $Schema = (Resolve-Path "evaluation/v2/schemas/codex-route-output.schema.json").Path
 $AuthSource = Join-Path ([Environment]::GetFolderPath('UserProfile')) ".codex\auth.json"
 $RunId = "beta1-" + (Get-Date -Format "yyyyMMdd-HHmmss")
@@ -72,7 +72,7 @@ python scripts/run-v2-benchmark.py `
   --confirm-live-run
 ```
 
-That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. The Runner accepts only its current Python executable with the first argument identifying one readable `.py` entrypoint; module mode and ambiguous command forms fail closed. It revalidates the clean full Git commit and authorized adapter digest before every resume decision and before and after every adapter invocation. Attempt nonces bind those revisions together with the prompt, capability snapshot, tool-inventory, instruction, model, case, and scoring-spec digests, so changed source, adapter, or case evidence cannot resume an older transcript.
+That is 6 cases × 2 arms × 3 fresh attempts = 36 model attempts. One beta case has a second consent turn, so the authorized provider budget is 42 model turns. Every attempt uses an isolated empty working directory. Baseline and candidate share the task prompt, structured Skill descriptors, tool inventory, Codex executable, output schema, timeout, and case order; only the candidate receives the canonical Router instruction package. The Runner accepts only its current Python executable and the canonical absolute `evaluation/v2/adapters/codex_cli_driver.py` entrypoint; external copies, renamed repository copies, module mode, and ambiguous command forms fail closed before provider execution. The adapter revision is a deterministic digest of the canonical relative entrypoint, its local Router Core Python module closure, and the driver-owned vocabulary/schema files. The Runner revalidates the clean full Git commit and authorized closure digest before and after resume inspection, before and after every adapter invocation, and around every checkpoint write. Attempt nonces bind those revisions together with the prompt, capability snapshot, tool-inventory, instruction, model, case, and scoring-spec digests, so changed source, adapter closure, or case evidence cannot resume an older transcript.
 
 Use a new `RunId` for every authorized run. The runner accepts only a missing or empty output root, rejects legacy public `checkpoint.json` or `raw-results.json`, verifies the Windows DACL or POSIX modes before accepting evidence, and exposes only `sanitized-report.json` at the output root. Do not reuse a superseded output or attempt root.
 
