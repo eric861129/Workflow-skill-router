@@ -1022,6 +1022,7 @@ def behavior_adapter_command(
 
 def verify_behavior_python_cache(
     controlled_cache: Path,
+    protector: LocalEvidenceProtector,
 ) -> None:
     """Keep Python bytecode lookup in one protected, empty, non-writing root."""
 
@@ -1029,6 +1030,7 @@ def verify_behavior_python_cache(
         if (
             _path_is_alias(controlled_cache)
             or not controlled_cache.is_dir()
+            or not protector.verify_directory(controlled_cache)
             or any(controlled_cache.iterdir())
         ):
             raise EvaluationIntegrityError("behavior_adapter_runtime_unavailable")
@@ -1284,7 +1286,7 @@ def main(argv: list[str] | None = None) -> int:
             args.authorized_adapter_revision,
         )
         if behavior_python_cache is not None:
-            verify_behavior_python_cache(behavior_python_cache)
+            verify_behavior_python_cache(behavior_python_cache, protector)
 
     cases = load_cases(args.suite)
     profiles = load_profiles()
@@ -1307,7 +1309,7 @@ def main(argv: list[str] | None = None) -> int:
         behavior_python_cache = restricted_dir / "python-cache"
         behavior_python_cache.mkdir()
         protector.protect_directory(behavior_python_cache)
-        verify_behavior_python_cache(behavior_python_cache)
+        verify_behavior_python_cache(behavior_python_cache, protector)
         command = behavior_adapter_command(
             args.adapter_executable,
             args.adapter_arg,

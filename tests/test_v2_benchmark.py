@@ -381,6 +381,77 @@ class V2BenchmarkTests(unittest.TestCase):
                     expected,
                 )
 
+    def test_behavior_cache_rejects_posix_mode_drift_before_provider_invocation(self):
+        executed = []
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            protector = LocalEvidenceProtector(platform_name="posix")
+            with patch.object(protector, "verify_directory", return_value=False):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_runtime_unavailable",
+                ):
+                    RUNNER.invoke_with_binding_checks(
+                        lambda: executed.append("provider-executed"),
+                        lambda: RUNNER.verify_behavior_python_cache(
+                            cache,
+                            protector,
+                        ),
+                    )
+
+        self.assertEqual([], executed)
+
+    def test_behavior_cache_rejects_windows_acl_drift_before_provider_construction(self):
+        source_revision = "a" * 40
+        adapter_revision = "sha256:" + "b" * 64
+
+        class WindowsAclDriftProtector:
+            def protect_directory(self, _path):
+                return None
+
+            def verify_directory(self, path):
+                return path.name != "python-cache"
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "LocalEvidenceProtector",
+                    return_value=WindowsAclDriftProtector(),
+                ),
+                patch.object(RUNNER, "SubprocessExecutionAdapter") as provider,
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_runtime_unavailable",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(output),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+            provider.assert_not_called()
+
     def test_behavior_adapter_closure_sort_has_case_sensitive_tie_breaker(self):
         root = Path("repository")
         paths = [root / "pkg" / "a.py", root / "pkg" / "A.py"]
@@ -547,6 +618,11 @@ class V2BenchmarkTests(unittest.TestCase):
                     "verify_behavior_adapter_revision",
                     return_value=adapter_revision,
                 ) as adapter_verifier,
+                patch.object(
+                    RUNNER.LocalEvidenceProtector,
+                    "verify_directory",
+                    return_value=True,
+                ),
                 patch.object(RUNNER, "SubprocessExecutionAdapter", FakeAdapter),
             ):
                 result = RUNNER.main([
