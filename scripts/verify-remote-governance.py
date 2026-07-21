@@ -36,7 +36,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not isinstance(branch, dict) or not isinstance(protection, dict) or not isinstance(rulesets, list):
             raise governance.RemoteGovernanceUnavailableError(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
         violations = governance.evaluate_governance(contract, branch, protection, rulesets)
-    except (ValueError, governance.RemoteGovernanceUnavailableError):
+    except (AttributeError, KeyError, TypeError, ValueError, governance.RemoteGovernanceUnavailableError):
         print(governance.REMOTE_GOVERNANCE_UNAVAILABLE)
         return 1
     if violations:

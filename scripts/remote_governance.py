@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
-from typing import Any
 
 
 MAIN_NOT_PROTECTED = "main-not-protected"
@@ -31,22 +30,42 @@ def load_contract(path: Path) -> dict[str, object]:
     tag_protection = value.get("tag_protection")
     if not (
         isinstance(value.get("repository"), str)
-        and isinstance(value.get("branch"), str)
+        and bool(value["repository"])
+        and value.get("branch") == "main"
         and isinstance(required_checks, dict)
-        and isinstance(required_checks.get("strict"), bool)
+        and required_checks.get("strict") is True
         and isinstance(required_checks.get("checks"), list)
         and isinstance(branch_controls, dict)
-        and all(isinstance(branch_controls.get(key), bool) for key in ("pull_request", "conversation_resolution", "force_pushes", "deletions"))
+        and branch_controls == {
+            "pull_request": True,
+            "conversation_resolution": True,
+            "force_pushes": False,
+            "deletions": False,
+        }
         and isinstance(tag_protection, dict)
-        and isinstance(tag_protection.get("ref_name_include"), str)
+        and tag_protection.get("name") == "Immutable V2 release tags"
+        and tag_protection.get("target") == "tag"
+        and tag_protection.get("enforcement") == "active"
+        and tag_protection.get("ref_name_include") == "refs/tags/v2.*"
         and isinstance(tag_protection.get("required_rules"), list)
         and isinstance(tag_protection.get("required_bypass_actor"), dict)
     ):
         raise ValueError("remote-governance-contract-invalid")
     if not all(
-        isinstance(item, dict) and isinstance(item.get("context"), str) and isinstance(item.get("app_id"), int)
+        isinstance(item, dict) and isinstance(item.get("context"), str) and bool(item["context"])
+        and isinstance(item.get("app_id"), int)
         for item in required_checks["checks"]
-    ):
+    ) or not required_checks["checks"]:
+        raise ValueError("remote-governance-contract-invalid")
+    if not all(isinstance(rule, str) and bool(rule) for rule in tag_protection["required_rules"]):
+        raise ValueError("remote-governance-contract-invalid")
+    if tag_protection["required_rules"] != ["creation", "update", "deletion"]:
+        raise ValueError("remote-governance-contract-invalid")
+    if tag_protection["required_bypass_actor"] != {
+        "actor_id": 15368,
+        "actor_type": "Integration",
+        "bypass_mode": "always",
+    }:
         raise ValueError("remote-governance-contract-invalid")
     return value
 
@@ -57,11 +76,19 @@ def _enabled(value: object) -> bool:
     return isinstance(value, dict) and value.get("enabled") is True
 
 
-def _tag_ruleset(contract: dict[str, object], rulesets: list[dict[str, object]]) -> dict[str, object] | None:
+def _explicitly_disabled(value: object) -> bool:
+    """Return true only for GitHub's two documented disabled representations."""
+    return value is False or (isinstance(value, dict) and value == {"enabled": False})
+
+
+def _tag_rulesets(contract: dict[str, object], rulesets: list[dict[str, object]]) -> list[dict[str, object]]:
     tag = contract["tag_protection"]
     assert isinstance(tag, dict)
     wanted = tag["ref_name_include"]
+    qualifying: list[dict[str, object]] = []
     for ruleset in rulesets:
+        if not isinstance(ruleset, dict):
+            raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
         conditions = ruleset.get("conditions")
         ref_name = conditions.get("ref_name") if isinstance(conditions, dict) else None
         includes = ref_name.get("include") if isinstance(ref_name, dict) else None
@@ -71,8 +98,24 @@ def _tag_ruleset(contract: dict[str, object], rulesets: list[dict[str, object]])
             and isinstance(includes, list)
             and wanted in includes
         ):
-            return ruleset
-    return None
+            qualifying.append(ruleset)
+    return qualifying
+
+
+def _rule_types(ruleset: dict[str, object]) -> set[str]:
+    rules = ruleset.get("rules")
+    if not isinstance(rules, list) or not all(
+        isinstance(rule, dict) and isinstance(rule.get("type"), str) for rule in rules
+    ):
+        raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+    return {rule["type"] for rule in rules}
+
+
+def _has_required_bypass(ruleset: dict[str, object], wanted_actor: dict[str, object]) -> bool:
+    actors = ruleset.get("bypass_actors")
+    if not isinstance(actors, list) or not all(isinstance(actor, dict) for actor in actors):
+        raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+    return any(all(actor.get(key) == value for key, value in wanted_actor.items()) for actor in actors)
 
 
 def evaluate_governance(
@@ -82,6 +125,8 @@ def evaluate_governance(
     rulesets: list[dict[str, object]],
 ) -> list[str]:
     """Return deterministic public-safe violations for captured GitHub payloads."""
+    if not isinstance(branch.get("protected"), bool):
+        raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
     violations: list[str] = []
     if branch.get("protected") is not True:
         violations.append(MAIN_NOT_PROTECTED)
@@ -96,15 +141,22 @@ def evaluate_governance(
     else:
         actual_checks = actual_status_checks.get("checks")
         if isinstance(actual_checks, list):
+            if not all(
+                isinstance(item, dict) and isinstance(item.get("context"), str) and isinstance(item.get("app_id"), int)
+                for item in actual_checks
+            ):
+                raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
             actual_pairs = {
-                (item.get("context"), item.get("app_id")) for item in actual_checks if isinstance(item, dict)
+                (item["context"], item["app_id"]) for item in actual_checks
             }
             expected_pairs = {(item["context"], item["app_id"]) for item in expected_checks if isinstance(item, dict)}
             checks_present = expected_pairs.issubset(actual_pairs)
         else:
             contexts = actual_status_checks.get("contexts")
             expected_contexts = {item["context"] for item in expected_checks if isinstance(item, dict)}
-            checks_present = isinstance(contexts, list) and expected_contexts.issubset(set(contexts))
+            if not isinstance(contexts, list) or not all(isinstance(context, str) for context in contexts):
+                raise RemoteGovernanceUnavailableError(REMOTE_GOVERNANCE_UNAVAILABLE)
+            checks_present = expected_contexts.issubset(set(contexts))
         if not checks_present:
             violations.append("required-status-check-missing")
 
@@ -114,30 +166,33 @@ def evaluate_governance(
         violations.append("direct-push-allowed")
     if controls["conversation_resolution"] and not _enabled(protection.get("required_conversation_resolution")):
         violations.append("conversation-resolution-missing")
-    if not controls["force_pushes"] and _enabled(protection.get("allow_force_pushes")):
+    if not controls["force_pushes"] and not _explicitly_disabled(protection.get("allow_force_pushes")):
         violations.append("force-push-allowed")
-    if not controls["deletions"] and _enabled(protection.get("allow_deletions")):
+    if not controls["deletions"] and not _explicitly_disabled(protection.get("allow_deletions")):
         violations.append("deletion-allowed")
 
-    ruleset = _tag_ruleset(contract, rulesets)
-    if ruleset is None:
+    ruleset_candidates = _tag_rulesets(contract, rulesets)
+    if not ruleset_candidates:
         violations.append(TAG_RULESET_MISSING)
         return violations
 
     tag = contract["tag_protection"]
     assert isinstance(tag, dict)
-    actual_rules = ruleset.get("rules")
-    actual_rule_types = {item.get("type") for item in actual_rules if isinstance(item, dict)} if isinstance(actual_rules, list) else set()
-    if not set(tag["required_rules"]).issubset(actual_rule_types):
-        violations.append("v2-tag-rule-missing")
     wanted_actor = tag["required_bypass_actor"]
     assert isinstance(wanted_actor, dict)
-    actors = ruleset.get("bypass_actors")
-    if not isinstance(actors, list) or not any(
-        isinstance(actor, dict) and all(actor.get(key) == value for key, value in wanted_actor.items())
-        for actor in actors
-    ):
+    required_rules = set(tag["required_rules"])
+    candidates = [
+        (required_rules.issubset(_rule_types(ruleset)), _has_required_bypass(ruleset, wanted_actor))
+        for ruleset in ruleset_candidates
+    ]
+    if any(has_rules and has_bypass for has_rules, has_bypass in candidates):
+        return violations
+    if not any(has_rules for has_rules, _ in candidates):
+        violations.append("v2-tag-rule-missing")
+    if not any(has_bypass for _, has_bypass in candidates):
         violations.append("v2-tag-bypass-missing")
+    if not violations or violations[-1] not in {"v2-tag-rule-missing", "v2-tag-bypass-missing"}:
+        violations.append("v2-tag-ruleset-incomplete")
     return violations
 
 
