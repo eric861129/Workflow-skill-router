@@ -4,8 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
+import sys
 import tempfile
 import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from workflow_skill_router.bridge import serve
 from workflow_skill_router.local_control import LocalControlPlaneService
