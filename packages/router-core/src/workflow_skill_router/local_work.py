@@ -373,6 +373,7 @@ def build_local_work_items(
     routing_envelope: str,
     goal_binding_id: str | None,
     planned_skill_tree: tuple[object, ...],
+    planned_skill_ids: tuple[str, ...],
 ) -> tuple[LocalWorkItem, ...]:
     """Materialize only Router-owned planned work; never mirror a Host Goal graph."""
 
@@ -407,12 +408,19 @@ def build_local_work_items(
         return tuple(items)
 
     if routing_envelope == "single":
-        return (_boundary_item(
+        item = _boundary_item(
             workflow_run_id,
             work_graph_id,
             phase_id="single-work",
             status="ready",
-        ),)
+        )
+        if planned_skill_ids:
+            item = replace(
+                item,
+                primary_skill_id=planned_skill_ids[0],
+                support_skill_ids=planned_skill_ids[1:],
+            )
+        return (item,)
 
     return (_boundary_item(
         workflow_run_id,

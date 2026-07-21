@@ -261,6 +261,34 @@ class LocalWorkLoopTests(unittest.TestCase):
         self.assertEqual("ready", result.work_item.status)
         self.assertEqual("router-local", result.work_item.authority_mode)
 
+    def test_explicit_locked_skills_materialize_and_replay_single_local_work_item(self) -> None:
+        command = self.command(
+            idempotency_key="explicit-locked-single",
+            explicit_skill_ids=("skill:api-designer", "skill:qa-test-planner"),
+            explicit_semantics="only",
+        )
+
+        plan = self.service.plan_work(command)
+        next_work = self.service.get_next_work(self.query(plan.workflow_run_id))
+        replay = self.service.plan_work(command)
+
+        self.assertEqual(1, plan.created_work_items)
+        self.assertEqual(plan, replay)
+        self.assertEqual("ready", next_work.status)
+        self.assertEqual("skill:api-designer", next_work.work_item.primary_skill_id)
+        self.assertEqual(
+            ("skill:qa-test-planner",),
+            next_work.work_item.support_skill_ids,
+        )
+
+    def test_auto_single_without_skill_tree_remains_generic(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="auto-single-generic"))
+
+        next_work = self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        self.assertIsNone(next_work.work_item.primary_skill_id)
+        self.assertEqual((), next_work.work_item.support_skill_ids)
+
     def test_get_next_work_returns_first_ready_profile_phase_only(self) -> None:
         self.write_phased_profile()
         plan = self.service.plan_work(self.command(

@@ -273,6 +273,7 @@ class LocalControlPlaneService:
             routing_envelope=routing_envelope,
             goal_binding_id=command.goal_binding_id,
             planned_skill_tree=planned_skill_tree,
+            planned_skill_ids=planned_skill_ids,
         )
 
         with closing(sqlite3.connect(self._database, timeout=30.0)) as connection:
@@ -1308,6 +1309,7 @@ class LocalControlPlaneService:
             routing_envelope=row["routing_envelope"],
             goal_binding_id=row["goal_binding_id"],
             planned_skill_tree=LocalControlPlaneService._planned_tree(row),
+            planned_skill_ids=tuple(json.loads(row["planned_skill_ids_json"])),
         )
 
     @staticmethod
