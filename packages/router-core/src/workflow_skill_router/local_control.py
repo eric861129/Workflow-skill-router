@@ -13,6 +13,7 @@ from workflow_skill_router.local_work import (
     LocalWorkItem,
     LocalWorkGraphCorruption,
     build_local_work_items,
+    next_ready_local_work_item,
     persist_local_work_graph,
     validate_local_work_graph,
 )
@@ -36,10 +37,12 @@ from workflow_skill_router.routing.profiler import (
 )
 from workflow_skill_router.routing.task_signal_analyzer import analyze_task_signals
 from workflow_skill_router.schemas.artifacts import canonical_json
+from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 from workflow_skill_router.service_models import (
     ClassificationDecisionView,
     PlannedSkillPhase,
     PlanWorkResult,
+    NextWorkResult,
     RouterStatusView,
     SupportConsentResult,
 )
@@ -449,6 +452,67 @@ class LocalControlPlaneService:
             None,
             False,
         )
+
+    def require_local_capability(self, tool_name: str, command) -> None:
+        if tool_name != "get_next_work":
+            raise CapabilityUnavailable.for_tool(tool_name)
+        self._validated_next_work(command)
+
+    def get_next_work(self, query) -> NextWorkResult:
+        _, items = self._validated_next_work(query)
+        status, work_item = next_ready_local_work_item(items)
+        refresh_requirements = (
+            ("local-work-graph-decomposition-required",)
+            if status == "decomposition-required"
+            else ()
+        )
+        return NextWorkResult(
+            status=status,
+            refresh_requirements=refresh_requirements,
+            work_item=work_item,
+            authority_mode="router-local",
+            host_goal_mutated=False,
+        )
+
+    def _validated_next_work(self, query) -> tuple[sqlite3.Row, tuple[LocalWorkItem, ...]]:
+        with closing(sqlite3.connect(self._database)) as connection:
+            connection.row_factory = sqlite3.Row
+            plan = connection.execute(
+                "SELECT * FROM local_control_plans WHERE workflow_run_id=? "
+                "AND session_id=? AND actor=? AND runtime_policy_snapshot_id=?",
+                (
+                    query.workflow_run_id,
+                    query.context.session_id,
+                    query.context.actor,
+                    query.context.runtime_policy_snapshot_id,
+                ),
+            ).fetchone()
+            if plan is None:
+                raise CapabilityUnavailable.for_local_condition(
+                    "get_next_work",
+                    required_capabilities=("router-owned-work-graph",),
+                    fallback_action=(
+                        "Create or replay a Router-owned local work graph in this session."
+                    ),
+                )
+            items = validate_local_work_graph(
+                connection,
+                workflow_run_id=plan["workflow_run_id"],
+                work_graph_id=plan["work_graph_id"],
+                expected_count=int(plan["created_work_items"]),
+                expected_items=self._expected_local_work_items(plan),
+                session_id=plan["session_id"],
+                expected_actor=plan["actor"],
+            )
+        if plan["goal_binding_id"] is not None:
+            raise CapabilityUnavailable.for_local_condition(
+                "get_next_work",
+                required_capabilities=("verified-host-scheduler",),
+                fallback_action=(
+                    "Continue this native Goal through the verified host scheduler."
+                ),
+            )
+        return plan, items
 
     def propose_support_consent(self, command) -> SupportConsentResult:
         support_skills = tuple(sorted(command.support_skill_ids))

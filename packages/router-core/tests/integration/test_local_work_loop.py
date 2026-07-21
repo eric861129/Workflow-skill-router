@@ -17,13 +17,16 @@ from workflow_skill_router.local_work import (
     LocalWorkGraphCorruption,
     local_transition_request_digest,
 )
+from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 from workflow_skill_router.persistence.migrator import iter_complete_statements, migrate
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
+    NextWorkQuery,
     PlanWork,
     RequestContext,
     RoutingContextInput,
 )
+from workflow_skill_router.tool_dispatch import ToolDispatcher
 
 
 class LocalWorkLoopTests(unittest.TestCase):
@@ -62,6 +65,68 @@ class LocalWorkLoopTests(unittest.TestCase):
         with closing(sqlite3.connect(self.database)) as connection:
             connection.row_factory = sqlite3.Row
             return list(connection.execute(sql, values).fetchall())
+
+    def query(self, workflow_run_id: str) -> NextWorkQuery:
+        return NextWorkQuery(self.context, workflow_run_id)
+
+    def complete_item_through_storage_seam(
+        self,
+        workflow_run_id: str,
+        item_order: int,
+    ) -> None:
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            row = connection.execute(
+                "SELECT * FROM local_work_items WHERE workflow_run_id=? AND item_order=?",
+                (workflow_run_id, item_order),
+            ).fetchone()
+            self.assertIsNotNone(row)
+            version = int(row["state_version"])
+            resulting_version = version + 1
+            transition_kind = "test-fixture-complete"
+            request_digest = local_transition_request_digest(
+                session_id=self.context.session_id,
+                actor=self.context.actor,
+                workflow_run_id=workflow_run_id,
+                work_item_id=row["work_item_id"],
+                transition_kind=transition_kind,
+                from_status=row["status"],
+                to_status="completed",
+                expected_state_version=version,
+                resulting_state_version=resulting_version,
+            )
+            connection.execute(
+                "INSERT INTO local_work_transitions("
+                "transition_id,session_id,workflow_run_id,work_item_id,transition_kind,"
+                "from_status,to_status,expected_state_version,resulting_state_version,"
+                "idempotency_key,request_digest,actor,created_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    self.public_id(
+                        "work-transition", row["work_item_id"], str(resulting_version)
+                    ),
+                    self.context.session_id,
+                    workflow_run_id,
+                    row["work_item_id"],
+                    transition_kind,
+                    row["status"],
+                    "completed",
+                    version,
+                    resulting_version,
+                    self.public_id(
+                        "test-complete", workflow_run_id, row["work_item_id"]
+                    ),
+                    request_digest,
+                    self.context.actor,
+                    "2026-07-21T00:00:00+00:00",
+                ),
+            )
+            connection.execute(
+                "UPDATE local_work_items SET status='completed',state_version=? "
+                "WHERE work_item_id=? AND state_version=?",
+                (resulting_version, row["work_item_id"], version),
+            )
+            connection.commit()
 
     @staticmethod
     def public_id(prefix: str, *parts: str) -> str:
@@ -150,6 +215,114 @@ class LocalWorkLoopTests(unittest.TestCase):
         self.assertEqual(1, transitions[0]["resulting_state_version"])
         self.assertTrue(transitions[0]["request_digest"].startswith("sha256:"))
         self.assertEqual("developer", transitions[0]["actor"])
+
+    def test_get_next_work_returns_only_ready_single_router_local_item(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="next-single"))
+
+        result = self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        self.assertEqual("ready", result.status)
+        self.assertEqual((), result.refresh_requirements)
+        self.assertEqual("router-local", result.authority_mode)
+        self.assertFalse(result.host_goal_mutated)
+        self.assertEqual("single-work", result.work_item.phase_id)
+        self.assertEqual("ready", result.work_item.status)
+        self.assertEqual("router-local", result.work_item.authority_mode)
+
+    def test_get_next_work_returns_first_ready_profile_phase_only(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="next-phased",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+
+        result = self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        self.assertEqual("ready", result.status)
+        self.assertEqual("design", result.work_item.phase_id)
+        self.assertEqual("skill:api-designer", result.work_item.primary_skill_id)
+
+    def test_get_next_work_fails_closed_for_native_goal_without_host_mutation(self) -> None:
+        plan = self.service.plan_work(self.command(
+            objective="Continue the native Goal",
+            idempotency_key="next-native-goal",
+            requested_work_mode="managed-goal",
+            goal_binding_id="goal-native-next",
+        ))
+
+        with self.assertRaises(CapabilityUnavailable) as direct:
+            self.service.get_next_work(self.query(plan.workflow_run_id))
+        direct_payload = direct.exception.public_payload()
+        self.assertEqual(["verified-host-scheduler"], direct_payload["required_capabilities"])
+        self.assertEqual("conditional-local", direct_payload["availability"])
+
+        dispatcher = ToolDispatcher(self.service)
+        with patch.object(
+            self.service,
+            "get_next_work",
+            wraps=self.service.get_next_work,
+        ) as body:
+            with self.assertRaises(CapabilityUnavailable) as dispatched:
+                dispatcher.dispatch("get_next_work", {
+                    "context": {
+                        "session_id": self.context.session_id,
+                        "actor": self.context.actor,
+                        "runtime_policy_snapshot_id": self.context.runtime_policy_snapshot_id,
+                    },
+                    "workflow_run_id": plan.workflow_run_id,
+                })
+        self.assertEqual(direct_payload, dispatched.exception.public_payload())
+        body.assert_not_called()
+
+    def test_get_next_work_returns_decomposition_boundary_without_invented_item(self) -> None:
+        plan = self.service.plan_work(self.command(
+            objective="Design then implement",
+            idempotency_key="next-decomposition",
+            requested_work_mode="phased",
+        ))
+
+        result = self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        self.assertEqual("decomposition-required", result.status)
+        self.assertEqual(("local-work-graph-decomposition-required",), result.refresh_requirements)
+        self.assertIsNone(result.work_item)
+        self.assertEqual("router-local", result.authority_mode)
+        self.assertFalse(result.host_goal_mutated)
+
+    def test_completed_dependency_makes_next_phase_eligible_without_persisted_activation(self) -> None:
+        self.write_phased_profile()
+        plan = self.service.plan_work(self.command(
+            objective="Design and verify the API",
+            idempotency_key="next-dependency",
+            requested_work_mode="phased",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+        self.complete_item_through_storage_seam(plan.workflow_run_id, 0)
+
+        result = self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        self.assertEqual("ready", result.status)
+        self.assertEqual("verify", result.work_item.phase_id)
+        self.assertEqual("ready", result.work_item.status)
+        persisted = self.rows(
+            "SELECT status FROM local_work_items WHERE workflow_run_id=? ORDER BY item_order",
+            (plan.workflow_run_id,),
+        )
+        self.assertEqual(["completed", "pending"], [row["status"] for row in persisted])
+
+    def test_get_next_work_fails_closed_when_graph_integrity_is_invalid(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="next-corruption"))
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.execute(
+                "UPDATE local_work_items SET status='completed' WHERE workflow_run_id=?",
+                (plan.workflow_run_id,),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
+            self.service.get_next_work(self.query(plan.workflow_run_id))
 
     def test_phased_profile_persists_ordered_dependencies_without_activation_claims(self) -> None:
         self.write_phased_profile()

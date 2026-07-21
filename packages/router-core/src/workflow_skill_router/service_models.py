@@ -155,6 +155,8 @@ class NextWorkResult(ResultCodec):
     status: str
     refresh_requirements: tuple[str, ...]
     work_item: object | None
+    authority_mode: str = "verified-host"
+    host_goal_mutated: bool = False
 
 
 @dataclass(frozen=True, slots=True)

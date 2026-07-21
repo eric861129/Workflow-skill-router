@@ -13,6 +13,7 @@ class ToolRuntimeReadiness:
     risk_class: str
     required_capabilities: tuple[str, ...]
     fallback_action: str
+    local_conditions: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -24,6 +25,7 @@ def _entry(
     risk_class: str,
     required_capabilities: tuple[str, ...],
     fallback_action: str,
+    local_conditions: tuple[str, ...] = (),
 ) -> ToolRuntimeReadiness:
     return ToolRuntimeReadiness(
         tool_name,
@@ -31,6 +33,7 @@ def _entry(
         risk_class,
         required_capabilities,
         fallback_action,
+        local_conditions,
     )
 
 
@@ -65,10 +68,11 @@ RUNTIME_READINESS: Mapping[str, ToolRuntimeReadiness] = {
     ),
     "get_next_work": _entry(
         "get_next_work",
-        "verified-host-required",
+        "conditional-local",
         "R0",
-        ("verified-host-scheduler", "fresh-runtime-context"),
-        "Inspect local status or initialize the verified host scheduler.",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
+        "Use a validated Router-owned graph or initialize the verified host scheduler.",
+        ("router-owned-work-graph", "no-native-goal-authority-required"),
     ),
     "validate_route": _entry(
         "validate_route",
@@ -136,6 +140,24 @@ class CapabilityUnavailable(RuntimeError):
     @classmethod
     def for_tool(cls, tool_name: str) -> "CapabilityUnavailable":
         return cls(RUNTIME_READINESS[tool_name])
+
+    @classmethod
+    def for_local_condition(
+        cls,
+        tool_name: str,
+        *,
+        required_capabilities: tuple[str, ...],
+        fallback_action: str,
+    ) -> "CapabilityUnavailable":
+        entry = RUNTIME_READINESS[tool_name]
+        return cls(ToolRuntimeReadiness(
+            tool_name=entry.tool_name,
+            availability=entry.availability,
+            risk_class=entry.risk_class,
+            required_capabilities=required_capabilities,
+            fallback_action=fallback_action,
+            local_conditions=entry.local_conditions,
+        ))
 
     def public_payload(self) -> dict[str, object]:
         entry = self.readiness

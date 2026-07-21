@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 import sqlite3
@@ -244,6 +244,29 @@ def load_local_work_items(
         status=row["status"],
         authority_mode=row["authority_mode"],
     ) for row in rows)
+
+
+def next_ready_local_work_item(
+    items: tuple[LocalWorkItem, ...],
+) -> tuple[str, LocalWorkItem | None]:
+    """Project advisory readiness without persisting activation or progress."""
+
+    completed_ids = {
+        item.work_item_id for item in items if item.status == "completed"
+    }
+    for item in items:
+        dependencies_satisfied = set(item.dependency_ids).issubset(completed_ids)
+        if item.status == "ready":
+            if not dependencies_satisfied:
+                raise LocalWorkGraphCorruption(
+                    "local-work-graph-corruption: premature-ready"
+                )
+            return "ready", item
+        if item.status == "pending" and dependencies_satisfied:
+            return "ready", replace(item, status="ready")
+        if item.status == "decomposition-required":
+            return "decomposition-required", None
+    return "no-ready-work", None
 
 
 def validate_local_work_graph(

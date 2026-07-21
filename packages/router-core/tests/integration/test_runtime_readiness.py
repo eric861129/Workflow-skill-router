@@ -31,8 +31,15 @@ class RuntimeReadinessTests(unittest.TestCase):
             "local-ready", RUNTIME_READINESS["get_router_status"].availability
         )
         self.assertEqual(
-            "verified-host-required",
+            "conditional-local",
             RUNTIME_READINESS["get_next_work"].availability,
+        )
+        self.assertEqual(
+            (
+                "router-owned-work-graph",
+                "no-native-goal-authority-required",
+            ),
+            RUNTIME_READINESS["get_next_work"].local_conditions,
         )
         self.assertEqual(
             "configured-adapter-required",
@@ -68,10 +75,24 @@ class RuntimeReadinessTests(unittest.TestCase):
         response = json.loads(output.getvalue())
         self.assertFalse(response["ok"])
         self.assertEqual("capability-unavailable", response["error"]["code"])
+        self.assertEqual("conditional-local", response["error"]["availability"])
         self.assertEqual(
-            "verified-host-required", response["error"]["availability"]
+            ["router-owned-work-graph"],
+            response["error"]["required_capabilities"],
         )
         self.assertNotIn("traceback", output.getvalue().lower())
+
+    def test_conditional_dispatch_decodes_before_local_capability_guard(self) -> None:
+        from workflow_skill_router.local_control import LocalControlPlaneService
+        from workflow_skill_router.service_codecs import ServiceCodecError
+        from workflow_skill_router.tool_dispatch import ToolDispatcher
+
+        with tempfile.TemporaryDirectory() as temporary:
+            dispatcher = ToolDispatcher(
+                LocalControlPlaneService(Path(temporary) / "router.db")
+            )
+            with self.assertRaises(ServiceCodecError):
+                dispatcher.dispatch("get_next_work", {"workflow_run_id": "workflow-1"})
 
     def test_doctor_exposes_the_same_readiness_matrix(self) -> None:
         from workflow_skill_router.cli import main

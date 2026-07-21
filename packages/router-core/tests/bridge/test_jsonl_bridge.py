@@ -42,7 +42,11 @@ class BridgeTests(unittest.TestCase):
         response = json.loads(output.getvalue())
         self.assertEqual("capability-unavailable", response["error"]["code"])
         self.assertEqual(
-            "verified-host-required", response["error"]["availability"]
+            "conditional-local", response["error"]["availability"]
+        )
+        self.assertEqual(
+            ["router-owned-work-graph", "no-native-goal-authority-required"],
+            response["error"]["required_capabilities"],
         )
         self.assertEqual("", diagnostics.getvalue())
 
