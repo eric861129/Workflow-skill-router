@@ -128,6 +128,25 @@ class LocalWorkLoopTests(unittest.TestCase):
             )
             connection.commit()
 
+    def mark_graph_as_v0(self, workflow_run_id: str, *, keep_rows: bool) -> None:
+        with closing(sqlite3.connect(self.database)) as connection:
+            if not keep_rows:
+                connection.execute("DROP TRIGGER local_work_transitions_no_delete")
+                connection.execute(
+                    "DELETE FROM local_work_transitions WHERE workflow_run_id=?",
+                    (workflow_run_id,),
+                )
+                connection.execute(
+                    "DELETE FROM local_work_items WHERE workflow_run_id=?",
+                    (workflow_run_id,),
+                )
+            connection.execute(
+                "UPDATE local_control_plans SET local_work_graph_version=0 "
+                "WHERE workflow_run_id=?",
+                (workflow_run_id,),
+            )
+            connection.commit()
+
     @staticmethod
     def public_id(prefix: str, *parts: str) -> str:
         identity = hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:32]
@@ -322,6 +341,89 @@ class LocalWorkLoopTests(unittest.TestCase):
             connection.commit()
 
         with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
+            self.service.get_next_work(self.query(plan.workflow_run_id))
+
+    def test_get_next_work_requires_replay_for_v0_plan_without_graph(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="next-v0-no-graph"))
+        self.mark_graph_as_v0(plan.workflow_run_id, keep_rows=False)
+
+        with self.assertRaises(CapabilityUnavailable) as direct:
+            self.service.get_next_work(self.query(plan.workflow_run_id))
+        expected = direct.exception.public_payload()
+        self.assertEqual(["router-owned-work-graph"], expected["required_capabilities"])
+        self.assertEqual(
+            "Replay or create the Router-owned local work graph before scheduling.",
+            expected["fallback_action"],
+        )
+
+        dispatcher = ToolDispatcher(self.service)
+        with patch.object(
+            self.service,
+            "get_next_work",
+            wraps=self.service.get_next_work,
+        ) as body:
+            with self.assertRaises(CapabilityUnavailable) as dispatched:
+                dispatcher.dispatch("get_next_work", {
+                    "context": {
+                        "session_id": self.context.session_id,
+                        "actor": self.context.actor,
+                        "runtime_policy_snapshot_id": self.context.runtime_policy_snapshot_id,
+                    },
+                    "workflow_run_id": plan.workflow_run_id,
+                })
+        self.assertEqual(expected, dispatched.exception.public_payload())
+        body.assert_not_called()
+
+    def test_get_next_work_rejects_v0_marker_with_graph_rows(self) -> None:
+        plan = self.service.plan_work(self.command(idempotency_key="next-v0-with-rows"))
+        self.mark_graph_as_v0(plan.workflow_run_id, keep_rows=True)
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: version-marker",
+        ):
+            self.service.get_next_work(self.query(plan.workflow_run_id))
+
+        dispatcher = ToolDispatcher(self.service)
+        with patch.object(
+            self.service,
+            "get_next_work",
+            wraps=self.service.get_next_work,
+        ) as body:
+            with self.assertRaisesRegex(
+                LocalWorkGraphCorruption,
+                "local-work-graph-corruption: version-marker",
+            ):
+                dispatcher.dispatch("get_next_work", {
+                    "context": {
+                        "session_id": self.context.session_id,
+                        "actor": self.context.actor,
+                        "runtime_policy_snapshot_id": self.context.runtime_policy_snapshot_id,
+                    },
+                    "workflow_run_id": plan.workflow_run_id,
+                })
+        body.assert_not_called()
+
+    def test_get_next_work_rejects_v0_marker_with_only_transition_rows(self) -> None:
+        plan = self.service.plan_work(self.command(
+            idempotency_key="next-v0-transition-only"
+        ))
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.execute(
+                "DELETE FROM local_work_items WHERE workflow_run_id=?",
+                (plan.workflow_run_id,),
+            )
+            connection.execute(
+                "UPDATE local_control_plans SET local_work_graph_version=0 "
+                "WHERE workflow_run_id=?",
+                (plan.workflow_run_id,),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: version-marker",
+        ):
             self.service.get_next_work(self.query(plan.workflow_run_id))
 
     def test_phased_profile_persists_ordered_dependencies_without_activation_claims(self) -> None:

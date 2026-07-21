@@ -24,12 +24,16 @@ class ToolDispatcher:
 
     def dispatch(self, tool: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         if tool not in PUBLIC_TOOLS: raise LookupError(tool)
-        command = self._codecs[tool].decode(arguments)
         if getattr(self._service, "runtime_profile", None) == "bundled-local-r0":
             availability = RUNTIME_READINESS[tool].availability
             if availability == "conditional-local":
+                command = self._codecs[tool].decode(arguments)
                 self._service.require_local_capability(tool, command)
             elif availability != "local-ready":
                 raise CapabilityUnavailable.for_tool(tool)
+            else:
+                command = self._codecs[tool].decode(arguments)
+        else:
+            command = self._codecs[tool].decode(arguments)
         result = getattr(self._service, tool)(command)
         return self._codecs[tool].encode(result)

@@ -495,6 +495,34 @@ class LocalControlPlaneService:
                         "Create or replay a Router-owned local work graph in this session."
                     ),
                 )
+            graph_version = int(plan["local_work_graph_version"])
+            graph_row = connection.execute(
+                "SELECT "
+                "(SELECT COUNT(*) FROM local_work_items WHERE workflow_run_id=?),"
+                "(SELECT COUNT(*) FROM local_work_transitions WHERE workflow_run_id=?)",
+                (plan["workflow_run_id"], plan["workflow_run_id"]),
+            ).fetchone()
+            graph_row_count = (
+                0
+                if graph_row is None
+                else int(graph_row[0]) + int(graph_row[1])
+            )
+            if graph_version == 0:
+                if graph_row_count != 0:
+                    raise LocalWorkGraphCorruption(
+                        "local-work-graph-corruption: version-marker"
+                    )
+                raise CapabilityUnavailable.for_local_condition(
+                    "get_next_work",
+                    required_capabilities=("router-owned-work-graph",),
+                    fallback_action=(
+                        "Replay or create the Router-owned local work graph before scheduling."
+                    ),
+                )
+            if graph_version != 1:
+                raise LocalWorkGraphCorruption(
+                    "local-work-graph-corruption: version-marker"
+                )
             items = validate_local_work_graph(
                 connection,
                 workflow_run_id=plan["workflow_run_id"],

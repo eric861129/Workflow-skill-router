@@ -94,6 +94,23 @@ class RuntimeReadinessTests(unittest.TestCase):
             with self.assertRaises(ServiceCodecError):
                 dispatcher.dispatch("get_next_work", {"workflow_run_id": "workflow-1"})
 
+    def test_static_unavailable_dispatch_preserves_guard_before_decode(self) -> None:
+        from workflow_skill_router.local_control import LocalControlPlaneService
+        from workflow_skill_router.runtime_readiness import CapabilityUnavailable
+        from workflow_skill_router.tool_dispatch import ToolDispatcher
+
+        with tempfile.TemporaryDirectory() as temporary:
+            dispatcher = ToolDispatcher(
+                LocalControlPlaneService(Path(temporary) / "router.db")
+            )
+            with self.assertRaises(CapabilityUnavailable) as unavailable:
+                dispatcher.dispatch("validate_route", {})
+
+        self.assertEqual(
+            "verified-host-required",
+            unavailable.exception.public_payload()["availability"],
+        )
+
     def test_doctor_exposes_the_same_readiness_matrix(self) -> None:
         from workflow_skill_router.cli import main
 
