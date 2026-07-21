@@ -40,6 +40,7 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         hostRequired: '需要已驗證 Host 能力',
         localBoundary: '此 Runtime 未提供排程能力；結果未被偽造。',
         classificationLimit: '分類只決定工作包絡，不代表 Skill 啟用或權限。',
+        noLockedSkill: '無鎖定 Skill',
       }
     : {
         noGraph: 'No work graph for this scenario.',
@@ -50,6 +51,7 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         hostRequired: 'Requires verified host capabilities',
         localBoundary: 'This runtime has no scheduler capability; no result was fabricated.',
         classificationLimit: 'Classification selects only the work envelope; it proves no Skill activation or authority.',
+        noLockedSkill: 'no locked Skill',
       };
 
   let preset = demo.presets.find((item) => item.id === root.dataset.initial) || demo.presets[0];
@@ -114,6 +116,14 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
       (result: any) => !result.ok && result.error?.code === 'capability-unavailable',
     );
     const routing = preset.routing_evidence;
+    const branch = selectBranch();
+    const branchRouting = branch.routing_evidence;
+    const profileMatch = routing.profile_match.status === 'applied'
+      ? `${routing.profile_match.source} · ${routing.profile_match.matched_rule_id}`
+      : 'not-applied';
+    const explicitLock = branchRouting.explicit_skill_lock.status === 'locked'
+      ? `locked · ${branchRouting.explicit_skill_lock.skill_ids.join(', ')}`
+      : `not-applied · ${localized.noLockedSkill}`;
     target.innerHTML = `
       <dl class="router-demo-evidence-grid">
         <div><dt>RUNTIME PROFILE</dt><dd data-testid="demo-runtime-profile">${escapeHtml(preset.runtime_profile)}</dd></div>
@@ -122,10 +132,11 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
         <div><dt>TRACE STATUS</dt><dd>${escapeHtml(preset.trace_status)}</dd></div>
         <div><dt>CLASSIFICATION SOURCE</dt><dd data-testid="demo-classification-source">${escapeHtml(routing.classification.source)}</dd></div>
         <div><dt>CLASSIFICATION CONFIDENCE</dt><dd>${escapeHtml(routing.classification.confidence)}</dd></div>
-        <div><dt>PROFILE MATCH SOURCE</dt><dd data-testid="demo-profile-source">${escapeHtml(routing.profile_match_source)}</dd></div>
-        <div><dt>PLANNED SKILLS</dt><dd>${escapeHtml(routing.planned_skill_ids.join(', ') || 'none')}</dd></div>
-        <div><dt>ACTUAL ACTIVATION</dt><dd data-testid="demo-actual-activation">${escapeHtml(routing.actual_activation)}</dd></div>
-        <div><dt>CONSENT BOUNDARY</dt><dd>${escapeHtml(routing.consent_boundary)}</dd></div>
+        <div><dt>PROFILE MATCH</dt><dd data-testid="demo-profile-source">${escapeHtml(profileMatch)}</dd></div>
+        <div><dt>PLANNED SKILLS</dt><dd data-testid="demo-planned-skills">${escapeHtml(branchRouting.planned_skill_ids.join(', '))}</dd></div>
+        <div><dt>ACTUAL ACTIVATION</dt><dd data-testid="demo-actual-activation">${escapeHtml(branchRouting.actual_activation)}</dd></div>
+        <div><dt>EXPLICIT SKILL LOCK</dt><dd data-testid="demo-explicit-lock">${escapeHtml(explicitLock)}</dd></div>
+        <div><dt>CONSENT BOUNDARY</dt><dd>${escapeHtml(branchRouting.consent_boundary)}</dd></div>
       </dl>
       <div class="router-demo-boundary is-unavailable">${localized.classificationLimit}</div>
       ${preset.requires_host_capabilities ? `<div class="router-demo-boundary is-fixture">${localized.hostRequired}</div>` : ''}
@@ -156,7 +167,6 @@ document.querySelectorAll<HTMLElement>('[data-router-demo]').forEach((root) => {
     text('[data-demo-request]', preset.request[locale]);
     text('[data-demo-envelope]', preset.decision.envelope);
     text('[data-testid="demo-status"]', branch.status[locale]);
-    text('[data-testid="demo-explicit-coverage"]', `explicit coverage · ${branch.explicit_skill_coverage.status}`);
 
     const route = root.querySelector<HTMLElement>('[data-demo-route]');
     if (route) {

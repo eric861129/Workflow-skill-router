@@ -274,18 +274,13 @@ class DemoScenarioExporter:
         routing_evidence = {
             "classification": plan_result["classification"],
             "classification_limit": "work-envelope-only",
-            "profile_match_source": plan_result["route_source"],
-            "planned_skill_ids": planned_skill_ids,
-            "activation_status": plan_result["activation_status"],
-            "actual_activation": "unverified",
-            "explicit_skill_lock": bool(explicit),
-            "consent_boundary": (
-                "phase-scoped-user-decision"
-                if support_policy is SupportPolicy.ASK
-                else "explicit-set-closed"
-                if support_policy is SupportPolicy.FORBID
-                else "router-owned-recommendation"
-            ),
+            "plan_route_source": plan_result["route_source"],
+            "profile_match": {
+                "status": "applied" if profile_applied else "not-applied",
+                "source": plan_result["route_source"] if profile_applied else None,
+                "profile_ids": plan_result["routing_profile_ids"],
+                "matched_rule_id": plan_result["matched_profile_rule_id"],
+            },
             "authority": {
                 "native_goal_mutation": False,
                 "deployment": False,
@@ -508,6 +503,14 @@ class DemoScenarioExporter:
         trace: Mapping[str, Any],
     ) -> list[dict[str, Any]]:
         support = item.get("support")
+        explicit_skill_ids = list(item.get("explicit_skills", ()))
+        consent_boundary = (
+            "phase-scoped-user-decision"
+            if support_policy is SupportPolicy.ASK
+            else "explicit-set-closed"
+            if support_policy is SupportPolicy.FORBID
+            else "router-owned-recommendation"
+        )
         if support and support_policy is SupportPolicy.AUTO:
             automatic_route = {**route, "support_selections": [support]}
             automatic_events = [
@@ -526,6 +529,8 @@ class DemoScenarioExporter:
                 automatic_events,
                 "已自動選入最小必要輔助能力",
                 "Minimal support auto-selected",
+                explicit_skill_ids,
+                consent_boundary,
             )]
         if support and support_policy is SupportPolicy.ASK:
             consent_results = {
@@ -588,6 +593,8 @@ class DemoScenarioExporter:
                     rejected_events,
                     "僅使用指定 SKILL",
                     "Requested SKILL only",
+                    explicit_skill_ids,
+                    consent_boundary,
                 ),
                 self._branch(
                     "support-approved",
@@ -599,17 +606,46 @@ class DemoScenarioExporter:
                     approved_events,
                     "已核准輔助能力；啟用仍受 Host gate 控制",
                     "Support approved; activation remains host-gated",
+                    explicit_skill_ids,
+                    consent_boundary,
                 ),
             ]
-        return [self._branch("default", route, events, "路由已就緒", "Route ready")]
+        return [self._branch(
+            "default",
+            route,
+            events,
+            "路由已就緒",
+            "Route ready",
+            explicit_skill_ids,
+            consent_boundary,
+        )]
 
     @staticmethod
-    def _branch(branch_id, route, events, status_zh, status_en):
+    def _branch(
+        branch_id,
+        route,
+        events,
+        status_zh,
+        status_en,
+        explicit_skill_ids,
+        consent_boundary,
+    ):
         return {
             "branch_id": branch_id,
             "route": route,
             "events": events,
-            "explicit_skill_coverage": {"status": "satisfied"},
+            "routing_evidence": {
+                "planned_skill_ids": [
+                    route["primary_selection"],
+                    *route["support_selections"],
+                ],
+                "actual_activation": "unverified",
+                "explicit_skill_lock": {
+                    "status": "locked" if explicit_skill_ids else "not-applied",
+                    "skill_ids": list(explicit_skill_ids),
+                },
+                "consent_boundary": consent_boundary,
+            },
             "status": {"en": status_en, "zh-TW": status_zh},
         }
 

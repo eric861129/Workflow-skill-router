@@ -9,6 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 SPEC=importlib.util.spec_from_file_location("build_v2_demo_data",ROOT/"scripts/build-v2-demo-data.py")
 module=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=module;SPEC.loader.exec_module(module)
 build_demo_data=module.build_demo_data
+validate_routing_evidence=module._validate_routing_evidence
 
 
 class DemoDataTests(unittest.TestCase):
@@ -133,7 +134,7 @@ class DemoDataTests(unittest.TestCase):
         self.assertNotIn("score",preset["evaluation"])
         self.assertNotIn("raw_traces",preset["evaluation"])
 
-    def test_demo_exposes_classification_profile_and_activation_evidence(self):
+    def test_demo_exposes_branch_scoped_planning_and_activation_evidence(self):
         data = build_demo_data(ROOT)
         allowed_sources = {
             "native-goal-binding",
@@ -149,12 +150,18 @@ class DemoDataTests(unittest.TestCase):
                 evidence = preset["routing_evidence"]
                 self.assertEqual(plan["classification"], evidence["classification"])
                 self.assertIn(evidence["classification"]["source"], allowed_sources)
-                self.assertEqual(plan["route_source"], evidence["profile_match_source"])
-                self.assertEqual(plan["planned_skill_ids"], evidence["planned_skill_ids"])
-                self.assertEqual("unverified", evidence["actual_activation"])
                 self.assertFalse(evidence["authority"]["native_goal_mutation"])
                 self.assertFalse(evidence["authority"]["deployment"])
                 self.assertFalse(evidence["authority"]["production"])
+                self.assertNotIn("planned_skill_ids", evidence)
+                for branch in preset["branches"]:
+                    branch_evidence = branch["routing_evidence"]
+                    expected = [
+                        branch["route"]["primary_selection"],
+                        *branch["route"]["support_selections"],
+                    ]
+                    self.assertEqual(expected, branch_evidence["planned_skill_ids"])
+                    self.assertEqual("unverified", branch_evidence["actual_activation"])
 
         by_id = {item["id"]: item for item in data["presets"]}
         self.assertEqual(
@@ -168,24 +175,111 @@ class DemoDataTests(unittest.TestCase):
             ["classification"]["source"],
         )
         self.assertEqual(
-            "personal-profile",
-            by_id["personal-skill-tree"]["routing_evidence"]
-            ["profile_match_source"],
+            {
+                "status": "applied",
+                "source": "personal-profile",
+                "profile_ids": ["personal:demo-api"],
+                "matched_rule_id": "demo-api",
+            },
+            by_id["personal-skill-tree"]["routing_evidence"]["profile_match"],
         )
         self.assertEqual(
             "native-goal-binding",
             by_id["goal-work-graph"]["routing_evidence"]
             ["classification"]["source"],
         )
-        self.assertTrue(
-            by_id["medium-explicit-phase-consent"]["routing_evidence"]
-            ["explicit_skill_lock"]
+        for preset_id, preset in by_id.items():
+            if preset_id == "personal-skill-tree":
+                continue
+            self.assertEqual(
+                {
+                    "status": "not-applied",
+                    "source": None,
+                    "profile_ids": [],
+                    "matched_rule_id": None,
+                },
+                preset["routing_evidence"]["profile_match"],
+            )
+
+        consent = by_id["medium-explicit-phase-consent"]
+        rejected = next(
+            branch for branch in consent["branches"]
+            if branch["branch_id"] == "support-rejected"
+        )
+        approved = next(
+            branch for branch in consent["branches"]
+            if branch["branch_id"] == "support-approved"
         )
         self.assertEqual(
             "phase-scoped-user-decision",
-            by_id["medium-explicit-phase-consent"]["routing_evidence"]
-            ["consent_boundary"],
+            approved["routing_evidence"]["consent_boundary"],
         )
+        self.assertEqual(
+            {
+                "status": "locked",
+                "skill_ids": ["skill:api-designer"],
+            },
+            approved["routing_evidence"]["explicit_skill_lock"],
+        )
+        self.assertEqual(
+            ["skill:api-designer"],
+            rejected["routing_evidence"]["planned_skill_ids"],
+        )
+        self.assertEqual(
+            ["skill:api-designer", "skill:qa-support"],
+            approved["routing_evidence"]["planned_skill_ids"],
+        )
+
+        automatic = by_id["medium-auto"]["branches"][0]
+        self.assertEqual(
+            ["skill:systematic-debugging", "skill:playwright"],
+            automatic["routing_evidence"]["planned_skill_ids"],
+        )
+        self.assertEqual(
+            {"status": "not-applied", "skill_ids": []},
+            automatic["routing_evidence"]["explicit_skill_lock"],
+        )
+
+    def test_authority_evidence_requires_exact_false_booleans(self):
+        data = build_demo_data(ROOT)
+        authority = data["presets"][0]["routing_evidence"]["authority"]
+        self.assertEqual(
+            {"native_goal_mutation", "deployment", "production"},
+            set(authority),
+        )
+
+        for invalid in (0, None, "", {}, []):
+            with self.subTest(invalid=invalid):
+                candidate = json.loads(json.dumps(data))
+                candidate["presets"][0]["routing_evidence"]["authority"][
+                    "deployment"
+                ] = invalid
+                with self.assertRaisesRegex(ValueError, "authority"):
+                    validate_routing_evidence(candidate)
+
+        missing = json.loads(json.dumps(data))
+        del missing["presets"][0]["routing_evidence"]["authority"]["production"]
+        with self.assertRaisesRegex(ValueError, "authority"):
+            validate_routing_evidence(missing)
+
+    def test_profile_match_rejects_generic_route_sources(self):
+        data = build_demo_data(ROOT)
+        profile = next(
+            preset for preset in data["presets"]
+            if preset["id"] == "personal-skill-tree"
+        )
+        for generic_source in ("user-explicit", "builtin-default"):
+            with self.subTest(generic_source=generic_source):
+                candidate = json.loads(json.dumps(data))
+                candidate_profile = next(
+                    preset for preset in candidate["presets"]
+                    if preset["id"] == profile["id"]
+                )
+                candidate_profile["routing_evidence"]["profile_match"][
+                    "source"
+                ] = generic_source
+                with self.assertRaisesRegex(ValueError, "profile match"):
+                    validate_routing_evidence(candidate)
 
     def test_committed_demo_matches_the_generator(self):
         result = subprocess.run(

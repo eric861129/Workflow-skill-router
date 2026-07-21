@@ -375,6 +375,23 @@ class ReleaseCopyTests(unittest.TestCase):
         self.assertIn("planned-unverified", source)
         self.assertNotIn("router-approved", source)
 
+    def test_demo_renderer_uses_selected_branch_evidence_and_truthful_labels(self) -> None:
+        source = (
+            ROOT / "site/src/scripts/adaptive-router-demo.ts"
+        ).read_text(encoding="utf-8")
+        component = (
+            ROOT / "site/src/components/AdaptiveRouterDemo.astro"
+        ).read_text(encoding="utf-8")
+        self.assertIn("const branchRouting = branch.routing_evidence", source)
+        self.assertIn('data-testid="demo-planned-skills"', source)
+        self.assertIn("branchRouting.planned_skill_ids", source)
+        self.assertIn('data-testid="demo-explicit-lock"', source)
+        self.assertIn("branchRouting.explicit_skill_lock", source)
+        self.assertIn("routing.profile_match", source)
+        self.assertNotIn("PROFILE MATCH SOURCE", source)
+        self.assertNotIn("explicit coverage", source)
+        self.assertNotIn("demo-explicit-coverage", component)
+
 
 if __name__ == "__main__":
     unittest.main()
