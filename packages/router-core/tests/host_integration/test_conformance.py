@@ -273,6 +273,103 @@ class HostIntegrationConformanceTests(unittest.TestCase):
         self.assertEqual("artifact-protection-failed", case.diagnostic)
         self.assertEqual((), case.private_details)
 
+    def test_artifact_protection_rejects_non_meaningful_protection_evidence(self) -> None:
+        delegate = self.reference.create_reference_adapter()
+        reference = self.reference
+        invalid_evidence = (
+            ("   ", "key:artifact"),
+            (None, "key:artifact"),
+            (" None ", "key:artifact"),
+            (" NONE ", "key:artifact"),
+            (123, "key:artifact"),
+            ("reference-envelope", "   "),
+            ("reference-envelope", None),
+            ("reference-envelope", 123),
+        )
+
+        for protection_kind, protection_ref in invalid_evidence:
+            with self.subTest(
+                protection_kind=protection_kind,
+                protection_ref=protection_ref,
+            ):
+                class AdversarialArtifactStore:
+                    def put_bytes(self, content, media_type, classification, purpose):
+                        del purpose
+                        return reference.ArtifactRef(
+                            digest="sha256:" + reference.sha256(content).hexdigest(),
+                            media_type=media_type,
+                            sensitivity=classification,
+                            protection_kind=protection_kind,
+                            protection_ref=protection_ref,
+                        )
+
+                class AdversarialAdapter:
+                    last_store = AdversarialArtifactStore()
+                    last_ports = None
+
+                    def host_manifest(self):
+                        return delegate.host_manifest()
+
+                    def build_router_ports(self, **kwargs):
+                        self.last_ports = replace(
+                            delegate.build_router_ports(**kwargs),
+                            artifacts=self.last_store,
+                        )
+                        return self.last_ports
+
+                    def build_conformance_probe(self):
+                        return delegate.build_conformance_probe()
+
+                adapter = AdversarialAdapter()
+                report = run_host_conformance(adapter, self.resources)
+                case = report.case("artifact-protection")
+
+                self.assertIs(adapter.last_store, adapter.last_ports.artifacts)
+                self.assertEqual("failed-development-conformance", report.status)
+                self.assertFalse(case.passed)
+                self.assertEqual("artifact-reference-invalid", case.diagnostic)
+
+    def test_artifact_protection_accepts_normalized_non_none_evidence(self) -> None:
+        delegate = self.reference.create_reference_adapter()
+        reference = self.reference
+
+        class NormalizedArtifactStore:
+            def put_bytes(self, content, media_type, classification, purpose):
+                del purpose
+                return reference.ArtifactRef(
+                    digest="sha256:" + reference.sha256(content).hexdigest(),
+                    media_type=media_type,
+                    sensitivity=classification,
+                    protection_kind=" Protected ",
+                    protection_ref=" key:artifact ",
+                )
+
+        class NormalizedAdapter:
+            last_store = NormalizedArtifactStore()
+            last_ports = None
+
+            def host_manifest(self):
+                return delegate.host_manifest()
+
+            def build_router_ports(self, **kwargs):
+                self.last_ports = replace(
+                    delegate.build_router_ports(**kwargs),
+                    artifacts=self.last_store,
+                )
+                return self.last_ports
+
+            def build_conformance_probe(self):
+                return delegate.build_conformance_probe()
+
+        adapter = NormalizedAdapter()
+        report = run_host_conformance(adapter, self.resources)
+        case = report.case("artifact-protection")
+
+        self.assertIs(adapter.last_store, adapter.last_ports.artifacts)
+        self.assertEqual("passed-development-conformance", report.status)
+        self.assertTrue(case.passed)
+        self.assertEqual("protected-artifact-reference-confirmed", case.diagnostic)
+
     def test_self_declared_production_authority_is_never_reported_as_verified(self) -> None:
         delegate = self.reference.create_reference_adapter()
 

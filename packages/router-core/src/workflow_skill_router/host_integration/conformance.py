@@ -76,6 +76,14 @@ def _artifact_protection_case(artifacts) -> HostConformanceCase:
     expected_digest = "sha256:" + sha256(content).hexdigest()
     protection_kind = getattr(reference, "protection_kind", None)
     protection_ref = getattr(reference, "protection_ref", None)
+    normalized_protection_kind = (
+        protection_kind.strip().casefold()
+        if isinstance(protection_kind, str)
+        else ""
+    )
+    normalized_protection_ref = (
+        protection_ref.strip() if isinstance(protection_ref, str) else ""
+    )
     unsafe_location = any(
         getattr(reference, field, None)
         for field in ("path", "location", "relative_path", "url")
@@ -85,12 +93,12 @@ def _artifact_protection_case(artifacts) -> HostConformanceCase:
         and getattr(reference, "media_type", None) == "application/octet-stream"
         and getattr(reference, "sensitivity", None) == "restricted"
         and isinstance(protection_kind, str)
-        and protection_kind not in {"", "none"}
+        and normalized_protection_kind not in {"", "none"}
         and isinstance(protection_ref, str)
-        and bool(protection_ref)
+        and bool(normalized_protection_ref)
         and not unsafe_location
-        and "/" not in protection_ref
-        and "\\" not in protection_ref
+        and "/" not in normalized_protection_ref
+        and "\\" not in normalized_protection_ref
     )
     return HostConformanceCase(
         "artifact-protection",
