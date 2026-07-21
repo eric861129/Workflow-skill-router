@@ -590,6 +590,53 @@ class LocalWorkLoopTests(unittest.TestCase):
         with self.assertRaisesRegex(LocalWorkGraphCorruption, "local-work-graph-corruption"):
             self.service.plan_work(command)
 
+    def test_v0_backfill_rejects_malformed_persisted_planned_skill_ids(self) -> None:
+        command = self.command(
+            idempotency_key="v0-malformed-skills",
+            explicit_skill_ids=("skill:api-designer",),
+            explicit_semantics="only",
+        )
+        plan = self.service.plan_work(command)
+        self.mark_graph_as_v0(plan.workflow_run_id, keep_rows=False)
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.execute(
+                "UPDATE local_control_plans SET planned_skill_ids_json=? "
+                "WHERE workflow_run_id=?",
+                ('{"skill":"skill:api-designer"}', plan.workflow_run_id),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: planned-skill-ids",
+        ):
+            self.service.plan_work(command)
+        self.assertEqual(0, self.rows(
+            "SELECT COUNT(*) AS count FROM local_work_items WHERE workflow_run_id=?",
+            (plan.workflow_run_id,),
+        )[0]["count"])
+
+    def test_v1_replay_rejects_malformed_persisted_planned_skill_ids(self) -> None:
+        command = self.command(
+            idempotency_key="v1-malformed-skills",
+            explicit_skill_ids=("skill:api-designer",),
+            explicit_semantics="only",
+        )
+        plan = self.service.plan_work(command)
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.execute(
+                "UPDATE local_control_plans SET planned_skill_ids_json=? "
+                "WHERE workflow_run_id=?",
+                ('"skill:api-designer"', plan.workflow_run_id),
+            )
+            connection.commit()
+
+        with self.assertRaisesRegex(
+            LocalWorkGraphCorruption,
+            "local-work-graph-corruption: planned-skill-ids",
+        ):
+            self.service.plan_work(command)
+
     def test_replay_fails_closed_when_append_only_transition_digest_is_corrupt(self) -> None:
         command = self.command(idempotency_key="transition-corruption")
         result = self.service.plan_work(command)

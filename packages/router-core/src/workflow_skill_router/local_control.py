@@ -27,6 +27,7 @@ from workflow_skill_router.persistence.sqlite_store import (
     ConcurrencyConflict,
     IdempotencyConflict,
 )
+from workflow_skill_router.profiles.contract import is_canonical_skill_id
 from workflow_skill_router.profiles.resolver import RoutingMatchContext, resolve_profile_route
 from workflow_skill_router.profiles.storage import RoutingProfileRepository
 from workflow_skill_router.routing.directives import resolve_directive
@@ -1309,8 +1310,28 @@ class LocalControlPlaneService:
             routing_envelope=row["routing_envelope"],
             goal_binding_id=row["goal_binding_id"],
             planned_skill_tree=LocalControlPlaneService._planned_tree(row),
-            planned_skill_ids=tuple(json.loads(row["planned_skill_ids_json"])),
+            planned_skill_ids=LocalControlPlaneService._planned_skill_ids(row),
         )
+
+    @staticmethod
+    def _planned_skill_ids(row: sqlite3.Row) -> tuple[str, ...]:
+        """讀取並驗證持久化的 Skill ID，避免重播時改寫 Router-owned 圖。"""
+
+        try:
+            skill_ids = json.loads(row["planned_skill_ids_json"])
+        except (TypeError, ValueError, json.JSONDecodeError) as error:
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: planned-skill-ids"
+            ) from error
+        if (
+            not isinstance(skill_ids, list)
+            or any(not is_canonical_skill_id(skill_id) for skill_id in skill_ids)
+            or len(set(skill_ids)) != len(skill_ids)
+        ):
+            raise LocalWorkGraphCorruption(
+                "local-work-graph-corruption: planned-skill-ids"
+            )
+        return tuple(skill_ids)
 
     @staticmethod
     def _expected_local_check_ids(
