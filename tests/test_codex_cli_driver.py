@@ -129,6 +129,11 @@ class CodexCliDriverTests(unittest.TestCase):
                     yield from collect_keywords(child)
 
         self.assertNotIn("uniqueItems", set(collect_keywords(schema)))
+        self.assertEqual(
+            ["unverified"],
+            schema["properties"]["evaluation_evidence"]["properties"]
+            ["activation_status"]["enum"],
+        )
 
     def test_creates_fresh_restricted_attempt_directories(self):
         first = self.start("nonce-1")
@@ -274,6 +279,29 @@ class CodexCliDriverTests(unittest.TestCase):
                         "codex_route_schema_invalid",
                     ):
                         self.driver.handle(request)
+
+    def test_rejects_unobservable_skill_activation_claim(self):
+        """Local-only evaluation cannot truthfully attest Skill activation."""
+
+        claimed = copy.deepcopy(VALID_ROUTE)
+        claimed["evaluation_evidence"]["activation_status"] = "claimed-activated"
+        context = self.start()
+        request = {
+            "type": "execute_turn", "context_id": context["context_id"],
+            "attempt_nonce": "nonce-1", "turn_index": 0,
+            "prompt": "Route", "allowed_tools": [],
+        }
+
+        with patch.object(
+            DRIVER_MODULE.subprocess,
+            "run",
+            return_value=completed(claimed),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "codex_route_schema_invalid",
+            ):
+                self.driver.handle(request)
 
     def test_rejects_invalid_schema_timeout_and_nonzero_exit_without_leaking_stderr(self):
         context = self.start()

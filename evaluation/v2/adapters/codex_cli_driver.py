@@ -467,7 +467,7 @@ class CodexCliDriver:
             and set(profile) == {"status", "reason_codes"}
             and profile.get("status") in {"not-requested", "match", "miss"}
             and valid_codes(profile.get("reason_codes"), _PROFILE_REASON_CODES)
-            and value.get("activation_status") in {"unverified", "claimed-activated"}
+            and value.get("activation_status") == "unverified"
             and isinstance(value.get("semantic_candidate_persisted"), bool)
         )
 

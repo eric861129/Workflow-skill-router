@@ -101,7 +101,7 @@
           },
           "additionalProperties": false
         },
-        "activation_status": { "enum": ["unverified", "claimed-activated"] },
+        "activation_status": { "enum": ["unverified"] },
         "semantic_candidate_persisted": { "type": "boolean" }
       },
       "additionalProperties": false
