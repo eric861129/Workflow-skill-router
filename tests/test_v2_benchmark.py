@@ -19,7 +19,10 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import EvaluationIntegrityError
-from workflow_skill_router.evaluation.local_evidence import LocalEvidenceProtector
+from workflow_skill_router.evaluation.local_evidence import (
+    LocalEvidenceProtector,
+    _POWERSHELL_ENV_ALLOWLIST,
+)
 
 
 V2 = ROOT / "evaluation" / "v2"
@@ -365,6 +368,14 @@ class V2BenchmarkTests(unittest.TestCase):
                 command[5],
             )
             self.assertEqual(str(CANONICAL_BEHAVIOR_ADAPTER.resolve()), command[6])
+
+    @unittest.skipUnless(os.name == "nt", "Windows evidence protection only")
+    def test_behavior_environment_retains_windows_evidence_protection_dependencies(self):
+        self.assertTrue(
+            set(_POWERSHELL_ENV_ALLOWLIST).issubset(
+                set(RUNNER.BEHAVIOR_PROVIDER_ENV_ALLOWLIST)
+            )
+        )
 
     def test_behavior_adapter_revision_binds_isolated_launch_policy(self):
         canonical = str(CANONICAL_BEHAVIOR_ADAPTER.resolve())

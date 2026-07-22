@@ -38,13 +38,16 @@ CANONICAL_CONSENT_SCHEMA = V2 / "schemas" / "codex-consent-intent.schema.json"
 BEHAVIOR_PYTHON_FLAGS = ("-I", "-S", "-B")
 BEHAVIOR_PROVIDER_ENV_ALLOWLIST = (
     "APPDATA",
+    "ComSpec",
     "HOME",
     "HTTP_PROXY",
     "HTTPS_PROXY",
     "LOCALAPPDATA",
     "NO_PROXY",
     "OPENAI_API_KEY",
+    "PATHEXT",
     "PATH",
+    "PSModulePath",
     "SSL_CERT_FILE",
     "SystemRoot",
     "TEMP",
