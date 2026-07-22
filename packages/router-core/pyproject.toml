@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "workflow-skill-router-core"
-version = "2.0.0a1"
+version = "2.0.0"
 description = "Workflow Skill Router V2 deterministic core"
 requires-python = ">=3.11"
 dependencies = []
