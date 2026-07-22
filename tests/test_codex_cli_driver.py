@@ -114,6 +114,22 @@ class CodexCliDriverTests(unittest.TestCase):
         self.assertEqual("nonce-1", response["attempt_nonce"])
         self.assertEqual(VALID_ROUTE, response["route"])
 
+    def test_route_output_schema_avoids_unsupported_unique_items_keyword(self):
+        """新版 Codex structured output schema 不接受 ``uniqueItems``。"""
+
+        schema = json.loads(self.schema.read_text(encoding="utf-8"))
+
+        def collect_keywords(value):
+            if isinstance(value, dict):
+                yield from value
+                for child in value.values():
+                    yield from collect_keywords(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from collect_keywords(child)
+
+        self.assertNotIn("uniqueItems", set(collect_keywords(schema)))
+
     def test_creates_fresh_restricted_attempt_directories(self):
         first = self.start("nonce-1")
         second = self.start("nonce-2")
@@ -231,8 +247,13 @@ class CodexCliDriverTests(unittest.TestCase):
         unknown["evaluation_evidence"]["classification"]["reason_codes"] = [
             "regex-valid-but-undeclared"
         ]
+        duplicate = copy.deepcopy(VALID_ROUTE)
+        duplicate["evaluation_evidence"]["classification"]["reason_codes"] = [
+            "single-default",
+            "single-default",
+        ]
 
-        for route in (missing, unknown):
+        for route in (missing, unknown, duplicate):
             with self.subTest(route=route):
                 context = self.start()
                 request = {
