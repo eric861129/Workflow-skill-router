@@ -29704,6 +29704,7 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
 }
 
 // mcp/src/server.ts
+var MCP_SERVER_VERSION = "2.0.0";
 var core = new CoreClient();
 try {
   await core.start();
@@ -29711,7 +29712,7 @@ try {
   process.stderr.write("Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF0C\u5207\u63DB\u70BA skill-only-fallback\u3002\n");
   process.exit(78);
 }
-var server = new McpServer({ name: "workflow-skill-router", version: "2.0.0" });
+var server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });
 var trustedWorkspaceRoots = async () => {
   let clientRoots = [];
   if (server.server.getClientCapabilities()?.roots) {
@@ -29777,3 +29778,6 @@ process.once("SIGTERM", async () => {
   process.exit(0);
 });
 await server.connect(new StdioServerTransport());
+export {
+  MCP_SERVER_VERSION
+};
