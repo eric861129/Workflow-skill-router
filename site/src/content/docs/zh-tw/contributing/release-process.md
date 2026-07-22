@@ -28,7 +28,7 @@ Builder 會讀取排序後的 allowlists、正規化 ZIP metadata、產生 check
 
 - Contract fixtures 與 compatibility tests 均通過。
 - Deterministic fixtures、reference driver 與 Pilot preparation 都不構成當期 behavior-model evidence。
-- 只有 release 提出當期 behavior-model claims 時，Behavior evidence 才是必要 gate。需要此 gate 時，paired run 必須綁定 exact frozen candidate SHA、完成 trusted review，並在 promotion 前確認 hard violations 為零。
+- 正式 GA release 必須具備新的最終 behavior-model evidence。paired run 必須綁定 exact frozen candidate SHA、完成 trusted review、確認 hard violations 為零，並在 promotion 前取得 maintainer attestation。Contract fixtures、reference driver 與 Pilot preparation 都不能滿足此要求。
 - Public artifacts 不含 raw traces、local paths 或未受信任的 scores。
 - 從解壓後 release assets 執行的 Plugin 與 Skill-only install smoke tests 均通過。
 
@@ -44,20 +44,20 @@ python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-rout
 
 `Release V2` workflow 只能由受信任的預設分支透過 `workflow_dispatch` 執行，並且必須輸入完全相同的確認字串 `CREATE_V2_RELEASE`，但此字串不是發布 bypass。Workflow 會先 checkout 受信任的 dispatch revision，再從該 revision 的 `release/version.json` 同時讀取 `release_lifecycle` 與 `release_source_revision`。只有 `reviewed-attested-publishable` 可以執行；`prepared-local-candidate` 會讓 resolve-source job 在任何 preflight、建立 tag、asset attestation 或 GitHub Release 發布前失敗。凍結 source revision 也必須可從同一個受信任 checkout 到達。
 
-未來 promotion 的固定程序如下：
+正式 GA promotion 的固定程序如下：
 
 1. **建置並凍結 candidate SHA。** 完成 source、release copies、版本化 notes、allowlists 與 deterministic assets，再記錄 candidate commit SHA。
-2. **針對該 exact SHA 執行必要 evidence 與 review。** 對 frozen candidate 執行必要 CI、解壓後 asset smoke checks、governance review；只有當期 behavior-model claims 需要時，才對該 SHA 執行 paired Behavior gate，不得改對後續 branch head 執行。
+2. **針對該 exact SHA 執行必要 evidence 與 review。** 對 frozen candidate 執行必要 CI、解壓後 asset smoke checks、governance review 與 paired final Behavior gate，不得改對後續 branch head 執行。以該 exact SHA 記錄已審查的 maintainer attestation。
 3. **建立受信任的 metadata-only promotion commit。** 在預設分支更新 `release/version.json`，讓 `release_source_revision` 指向已審查 candidate SHA，並將 `release_lifecycle` 設為 `reviewed-attested-publishable`。不得把 metadata commit 當作 frozen source 重新建置或重新評估。
 4. **Dispatch `Release V2`。** Workflow 會先以唯讀 Git object inspection 重新讀取 candidate metadata、release notes、builder 與 allowlists，之後才輸出 outputs 或啟動 preflight。
 
 已審查且未變更的 candidate 可以直接進行步驟 3、4，不必重新建置或重新評估；前提是所有必要 evidence 仍綁定該 exact SHA。不得沿用另一個 source revision 的 evidence，或把 `CREATE_V2_RELEASE` 當成核准。
 
-三平台 preflight 與 release build 都會 checkout 該凍結 revision，而不是 checkout 觸發 workflow 的分支。只有全部通過後，workflow 才會建立受範圍限制的 Release GitHub App token，以該 token 建立或驗證 annotated V2 tag、確認遠端 tag 解析為同一個凍結 revision、attest assets，並發布 GitHub prerelease。重試只在既有 tag 已解析為相同 revision 時才有效。
+三平台 preflight 與 release build 都會 checkout 該凍結 revision，而不是 checkout 觸發 workflow 的分支。只有全部通過後，workflow 才會建立受範圍限制的 Release GitHub App token，以該 token 建立或驗證 annotated V2 tag、確認遠端 tag 解析為同一個凍結 revision、attest assets，並發布非 prerelease 的 GitHub Release。重試只在既有 tag 已解析為相同 revision 時才有效。
 
 不得手動 push `v2.*` tag。請保護該 tag pattern，讓僅能由 release job 建立的受範圍限制 Release GitHub App token 成為唯一授權建立者；否則儲存在凍結 source revision 的舊 workflow 可能會在受信任 dispatch 完成檢查前就先執行。此 repository contract 無法替你設定 GitHub 的 live ruleset，發行前必須另外確認。
 
-`latest-v2` 可以指向已審查的 prerelease；在 V2 GA gates 全數通過前，`latest` 維持 V1.3.1。建立 tag、發布 GitHub Release、推進 channel、部署 Pages 與 push 都是個別授權的 actions；本機驗證不會自動執行它們。
+`latest-v2` 保留歷史已審查 prerelease；在正式 V2 GA gate 通過前，`latest` 維持 V1.3.1。建立 tag、發布非 prerelease GitHub Release、推進 channel、部署 Pages 與 push 都是個別授權的 actions；本機驗證不會自動執行它們。
 
 ## 5. 保留 V1 recovery
 

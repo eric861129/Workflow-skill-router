@@ -7,12 +7,12 @@ title: 真實模型評測邊界
 Workflow Skill Router 將「確定性合約測試」、「真實模型行為評測」與
 「真實 Host Pilot」分開處理。通過其中一種驗證，不代表其他層級也已完成。
 
-## beta.5 Pilot 目前狀態
+## GA candidate Pilot 目前狀態
 
 目前狀態是 `protocol-frozen-awaiting-real-pilot`：Pilot 規則已凍結，但尚未執行或計入任何真實 Pilot 任務。
 
 - 對外發布的 V2 仍是 beta.3。
-- beta.5 是已準備但尚未發布的 candidate，仍等待真實 Pilot。
+- `v2.0.0` 是已準備但尚未發布的 GA candidate，仍等待真實 Pilot 與最終模型資格驗證。
 - 這個 candidate 的 `release_source_revision` 尚未重綁；後續受信任的 metadata-only promotion 必須把它綁定到 exact reviewed candidate SHA，才可 dispatch。
 - 協定、範本與 dry-run 都不是 Pilot 結果，也不會自動授權模型額度、Host
   存取或版本發布。

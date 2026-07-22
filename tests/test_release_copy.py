@@ -207,10 +207,10 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("latest", text)
                 self.assertIn("V1.3.1", text)
 
-    def test_beta3_quickstart_and_prepared_beta5_candidate_are_not_conflated(self) -> None:
-        for relative, contributor_marker, unpublished_phrase in (
-            ("README.md", "For contributors", "not yet published"),
-            ("README.zh-TW.md", "需要修改 Router", "尚未發布"),
+    def test_beta3_quickstart_and_prepared_ga_candidate_are_not_conflated(self) -> None:
+        for relative, contributor_marker, candidate_phrase, unpublished_phrase in (
+            ("README.md", "For contributors", "prepared GA candidate", "not yet released"),
+            ("README.zh-TW.md", "需要修改 Router", "已準備的 GA candidate", "尚未發布"),
         ):
             text = (ROOT / relative).read_text(encoding="utf-8")
             quickstart = text.split(
@@ -220,10 +220,11 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("4 always local-ready", quickstart)
                 self.assertIn("5 verified-Host-required", quickstart)
                 self.assertNotIn("3 Router-owned conditional-local", quickstart)
-                self.assertIn("prepared beta.5 candidate", text)
+                self.assertIn(candidate_phrase, text)
                 self.assertIn("not included in published beta.3", text)
-                self.assertIn("2.0.0-beta.5", text)
+                self.assertIn("2.0.0", text)
                 self.assertIn(unpublished_phrase, text)
+                self.assertNotIn("prepared beta.5 candidate", text)
 
     def test_conditional_local_failure_contract_is_tool_specific_and_public_safe(self) -> None:
         pages = (
@@ -344,7 +345,7 @@ class ReleaseCopyTests(unittest.TestCase):
         pages = (
             "README.md",
             "README.zh-TW.md",
-            "release/notes/v2.0.0-beta.5.md",
+            "release/notes/v2.0.0.md",
             "site/src/content/docs/contributing/release-process.md",
             "site/src/content/docs/zh-tw/contributing/release-process.md",
         )
@@ -390,20 +391,20 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn(unchanged_candidate, text)
                 self.assertNotIn("update lifecycle and source revision", text)
 
-    def test_release_process_conditionally_scopes_current_behavior_evidence(
+    def test_release_process_requires_fresh_ga_behavior_evidence(
         self,
     ) -> None:
         pages = (
             (
                 "site/src/content/docs/contributing/release-process.md",
-                "Behavior evidence is required only when the release makes current behavior-model claims",
-                "Deterministic fixtures, the reference driver, and Pilot preparation do not constitute current behavior-model evidence",
+                "A formal GA release requires fresh final behavior-model evidence",
+                "Contract fixtures, the reference driver, and Pilot preparation cannot satisfy this requirement",
                 "Corrected Behavior evidence is complete, paired, and reviewed.",
             ),
             (
                 "site/src/content/docs/zh-tw/contributing/release-process.md",
-                "只有 release 提出當期 behavior-model claims 時，Behavior evidence 才是必要 gate",
-                "Deterministic fixtures、reference driver 與 Pilot preparation 都不構成當期 behavior-model evidence",
+                "正式 GA release 必須具備新的最終 behavior-model evidence",
+                "Contract fixtures、reference driver 與 Pilot preparation 都不能滿足此要求",
                 "修正後的 Behavior evidence 已完成、成對且經過審查。",
             ),
         )
@@ -564,7 +565,7 @@ class ReleaseCopyTests(unittest.TestCase):
             skill_only.index("durable resume"),
         )
 
-    def test_beta5_public_surfaces_preserve_routing_and_authority_boundaries(self) -> None:
+    def test_ga_candidate_public_surfaces_preserve_routing_and_authority_boundaries(self) -> None:
         pages = (
             "README.md",
             "README.zh-TW.md",

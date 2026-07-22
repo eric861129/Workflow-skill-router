@@ -202,9 +202,8 @@ def _verify_frozen_source_contract(
         )
     except json.JSONDecodeError as error:
         raise PublicationGateError("Frozen release metadata is invalid JSON.") from error
-    if not isinstance(frozen_metadata, dict) or any(
-        frozen_metadata.get(key) != release_version
-        for key in ("v2_version", "target_prerelease")
+    if not isinstance(frozen_metadata, dict) or (
+        frozen_metadata.get("v2_version") != release_version
     ):
         raise PublicationGateError(
             "Frozen release metadata does not match trusted release version."

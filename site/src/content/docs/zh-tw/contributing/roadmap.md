@@ -45,30 +45,27 @@ description: 以可驗證證據追蹤從 alpha 到 GA 的里程碑。
 
 Reference-driver 只驗證離線合約；它無法證明真實模型的行為。這段 beta.4 歷史準備工作並不是已發布版本。
 
-## Beta 2.0.0-beta.5 — 已準備 candidate
+## 2.0.0 — 正式 GA candidate
 
 - [x] 加入 Router-owned Local Work Loop：將 `get_next_work`、`record_work_event` 與 `evaluate_gate` 限定為 `conditional-local` 操作
 - [x] 保留 Explicit Skill Lock、scoped consent、Native Goal 保護與 fail-closed authority separation
 - [x] 加入 Host Integration Kit、reference adapter、capability manifest 與跨平台 conformance suite
 - [x] 凍結二十個本機真實任務的 Pilot protocol、verified-Host lane 與 semantic-recommender decision gate
-- [x] 建立 prepared local candidate，同時讓 `latest` 維持 V1.3.1、已發布的 `latest-v2` 維持 beta.3
+- [x] 準備正式 GA candidate，同時讓 `latest` 維持 V1.3.1、已發布的 `latest-v2` 維持歷史 beta.3
 - [ ] 執行並獨立審查至少 20 個真實本機 Pilot 任務
 - [ ] 完成真實 verified-Host Pilot，或發布經審查的 `capability-unavailable` evidence
 - [ ] 在執行新的 36 attempts／42 model turns behavior-model run 前取得明確授權
-- [ ] 審查 sanitized evidence、attest exact frozen candidate SHA，並發布 immutable prerelease
+- [ ] 審查 sanitized evidence、attest exact frozen candidate SHA，並完成 immutable GA release qualification
 
-prepared beta.5 candidate 尚未發布。只有在 evidence 與 review 完成後，後續受信任的 metadata-only promotion commit 才能重綁它的 `release_source_revision`。
+prepared GA candidate 尚未發布。只有在 evidence 與 review 完成後，後續受信任的 metadata-only promotion commit 才能重綁它的 `release_source_revision`。
 
-## 下一個 Beta 里程碑
+## 剩餘正式 qualification
 
 - [ ] 在 fixtures 之外，驗證一套 Host scheduler／evidence integration
-
-## GA — promotion gate
-
 - [ ] 通過 13-case、78-attempt、96-model-turn paired Behavior suite
 - [ ] 維持零 hard violations
 - [ ] 完成 security review、dependency／SBOM checks、雙語文件一致性與 release rehearsal
 - [ ] 依已審查的人工 manifest gate 移除 V1 公開介面的剩餘雜訊
-- [ ] 所有必要 gate 通過後，才把 `latest` 提升至 V2
+- [ ] 記錄 maintainer attestation，且只有在所有必要 gate 通過後，才把 `latest` 提升至 V2
 
 路線圖項目不是 availability claim；目前 readiness 仍以 generated runtime matrix 為準。

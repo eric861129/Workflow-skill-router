@@ -47,7 +47,7 @@ implementation, model quota, route mutation, a Host Pilot, or release.
 
 Router-owned local state and Host-authoritative state use distinct `authority_mode` values:
 
-- `router-local` means a result applies only to Router-owned state. Published beta.3 covers planning, consent, and status; the prepared beta.5 candidate also implements bounded local scheduling, reported progress, and advisory gates with `host_transition_authorized=false`.
+- `router-local` means a result applies only to Router-owned state. Published beta.3 covers planning, consent, and status; the prepared GA candidate also implements bounded local scheduling, reported progress, and advisory gates with `host_transition_authorized=false`.
 - `verified-host` means the Host supplied the required authoritative state, receipts, policy, and transition capability.
 - `configured-adapter` means a server-configured evaluation adapter and its authorization govern the operation.
 
@@ -63,9 +63,9 @@ Router-owned local state and Host-authoritative state use distinct `authority_mo
 | `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires Host-owned authority, current state, and receipts. |
 | `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a configured evaluation adapter, authorization, and applicable attestation. |
 
-#### Prepared beta.5 candidate (`prepared-beta.5-candidate`)
+#### Prepared GA candidate (`prepared-ga-candidate`)
 
-This candidate implements the beta.5 `conditional-local` work, but it is **not included in published beta.3** and is not a published beta.5 release. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed candidate SHA before dispatch.
+This candidate implements the `conditional-local` work, but it is **not included in published beta.3** and is not a released GA version. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed GA candidate SHA before dispatch.
 
 | Source class | Tools | Boundary |
 | --- | --- | --- |

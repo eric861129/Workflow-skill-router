@@ -511,8 +511,8 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "server-configured advisory-only adapter",
             "No Pilot data means the gate is unmet",
             "published beta.3",
-            "prepared, unpublished beta.5",
-            "prepared beta.5 candidate",
+            "prepared GA candidate",
+            "`v2.0.0` is the prepared GA candidate",
         ):
             self.assertIn(phrase, combined)
         self.assertIn("local-work-loop-plan.json", readme)
@@ -522,7 +522,8 @@ class Beta5PilotProtocolTests(unittest.TestCase):
 
         release = self.read_json(ROOT / "release/version.json")
         self.assertEqual("2.0.0-beta.3", release["published_v2_version"])
-        self.assertEqual("2.0.0-beta.5", release["target_prerelease"])
+        self.assertEqual("2.0.0", release["v2_version"])
+        self.assertNotIn("target_prerelease", release)
 
     def test_traditional_chinese_evaluation_page_is_clear_utf8_without_mojibake(self) -> None:
         page = CHINESE_PAGE.read_text(encoding="utf-8")

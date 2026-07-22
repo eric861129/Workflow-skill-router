@@ -51,9 +51,9 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
 | `verified-host`（5） | `sync_runtime_context`、`get_next_work`、`validate_route`、`record_work_event`、`evaluate_gate` | 必須具備經驗證的 Host 狀態、政策與 receipt；本機呼叫會 fail closed。 |
 | `configured-adapter`（3） | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | 必須具備伺服器端設定的 adapter、授權與適用的 attestation。 |
 
-### 已準備的 beta.5 candidate（`prepared-beta.5-candidate`）
+### 已準備的 GA candidate（`prepared-ga-candidate`）
 
-此 candidate 已實作 `conditional-local` work，但它 **not included in published beta.3**，也不代表 beta.5 已發布。它維持 `prepared-local-candidate` lifecycle；後續受信任的 metadata-only promotion 必須把 `release_source_revision` 綁定到這個 exact reviewed candidate SHA，才可 dispatch。
+此 candidate 已實作 `conditional-local` work，但它 **not included in published beta.3**，也不代表 GA 已發布。它維持 `prepared-local-candidate` lifecycle；後續受信任的 metadata-only promotion 必須把 `release_source_revision` 綁定到這個 exact reviewed GA candidate SHA，才可 dispatch。
 
 | Source 類別 | 工具 | 此 checkout 中的意義 |
 | --- | --- | --- |

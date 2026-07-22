@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-BETA5_CANDIDATE_SOURCE_REVISION = "cc3aecd8a8921f3d016ca26c865d92eab3ce033c"
+PREPARED_CANDIDATE_SOURCE_REVISION = "cc3aecd8a8921f3d016ca26c865d92eab3ce033c"
 JOB_BLOCK_PATTERN = re.compile(
     r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
     r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
@@ -83,10 +83,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         notes.mkdir(parents=True)
         allowlists.mkdir(parents=True)
         scripts.mkdir(parents=True)
-        frozen_metadata: dict[str, object] = {
-            "target_prerelease": frozen_version,
-            "v2_version": frozen_version,
-        }
+        frozen_metadata: dict[str, object] = {"v2_version": frozen_version}
         if include_frozen_v1_pinned_version:
             frozen_metadata["v1_pinned_version"] = frozen_v1_pinned_version
         (release / "version.json").write_text(
@@ -158,7 +155,6 @@ class GitHubWorkflowTests(unittest.TestCase):
         trusted_metadata: dict[str, object] = {
             "release_lifecycle": "reviewed-attested-publishable",
             "release_source_revision": frozen_revision,
-            "target_prerelease": trusted_version,
             "v2_version": trusted_version,
         }
         if include_trusted_v1_pinned_version:
@@ -522,7 +518,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             "GH_TOKEN: ${{ steps.release-app-token.outputs.token }}", release_job
         )
 
-    def test_beta5_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
+    def test_ga_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
         metadata = json.loads(
             (ROOT / "release" / "version.json").read_text(encoding="utf-8")
         )
@@ -531,8 +527,9 @@ class GitHubWorkflowTests(unittest.TestCase):
         declared_revision = metadata["release_source_revision"]
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
-        self.assertEqual(BETA5_CANDIDATE_SOURCE_REVISION, declared_revision)
-        self.assertEqual("2.0.0-beta.5", metadata["v2_version"])
+        self.assertEqual(PREPARED_CANDIDATE_SOURCE_REVISION, declared_revision)
+        self.assertEqual("2.0.0", metadata["v2_version"])
+        self.assertNotIn("target_prerelease", metadata)
         self.assertEqual("prepared-local-candidate", metadata["release_lifecycle"])
         publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
             encoding="utf-8"
@@ -543,6 +540,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("Declared release source is not a reachable trusted revision", source_job)
         self.assertIn("release_tag={release_tag}", publication_gate)
         self.assertIn("Release metadata V2 version is invalid", publication_gate)
+        self.assertNotIn("target_prerelease", publication_gate)
         self.assertIn('"git", "ls-remote", "origin"', source_job)
         self.assertIn("Existing release tag does not match declared release source revision", source_job)
         self.assertNotIn('metadata["release_source_revision"]', release_job)
@@ -551,7 +549,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
 
-    def test_prepared_beta5_metadata_fails_the_executable_publication_gate(self) -> None:
+    def test_prepared_ga_metadata_fails_the_executable_publication_gate(self) -> None:
         metadata_path = ROOT / "release" / "version.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         trusted_revision = subprocess.check_output(
@@ -587,7 +585,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("prepared-local-candidate", result.stderr)
         self.assertIn("reviewed-attested-publishable", result.stderr)
 
-    def test_synthetic_publishable_beta5_metadata_emits_candidate_binding_when_contract_matches(
+    def test_prepared_ga_metadata_needs_a_matching_frozen_ga_source_before_promotion(
         self,
     ) -> None:
         trusted_revision = subprocess.check_output(
@@ -597,7 +595,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             (ROOT / "release" / "version.json").read_text(encoding="utf-8")
         )
         self.assertEqual(
-            BETA5_CANDIDATE_SOURCE_REVISION,
+            PREPARED_CANDIDATE_SOURCE_REVISION,
             metadata["release_source_revision"],
         )
         metadata["release_lifecycle"] = "reviewed-attested-publishable"
@@ -627,11 +625,28 @@ class GitHubWorkflowTests(unittest.TestCase):
                 timeout=30,
             )
 
+            self.assertEqual(1, result.returncode)
+            self.assertIn("Frozen release metadata does not match", result.stderr)
+            self.assertFalse(output_path.exists())
+
+    def test_publishable_ga_metadata_without_target_prerelease_emits_ga_tag(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            frozen_revision, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0",
+                trusted_version="2.0.0",
+            )
+
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
+            )
+
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual(
-                "source_revision="
-                f"{BETA5_CANDIDATE_SOURCE_REVISION}\n"
-                "release_tag=v2.0.0-beta.5\n",
+                f"source_revision={frozen_revision}\nrelease_tag=v2.0.0\n",
                 output_path.read_text(encoding="utf-8"),
             )
 

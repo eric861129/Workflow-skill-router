@@ -1,4 +1,4 @@
-# V2 beta.5 Pilot evidence template
+# V2 formal GA-candidate Pilot evidence template
 
 Status: `protocol-frozen-awaiting-real-pilot`
 
@@ -10,7 +10,7 @@ authorized. A deterministic validation or dry-run is not Pilot evidence.
 
 - Published V2 remains beta.3.
 - Beta.4 is prepared, unpublished source work.
-- Beta.5 is unreleased source work awaiting a genuine Pilot.
+- `v2.0.0` is unreleased GA-candidate source work awaiting a genuine Pilot and final model qualification.
 - This document does not authorize a release, live model use, Host access, or
   production activity.
 

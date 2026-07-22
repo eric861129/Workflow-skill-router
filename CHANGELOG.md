@@ -4,6 +4,19 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.0.0 (GA candidate, not yet released)
+
+### Changed
+
+- Established `v2.0.0` as the formal GA candidate while retaining immutable V1.3.1 recovery and historical published V2 beta.3 provenance.
+- Reframed the public product boundary as pre-execution Skill selection, not a substitute for permissions, approvals, sandboxing, Host authority, or production orchestration.
+- Replaced prerelease-target metadata with a single `v2_version` release gate and a formal GA-candidate release note.
+
+### Evidence
+
+- The candidate remains blocked by `prepared-local-candidate`. No fresh final GA model qualification, completed Pilot, verified Host deployment, maintainer attestation, tag, channel movement, or GitHub Release is claimed.
+- Promotion still requires fresh evidence bound to the frozen source SHA, trusted review, maintainer attestation, and a metadata-only transition to `reviewed-attested-publishable`.
+
 ## 2.0.0-beta.5 (prepared, not yet published)
 
 ### Added
