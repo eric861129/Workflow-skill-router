@@ -44,6 +44,25 @@ const routingContext = z.object({
     "Current Phase identifier; only that Phase's Primary and immediate support become current intent.",
   ),
 }).strict();
+export const PLAN_WORK_INPUT_SCHEMA = z.object({
+  ...mutation,
+  objective: z.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
+  goal_binding_id: z.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
+  requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
+  explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
+  explicit_semantics: z.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+  routing_context: routingContext.optional().describe(
+    "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority.",
+  ),
+}).strict().superRefine((value, context) => {
+  if (value.explicit_skill_ids.length === 0 && value.explicit_semantics !== null) {
+    context.addIssue({
+      code: "custom",
+      path: ["explicit_semantics"],
+      message: "explicit_semantics requires at least one explicit_skill_id.",
+    });
+  }
+});
 
 export const TOOL_INPUT_SHAPES = {
   sync_runtime_context: z.object({
@@ -54,17 +73,7 @@ export const TOOL_INPUT_SHAPES = {
       agent_runtime_snapshot: agentSnapshot.describe("Runtime capabilities directly observed by the active agent."),
     }).strict().describe("Inputs to verified runtime capability discovery."),
   }).strict().shape,
-  plan_work: z.object({
-    ...mutation,
-    objective: z.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
-    goal_binding_id: z.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
-    requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
-    explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
-    explicit_semantics: z.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
-    routing_context: routingContext.optional().describe(
-      "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority.",
-    ),
-  }).strict().shape,
+  plan_work: PLAN_WORK_INPUT_SCHEMA.shape,
   propose_support_consent: z.object({
     ...mutation,
     workflow_run_id: z.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),

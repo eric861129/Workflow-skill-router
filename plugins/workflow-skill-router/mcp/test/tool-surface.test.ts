@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { z } from "zod";
 import { PUBLIC_TOOL_NAMES } from "../src/tool-definitions.js";
-import { TOOL_INPUT_SHAPES } from "../src/tool-schemas.js";
+import { PLAN_WORK_INPUT_SCHEMA, TOOL_INPUT_SHAPES } from "../src/tool-schemas.js";
 
 test("只公開核准的十二個工具", () => {
   assert.equal(PUBLIC_TOOL_NAMES.length, 12); assert.equal(new Set(PUBLIC_TOOL_NAMES).size, 12);
@@ -109,4 +109,30 @@ test("plan_work accepts public all semantics and rejects internal required-all",
 
   assert.equal(schema.safeParse({ ...base, explicit_semantics: "all" }).success, true);
   assert.equal(schema.safeParse({ ...base, explicit_semantics: "required-all" }).success, false);
+});
+
+test("plan_work rejects unbound explicit semantics", () => {
+  const base = {
+    context: {
+      session_id: "session-1",
+      actor: "developer",
+      runtime_policy_snapshot_id: "policy-1",
+    },
+    expected_state_version: 0,
+    idempotency_key: "plan-empty-explicit-lock",
+    correlation_id: "correlation-empty-explicit-lock",
+    objective: "Use automatic routing",
+    goal_binding_id: null,
+    requested_work_mode: "single" as const,
+    explicit_skill_ids: [],
+  };
+
+  assert.equal(PLAN_WORK_INPUT_SCHEMA.safeParse({ ...base, explicit_semantics: null }).success, true);
+  for (const explicitSemantics of ["use", "only", "all"]) {
+    assert.equal(
+      PLAN_WORK_INPUT_SCHEMA.safeParse({ ...base, explicit_semantics: explicitSemantics }).success,
+      false,
+      explicitSemantics,
+    );
+  }
 });

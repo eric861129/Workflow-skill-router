@@ -4,6 +4,7 @@ import path from "node:path";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
 import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
+import { PLAN_WORK_INPUT_SCHEMA } from "./tool-schemas.js";
 import {
   WorkspaceRootTrustError,
   bindPlanWorkWorkspaceRoot,
@@ -48,9 +49,12 @@ for (const definition of TOOL_DEFINITIONS) {
             await trustedWorkspaceRoots(),
           )
           : arguments_;
-        const rawResult = await core.call(definition.name, boundArguments);
-        // MCP SDK 1.29 registers object shapes, while this explicit parse preserves
-        // cross-field authority constraints defined with Zod superRefine.
+        // MCP SDK registration accepts object shapes; parse after root binding to
+        // enforce plan_work cross-field constraints declared with superRefine.
+        const validatedArguments = definition.name === "plan_work"
+          ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments)
+          : boundArguments;
+        const rawResult = await core.call(definition.name, validatedArguments);
         const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],

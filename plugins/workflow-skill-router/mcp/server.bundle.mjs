@@ -29187,6 +29187,25 @@ var routingContext = external_exports3.object({
     "Current Phase identifier; only that Phase's Primary and immediate support become current intent."
   )
 }).strict();
+var PLAN_WORK_INPUT_SCHEMA = external_exports3.object({
+  ...mutation,
+  objective: external_exports3.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
+  goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
+  requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
+  explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
+  explicit_semantics: external_exports3.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+  routing_context: routingContext.optional().describe(
+    "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
+  )
+}).strict().superRefine((value, context2) => {
+  if (value.explicit_skill_ids.length === 0 && value.explicit_semantics !== null) {
+    context2.addIssue({
+      code: "custom",
+      path: ["explicit_semantics"],
+      message: "explicit_semantics requires at least one explicit_skill_id."
+    });
+  }
+});
 var TOOL_INPUT_SHAPES = {
   sync_runtime_context: external_exports3.object({
     ...mutation,
@@ -29196,17 +29215,7 @@ var TOOL_INPUT_SHAPES = {
       agent_runtime_snapshot: agentSnapshot.describe("Runtime capabilities directly observed by the active agent.")
     }).strict().describe("Inputs to verified runtime capability discovery.")
   }).strict().shape,
-  plan_work: external_exports3.object({
-    ...mutation,
-    objective: external_exports3.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
-    goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
-    requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
-    explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
-    explicit_semantics: external_exports3.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
-    routing_context: routingContext.optional().describe(
-      "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
-    )
-  }).strict().shape,
+  plan_work: PLAN_WORK_INPUT_SCHEMA.shape,
   propose_support_consent: external_exports3.object({
     ...mutation,
     workflow_run_id: external_exports3.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),
@@ -29741,7 +29750,8 @@ for (const definition of TOOL_DEFINITIONS) {
           arguments_,
           await trustedWorkspaceRoots()
         ) : arguments_;
-        const rawResult = await core.call(definition.name, boundArguments);
+        const validatedArguments = definition.name === "plan_work" ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments) : boundArguments;
+        const rawResult = await core.call(definition.name, validatedArguments);
         const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

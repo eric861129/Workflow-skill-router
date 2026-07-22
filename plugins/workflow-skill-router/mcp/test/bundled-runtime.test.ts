@@ -145,7 +145,7 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
     assert.equal(result.isError, undefined);
     assert.match(String(result.content?.[0]?.text), /created_work_items/);
 
-    const planResponse = await request(3, "tools/call", {
+    const emptyIdsNullSemanticsPlanResponse = await request(3, "tools/call", {
       name: "plan_work",
       arguments: {
         context: {
@@ -163,14 +163,40 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
         explicit_semantics: null,
       },
     });
-    assert.equal(planResponse.error, undefined);
-    const planResult = planResponse.result as {
+    assert.equal(emptyIdsNullSemanticsPlanResponse.error, undefined);
+    const emptyIdsNullSemanticsPlan = emptyIdsNullSemanticsPlanResponse.result as {
       isError?: boolean;
       structuredContent?: Record<string, unknown>;
     };
-    assert.equal(planResult.isError, undefined, JSON.stringify(planResponse));
-    assert.equal(planResult.structuredContent?.selection_mode, "auto");
-    assert.equal(planResult.structuredContent?.support_consent_required, false);
+    assert.equal(emptyIdsNullSemanticsPlan.isError, undefined, JSON.stringify(emptyIdsNullSemanticsPlanResponse));
+    assert.equal(emptyIdsNullSemanticsPlan.structuredContent?.selection_mode, "auto");
+    assert.equal(emptyIdsNullSemanticsPlan.structuredContent?.support_consent_required, false);
+
+    const emptyIdsAllSemanticsResponse = await request(11, "tools/call", {
+      name: "plan_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 0,
+        idempotency_key: "bundled-runtime-unbound-all",
+        correlation_id: "bundled-runtime-unbound-all",
+        objective: "Reject unbound explicit semantics.",
+        goal_binding_id: null,
+        requested_work_mode: "single",
+        explicit_skill_ids: [],
+        explicit_semantics: "all",
+      },
+    });
+    assert.equal(emptyIdsAllSemanticsResponse.error, undefined);
+    const emptyIdsAllSemanticsResult = emptyIdsAllSemanticsResponse.result as {
+      isError?: boolean;
+      content?: Array<{ text?: string }>;
+    };
+    assert.equal(emptyIdsAllSemanticsResult.isError, true);
+    assert.match(String(emptyIdsAllSemanticsResult.content?.[0]?.text), /explicit_semantics/);
 
     const explicitPlanResponse = await request(4, "tools/call", {
       name: "plan_work",
@@ -292,7 +318,7 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
           actor: "test",
           runtime_policy_snapshot_id: "policy-test",
         },
-        workflow_run_id: String(planResult.structuredContent?.workflow_run_id),
+        workflow_run_id: String(emptyIdsNullSemanticsPlan.structuredContent?.workflow_run_id),
       },
     });
     assert.equal(localNextResponse.error, undefined);
