@@ -61,7 +61,7 @@ def contract() -> dict[str, object]:
             "ref_name_include": "refs/tags/v2.*",
             "required_rules": ["creation", "update", "deletion"],
             "required_bypass_actor": {
-                "actor_id": 15368,
+                "actor_id": 4361147,
                 "actor_type": "Integration",
                 "bypass_mode": "always",
             },
@@ -97,7 +97,7 @@ def v2_tag_ruleset() -> dict[str, object]:
         "enforcement": "active",
         "conditions": {"ref_name": {"include": ["refs/tags/v2.*"]}},
         "rules": [{"type": "creation"}, {"type": "update"}, {"type": "deletion"}],
-        "bypass_actors": [{"actor_id": 15368, "actor_type": "Integration", "bypass_mode": "always"}],
+        "bypass_actors": [{"actor_id": 4361147, "actor_type": "Integration", "bypass_mode": "always"}],
     }
 
 
@@ -121,6 +121,20 @@ class RemoteGovernanceTests(unittest.TestCase):
         )
 
         self.assertEqual([], violations)
+
+    def test_checked_in_contract_names_the_dedicated_release_app_only(self) -> None:
+        checked_in_contract = self.governance.load_contract(
+            ROOT / ".github" / "branch-protection.json"
+        )
+
+        self.assertEqual(
+            {
+                "actor_id": 4361147,
+                "actor_type": "Integration",
+                "bypass_mode": "always",
+            },
+            checked_in_contract["tag_protection"]["required_bypass_actor"],  # type: ignore[index]
+        )
 
     def test_evaluate_governance_fails_closed_for_unprotected_main_and_missing_tag_ruleset(self) -> None:
         violations = self.governance.evaluate_governance(contract(), {"protected": False}, {}, [])

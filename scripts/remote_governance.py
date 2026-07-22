@@ -62,7 +62,7 @@ def load_contract(path: Path) -> dict[str, object]:
     if tag_protection["required_rules"] != ["creation", "update", "deletion"]:
         raise ValueError("remote-governance-contract-invalid")
     if tag_protection["required_bypass_actor"] != {
-        "actor_id": 15368,
+        "actor_id": 4361147,
         "actor_type": "Integration",
         "bypass_mode": "always",
     }:

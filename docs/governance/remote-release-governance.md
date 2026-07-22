@@ -19,9 +19,12 @@ these Check Run display names from GitHub Actions Integration (`app_id` `15368`)
 
 An active ruleset named `Immutable V2 release tags` targets `refs/tags/v2.*`.
 It blocks tag creation, update, and deletion. Its only required bypass actor is
-GitHub Actions Integration (`actor_id` `15368`, type `Integration`, mode
-`always`). This allows the release workflow to create or verify its immutable
-release tag while preventing manual tag changes.
+the dedicated Workflow Skill Router Release GitHub App (`actor_id` `4361147`,
+type `Integration`, mode `always`). The `Release V2` workflow mints a scoped
+Contents-write installation token only after source and preflight gates pass.
+That allows the workflow to create or verify its immutable release tag while
+preventing manual tag changes and preventing the default GitHub Actions token
+from acting as a tag bypass.
 
 ## Apply through the GitHub UI
 
@@ -35,7 +38,8 @@ repository administration authority.
    deletions disabled.
 2. Open **Rules** and create or update the active `Immutable V2 release tags`
    ruleset. Target `refs/tags/v2.*`, block creation, update, and deletion, and
-   grant the `always` bypass only to GitHub Actions Integration `15368`.
+   grant the `always` bypass only to Workflow Skill Router Release GitHub App
+   `4361147`.
 3. Re-check that no additional bypass actor can create, update, or delete V2
    tags. Record the authorized change under the applicable repository process.
 
@@ -61,6 +65,6 @@ python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-rout
 
 The verifier is read-only: it does not change GitHub configuration. A pass
 confirms the captured configuration meets the checked-in contract. It does not
-prove that a release workflow has successfully exercised the GitHub Actions
+prove that a release workflow has successfully exercised the Release GitHub App
 bypass; that is a separate live release-workflow concern. A failure means the
 remote settings have not been proven and must block the release checklist.

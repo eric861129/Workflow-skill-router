@@ -173,7 +173,7 @@ jobs:
       SOURCE_REVISION: ${{ needs.resolve-source.outputs.source_revision }}
       RELEASE_TAG: ${{ needs.resolve-source.outputs.release_tag }}
     permissions:
-      contents: write
+      contents: read
       id-token: write
       attestations: write
     steps:
@@ -231,10 +231,18 @@ jobs:
         run: |
           test -s "dist/release/sbom/workflow-skill-router-v${RELEASE_TAG#v}.spdx.json"
           (cd dist/release && sha256sum --check checksums.sha256)
+      - name: Mint scoped release App token
+        id: release-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: write
       - name: Create or verify immutable release tag
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.release-app-token.outputs.token }}
         run: |
           fail_tag_check() {
             echo "Release tag could not be verified against the declared release source revision."
@@ -291,7 +299,7 @@ jobs:
       - name: Publish GitHub release
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.release-app-token.outputs.token }}
         run: |
           mapfile -t release_files < <(find dist/release -type f -print | sort)
           release_flags=()

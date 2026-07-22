@@ -500,6 +500,28 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job,
         )
 
+    def test_release_uses_a_scoped_github_app_token_for_tag_and_release(self) -> None:
+        release_job = workflow_job_body("release-v2.yml", "release")
+
+        self.assertIn("permissions:\n      contents: read", release_job)
+        self.assertNotIn("permissions:\n      contents: write", release_job)
+        self.assertIn(
+            "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
+            release_job,
+        )
+        self.assertIn("client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}", release_job)
+        self.assertIn(
+            "private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}", release_job
+        )
+        self.assertIn("owner: ${{ github.repository_owner }}", release_job)
+        self.assertIn("permission-contents: write", release_job)
+        self.assertIn(
+            "GITHUB_TOKEN: ${{ steps.release-app-token.outputs.token }}", release_job
+        )
+        self.assertIn(
+            "GH_TOKEN: ${{ steps.release-app-token.outputs.token }}", release_job
+        )
+
     def test_beta5_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
         metadata = json.loads(
             (ROOT / "release" / "version.json").read_text(encoding="utf-8")
@@ -1136,7 +1158,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("does not change GitHub configuration", template)
         self.assertIn(
             "does not prove a release workflow has successfully exercised the "
-            "GitHub Actions bypass",
+            "Release GitHub App bypass",
             " ".join(template.split()),
         )
 
@@ -1187,6 +1209,32 @@ class GitHubWorkflowTests(unittest.TestCase):
                     with self.subTest(boundary=boundary):
                         self.assertIn(boundary, content)
 
+    def test_release_processes_name_the_scoped_release_app_token(self) -> None:
+        english = (
+            ROOT
+            / "site"
+            / "src"
+            / "content"
+            / "docs"
+            / "contributing"
+            / "release-process.md"
+        ).read_text(encoding="utf-8")
+        traditional_chinese = (
+            ROOT
+            / "site"
+            / "src"
+            / "content"
+            / "docs"
+            / "zh-tw"
+            / "contributing"
+            / "release-process.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("scoped Release GitHub App token", english)
+        self.assertNotIn("release workflow's `GITHUB_TOKEN`", english)
+        self.assertIn("受範圍限制的 Release GitHub App token", traditional_chinese)
+        self.assertNotIn("release workflow 的 `GITHUB_TOKEN`", traditional_chinese)
+
     def test_remote_release_governance_guide_defines_targets_and_apply_boundaries(
         self,
     ) -> None:
@@ -1197,6 +1245,8 @@ class GitHubWorkflowTests(unittest.TestCase):
         for required in (
             "The protected branch is `main`.",
             "targets `refs/tags/v2.*`",
+            "Workflow Skill Router Release GitHub App",
+            "`4361147`",
             "## Apply through the GitHub UI",
             "## Apply through the GitHub API",
             "Applying these settings is privileged external work.",

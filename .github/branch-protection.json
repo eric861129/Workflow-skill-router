@@ -37,7 +37,7 @@
     "ref_name_include": "refs/tags/v2.*",
     "required_rules": ["creation", "update", "deletion"],
     "required_bypass_actor": {
-      "actor_id": 15368,
+      "actor_id": 4361147,
       "actor_type": "Integration",
       "bypass_mode": "always"
     }

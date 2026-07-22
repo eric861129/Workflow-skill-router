@@ -40,7 +40,7 @@ Before dispatching a release, verify the live GitHub governance configuration:
 python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
 ```
 
-This command is read-only and does not change GitHub configuration. A pass confirms the captured configuration meets the checked-in contract; it is not a live release-workflow rehearsal and does not prove the GitHub Actions bypass has been successfully exercised. A failure means the remote settings have not been proven and blocks the release checklist. Applying or changing remote rules is privileged external work; follow the maintainer guide in `docs/governance/remote-release-governance.md`.
+This command is read-only and does not change GitHub configuration. A pass confirms the captured configuration meets the checked-in contract; it is not a live release-workflow rehearsal and does not prove the Release GitHub App bypass has been successfully exercised. A failure means the remote settings have not been proven and blocks the release checklist. Applying or changing remote rules is privileged external work; follow the maintainer guide in `docs/governance/remote-release-governance.md`.
 
 The `Release V2` workflow runs only through a `workflow_dispatch` from the trusted default branch. It requires the exact confirmation `CREATE_V2_RELEASE`, but that string is not a publication bypass. The workflow first checks out the trusted dispatch revision and reads both `release_lifecycle` and `release_source_revision` from that revision's `release/version.json`. Only `reviewed-attested-publishable` is executable; `prepared-local-candidate` fails the resolve-source job before any preflight, tag, asset attestation, or GitHub Release publication begins. The frozen source revision must also be reachable from that same trusted checkout.
 
@@ -53,9 +53,9 @@ The future promotion procedure is exact:
 
 An already-reviewed unchanged candidate can be promoted through steps 3 and 4 without rebuilding or re-evaluating it, provided every required evidence record remains bound to that exact SHA. Do not reuse evidence from another source revision or treat `CREATE_V2_RELEASE` as approval.
 
-The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow create or verify the annotated V2 tag with `GITHUB_TOKEN`, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the GitHub prerelease. A retry is valid only when the existing tag already resolves to that same revision.
+The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow mint a scoped Release GitHub App token, create or verify the annotated V2 tag with that token, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the GitHub prerelease. A retry is valid only when the existing tag already resolves to that same revision.
 
-Do not manually push a `v2.*` tag. Protect that tag pattern so that the release workflow's `GITHUB_TOKEN` is the authorized creator; otherwise an older workflow stored at a frozen source revision could run before the trusted dispatch has completed its checks. This repository contract cannot configure the live ruleset for you, so verify that protection separately before release.
+Do not manually push a `v2.*` tag. Protect that tag pattern so that only the scoped Release GitHub App token minted by the release job is the authorized creator; otherwise an older workflow stored at a frozen source revision could run before the trusted dispatch has completed its checks. This repository contract cannot configure the live ruleset for you, so verify that protection separately before release.
 
 `latest-v2` may track reviewed prereleases. `latest` remains V1.3.1 until V2 GA gates pass. Tag, GitHub Release publication, channel promotion, Pages deployment, and push are separate authorized actions; local validation does none of them automatically.
 

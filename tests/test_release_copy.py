@@ -337,7 +337,7 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("CREATE_V2_RELEASE", text)
                 self.assertIn("release_source_revision", text)
                 self.assertIn(trusted_branch_phrase, text)
-                self.assertIn("GITHUB_TOKEN", text)
+                self.assertIn("Release GitHub App", text)
                 self.assertIn(denial_phrase, text)
 
     def test_public_docs_explain_the_prepared_candidate_publication_guard(self) -> None:

@@ -38,7 +38,7 @@ python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-rout
 
 This command is read-only and does not change GitHub configuration. A pass confirms
 the captured configuration meets the checked-in contract; it does not prove a
-release workflow has successfully exercised the GitHub Actions bypass. A failure
+release workflow has successfully exercised the Release GitHub App bypass. A failure
 means remote settings have not been proven and blocks this release checklist.
 
 For privileged UI or API application of the remote settings, see
