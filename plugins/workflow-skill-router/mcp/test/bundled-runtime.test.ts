@@ -433,7 +433,7 @@ test("bundled MCP server exits 78 with standalone Skill-only startup guidance", 
   assert.equal(result.code, 78);
   assert.equal(
     result.stderr,
-    "Workflow Skill Router：Python Runtime 無法使用，MCP 伺服器無法啟動。請安裝或使用獨立的純 SKILL 模式。\n",
+    "Workflow Skill Router：Python runtime 不可用；MCP server 無法啟動。請改用獨立安裝的 Skill-only 模式。\n",
   );
 });
 

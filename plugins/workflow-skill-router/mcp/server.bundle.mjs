@@ -29785,7 +29785,7 @@ var core = new CoreClient();
 try {
   await core.start();
 } catch {
-  process.stderr.write("Workflow Skill Router\uFF1APython Runtime \u7121\u6CD5\u4F7F\u7528\uFF0CMCP \u4F3A\u670D\u5668\u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u5B89\u88DD\u6216\u4F7F\u7528\u7368\u7ACB\u7684\u7D14 SKILL \u6A21\u5F0F\u3002\n");
+  process.stderr.write("Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n");
   process.exit(78);
 }
 var server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });
