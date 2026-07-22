@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+BETA5_CANDIDATE_SOURCE_REVISION = "d3cb53de7c3587ee71640e8a8acde3bfa283c12a"
 JOB_BLOCK_PATTERN = re.compile(
     r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
     r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
@@ -508,6 +509,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         declared_revision = metadata["release_source_revision"]
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
+        self.assertEqual(BETA5_CANDIDATE_SOURCE_REVISION, declared_revision)
         self.assertEqual("2.0.0-beta.5", metadata["v2_version"])
         self.assertEqual("prepared-local-candidate", metadata["release_lifecycle"])
         publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
@@ -563,18 +565,20 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("prepared-local-candidate", result.stderr)
         self.assertIn("reviewed-attested-publishable", result.stderr)
 
-    def test_only_reviewed_attested_metadata_emits_the_frozen_release_binding(
+    def test_synthetic_publishable_beta5_metadata_emits_candidate_binding_when_contract_matches(
         self,
     ) -> None:
         trusted_revision = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip()
-        metadata = {
-            "release_lifecycle": "reviewed-attested-publishable",
-            "release_source_revision": trusted_revision,
-            "v1_pinned_version": "1.3.1",
-            "v2_version": "2.0.0-beta.4",
-        }
+        metadata = json.loads(
+            (ROOT / "release" / "version.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            BETA5_CANDIDATE_SOURCE_REVISION,
+            metadata["release_source_revision"],
+        )
+        metadata["release_lifecycle"] = "reviewed-attested-publishable"
 
         with tempfile.TemporaryDirectory() as directory:
             directory_path = Path(directory)
@@ -603,7 +607,9 @@ class GitHubWorkflowTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual(
-                f"source_revision={trusted_revision}\nrelease_tag=v2.0.0-beta.4\n",
+                "source_revision="
+                f"{BETA5_CANDIDATE_SOURCE_REVISION}\n"
+                "release_tag=v2.0.0-beta.5\n",
                 output_path.read_text(encoding="utf-8"),
             )
 
