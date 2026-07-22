@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-BETA5_CANDIDATE_SOURCE_REVISION = "d3cb53de7c3587ee71640e8a8acde3bfa283c12a"
+BETA5_CANDIDATE_SOURCE_REVISION = "ef62aa91349e0e3935a460197c9be9e6780088a6"
 JOB_BLOCK_PATTERN = re.compile(
     r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
     r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
