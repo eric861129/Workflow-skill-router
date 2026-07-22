@@ -14,6 +14,10 @@ for line in sys.stdin:
     request = json.loads(line)
     tool = request["tool"]
     arguments = request.get("arguments", {})
+    if tool == "__workflow_skill_router_bridge_ready__":
+        print(json.dumps({"request_id": request["request_id"], "ok": False,
+                          "error": {"code": "unknown-tool"}}), flush=True)
+        continue
     if tool == "get_next_work":
         if arguments["workflow_run_id"].endswith("host-top"):
             result = {

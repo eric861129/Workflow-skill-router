@@ -12,12 +12,22 @@ class FakeReadable extends EventEmitter {
 
 class FakeWritable extends EventEmitter {
   readonly writes: BridgeRequest[] = [];
+  readonly startupHandshakes: BridgeRequest[] = [];
   writeFailure?: Error;
   backpressureWrites = 0;
+  onWrite?: (request: BridgeRequest) => void;
 
   write(payload: string) {
     if (this.writeFailure) throw this.writeFailure;
-    this.writes.push(JSON.parse(payload) as BridgeRequest);
+    const request = JSON.parse(payload) as BridgeRequest;
+    if (request.tool === "__workflow_skill_router_bridge_ready__") {
+      this.startupHandshakes.push(request);
+      this.onWrite?.(request);
+      return true;
+    } else {
+      this.writes.push(request);
+    }
+    this.onWrite?.(request);
     if (this.backpressureWrites > 0) {
       this.backpressureWrites -= 1;
       return false;
@@ -32,6 +42,15 @@ class FakeChild extends EventEmitter {
   readonly stderr = new FakeReadable();
   killed = false;
 
+  constructor(autoRespondToStartupHandshake = true) {
+    super();
+    this.stdin.onWrite = (request) => {
+      if (autoRespondToStartupHandshake && request.tool === "__workflow_skill_router_bridge_ready__") {
+        setImmediate(() => this.respondFailure(request.request_id, "unknown-tool"));
+      }
+    };
+  }
+
   kill() {
     this.killed = true;
     return true;
@@ -39,6 +58,10 @@ class FakeChild extends EventEmitter {
 
   respond(requestId: string, result: unknown) {
     this.stdout.emit("data", `${JSON.stringify({ request_id: requestId, ok: true, result })}\n`);
+  }
+
+  respondFailure(requestId: string, code: string) {
+    this.stdout.emit("data", `${JSON.stringify({ request_id: requestId, ok: false, error: { code } })}\n`);
   }
 }
 
@@ -94,6 +117,35 @@ test("start rejects when the child emits an error before startup completes", asy
 
   await assert.rejects(starting, /bridge-spawn-failed/);
   assert.equal(child.killed, true);
+});
+
+test("start resolves only after the bridge answers the private readiness handshake", async () => {
+  const child = new FakeChild(false);
+  const client = createClient(child, () => 1_000);
+  let settled = false;
+  const starting = client.start().then(() => { settled = true; });
+
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+  assert.equal(child.stdin.startupHandshakes.length, 1);
+  const handshake = child.stdin.startupHandshakes[0];
+  assert.equal(handshake.tool, "__workflow_skill_router_bridge_ready__");
+  child.respondFailure(handshake.request_id, "unknown-tool");
+
+  await starting;
+  assert.equal(settled, true);
+});
+
+test("start rejects when the bridge exits during Python bootstrap", async () => {
+  const child = new FakeChild(false);
+  const client = createClient(child, () => 1_000);
+  const starting = client.start();
+
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(child.stdin.startupHandshakes.length, 1);
+  child.emit("exit", 1, null);
+
+  await assert.rejects(starting, /bridge-restarted/);
 });
 
 test("stale child output and stream errors cannot corrupt a new generation", async () => {
@@ -263,7 +315,7 @@ test("an aborted request rejects alone and removes its abort listener", async ()
   assert.deepEqual(await retained, { accepted: true });
 });
 
-test("a child exit rejects every request in the active generation", async () => {
+test("a post-ready child exit rejects every request in the active generation", async () => {
   const child = new FakeChild();
   const client = createClient(child, () => 1_000);
   await client.start();

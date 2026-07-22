@@ -17,12 +17,23 @@ type WriteState = {
   closed: boolean;
   drainWaiters: Set<(error: Error) => void>;
 };
+type StartupHandshake = {
+  child: ChildProcessWithoutNullStreams;
+  generation: number;
+  resolve: () => void;
+  reject: (error: Error) => void;
+  requestId?: string;
+  timer?: NodeJS.Timeout;
+};
 type BridgeSpawner = () => ChildProcessWithoutNullStreams | Promise<ChildProcessWithoutNullStreams>;
 type CoreClientOptions = {
   requestTimeout?: (tool: string) => number;
   maxQueuedWrites?: number;
 };
 const DEFAULT_MAX_QUEUED_WRITES = 64;
+const STARTUP_HANDSHAKE_TIMEOUT_MS = 5_000;
+// 保留控制訊息不會加入 PUBLIC_TOOLS；既有 bridge 回傳 unknown-tool 即證明 JSONL 已可收發。
+const STARTUP_HANDSHAKE_TOOL = "__workflow_skill_router_bridge_ready__";
 
 export class CoreBridgeError extends Error {
   constructor(
@@ -41,6 +52,7 @@ export class CoreClient {
   private sequence = 0;
   private pending = new Map<string, Pending>();
   private writeState?: WriteState;
+  private startupHandshake?: StartupHandshake;
   private buffer = "";
   constructor(
     private readonly pluginRoot = path.resolve(import.meta.dirname, ".."),
@@ -77,19 +89,17 @@ export class CoreClient {
     child.stderr.on("data", (chunk) => {
       if (this.isActiveBridge(child, generation)) process.stderr.write(chunk);
     });
-    let started = false;
     let resolveStartup!: () => void;
     let rejectStartup!: (error: Error) => void;
     const startup = new Promise<void>((resolve, reject) => {
       resolveStartup = resolve;
       rejectStartup = reject;
     });
+    this.startupHandshake = { child, generation, resolve: resolveStartup, reject: rejectStartup };
     child.once("spawn", () => {
-      started = true;
-      resolveStartup();
+      this.beginStartupHandshake(child, generation);
     });
     child.once("error", (error) => {
-      if (!started) rejectStartup(error);
       if (this.isActiveBridge(child, generation)) this.failGeneration(error, true);
     });
     for (const stream of [child.stdin, child.stdout, child.stderr]) {
@@ -99,10 +109,31 @@ export class CoreClient {
     }
     child.once("exit", () => {
       const error = new Error("bridge-restarted");
-      if (!started) rejectStartup(error);
       if (this.isActiveBridge(child, generation)) this.failGeneration(error, false);
     });
     await startup;
+  }
+
+  private beginStartupHandshake(child: ChildProcessWithoutNullStreams, generation: number) {
+    const handshake = this.startupHandshake;
+    if (!handshake || handshake.child !== child || handshake.generation !== generation
+      || !this.isActiveBridge(child, generation)) return;
+    const requestId = `g${generation}:startup`;
+    handshake.requestId = requestId;
+    handshake.timer = setTimeout(() => {
+      if (this.isActiveBridge(child, generation)) {
+        this.failGeneration(new Error("bridge-startup-timeout"), true);
+      }
+    }, STARTUP_HANDSHAKE_TIMEOUT_MS);
+    try {
+      child.stdin.write(JSON.stringify({
+        request_id: requestId,
+        tool: STARTUP_HANDSHAKE_TOOL,
+        arguments: {},
+      }) + "\n");
+    } catch (error) {
+      this.failGeneration(error instanceof Error ? error : new Error("bridge-write-failed"), true);
+    }
   }
 
   private async spawnBridge() {
@@ -138,6 +169,14 @@ export class CoreClient {
           this.failGeneration(new Error("bridge-protocol-error"), true);
           return;
         }
+        if (this.isStartupHandshakeResponse(child, generation, response)) {
+          if (response.ok === false && (response.error as { code?: unknown } | undefined)?.code === "unknown-tool") {
+            this.resolveStartupHandshake();
+          } else {
+            this.failGeneration(new Error("bridge-readiness-failed"), true);
+          }
+          continue;
+        }
         const pending = this.pending.get(response.request_id);
         if (!pending || !response.request_id.startsWith(`g${generation}:`)) continue;
         this.pending.delete(response.request_id);
@@ -160,9 +199,36 @@ export class CoreClient {
     }
   }
 
+  private isStartupHandshakeResponse(
+    child: ChildProcessWithoutNullStreams,
+    generation: number,
+    response: { request_id?: unknown },
+  ) {
+    const handshake = this.startupHandshake;
+    return handshake?.child === child && handshake.generation === generation
+      && handshake.requestId === response.request_id;
+  }
+
+  private resolveStartupHandshake() {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = undefined;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.resolve();
+  }
+
+  private rejectStartupHandshake(error: Error) {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = undefined;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.reject(error);
+  }
+
   private failGeneration(error: Error, terminate: boolean) {
     const child = this.child;
     const writeState = this.writeState;
+    this.rejectStartupHandshake(error);
     this.child = undefined;
     this.writeState = undefined;
     this.buffer = "";

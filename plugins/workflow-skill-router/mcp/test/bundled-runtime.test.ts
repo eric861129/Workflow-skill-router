@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -14,10 +14,16 @@ const INITIALIZE_PARAMS = {
 };
 const MUTATED_MCP_SERVER_VERSION = "9.9.9";
 const GENERIC_STARTUP_FAILURE = "Workflow Skill Router：MCP 啟動失敗。請確認本機狀態目錄、檔案系統權限與 Plugin 安裝設定後再試。\n";
-const fakeBridge = String.raw`import sys
+const fakeBridge = String.raw`import json
+import sys
 
-for _ in sys.stdin:
-    pass
+for line in sys.stdin:
+    request = json.loads(line)
+    if request["tool"] == "__workflow_skill_router_bridge_ready__":
+        print(json.dumps({"request_id": request["request_id"], "ok": False,
+                          "error": {"code": "unknown-tool"}}), flush=True)
+`;
+const crashingBridge = String.raw`raise SystemExit(1)
 `;
 
 async function startupDiagnostics(
@@ -435,7 +441,7 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
   }
 });
 
-test("bundled MCP server exits 78 with standalone Skill-only startup guidance", async () => {
+test("bundled MCP server gives generic remediation when the Python executable cannot spawn", async () => {
   const parent = path.resolve(import.meta.dirname, "..");
   const pluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
   const result = await failedStartupDiagnostics(pluginRoot);
@@ -443,7 +449,7 @@ test("bundled MCP server exits 78 with standalone Skill-only startup guidance", 
   assert.equal(result.code, 78);
   assert.equal(
     result.stderr,
-    "Workflow Skill Router：Python runtime 不可用；MCP server 無法啟動。請改用獨立安裝的 Skill-only 模式。\n",
+    GENERIC_STARTUP_FAILURE,
   );
 });
 
@@ -456,6 +462,42 @@ test("bundled MCP server gives generic remediation for state-path startup failur
 
   assert.equal(result.code, 78);
   assert.equal(result.stderr, GENERIC_STARTUP_FAILURE);
+});
+
+test("bundled MCP server gives generic remediation when the bridge exits during bootstrap", async () => {
+  const sourceParent = path.resolve(import.meta.dirname, "..");
+  const sourcePluginRoot = path.basename(sourceParent) === "mcp"
+    ? path.resolve(sourceParent, "..")
+    : sourceParent;
+  const root = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-bootstrap-exit-"));
+  const pluginRoot = path.join(root, "plugin");
+  const mcpDirectory = path.join(pluginRoot, "mcp");
+  const runtimeDirectory = path.join(pluginRoot, "runtime");
+  const stateDirectory = path.join(root, "state");
+  await mkdir(mcpDirectory, { recursive: true });
+  await mkdir(runtimeDirectory);
+  await mkdir(stateDirectory);
+  await copyFile(
+    path.join(sourcePluginRoot, "mcp", "server.bundle.mjs"),
+    path.join(mcpDirectory, "server.bundle.mjs"),
+  );
+  await writeFile(path.join(runtimeDirectory, "workflow_skill_router.pyz"), crashingBridge, "utf8");
+
+  try {
+    const result = await startupDiagnostics(pluginRoot, {
+      WORKFLOW_SKILL_ROUTER_DATA_DIR: stateDirectory,
+    });
+    assert.equal(result.code, 78);
+    assert.equal(result.stderr, GENERIC_STARTUP_FAILURE);
+  } finally {
+    await unlink(path.join(mcpDirectory, "server.bundle.mjs"));
+    await unlink(path.join(runtimeDirectory, "workflow_skill_router.pyz"));
+    await rmdir(mcpDirectory);
+    await rmdir(runtimeDirectory);
+    await rmdir(stateDirectory);
+    await rmdir(pluginRoot);
+    await rmdir(root);
+  }
 });
 
 test("shipped MCP bundle advertises release metadata through MCP_SERVER_VERSION", async () => {

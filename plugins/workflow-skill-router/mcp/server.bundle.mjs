@@ -29009,7 +29009,12 @@ async function defaultProbe(candidate) {
       { shell: false, stdio: ["ignore", "pipe", "ignore"] }
     );
     let output = "";
-    const timer = setTimeout(() => {
+    let timer;
+    const rejectProbe = (error46) => {
+      if (timer) clearTimeout(timer);
+      reject(error46);
+    };
+    timer = setTimeout(() => {
       child.kill();
       reject(new Error("python-probe-timeout"));
     }, 3e3);
@@ -29017,23 +29022,32 @@ async function defaultProbe(candidate) {
     child.stdout.on("data", (chunk) => {
       output += chunk;
     });
-    child.once("error", reject);
+    child.once("error", rejectProbe);
     child.once("close", (code) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       code === 0 ? resolve(output.trim()) : reject(new Error("python-probe-failed"));
     });
   });
 }
 async function discoverPython(platform, probe = defaultProbe, override = process.env.WORKFLOW_SKILL_ROUTER_PYTHON) {
   const choices = override ? [{ command: override, prefixArgs: [] }] : candidates(platform);
+  let confirmedUnsupported = false;
+  let lastFailure;
   for (const choice of choices) {
     try {
       const [major, minor] = (await probe(choice)).split(".").map(Number);
+      if (!Number.isInteger(major) || !Number.isInteger(minor)) {
+        lastFailure = new Error("python-version-probe-invalid");
+        continue;
+      }
       if (major > 3 || major === 3 && minor >= 11) return choice;
-    } catch {
+      confirmedUnsupported = true;
+    } catch (error46) {
+      lastFailure = error46 instanceof Error ? error46 : new Error("python-probe-failed");
     }
   }
-  throw new PythonDiscoveryError();
+  if (confirmedUnsupported) throw new PythonDiscoveryError();
+  throw lastFailure ?? new Error("python-probe-failed");
 }
 
 // mcp/src/state-path.ts
@@ -29057,6 +29071,8 @@ async function resolveState(platform, pluginRoot, env = process.env, home = os.h
 
 // mcp/src/core-client.ts
 var DEFAULT_MAX_QUEUED_WRITES = 64;
+var STARTUP_HANDSHAKE_TIMEOUT_MS = 5e3;
+var STARTUP_HANDSHAKE_TOOL = "__workflow_skill_router_bridge_ready__";
 var CoreBridgeError = class extends Error {
   constructor(code, details) {
     super(code);
@@ -29082,6 +29098,7 @@ var CoreClient = class {
   sequence = 0;
   pending = /* @__PURE__ */ new Map();
   writeState;
+  startupHandshake;
   buffer = "";
   async start() {
     if (this.child) return;
@@ -29111,19 +29128,17 @@ var CoreClient = class {
     child.stderr.on("data", (chunk) => {
       if (this.isActiveBridge(child, generation)) process.stderr.write(chunk);
     });
-    let started = false;
     let resolveStartup;
     let rejectStartup;
     const startup = new Promise((resolve, reject) => {
       resolveStartup = resolve;
       rejectStartup = reject;
     });
+    this.startupHandshake = { child, generation, resolve: resolveStartup, reject: rejectStartup };
     child.once("spawn", () => {
-      started = true;
-      resolveStartup();
+      this.beginStartupHandshake(child, generation);
     });
     child.once("error", (error46) => {
-      if (!started) rejectStartup(error46);
       if (this.isActiveBridge(child, generation)) this.failGeneration(error46, true);
     });
     for (const stream of [child.stdin, child.stdout, child.stderr]) {
@@ -29133,10 +29148,29 @@ var CoreClient = class {
     }
     child.once("exit", () => {
       const error46 = new Error("bridge-restarted");
-      if (!started) rejectStartup(error46);
       if (this.isActiveBridge(child, generation)) this.failGeneration(error46, false);
     });
     await startup;
+  }
+  beginStartupHandshake(child, generation) {
+    const handshake = this.startupHandshake;
+    if (!handshake || handshake.child !== child || handshake.generation !== generation || !this.isActiveBridge(child, generation)) return;
+    const requestId = `g${generation}:startup`;
+    handshake.requestId = requestId;
+    handshake.timer = setTimeout(() => {
+      if (this.isActiveBridge(child, generation)) {
+        this.failGeneration(new Error("bridge-startup-timeout"), true);
+      }
+    }, STARTUP_HANDSHAKE_TIMEOUT_MS);
+    try {
+      child.stdin.write(JSON.stringify({
+        request_id: requestId,
+        tool: STARTUP_HANDSHAKE_TOOL,
+        arguments: {}
+      }) + "\n");
+    } catch (error46) {
+      this.failGeneration(error46 instanceof Error ? error46 : new Error("bridge-write-failed"), true);
+    }
   }
   async spawnBridge() {
     const python = await discoverPython(process.platform);
@@ -29174,6 +29208,14 @@ var CoreClient = class {
           this.failGeneration(new Error("bridge-protocol-error"), true);
           return;
         }
+        if (this.isStartupHandshakeResponse(child, generation, response)) {
+          if (response.ok === false && response.error?.code === "unknown-tool") {
+            this.resolveStartupHandshake();
+          } else {
+            this.failGeneration(new Error("bridge-readiness-failed"), true);
+          }
+          continue;
+        }
         const pending = this.pending.get(response.request_id);
         if (!pending || !response.request_id.startsWith(`g${generation}:`)) continue;
         this.pending.delete(response.request_id);
@@ -29189,9 +29231,28 @@ var CoreClient = class {
       }
     }
   }
+  isStartupHandshakeResponse(child, generation, response) {
+    const handshake = this.startupHandshake;
+    return handshake?.child === child && handshake.generation === generation && handshake.requestId === response.request_id;
+  }
+  resolveStartupHandshake() {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = void 0;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.resolve();
+  }
+  rejectStartupHandshake(error46) {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = void 0;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.reject(error46);
+  }
   failGeneration(error46, terminate) {
     const child = this.child;
     const writeState = this.writeState;
+    this.rejectStartupHandshake(error46);
     this.child = void 0;
     this.writeState = void 0;
     this.buffer = "";
