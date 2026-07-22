@@ -29050,6 +29050,7 @@ async function resolveState(platform, pluginRoot, env = process.env, home = os.h
 }
 
 // mcp/src/core-client.ts
+var DEFAULT_MAX_QUEUED_WRITES = 64;
 var CoreBridgeError = class extends Error {
   constructor(code, details) {
     super(code);
@@ -29074,6 +29075,7 @@ var CoreClient = class {
   generation = 0;
   sequence = 0;
   pending = /* @__PURE__ */ new Map();
+  writeState;
   buffer = "";
   async start() {
     if (this.child) return;
@@ -29088,10 +29090,21 @@ var CoreClient = class {
   async startBridge() {
     const child = this.bridgeSpawner ? await this.bridgeSpawner() : await this.spawnBridge();
     this.generation += 1;
+    const generation = this.generation;
     this.child = child;
+    this.buffer = "";
+    this.writeState = {
+      generation,
+      queued: 0,
+      chain: Promise.resolve(),
+      closed: false,
+      drainWaiters: /* @__PURE__ */ new Set()
+    };
     child.stdout.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => this.onData(chunk));
-    child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+    child.stdout.on("data", (chunk) => this.onData(child, generation, chunk));
+    child.stderr.on("data", (chunk) => {
+      if (this.isActiveBridge(child, generation)) process.stderr.write(chunk);
+    });
     let started = false;
     let resolveStartup;
     let rejectStartup;
@@ -29105,15 +29118,17 @@ var CoreClient = class {
     });
     child.once("error", (error46) => {
       if (!started) rejectStartup(error46);
-      if (this.child === child) this.failGeneration(error46, true);
+      if (this.isActiveBridge(child, generation)) this.failGeneration(error46, true);
     });
-    child.stdin.once("error", (error46) => {
-      if (this.child === child) this.failGeneration(error46, true);
-    });
+    for (const stream of [child.stdin, child.stdout, child.stderr]) {
+      stream.on("error", (error46) => {
+        if (this.isActiveBridge(child, generation)) this.failGeneration(error46, true);
+      });
+    }
     child.once("exit", () => {
       const error46 = new Error("bridge-restarted");
       if (!started) rejectStartup(error46);
-      if (this.child === child) this.failGeneration(error46, false);
+      if (this.isActiveBridge(child, generation)) this.failGeneration(error46, false);
     });
     await startup;
   }
@@ -29136,7 +29151,11 @@ var CoreClient = class {
       }
     );
   }
-  onData(chunk) {
+  isActiveBridge(child, generation) {
+    return this.child === child && this.generation === generation;
+  }
+  onData(child, generation, chunk) {
+    if (!this.isActiveBridge(child, generation)) return;
     this.buffer += chunk;
     for (; ; ) {
       const index = this.buffer.indexOf("\n");
@@ -29150,7 +29169,7 @@ var CoreClient = class {
           return;
         }
         const pending = this.pending.get(response.request_id);
-        if (!pending || !response.request_id.startsWith(`g${this.generation}:`)) continue;
+        if (!pending || !response.request_id.startsWith(`g${generation}:`)) continue;
         this.pending.delete(response.request_id);
         clearTimeout(pending.timer);
         pending.signal?.removeEventListener("abort", pending.abortListener);
@@ -29166,8 +29185,15 @@ var CoreClient = class {
   }
   failGeneration(error46, terminate) {
     const child = this.child;
+    const writeState = this.writeState;
     this.child = void 0;
+    this.writeState = void 0;
     this.buffer = "";
+    if (writeState) {
+      writeState.closed = true;
+      for (const rejectDrainWaiter of writeState.drainWaiters) rejectDrainWaiter(error46);
+      writeState.drainWaiters.clear();
+    }
     for (const requestId of this.pending.keys()) this.expireRequest(requestId, error46);
     if (terminate && child && !child.killed) child.kill();
   }
@@ -29182,10 +29208,65 @@ var CoreClient = class {
   requestTimeout(tool) {
     return this.options.requestTimeout?.(tool) ?? (tool === "run_model_evaluation" ? 30 * 6e4 : 15e3);
   }
+  queueWrite(child, generation, requestId, payload) {
+    const writeState = this.writeState;
+    if (!writeState || writeState.closed || writeState.generation !== generation || !this.isActiveBridge(child, generation)) {
+      this.expireRequest(requestId, new Error("bridge-restarted"));
+      return;
+    }
+    if (writeState.queued >= (this.options.maxQueuedWrites ?? DEFAULT_MAX_QUEUED_WRITES)) {
+      this.expireRequest(requestId, new Error("bridge-write-queue-full"));
+      return;
+    }
+    writeState.queued += 1;
+    const write = async () => {
+      try {
+        if (!this.pending.has(requestId) || writeState.closed || !this.isActiveBridge(child, generation)) return;
+        if (!child.stdin.write(payload)) await this.waitForDrain(child, generation, writeState);
+      } catch (error46) {
+        if (this.isActiveBridge(child, generation) && !writeState.closed) {
+          this.failGeneration(error46 instanceof Error ? error46 : new Error("bridge-write-failed"), true);
+        }
+      } finally {
+        writeState.queued -= 1;
+      }
+    };
+    const scheduled = writeState.chain.then(write, write);
+    writeState.chain = scheduled.catch(() => void 0);
+  }
+  async waitForDrain(child, generation, writeState) {
+    await new Promise((resolve, reject) => {
+      let finished = false;
+      const cleanup = () => {
+        child.stdin.removeListener("drain", onDrain);
+        child.stdin.removeListener("error", onError);
+        child.stdin.removeListener("close", onClose);
+        writeState.drainWaiters.delete(onGenerationFailure);
+      };
+      const finish = (error46) => {
+        if (finished) return;
+        finished = true;
+        cleanup();
+        error46 ? reject(error46) : resolve();
+      };
+      const onDrain = () => finish();
+      const onError = (error46) => finish(error46);
+      const onClose = () => finish(new Error("bridge-write-closed"));
+      const onGenerationFailure = (error46) => finish(error46);
+      child.stdin.once("drain", onDrain);
+      child.stdin.once("error", onError);
+      child.stdin.once("close", onClose);
+      writeState.drainWaiters.add(onGenerationFailure);
+      if (writeState.closed || !this.isActiveBridge(child, generation)) {
+        onGenerationFailure(new Error("bridge-restarted"));
+      }
+    });
+  }
   async call(tool, arguments_, options = {}) {
     await this.start();
     const child = this.child;
-    const requestId = `g${this.generation}:${++this.sequence}`;
+    const generation = this.generation;
+    const requestId = `g${generation}:${++this.sequence}`;
     const deadline = this.requestTimeout(tool);
     return await new Promise((resolve, reject) => {
       const timer = setTimeout(() => this.expireRequest(requestId, new Error("bridge-timeout")), deadline);
@@ -29200,11 +29281,7 @@ var CoreClient = class {
           return;
         }
       }
-      try {
-        child.stdin.write(JSON.stringify({ request_id: requestId, tool, arguments: arguments_ }) + "\n");
-      } catch (error46) {
-        this.failGeneration(error46 instanceof Error ? error46 : new Error("bridge-write-failed"), true);
-      }
+      this.queueWrite(child, generation, requestId, JSON.stringify({ request_id: requestId, tool, arguments: arguments_ }) + "\n");
     });
   }
   async close() {
@@ -29781,11 +29858,18 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
 
 // mcp/src/server.ts
 var MCP_SERVER_VERSION = "2.0.0";
+var PYTHON_STARTUP_FAILURE = "Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n";
+var GENERIC_STARTUP_FAILURE = "Workflow Skill Router\uFF1AMCP \u555F\u52D5\u5931\u6557\u3002\u8ACB\u78BA\u8A8D\u672C\u6A5F\u72C0\u614B\u76EE\u9304\u3001\u6A94\u6848\u7CFB\u7D71\u6B0A\u9650\u8207 Plugin \u5B89\u88DD\u8A2D\u5B9A\u5F8C\u518D\u8A66\u3002\n";
+function isPythonStartupFailure(error46) {
+  if (!(error46 instanceof Error)) return false;
+  const systemError = error46;
+  return error46.message === "python-3.11-unavailable" || systemError.code === "ENOENT" && systemError.syscall?.startsWith("spawn") === true;
+}
 var core = new CoreClient();
 try {
   await core.start();
-} catch {
-  process.stderr.write("Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n");
+} catch (error46) {
+  process.stderr.write(isPythonStartupFailure(error46) ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE);
   process.exit(78);
 }
 var server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });

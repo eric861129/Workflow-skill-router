@@ -13,19 +13,22 @@ const INITIALIZE_PARAMS = {
   clientInfo: { name: "runtime-version-test", version: "1.0.0" },
 };
 const MUTATED_MCP_SERVER_VERSION = "9.9.9";
+const GENERIC_STARTUP_FAILURE = "Workflow Skill Router：MCP 啟動失敗。請確認本機狀態目錄、檔案系統權限與 Plugin 安裝設定後再試。\n";
 const fakeBridge = String.raw`import sys
 
 for _ in sys.stdin:
     pass
 `;
 
-async function failedStartupDiagnostics(pluginRoot: string): Promise<{ code: number | null; stderr: string }> {
-  const missingPythonDirectory = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-missing-python-"));
+async function startupDiagnostics(
+  pluginRoot: string,
+  environment: NodeJS.ProcessEnv,
+): Promise<{ code: number | null; stderr: string }> {
   const child = spawn(process.execPath, [path.join(pluginRoot, "mcp", "server.bundle.mjs")], {
     cwd: pluginRoot,
     env: {
       ...process.env,
-      WORKFLOW_SKILL_ROUTER_PYTHON: path.join(missingPythonDirectory, "python-does-not-exist"),
+      ...environment,
     },
     shell: false,
     stdio: ["ignore", "ignore", "pipe"],
@@ -34,22 +37,29 @@ async function failedStartupDiagnostics(pluginRoot: string): Promise<{ code: num
   child.stderr.setEncoding("utf8");
   child.stderr.on("data", (chunk: string) => { stderr += chunk; });
 
-  try {
-    const code = await new Promise<number | null>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        child.kill();
-        reject(new Error("MCP server did not exit after Python discovery failed."));
-      }, 10_000);
-      child.once("error", (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-      child.once("exit", (exitCode) => {
-        clearTimeout(timeout);
-        resolve(exitCode);
-      });
+  const code = await new Promise<number | null>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      child.kill();
+      reject(new Error("MCP server did not exit after startup failed."));
+    }, 10_000);
+    child.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
     });
-    return { code, stderr };
+    child.once("exit", (exitCode) => {
+      clearTimeout(timeout);
+      resolve(exitCode);
+    });
+  });
+  return { code, stderr };
+}
+
+async function failedStartupDiagnostics(pluginRoot: string): Promise<{ code: number | null; stderr: string }> {
+  const missingPythonDirectory = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-missing-python-"));
+  try {
+    return await startupDiagnostics(pluginRoot, {
+      WORKFLOW_SKILL_ROUTER_PYTHON: path.join(missingPythonDirectory, "python-does-not-exist"),
+    });
   } finally {
     await rmdir(missingPythonDirectory);
   }
@@ -435,6 +445,17 @@ test("bundled MCP server exits 78 with standalone Skill-only startup guidance", 
     result.stderr,
     "Workflow Skill Router：Python runtime 不可用；MCP server 無法啟動。請改用獨立安裝的 Skill-only 模式。\n",
   );
+});
+
+test("bundled MCP server gives generic remediation for state-path startup failures", async () => {
+  const parent = path.resolve(import.meta.dirname, "..");
+  const pluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
+  const result = await startupDiagnostics(pluginRoot, {
+    WORKFLOW_SKILL_ROUTER_DATA_DIR: pluginRoot,
+  });
+
+  assert.equal(result.code, 78);
+  assert.equal(result.stderr, GENERIC_STARTUP_FAILURE);
 });
 
 test("shipped MCP bundle advertises release metadata through MCP_SERVER_VERSION", async () => {

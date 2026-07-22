@@ -23,6 +23,8 @@ codex plugin list
 
 若錯誤指出 Python Runtime 無法使用、MCP 伺服器無法啟動，Plugin 不會自動切換為純 SKILL 模式。請在啟動錯誤後自行安裝或選擇獨立的純 SKILL 模式。
 
+若錯誤改為指出 MCP 啟動失敗，應視為本機 state path、檔案系統權限或 Plugin 安裝問題，而不是 Python 診斷。請檢查設定的本機 state directory、其權限與 Plugin 安裝後再重試。
+
 Runtime 在啟動後當掉時，該 bridge generation 內的 request 會回傳錯誤，且可能需要重試；這不代表提供高可用性保證。
 
 ## 純 SKILL 沒有觸發
