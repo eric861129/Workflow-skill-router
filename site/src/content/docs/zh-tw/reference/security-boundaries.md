@@ -27,6 +27,10 @@ description: 分離 instruction consent、runtime authority、side effects 與 e
 
 R0 local planning 可在 bundled control plane 執行。R1 需要更嚴格的 runtime validation；R2/R3 仍受 Codex sandbox、approval 與 permission boundaries 控制。較低的 routing risk label 不會降低 Host 自身的風險判斷。
 
+## 相依套件決策
+
+Plugin lockfile 會先排除已知的 High 與 Critical 相依套件風險，才接受新的 release candidate。目前 MCP SDK 的間接 HTTP adapter 仍有一項由上游追蹤的 Moderate 例外；其暴露邊界與移除條件已記錄在 [Plugin 相依套件安全決策](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md)。Plugin 本身只啟動 MCP stdio transport，不會啟動 HTTP listener。
+
 ## 回報弱點
 
 依照 [SECURITY.md](https://github.com/eric861129/Workflow-skill-router/blob/main/SECURITY.md) 回報。不要在 public issue 放入 secrets、private repository data 或 exploit details。
