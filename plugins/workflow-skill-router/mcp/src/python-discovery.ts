@@ -3,6 +3,13 @@ import { spawn } from "node:child_process";
 export type PythonCommand = Readonly<{ command: string; prefixArgs: readonly string[] }>;
 export type Probe = (candidate: PythonCommand) => Promise<string>;
 
+export class PythonDiscoveryError extends Error {
+  constructor() {
+    super("python-3.11-unavailable");
+    this.name = "PythonDiscoveryError";
+  }
+}
+
 export function candidates(platform: NodeJS.Platform): readonly PythonCommand[] {
   return platform === "win32"
     ? [{ command: "py", prefixArgs: ["-3.11"] }, { command: "python", prefixArgs: [] }]
@@ -30,5 +37,5 @@ export async function discoverPython(platform: NodeJS.Platform, probe: Probe = d
       if (major > 3 || (major === 3 && minor >= 11)) return choice;
     } catch { /* 嘗試下一個明確候選。 */ }
   }
-  throw new Error("python-3.11-unavailable");
+  throw new PythonDiscoveryError();
 }

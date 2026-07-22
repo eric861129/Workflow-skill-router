@@ -14,6 +14,7 @@ const testSources = [
   ["python-discovery", "ts"],
   ["runtime-readiness", "ts"],
   ["runtime-output-validation", "ts"],
+  ["startup-diagnostics", "ts"],
   ["state-path", "ts"],
   ["tool-metadata", "ts"],
   ["tool-output", "ts"],

@@ -28992,6 +28992,12 @@ import path2 from "node:path";
 
 // mcp/src/python-discovery.ts
 import { spawn } from "node:child_process";
+var PythonDiscoveryError = class extends Error {
+  constructor() {
+    super("python-3.11-unavailable");
+    this.name = "PythonDiscoveryError";
+  }
+};
 function candidates(platform) {
   return platform === "win32" ? [{ command: "py", prefixArgs: ["-3.11"] }, { command: "python", prefixArgs: [] }] : [{ command: "python3", prefixArgs: [] }, { command: "python", prefixArgs: [] }];
 }
@@ -29027,7 +29033,7 @@ async function discoverPython(platform, probe = defaultProbe, override = process
     } catch {
     }
   }
-  throw new Error("python-3.11-unavailable");
+  throw new PythonDiscoveryError();
 }
 
 // mcp/src/state-path.ts
@@ -29288,6 +29294,13 @@ var CoreClient = class {
     this.failGeneration(new Error("bridge-closed"), true);
   }
 };
+
+// mcp/src/startup-diagnostics.ts
+var PYTHON_STARTUP_FAILURE = "Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n";
+var GENERIC_STARTUP_FAILURE = "Workflow Skill Router\uFF1AMCP \u555F\u52D5\u5931\u6557\u3002\u8ACB\u78BA\u8A8D\u672C\u6A5F\u72C0\u614B\u76EE\u9304\u3001\u6A94\u6848\u7CFB\u7D71\u6B0A\u9650\u8207 Plugin \u5B89\u88DD\u8A2D\u5B9A\u5F8C\u518D\u8A66\u3002\n";
+function startupFailureMessage(error46) {
+  return error46 instanceof PythonDiscoveryError ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE;
+}
 
 // mcp/src/tool-schemas.ts
 var context = external_exports3.object({
@@ -29858,18 +29871,11 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
 
 // mcp/src/server.ts
 var MCP_SERVER_VERSION = "2.0.0";
-var PYTHON_STARTUP_FAILURE = "Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n";
-var GENERIC_STARTUP_FAILURE = "Workflow Skill Router\uFF1AMCP \u555F\u52D5\u5931\u6557\u3002\u8ACB\u78BA\u8A8D\u672C\u6A5F\u72C0\u614B\u76EE\u9304\u3001\u6A94\u6848\u7CFB\u7D71\u6B0A\u9650\u8207 Plugin \u5B89\u88DD\u8A2D\u5B9A\u5F8C\u518D\u8A66\u3002\n";
-function isPythonStartupFailure(error46) {
-  if (!(error46 instanceof Error)) return false;
-  const systemError = error46;
-  return error46.message === "python-3.11-unavailable" || systemError.code === "ENOENT" && systemError.syscall?.startsWith("spawn") === true;
-}
 var core = new CoreClient();
 try {
   await core.start();
 } catch (error46) {
-  process.stderr.write(isPythonStartupFailure(error46) ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE);
+  process.stderr.write(startupFailureMessage(error46));
   process.exit(78);
 }
 var server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });

@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import path from "node:path";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
+import { startupFailureMessage } from "./startup-diagnostics.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
 import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
 import { PLAN_WORK_INPUT_SCHEMA } from "./tool-schemas.js";
@@ -13,19 +14,9 @@ import {
 
 export const MCP_SERVER_VERSION = "2.0.0";
 
-const PYTHON_STARTUP_FAILURE = "Workflow Skill Router：Python runtime 不可用；MCP server 無法啟動。請改用獨立安裝的 Skill-only 模式。\n";
-const GENERIC_STARTUP_FAILURE = "Workflow Skill Router：MCP 啟動失敗。請確認本機狀態目錄、檔案系統權限與 Plugin 安裝設定後再試。\n";
-
-function isPythonStartupFailure(error: unknown) {
-  if (!(error instanceof Error)) return false;
-  const systemError = error as NodeJS.ErrnoException;
-  return error.message === "python-3.11-unavailable"
-    || (systemError.code === "ENOENT" && systemError.syscall?.startsWith("spawn") === true);
-}
-
 const core = new CoreClient();
 try { await core.start(); } catch (error) {
-  process.stderr.write(isPythonStartupFailure(error) ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE);
+  process.stderr.write(startupFailureMessage(error));
   process.exit(78);
 }
 const server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });

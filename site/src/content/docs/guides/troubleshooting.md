@@ -23,6 +23,8 @@ For a normal installation, ensure the marketplace is pinned to `v2.0.0-beta.3`, 
 
 If the error says that the Python Runtime is unavailable and the MCP server cannot start, the Plugin does not automatically fall back to Skill-only mode. Install or choose the standalone Skill-only mode yourself after the startup error.
 
+This message is reserved for a confirmed Python discovery failure; an OS spawn error alone is not treated as proof that Python is unavailable.
+
 If the error instead says that MCP startup failed, treat it as a state-path, filesystem-permission, or Plugin-installation problem—not a Python diagnosis. Check the configured local state directory, its permissions, and the Plugin installation, then retry.
 
 If the Runtime crashes after startup, requests in that bridge generation return an error and a retry may be necessary. This is not a high-availability guarantee.
