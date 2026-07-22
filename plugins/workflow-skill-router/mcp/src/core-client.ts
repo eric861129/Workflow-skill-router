@@ -54,15 +54,30 @@ export class CoreClient {
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk) => this.onData(chunk));
     child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+    let started = false;
+    let resolveStartup!: () => void;
+    let rejectStartup!: (error: Error) => void;
+    const startup = new Promise<void>((resolve, reject) => {
+      resolveStartup = resolve;
+      rejectStartup = reject;
+    });
+    child.once("spawn", () => {
+      started = true;
+      resolveStartup();
+    });
     child.once("error", (error) => {
+      if (!started) rejectStartup(error);
       if (this.child === child) this.failGeneration(error, true);
     });
     child.stdin.once("error", (error) => {
       if (this.child === child) this.failGeneration(error, true);
     });
     child.once("exit", () => {
-      if (this.child === child) this.failGeneration(new Error("bridge-restarted"), false);
+      const error = new Error("bridge-restarted");
+      if (!started) rejectStartup(error);
+      if (this.child === child) this.failGeneration(error, false);
     });
+    await startup;
   }
 
   private async spawnBridge() {

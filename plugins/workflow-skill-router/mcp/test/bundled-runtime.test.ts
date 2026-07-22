@@ -19,6 +19,42 @@ for _ in sys.stdin:
     pass
 `;
 
+async function failedStartupDiagnostics(pluginRoot: string): Promise<{ code: number | null; stderr: string }> {
+  const missingPythonDirectory = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-missing-python-"));
+  const child = spawn(process.execPath, [path.join(pluginRoot, "mcp", "server.bundle.mjs")], {
+    cwd: pluginRoot,
+    env: {
+      ...process.env,
+      WORKFLOW_SKILL_ROUTER_PYTHON: path.join(missingPythonDirectory, "python-does-not-exist"),
+    },
+    shell: false,
+    stdio: ["ignore", "ignore", "pipe"],
+  });
+  let stderr = "";
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk: string) => { stderr += chunk; });
+
+  try {
+    const code = await new Promise<number | null>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        child.kill();
+        reject(new Error("MCP server did not exit after Python discovery failed."));
+      }, 10_000);
+      child.once("error", (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+      child.once("exit", (exitCode) => {
+        clearTimeout(timeout);
+        resolve(exitCode);
+      });
+    });
+    return { code, stderr };
+  } finally {
+    await rmdir(missingPythonDirectory);
+  }
+}
+
 async function initializedServerInfo(pluginRoot: string): Promise<Record<string, unknown>> {
   const stateDirectory = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-version-"));
   const child = spawn(process.execPath, [path.join(pluginRoot, "mcp", "server.bundle.mjs")], {
@@ -387,6 +423,18 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
     }
     await rmdir(stateDirectory);
   }
+});
+
+test("bundled MCP server exits 78 with standalone Skill-only startup guidance", async () => {
+  const parent = path.resolve(import.meta.dirname, "..");
+  const pluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
+  const result = await failedStartupDiagnostics(pluginRoot);
+
+  assert.equal(result.code, 78);
+  assert.equal(
+    result.stderr,
+    "Workflow Skill Router：Python Runtime 無法使用，MCP 伺服器無法啟動。請安裝或使用獨立的純 SKILL 模式。\n",
+  );
 });
 
 test("shipped MCP bundle advertises release metadata through MCP_SERVER_VERSION", async () => {

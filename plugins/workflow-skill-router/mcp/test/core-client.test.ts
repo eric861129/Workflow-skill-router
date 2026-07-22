@@ -57,13 +57,31 @@ class ManualAbortSignal {
   }
 }
 
-function createClient(child: FakeChild, requestTimeout: (tool: string) => number) {
-  const spawnBridge = async () => child as unknown as ChildProcessWithoutNullStreams;
+function createClient(
+  child: FakeChild,
+  requestTimeout: (tool: string) => number,
+  emitSpawn = true,
+) {
+  const spawnBridge = async () => {
+    if (emitSpawn) setImmediate(() => child.emit("spawn"));
+    return child as unknown as ChildProcessWithoutNullStreams;
+  };
   const client = new CoreClient("/fake-plugin", spawnBridge, { requestTimeout });
   // The test seam must be in place before start(), so these tests never launch Python.
   assert.equal((client as unknown as { bridgeSpawner?: unknown }).bridgeSpawner, spawnBridge);
   return client;
 }
+
+test("start rejects when the child emits an error before startup completes", async () => {
+  const child = new FakeChild();
+  const client = createClient(child, () => 1_000, false);
+  const starting = client.start();
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  child.emit("error", new Error("bridge-spawn-failed"));
+
+  await assert.rejects(starting, /bridge-spawn-failed/);
+  assert.equal(child.killed, true);
+});
 
 test("a timed out request rejects alone and ignores its late response", async () => {
   const child = new FakeChild();
