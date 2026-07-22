@@ -8,8 +8,8 @@ title: Real model evaluation boundary
 
 The local-work-loop and Host conformance protocols are frozen as
 `protocol-frozen-awaiting-real-pilot`. No real Pilot task has been executed or
-counted. Published beta.3 remains public, beta.4 is prepared, unpublished source
-work, and beta.5 is unreleased source work.
+counted. Published beta.3 remains public; beta.5 is the prepared, unpublished
+beta.5 candidate.
 
 The local protocol requires at least twenty real tasks: 6 Single, 8 Phased, and
 6 Goal-like, including at least 8 Profile-backed tasks. Before the first task,
@@ -99,6 +99,6 @@ Contract `workflow-skill-router.behavior-routing@2.3.0` keeps the full suite at 
 
 The contract scores public-safe classification source/reason codes, local authority, Profile explain, and unnecessary consent. Goal-bound local mutation, local output that claims activation, direct semantic-candidate persistence, and missing or invalid required evidence are hard violations. Every turn must include the evidence object using the shared public non-oracle vocabulary; it never includes raw prompts, instruction bodies, Profile contents, paths, or scoring expectations. Attempt identity binds the nonce, tool inventory, instruction digest, public case payload digest, model/reference-driver version, and an irreversible scorer-side digest of the private oracle and scoring policy. Resume rejects a transcript produced under a different scoring digest.
 
-The deterministic reference-driver validates the protocol and scoring pipeline; it does not prove real-model behavior. Beta.4 has no new model evidence until an explicitly authorized 36-attempt / 42-turn run is reviewed and attested.
+The deterministic reference-driver validates the protocol and scoring pipeline; it does not prove real-model behavior. Beta.5 has no model evidence until an explicitly authorized 36-attempt / 42-turn run is reviewed and attested.
 
 The paired arms now declare different product execution modes instead of pretending both are instruction-only: baseline is `model-only`, candidate is `hybrid-router`. On a candidate consent follow-up, the fresh model returns only `approved`, `rejected`, or `unclear`; the deterministic Router applies that intent to the persisted proposal. Model behavior evidence and deterministic MCP integration evidence must share the same source revision before attestation.

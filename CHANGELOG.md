@@ -4,6 +4,24 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.0.0-beta.5 (prepared, not yet published)
+
+### Added
+
+- Added the Router-owned Local Work Loop: `get_next_work`, `record_work_event`, and `evaluate_gate` are available only as bounded `conditional-local` operations for a validated Router-owned graph.
+- Added the verified Host Integration Kit, a reference adapter, capability manifest, and conformance suite without granting bundled local runtime Host authority.
+- Added frozen beta.5 Pilot protocols for twenty real local tasks, verified-Host evidence, and the semantic-recommender decision gate.
+
+### Changed
+
+- The prepared product surface now identifies `2.0.0-beta.5` while `latest` remains pinned to V1.3.1 and every public installation link remains on published beta.3.
+- The candidate reports **4 always local-ready + 3 Router-owned conditional-local** operations, never `7/12 local-ready`; Explicit Skill Lock, scoped consent, Native Goal protection, and fail-closed authority separation remain unchanged.
+
+### Evidence
+
+- The reference driver and deterministic conformance suites do not prove real-model behavior, Skill activation, task outcome, a completed Pilot, or a verified Host deployment.
+- No beta.5 live model evaluation, real Pilot result, maintainer attestation, external prerelease, tag, or channel update is claimed by this prepared candidate.
+
 ## 2.0.0-beta.4 (prepared, not yet published)
 
 ### Added

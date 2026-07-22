@@ -207,7 +207,7 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("latest", text)
                 self.assertIn("V1.3.1", text)
 
-    def test_beta3_quickstart_and_unreleased_beta5_source_are_not_conflated(self) -> None:
+    def test_beta3_quickstart_and_prepared_beta5_candidate_are_not_conflated(self) -> None:
         for relative, contributor_marker, unpublished_phrase in (
             ("README.md", "For contributors", "not yet published"),
             ("README.zh-TW.md", "需要修改 Router", "尚未發布"),
@@ -220,9 +220,9 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("4 always local-ready", quickstart)
                 self.assertIn("5 verified-Host-required", quickstart)
                 self.assertNotIn("3 Router-owned conditional-local", quickstart)
-                self.assertIn("unreleased beta.5 source checkout", text)
+                self.assertIn("prepared beta.5 candidate", text)
                 self.assertIn("not included in published beta.3", text)
-                self.assertIn("2.0.0-beta.4", text)
+                self.assertIn("2.0.0-beta.5", text)
                 self.assertIn(unpublished_phrase, text)
 
     def test_conditional_local_failure_contract_is_tool_specific_and_public_safe(self) -> None:
@@ -344,7 +344,7 @@ class ReleaseCopyTests(unittest.TestCase):
         pages = (
             "README.md",
             "README.zh-TW.md",
-            "release/notes/v2.0.0-beta.4.md",
+            "release/notes/v2.0.0-beta.5.md",
             "site/src/content/docs/contributing/release-process.md",
             "site/src/content/docs/zh-tw/contributing/release-process.md",
         )
@@ -564,7 +564,7 @@ class ReleaseCopyTests(unittest.TestCase):
             skill_only.index("durable resume"),
         )
 
-    def test_beta4_public_surfaces_preserve_routing_and_authority_boundaries(self) -> None:
+    def test_beta5_public_surfaces_preserve_routing_and_authority_boundaries(self) -> None:
         pages = (
             "README.md",
             "README.zh-TW.md",

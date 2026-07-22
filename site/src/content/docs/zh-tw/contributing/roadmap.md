@@ -34,7 +34,7 @@ description: 以可驗證證據追蹤從 alpha 到 GA 的里程碑。
 - [x] 將 Pages 發布綁定至已驗證的 trusted `main` revision
 - [x] 發布新的 immutable prerelease，且只更新 `latest-v2`
 
-## Beta 2.0.0-beta.4 — 本機候選版本
+## Beta 2.0.0-beta.4 — 歷史準備工作
 
 - [x] 加入 Single、Phased、Managed Goal 的無 hint 可解釋分類
 - [x] 加入 deterministic Profile explain／lint 與 Contract 2.3.0 Profile miss 案例
@@ -43,7 +43,21 @@ description: 以可驗證證據追蹤從 alpha 到 GA 的里程碑。
 - [ ] 取得 36 attempts／42 model turns 的明確模型額度授權
 - [ ] 人工審查 sanitized evidence、attest 零 hard violations，並發布 immutable prerelease
 
-Reference-driver 只驗證離線合約；它無法證明真實模型的行為。在剩餘審查與發布 gate 完成前，beta.3 仍是最新已發布的 V2 snapshot。
+Reference-driver 只驗證離線合約；它無法證明真實模型的行為。這段 beta.4 歷史準備工作並不是已發布版本。
+
+## Beta 2.0.0-beta.5 — 已準備 candidate
+
+- [x] 加入 Router-owned Local Work Loop：將 `get_next_work`、`record_work_event` 與 `evaluate_gate` 限定為 `conditional-local` 操作
+- [x] 保留 Explicit Skill Lock、scoped consent、Native Goal 保護與 fail-closed authority separation
+- [x] 加入 Host Integration Kit、reference adapter、capability manifest 與跨平台 conformance suite
+- [x] 凍結二十個本機真實任務的 Pilot protocol、verified-Host lane 與 semantic-recommender decision gate
+- [x] 建立 prepared local candidate，同時讓 `latest` 維持 V1.3.1、已發布的 `latest-v2` 維持 beta.3
+- [ ] 執行並獨立審查至少 20 個真實本機 Pilot 任務
+- [ ] 完成真實 verified-Host Pilot，或發布經審查的 `capability-unavailable` evidence
+- [ ] 在執行新的 36 attempts／42 model turns behavior-model run 前取得明確授權
+- [ ] 審查 sanitized evidence、attest exact frozen candidate SHA，並發布 immutable prerelease
+
+prepared beta.5 candidate 尚未發布。只有在 evidence 與 review 完成後，後續受信任的 metadata-only promotion commit 才能重綁它的 `release_source_revision`。
 
 ## 下一個 Beta 里程碑
 

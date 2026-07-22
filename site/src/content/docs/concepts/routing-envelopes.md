@@ -51,9 +51,9 @@ The structural analyzer records `classifier_revision: deterministic-objective-v1
 | `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires verified Host state, policy, and receipts; local calls fail closed. |
 | `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a server-configured adapter, authorization, and applicable attestation. |
 
-### Unreleased beta.5 source checkout (`unreleased-beta.5-source`)
+### Prepared beta.5 candidate (`prepared-beta.5-candidate`)
 
-The checkout implements `conditional-local` source work, but it is **not included in published beta.3** and is not a published beta.5 release. Product metadata remains on the prepared, unpublished beta.4 candidate until the release task.
+This candidate implements `conditional-local` work, but it is **not included in published beta.3** and is not a published beta.5 release. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed candidate SHA before dispatch.
 
 | Source class | Tools | What it means in this checkout |
 | --- | --- | --- |
@@ -80,7 +80,7 @@ The conditional boundary is tool- and condition-specific:
 - A copy edit forced into `managed-goal` creates needless state and consent overhead.
 - Reusing one route across phases keeps stale capabilities active after the work changes.
 - In published beta.3, local `get_next_work`, `record_work_event`, and `evaluate_gate` calls require the verified Host.
-- In the unreleased source checkout, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
+- In the prepared beta.5 candidate, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
 - A missing Router-owned graph requests local graph creation or replay; it does not switch to an invented Host path.
 - A corrupt graph returns a sanitized `internal-error`; corruption details stay in internal diagnostics.
 - A passing Router-local gate is only advisory. It does not activate a Skill, authorize a native Goal transition, or grant deployment or production permission.

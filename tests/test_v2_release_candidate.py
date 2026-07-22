@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BETA_VERSION = "2.0.0-beta.4"
+BETA_VERSION = "2.0.0-beta.5"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):
@@ -140,9 +140,13 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         self.assertIn(f"## {BETA_VERSION}", changelog)
         self.assertIn("225", changelog)
 
-    def test_beta_4_release_notes_are_local_preparation_not_publication_claims(self) -> None:
+    def test_beta_5_release_notes_are_local_preparation_not_publication_claims(self) -> None:
         notes = (ROOT / "release" / "notes" / f"v{BETA_VERSION}.md").read_text(encoding="utf-8")
-        self.assertIn("Contract 2.3.0", notes)
+        self.assertIn("Router-owned Local Work Loop", notes)
+        self.assertIn("4 always local-ready", notes)
+        self.assertIn("3 Router-owned conditional-local", notes)
+        self.assertIn("Host Integration Kit", notes)
+        self.assertIn("Pilot", notes)
         self.assertIn("reference-driver", notes)
         self.assertIn("does not prove real-model behavior", notes)
         self.assertIn("not yet published", notes)

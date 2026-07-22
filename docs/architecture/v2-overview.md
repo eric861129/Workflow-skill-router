@@ -59,9 +59,9 @@ Managed Goal orchestration maintains a dependency graph but never mutates the na
 | `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires verified Host state, policy, and receipts; local calls fail closed. |
 | `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a server-configured adapter, authorization, and applicable attestation. |
 
-### Unreleased beta.5 source matrix (`unreleased-beta.5-source`)
+### Prepared beta.5 candidate matrix (`prepared-beta.5-candidate`)
 
-This checkout implements the beta.5 `conditional-local` source work, but it is **not included in published beta.3** and is not a published beta.5 release. Version metadata remains on the prepared, unpublished beta.4 candidate until release work advances it.
+This candidate implements the beta.5 `conditional-local` work, but it is **not included in published beta.3** and is not a published beta.5 release. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed candidate SHA before dispatch.
 
 | Source class | Tools | Authority and fail-closed behavior |
 | --- | --- | --- |
@@ -82,7 +82,7 @@ Host-authoritative operations use a distinct `authority_mode=verified-host`; eva
 Fail-closed examples:
 
 - Published beta.3 keeps `get_next_work`, `record_work_event`, and `evaluate_gate` on the verified-Host path.
-- In the unreleased source checkout, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
+- In the prepared beta.5 candidate, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
 - Missing graphs request local creation or replay; corrupt graphs return only a sanitized `internal-error` correlation.
 - A missing activation receipt prevents a Host transition even if a Router-local advisory gate passed.
 - A semantic route candidate remains advisory and cannot replace the persisted deterministic route.

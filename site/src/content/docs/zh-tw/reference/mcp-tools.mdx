@@ -13,7 +13,7 @@ import toolData from '../../../../data/mcp-tools.generated.json';
 
 目前產生的 profile：**{toolData.runtime_profile}**
 
-此 generated profile 描述 **unreleased beta.5 source checkout**，能力 **not included in published beta.3**。它清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
+此 generated profile 描述 **prepared beta.5 candidate**，能力 **not included in published beta.3**。它清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
 
 Native Goal boundary 依工具區分：next work 使用 `verified-host-scheduler`，formal progress 使用 `verified-event-store` 與 `activation-receipt-verifier`，gate 使用 `verified-evidence-store` 與 `gate-authority`。缺少 graph 時透過 `router-owned-work-graph` 要求本機建立或 replay；graph 損毀則回傳已清理的 `internal-error`。所有不可用或不安全分支都必須 **fail closed**。
 

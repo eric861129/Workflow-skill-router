@@ -23,9 +23,8 @@ The safe preparation artifacts are now frozen with
   is the maintainer evidence template.
 
 No real Pilot task has been executed or counted. Published beta.3 remains the
-public V2 release, beta.4 is prepared, unpublished source work, and beta.5 is
-unreleased. These protocols do not authorize a live model, a real Host, or a
-release.
+public V2 release, while beta.5 is the prepared, unpublished beta.5 candidate.
+These protocols do not authorize a live model, a real Host, or a release.
 
 The binding-manifest commitment, task-set commitment, and reviewer-attestation
 commitment must be frozen before task 1. The restricted reviewer verifies real
@@ -86,13 +85,13 @@ Contract or reference-driver results do **not** prove real-model routing quality
 
 ## Versioned scoring contract
 
-Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.3.0`. The full suite remains 13 cases: the existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode` and bind public-safe classification evidence, while `profile-explain-miss` replaces `evaluation-manual-required`. The six-case beta smoke keeps one two-turn consent case, so a future authorized run remains 36 attempts and 42 model turns. This replacement prioritizes beta.4 intelligence coverage without changing the frozen execution budget; historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
+Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.3.0`. The full suite remains 13 cases: the existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode` and bind public-safe classification evidence, while `profile-explain-miss` replaces `evaluation-manual-required`. The six-case beta smoke keeps one two-turn consent case, so a future authorized run remains 36 attempts and 42 model turns. The prepared beta.5 candidate carries the sealed Contract 2.3.0 classification coverage without changing the frozen execution budget; historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
 
 Contract 2.3.0 adds aggregate dimensions for envelope source, classification reasons, local authority, Profile explain, and unnecessary consent. It also treats goal-bound local mutation, a local activation claim, direct semantic-candidate persistence, and missing or invalid required evidence as hard violations. Every turn must return `evaluation_evidence` using the public, non-oracle [reason-code vocabulary](reason-code-vocabulary.json). Expected evidence remains in the private scoring oracle; it is excluded from the public case payload and execution driver.
 
 The server-side scoring-spec digest seals every private route/evidence oracle plus the scoring policy, public vocabulary, and deterministic runner source bytes. The digest is embedded only as an irreversible segment of the attempt identity and sanitized server-side metadata. Resume fails closed when an otherwise identical execution transcript was produced under a different scoring spec.
 
-The reference-driver validates deterministic protocol and scoring composition only; it does not prove real-model behavior. No beta.4 model evidence exists until a frozen 36-attempt / 42-turn run receives explicit quota authorization and its sanitized output is reviewed and attested.
+The reference-driver validates deterministic protocol and scoring composition only; it does not prove real-model behavior. No beta.5 model evidence exists until a frozen 36-attempt / 42-turn run receives explicit quota authorization and its sanitized output is reviewed and attested.
 
 Historical reports keep their original case and instruction digests. Never rescore an older run against a newer contract revision. The runner recomputes the canonical path-and-SHA-256 manifest before execution and fails closed when the instruction package no longer matches its declared digest.
 

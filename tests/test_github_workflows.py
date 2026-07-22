@@ -499,7 +499,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job,
         )
 
-    def test_beta4_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
+    def test_beta5_release_lane_is_bound_to_its_declared_source_revision(self) -> None:
         metadata = json.loads(
             (ROOT / "release" / "version.json").read_text(encoding="utf-8")
         )
@@ -508,7 +508,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         declared_revision = metadata["release_source_revision"]
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
-        self.assertEqual("2.0.0-beta.4", metadata["v2_version"])
+        self.assertEqual("2.0.0-beta.5", metadata["v2_version"])
         self.assertEqual("prepared-local-candidate", metadata["release_lifecycle"])
         publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
             encoding="utf-8"
@@ -527,7 +527,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
 
-    def test_prepared_beta4_metadata_fails_the_executable_publication_gate(self) -> None:
+    def test_prepared_beta5_metadata_fails_the_executable_publication_gate(self) -> None:
         metadata_path = ROOT / "release" / "version.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         trusted_revision = subprocess.check_output(

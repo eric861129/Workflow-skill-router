@@ -34,7 +34,7 @@ description: Track evidence-backed milestones from alpha to GA.
 - [x] Bind Pages publication to the validated trusted `main` revision
 - [x] Publish a new immutable prerelease and move only `latest-v2`
 
-## Beta 2.0.0-beta.4 — local candidate
+## Beta 2.0.0-beta.4 — historical preparation
 
 - [x] Add explainable no-hint classification for Single, Phased, and Managed Goal work
 - [x] Add deterministic Profile explain/lint and the Contract 2.3.0 Profile-miss case
@@ -43,7 +43,21 @@ description: Track evidence-backed milestones from alpha to GA.
 - [ ] Obtain explicit authorization for the 36-attempt / 42-turn model run
 - [ ] Review sanitized evidence, attest zero hard violations, and publish the immutable prerelease
 
-The reference-driver validates the offline contract but does not prove real-model behavior. Until the remaining review and publication gates finish, beta.3 remains the latest published V2 snapshot.
+The reference-driver validates the offline contract but does not prove real-model behavior. This historical beta.4 preparation is not a published release.
+
+## Beta 2.0.0-beta.5 — prepared candidate
+
+- [x] Add the Router-owned Local Work Loop: `get_next_work`, `record_work_event`, and `evaluate_gate` as bounded `conditional-local` operations
+- [x] Preserve Explicit Skill Lock, scoped consent, Native Goal protection, and fail-closed authority separation
+- [x] Add the Host Integration Kit, reference adapter, capability manifest, and cross-platform conformance suite
+- [x] Freeze the twenty-task local Pilot protocol, verified-Host lane, and semantic-recommender decision gate
+- [x] Build a prepared local candidate while keeping `latest` on V1.3.1 and published `latest-v2` on beta.3
+- [ ] Execute and independently review at least 20 real local Pilot tasks
+- [ ] Complete a real verified-Host Pilot or publish reviewed `capability-unavailable` evidence
+- [ ] Obtain explicit authorization before a fresh 36-attempt / 42-turn behavior-model run
+- [ ] Review sanitized evidence, attest the exact frozen candidate SHA, and publish the immutable prerelease
+
+The prepared beta.5 candidate is not published. Its `release_source_revision` is rebound only by the later trusted metadata-only promotion commit after evidence and review.
 
 ## Next beta milestone
 

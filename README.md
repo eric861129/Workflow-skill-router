@@ -4,7 +4,7 @@
 
 Workflow Skill Router is a runtime-aware planning and routing layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do.
 
-> Prepared prerelease candidate: `2.0.0-beta.4` (not yet published). The latest published V2 prerelease remains `2.0.0-beta.3`; immutable V1.3.1 recovery remains available during migration.
+> Prepared prerelease candidate: `2.0.0-beta.5` (not yet published). The latest published V2 prerelease remains `2.0.0-beta.3`; immutable V1.3.1 recovery remains available during migration.
 
 The checked-in `release_lifecycle` is `prepared-local-candidate`, so the trusted default-branch workflow fails before preflight, tag creation, or publication. `CREATE_V2_RELEASE` cannot bypass this guard. A future reviewed release-preparation commit must set `release_lifecycle` to `reviewed-attested-publishable` and bind the reviewed frozen source through `release_source_revision` before dispatch is allowed.
 
@@ -58,7 +58,7 @@ codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-The checkout currently contains **unreleased beta.5 source checkout** work for the conditional-local loop. It is **not included in published beta.3**. Release metadata intentionally remains on the prepared, unpublished `2.0.0-beta.4` candidate until the later release task; this source statement is not a beta.5 release claim.
+The checkout contains the **prepared beta.5 candidate** for the conditional-local loop and Host Integration Kit. It is **not included in published beta.3** and is not yet published. This first candidate-content commit deliberately leaves `release_source_revision` on its earlier value: a later trusted metadata-only promotion commit must bind that field to this exact reviewed candidate SHA before `Release V2` can dispatch.
 
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
@@ -157,9 +157,9 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 | `verified-host-required` | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Five operations require verified Host authority |
 | `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Three operations require an authorized evaluation adapter |
 
-### Unreleased beta.5 source checkout (`unreleased-beta.5-source`)
+### Prepared beta.5 candidate (`prepared-beta.5-candidate`)
 
-The following source matrix is **not included in published beta.3** and is not a published beta.5 release:
+This prepared candidate matrix is **not included in published beta.3** and is not a published beta.5 release. It remains blocked by the checked-in `prepared-local-candidate` lifecycle until the exact candidate SHA has required evidence, review, and a trusted metadata-only source binding.
 
 | Availability in bundled local R0 | Tools | Meaning |
 | --- | --- | --- |
@@ -168,7 +168,7 @@ The following source matrix is **not included in published beta.3** and is not a
 | `verified-host-required` | `sync_runtime_context`, `validate_route` | Needs verified host authority and stores |
 | `configured-adapter-required` | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Needs an authorized evaluation adapter and evidence |
 
-The unreleased source claim is deliberately **4 always local-ready + 3 Router-owned conditional-local**, never `7/12 local-ready`. A conditional-local call succeeds only for a validated Router-owned work graph with no Native Goal authority. `get_next_work` returns `authority_mode=router-local` and `host_goal_mutated=false`; progress and local gate results use `evidence_class=user-or-agent-reported-local` and `host_transition_authorized=false`. A local gate pass is advisory: it is not Skill activation, Native Goal completion, deployment approval, or production permission. Explicit Skill Lock and consent behavior are unaffected.
+The prepared beta.5 candidate claim is deliberately **4 always local-ready + 3 Router-owned conditional-local**, never `7/12 local-ready`. A conditional-local call succeeds only for a validated Router-owned work graph with no Native Goal authority. `get_next_work` returns `authority_mode=router-local` and `host_goal_mutated=false`; progress and local gate results use `evidence_class=user-or-agent-reported-local` and `host_transition_authorized=false`. A local gate pass is advisory: it is not Skill activation, Native Goal completion, deployment approval, or production permission. Explicit Skill Lock and consent behavior are unaffected.
 
 | Runtime condition | `get_next_work` | `record_work_event` | `evaluate_gate` |
 | --- | --- | --- | --- |
