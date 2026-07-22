@@ -3,7 +3,7 @@
   "stable_channel": "latest",
   "target_prerelease": "2.0.0-beta.5",
   "release_lifecycle": "prepared-local-candidate",
-  "release_source_revision": "ef62aa91349e0e3935a460197c9be9e6780088a6",
+  "release_source_revision": "428e5c680507a947a68c3ee59fc90b63fe02fece",
   "published_v2_version": "2.0.0-beta.3",
   "v1_pinned_version": "1.3.1",
   "v2_version": "2.0.0-beta.5",
