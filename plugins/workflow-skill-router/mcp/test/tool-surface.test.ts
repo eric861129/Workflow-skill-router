@@ -89,3 +89,24 @@ test("plan_work keeps legacy callers and accepts a strict routing profile contex
     },
   }).success, false);
 });
+
+test("plan_work accepts public all semantics and rejects internal required-all", () => {
+  const schema = z.object(TOOL_INPUT_SHAPES.plan_work).strict();
+  const base = {
+    context: {
+      session_id: "session-1",
+      actor: "developer",
+      runtime_policy_snapshot_id: "policy-1",
+    },
+    expected_state_version: 0,
+    idempotency_key: "plan-all",
+    correlation_id: "correlation-all",
+    objective: "Use both named skills",
+    goal_binding_id: null,
+    requested_work_mode: "single" as const,
+    explicit_skill_ids: ["skill:api-designer", "skill:qa-test-planner"],
+  };
+
+  assert.equal(schema.safeParse({ ...base, explicit_semantics: "all" }).success, true);
+  assert.equal(schema.safeParse({ ...base, explicit_semantics: "required-all" }).success, false);
+});

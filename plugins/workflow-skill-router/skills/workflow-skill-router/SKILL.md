@@ -5,6 +5,16 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 # Workflow Skill Router V2
 
+## 明確 SKILL 鎖定（公開 `plan_work` 語意）
+
+| 指令 | 路由合約 |
+| --- | --- |
+| `use` | 指名 SKILL 優先作為 Primary；需要新增支援時，先取得目前 Phase 的具體同意。 |
+| `only` | 路由僅限指名集合；不得新增集合外支援。 |
+| `all` | 每個指名 SKILL 都必須被覆蓋；集合外支援仍限於已同意的範圍。 |
+
+任何指令都不會啟用 SKILL，也不授予檔案、部署、訊息、秘密或其他 Host 權限。若指名 SKILL 不可用或不足以完成必要工作，應縮小結果或回報阻礙，不得自動 fallback 或靜默替換；啟用仍受 activation gate 與 Host permission 約束。
+
 先解析 Goal relation：`progress`、`steer`、`status`、`side-question`、`unrelated` 或 `none`。`status` 只讀狀態，不建立工作；`side-question` 與 `unrelated` 不修改 Goal semantic revision。
 
 再選 envelope：單一意圖用 `single`；有兩個以上相異階段用 `phased`，每個 Phase 重新選擇能力；長期、可恢復、跨 repo、dependency DAG 或 Goal progress/steer 用 `managed-goal`，每個 Work Item 再分成 `single` 或 `phased`。

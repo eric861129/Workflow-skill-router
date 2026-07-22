@@ -195,6 +195,36 @@ test("bundled MCP server resolves the runtime inside the installed plugin", asyn
     };
     assert.equal(explicitPlan.structuredContent?.selection_mode, "explicit-locked");
 
+    const requiredAllPlanResponse = await request(10, "tools/call", {
+      name: "plan_work",
+      arguments: {
+        context: {
+          session_id: "bundled-runtime-test",
+          actor: "test",
+          runtime_policy_snapshot_id: "policy-test",
+        },
+        expected_state_version: 0,
+        idempotency_key: "bundled-runtime-required-all-plan",
+        correlation_id: "bundled-runtime-required-all-plan",
+        objective: "Use both named skills before completion.",
+        goal_binding_id: null,
+        requested_work_mode: "single",
+        explicit_skill_ids: ["skill:api-designer", "skill:qa-test-planner"],
+        explicit_semantics: "all",
+      },
+    });
+    assert.equal(requiredAllPlanResponse.error, undefined, JSON.stringify(requiredAllPlanResponse));
+    const requiredAllPlan = requiredAllPlanResponse.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+    assert.equal(requiredAllPlan.isError, undefined, JSON.stringify(requiredAllPlanResponse));
+    assert.equal(requiredAllPlan.structuredContent?.selection_mode, "explicit-locked");
+    assert.deepEqual(
+      requiredAllPlan.structuredContent?.planned_skill_ids,
+      ["skill:api-designer", "skill:qa-test-planner"],
+    );
+
     const proposalResponse = await request(5, "tools/call", {
       name: "propose_support_consent",
       arguments: {

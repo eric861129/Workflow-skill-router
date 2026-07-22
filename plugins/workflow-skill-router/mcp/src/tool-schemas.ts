@@ -60,7 +60,7 @@ export const TOOL_INPUT_SHAPES = {
     goal_binding_id: z.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
     requested_work_mode: z.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
     explicit_skill_ids: z.array(z.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
-    explicit_semantics: z.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+    explicit_semantics: z.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
     routing_context: routingContext.optional().describe(
       "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority.",
     ),
