@@ -60,7 +60,7 @@ class V2DocumentationTests(unittest.TestCase):
             "conditional-local",
             "host_transition_authorized",
             "published-beta.3",
-            "prepared-beta.5-candidate",
+            "prepared-ga-candidate",
             "propose_support_consent",
             "transition_support_consent",
             "not included in published beta.3",
@@ -75,9 +75,9 @@ class V2DocumentationTests(unittest.TestCase):
                     self.assertIn(term, text, relative)
 
                 published_section = text.split("published-beta.3", 1)[1].split(
-                    "prepared-beta.5-candidate", 1
+                    "prepared-ga-candidate", 1
                 )[0]
-                source_section = text.split("prepared-beta.5-candidate", 1)[1]
+                source_section = text.split("prepared-ga-candidate", 1)[1]
                 for readiness, expected_tools in published_beta3_tools.items():
                     documented_tools, _ = readiness_row(
                         published_section, readiness, relative
