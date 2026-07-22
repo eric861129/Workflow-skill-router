@@ -19,6 +19,12 @@ codex plugin list
 
 For a normal installation, ensure the marketplace is pinned to `v2.0.0-beta.3`, reinstall `workflow-skill-router@workflow-skill-router`, and restart Codex. For a contributor checkout, ensure the marketplace points at the repository root before reinstalling.
 
+## Plugin startup fails
+
+If the error says that the Python Runtime is unavailable and the MCP server cannot start, the Plugin does not automatically fall back to Skill-only mode. Install or choose the standalone Skill-only mode yourself after the startup error.
+
+If the Runtime crashes after startup, requests in that bridge generation return an error and a retry may be necessary. This is not a high-availability guarantee.
+
 ## Skill-only does not trigger
 
 Verify that the folder directly contains `SKILL.md`:

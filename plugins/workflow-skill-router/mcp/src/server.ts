@@ -15,7 +15,7 @@ export const MCP_SERVER_VERSION = "2.0.0";
 
 const core = new CoreClient();
 try { await core.start(); } catch {
-  process.stderr.write("Workflow Skill Router：Python runtime 不可用，切換為 skill-only-fallback。\n");
+  process.stderr.write("Workflow Skill Router：Python Runtime 無法使用，MCP 伺服器無法啟動。請安裝或使用獨立的純 SKILL 模式。\n");
   process.exit(78);
 }
 const server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });

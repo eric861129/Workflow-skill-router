@@ -19,6 +19,12 @@ codex plugin list
 
 一般安裝請確認 marketplace 固定在 `v2.0.0-beta.3`，重新安裝 `workflow-skill-router@workflow-skill-router`，再重新啟動 Codex。使用 contributor checkout 時，請先確認 marketplace 指向 repository root。
 
+## Plugin 啟動失敗
+
+若錯誤指出 Python Runtime 無法使用、MCP 伺服器無法啟動，Plugin 不會自動切換為純 SKILL 模式。請在啟動錯誤後自行安裝或選擇獨立的純 SKILL 模式。
+
+Runtime 在啟動後當掉時，該 bridge generation 內的 request 會回傳錯誤，且可能需要重試；這不代表提供高可用性保證。
+
 ## 純 SKILL 沒有觸發
 
 確認目錄第一層直接包含 `SKILL.md`：
