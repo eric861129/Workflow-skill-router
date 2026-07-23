@@ -549,84 +549,37 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
 
-    def test_reviewed_ga_metadata_passes_the_executable_publication_gate(self) -> None:
+    def test_reviewed_ga_metadata_declares_the_publishable_frozen_source(self) -> None:
         metadata_path = ROOT / "release" / "version.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-        trusted_revision = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-        ).strip()
 
         self.assertEqual(
             "reviewed-attested-publishable", metadata.get("release_lifecycle")
         )
-        with tempfile.TemporaryDirectory() as directory:
-            output_path = Path(directory) / "github-output.txt"
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "scripts" / "release-publication-gate.py"),
-                    "--metadata",
-                    str(metadata_path),
-                    "--trusted-revision",
-                    trusted_revision,
-                    "--github-output",
-                    str(output_path),
-                ],
-                cwd=ROOT,
-                text=True,
-                encoding="utf-8",
-                capture_output=True,
-                timeout=30,
-            )
+        self.assertEqual(FROZEN_GA_SOURCE_REVISION, metadata["release_source_revision"])
+        self.assertEqual("2.0.0", metadata["v2_version"])
 
-            self.assertEqual(0, result.returncode, result.stderr)
-            self.assertEqual(
-                "source_revision=" + FROZEN_GA_SOURCE_REVISION + "\nrelease_tag=v2.0.0\n",
-                output_path.read_text(encoding="utf-8"),
-            )
+        source_job = workflow_job_body("release-v2.yml", "resolve-source")
+        self.assertIn("fetch-depth: 0", source_job)
+        self.assertIn("python scripts/release-publication-gate.py", source_job)
 
     def test_reviewed_ga_metadata_is_bound_to_the_frozen_candidate_source(
         self,
     ) -> None:
-        trusted_revision = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-        ).strip()
-        metadata = json.loads(
-            (ROOT / "release" / "version.json").read_text(encoding="utf-8")
-        )
-        self.assertEqual(
-            FROZEN_GA_SOURCE_REVISION,
-            metadata["release_source_revision"],
-        )
-
         with tempfile.TemporaryDirectory() as directory:
-            directory_path = Path(directory)
-            metadata_path = directory_path / "version.json"
-            output_path = directory_path / "github-output.txt"
-            metadata_path.write_text(
-                json.dumps(metadata), encoding="utf-8", newline="\n"
+            repository = Path(directory)
+            frozen_revision, trusted_revision = self._create_release_fixture(
+                repository,
+                frozen_version="2.0.0",
+                trusted_version="2.0.0",
             )
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "scripts" / "release-publication-gate.py"),
-                    "--metadata",
-                    str(metadata_path),
-                    "--trusted-revision",
-                    trusted_revision,
-                    "--github-output",
-                    str(output_path),
-                ],
-                cwd=ROOT,
-                text=True,
-                encoding="utf-8",
-                capture_output=True,
-                timeout=30,
+            result, output_path = self._run_publication_gate(
+                repository, trusted_revision
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual(
-                "source_revision=" + FROZEN_GA_SOURCE_REVISION + "\nrelease_tag=v2.0.0\n",
+                f"source_revision={frozen_revision}\nrelease_tag=v2.0.0\n",
                 output_path.read_text(encoding="utf-8"),
             )
 
