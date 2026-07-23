@@ -29931,7 +29931,7 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
 }
 
 // mcp/src/server.ts
-var MCP_SERVER_VERSION = "2.0.0";
+var MCP_SERVER_VERSION = "2.0.1";
 var core = new CoreClient();
 try {
   await core.start();

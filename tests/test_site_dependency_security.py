@@ -18,6 +18,22 @@ def version_tuple(value: str) -> tuple[int, int, int]:
 
 
 class SiteDependencySecurityTests(unittest.TestCase):
+    def test_site_declares_astro_security_floor(self) -> None:
+        package = json.loads(PACKAGE.read_text(encoding="utf-8"))
+
+        self.assertGreaterEqual(
+            version_tuple(package["dependencies"]["astro"].lstrip("^~")),
+            (7, 1, 3),
+        )
+
+    def test_site_declares_starlight_version_compatible_with_astro_7(self) -> None:
+        package = json.loads(PACKAGE.read_text(encoding="utf-8"))
+
+        self.assertGreaterEqual(
+            version_tuple(package["dependencies"]["@astrojs/starlight"].lstrip("^~")),
+            (0, 41, 4),
+        )
+
     def test_locked_opentelemetry_core_versions_include_baggage_limit_fix(self) -> None:
         package = json.loads(PACKAGE.read_text(encoding="utf-8"))
         lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))

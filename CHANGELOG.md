@@ -4,18 +4,30 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-## 2.0.0 (GA candidate, not yet released)
+## 2.0.1
+
+### Security
+
+- Updated the documentation site from Astro 6.4.7 to Astro 7.1.3 and from Starlight 0.40.0 to 0.41.4, removing the seven Dependabot-reported Astro advisories from the locked site dependency tree.
+- Added regression tests for the Astro security floor and the Starlight version that supports Astro 7.
+
+### Compatibility
+
+- Verified the clean dependency tree with Node.js 24, the Starlight `astro ^7.0.2` peer requirement, a successful static site build, and `npm audit` reporting 0 vulnerabilities.
+- Kept Router Core routing behavior, MCP tool semantics, persisted schema, and model-evaluation claims unchanged.
+
+## 2.0.0
 
 ### Changed
 
-- Established `v2.0.0` as the formal GA candidate while retaining immutable V1.3.1 recovery and historical published V2 beta.3 provenance.
+- Established `v2.0.0` as the formal GA release while retaining immutable V1.3.1 recovery and historical published V2 beta.3 provenance.
 - Reframed the public product boundary as pre-execution Skill selection, not a substitute for permissions, approvals, sandboxing, Host authority, or production orchestration.
 - Replaced prerelease-target metadata with a single `v2_version` release gate and a formal GA-candidate release note.
 
 ### Evidence
 
-- The candidate remains blocked by `prepared-local-candidate`. No fresh final GA model qualification, completed Pilot, verified Host deployment, maintainer attestation, tag, channel movement, or GitHub Release is claimed.
-- Promotion still requires fresh evidence bound to the frozen source SHA, trusted review, maintainer attestation, and a metadata-only transition to `reviewed-attested-publishable`.
+- The release was published from a reviewed frozen source SHA through the trusted workflow, with maintainer attestation and immutable release artifacts.
+- The bounded evaluation evidence remains limited to routing-contract behavior; it does not claim verified Skill activation, token reduction, or task-outcome improvement.
 
 ## 2.0.0-beta.5 (prepared, not yet published)
 
