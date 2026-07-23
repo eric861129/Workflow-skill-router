@@ -4,9 +4,9 @@
 
 Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 pre-execution、runtime-aware 的規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。它不能取代權限、核准政策、sandboxing 或 production orchestration。
 
-> 已準備的 GA candidate：`2.0.0`（尚未發布）。目前已發布的 V2 snapshot 仍是 `2.0.0-beta.3`；遷移期間仍可從 immutable V1.3.1 復原。
+> 目前 V2 正式版：`2.0.1`。遷移期間仍可使用 immutable V1.3.1 復原路徑。
 
-目前納入版控的 `release_lifecycle` 是 `prepared-local-candidate`，因此受信任預設分支上的 workflow 會在 preflight、建立 tag 或發布前失敗；`CREATE_V2_RELEASE` 不能繞過此 guard。未來必須由經審查的 metadata-only promotion 綁定凍結的 GA candidate `release_source_revision`、記錄新的模型證據與 maintainer attestation，並把 `release_lifecycle` 改為 `reviewed-attested-publishable`，之後才允許 dispatch。
+每一個 V2 release 都會綁定來源。candidate 先處於 `prepared-local-candidate`；只有經審查的 metadata-only promotion 綁定 `release_source_revision`、記錄 maintainer attestation，並把 `release_lifecycle` 改為 `reviewed-attested-publishable` 後，才可以執行 `CREATE_V2_RELEASE`。受信任的預設分支 workflow 會再從凍結來源建置、建立 tag、attest 並發布。
 
 ## 60-second outcome / 60 秒成果
 
@@ -37,15 +37,15 @@ Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或
 
 ## 五分鐘 Plugin + MCP quickstart
 
-一般使用者請固定安裝不可變的 `v2.0.0-beta.3` marketplace snapshot：
+一般使用者請固定安裝不可變的 `v2.0.1` marketplace snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.3
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-開啟新的 Codex 任務，要求它顯示 Workflow Skill Router 狀態。已發布的 beta.3 snapshot 共有 12 個 MCP tools：**4 always local-ready**、**5 verified-Host-required**，以及 3 個 configured-adapter-required tools；它不包含下方說明的 conditional-local work loop。
+開啟新的 Codex 任務，要求它顯示 Workflow Skill Router 狀態。已發布的 V2 surface 共有 12 個 MCP tools：**4 always local-ready**、**5 verified-Host-required**，以及 3 個 configured-adapter-required tools；每一項操作仍以 Runtime readiness 為準。
 
 需要修改 Router 的貢獻者才使用 checkout：
 
@@ -58,15 +58,15 @@ codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-目前 checkout 包含 conditional-local loop 與 Host Integration Kit 的 **已準備的 GA candidate**；它 **not included in published beta.3**，且尚未發布。此 candidate 刻意保留既有的 `release_source_revision`：後續受信任的 metadata-only promotion 必須將它綁定到 exact reviewed GA candidate SHA，`Release V2` 才能 dispatch。
+目前 checkout 是 V2 正式版的來源。貢獻者必須區分 candidate 與受信任 release metadata：後續 metadata-only promotion 會把 `release_source_revision` 綁定到 exact reviewed source SHA，之後 `Release V2` 才能 dispatch。
 
-`v2.0.0` 是 qualification 後預定建立的 immutable GA tag；在 release workflow 建立並驗證該 tag 前，不要執行任何 `v2.0.0` 安裝命令。
+`v2.0.1` 是由受信任 release workflow 建立並驗證的 immutable GA tag；一般使用者應固定使用此 tag，而不是 mutable branch。
 
 正式 Plugin 已包含 MCP bundle 與 Python runtime。執行需要 Node.js 24+ 與 Python 3.11+；只有從原始碼重建時需要 npm。完整說明請看 [Plugin 安裝](site/src/content/docs/zh-tw/guides/install-plugin.md)。
 
 ## 五分鐘 Skill-only quickstart
 
-一般使用者請下載 [`workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+一般使用者請下載 [`workflow-skill-router-skill-v2.0.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.1/workflow-skill-router-skill-v2.0.1.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
 
 需要修改 Router 的貢獻者可在 Windows checkout 中執行：
 

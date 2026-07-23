@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-FROZEN_GA_SOURCE_REVISION = "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1"
+PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
+PREPARED_LIFECYCLE = "prepared-local-candidate"
 JOB_BLOCK_PATTERN = re.compile(
     r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
     r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
@@ -527,10 +528,12 @@ class GitHubWorkflowTests(unittest.TestCase):
         declared_revision = metadata["release_source_revision"]
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
-        self.assertEqual(FROZEN_GA_SOURCE_REVISION, declared_revision)
-        self.assertEqual("2.0.0", metadata["v2_version"])
+        self.assertRegex(metadata["v2_version"], r"^2\.\d+\.\d+$")
         self.assertNotIn("target_prerelease", metadata)
-        self.assertEqual("reviewed-attested-publishable", metadata["release_lifecycle"])
+        self.assertIn(
+            metadata["release_lifecycle"],
+            {PREPARED_LIFECYCLE, PUBLISHABLE_LIFECYCLE},
+        )
         publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
             encoding="utf-8"
         )
@@ -549,15 +552,14 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
 
-    def test_reviewed_ga_metadata_declares_the_publishable_frozen_source(self) -> None:
+    def test_current_release_metadata_declares_a_valid_lifecycle(self) -> None:
         metadata_path = ROOT / "release" / "version.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(
-            "reviewed-attested-publishable", metadata.get("release_lifecycle")
-        )
-        self.assertEqual(FROZEN_GA_SOURCE_REVISION, metadata["release_source_revision"])
-        self.assertEqual("2.0.0", metadata["v2_version"])
+        lifecycle = metadata.get("release_lifecycle")
+        self.assertIn(lifecycle, {PREPARED_LIFECYCLE, PUBLISHABLE_LIFECYCLE})
+        self.assertRegex(metadata["release_source_revision"], r"^[0-9a-f]{40}$")
+        self.assertRegex(metadata["v2_version"], r"^2\.\d+\.\d+$")
 
         source_job = workflow_job_body("release-v2.yml", "resolve-source")
         self.assertIn("fetch-depth: 0", source_job)

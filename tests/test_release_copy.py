@@ -207,10 +207,10 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("latest", text)
                 self.assertIn("V1.3.1", text)
 
-    def test_beta3_quickstart_and_prepared_ga_candidate_are_not_conflated(self) -> None:
-        for relative, contributor_marker, candidate_phrase, unpublished_phrase in (
-            ("README.md", "For contributors", "prepared GA candidate", "not yet released"),
-            ("README.zh-TW.md", "需要修改 Router", "已準備的 GA candidate", "尚未發布"),
+    def test_current_release_quickstart_is_not_conflated_with_contributor_setup(self) -> None:
+        for relative, contributor_marker in (
+            ("README.md", "For contributors"),
+            ("README.zh-TW.md", "需要修改 Router"),
         ):
             text = (ROOT / relative).read_text(encoding="utf-8")
             quickstart = text.split(
@@ -220,10 +220,7 @@ class ReleaseCopyTests(unittest.TestCase):
                 self.assertIn("4 always local-ready", quickstart)
                 self.assertIn("5 verified-Host-required", quickstart)
                 self.assertNotIn("3 Router-owned conditional-local", quickstart)
-                self.assertIn(candidate_phrase, text)
-                self.assertIn("not included in published beta.3", text)
-                self.assertIn("2.0.0", text)
-                self.assertIn(unpublished_phrase, text)
+                self.assertIn(PUBLISHED_VERSION, text)
                 self.assertNotIn("prepared beta.5 candidate", text)
 
     def test_conditional_local_failure_contract_is_tool_specific_and_public_safe(self) -> None:

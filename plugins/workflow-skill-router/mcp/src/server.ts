@@ -12,7 +12,7 @@ import {
   collectTrustedWorkspaceRoots,
 } from "./workspace-roots.js";
 
-export const MCP_SERVER_VERSION = "2.0.0";
+export const MCP_SERVER_VERSION = "2.0.1";
 
 const core = new CoreClient();
 try { await core.start(); } catch (error) {

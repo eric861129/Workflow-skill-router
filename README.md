@@ -4,9 +4,9 @@
 
 Workflow Skill Router is a pre-execution, runtime-aware Skill-selection layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do. It is not a substitute for permissions, approval policies, sandboxing, or production orchestration.
 
-> Prepared GA candidate: `2.0.0` (not yet released). The latest published V2 snapshot remains `2.0.0-beta.3`; immutable V1.3.1 recovery remains available during migration.
+> Current V2 release: `2.0.1`. The immutable V1.3.1 recovery path remains available during migration.
 
-The checked-in `release_lifecycle` is `prepared-local-candidate`, so the trusted default-branch workflow fails before preflight, tag creation, or publication. `CREATE_V2_RELEASE` cannot bypass this guard. A future reviewed metadata-only promotion must bind the frozen GA candidate through `release_source_revision`, record the required fresh model evidence and maintainer attestation, and set `release_lifecycle` to `reviewed-attested-publishable` before dispatch is allowed.
+Every V2 release is source-bound. A candidate starts as `prepared-local-candidate`; only a reviewed metadata-only promotion that binds `release_source_revision`, records maintainer attestation, and sets `release_lifecycle` to `reviewed-attested-publishable` can unlock `CREATE_V2_RELEASE`. The trusted default-branch workflow then builds, tags, attests, and publishes the frozen source.
 
 ## 60-second outcome
 
@@ -37,15 +37,15 @@ Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone 
 
 ## Five-minute Plugin + MCP quickstart
 
-For a normal installation, pin the immutable `v2.0.0-beta.3` marketplace snapshot:
+For a normal installation, pin the immutable `v2.0.1` marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.0-beta.3
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Open a new Codex task and ask it to show the Workflow Skill Router status. The published beta.3 snapshot exposes twelve MCP tools: **4 always local-ready**, **5 verified-Host-required**, and 3 configured-adapter-required tools. It does not contain the conditional-local work loop described below.
+Open a new Codex task and ask it to show the Workflow Skill Router status. The published V2 surface exposes twelve MCP tools: **4 always local-ready**, **5 verified-Host-required**, and 3 configured-adapter-required tools. Runtime readiness remains authoritative for every individual operation.
 
 For contributors who are changing or testing the Router:
 
@@ -58,15 +58,15 @@ codex plugin list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
-The checkout contains the **prepared GA candidate** for the conditional-local loop and Host Integration Kit. It is **not included in published beta.3** and is not yet released. This candidate deliberately leaves `release_source_revision` on its earlier value: a later trusted metadata-only promotion must bind that field to the exact reviewed GA candidate SHA before `Release V2` can dispatch.
+The checkout is the source for the current V2 release. Contributors must keep the candidate and trusted release metadata distinct: the later metadata-only promotion binds `release_source_revision` to the exact reviewed source SHA before `Release V2` can dispatch.
 
-`v2.0.0` is the intended immutable GA tag after qualification; do not run a `v2.0.0` installation command until the release workflow has created and verified that tag.
+`v2.0.1` is an immutable GA tag created and verified by the trusted release workflow; normal installations should pin that tag instead of a mutable branch.
 
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
 ## Five-minute Skill-only quickstart
 
-For a normal installation, download [`workflow-skill-router-skill-v2.0.0-beta.3.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.0-beta.3/workflow-skill-router-skill-v2.0.0-beta.3.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
+For a normal installation, download [`workflow-skill-router-skill-v2.0.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.1/workflow-skill-router-skill-v2.0.1.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
 
 For contributors working from a checkout on Windows:
 
