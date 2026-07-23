@@ -78,6 +78,72 @@ Use a new `RunId` for every authorized run. The runner accepts only a missing or
 
 The driver also uses a fresh `HOME` and `CODEX_HOME`, disables plugins and bundled Skills, and copies authentication into that isolated home only for the duration of one turn. The copy is removed in `finally`, including timeout and process-start failure paths. This prevents personal Skills and configuration from contaminating either arm.
 
+## Delta Qualification for a monotonic safety repair
+
+The paired six-case `beta-smoke` run remains the default final Behavior
+qualification: 36 attempts and 42 model turns. It is required whenever a
+change can alter routing intent, instruction content, scoring, public cases,
+model configuration, or the general execution protocol.
+
+A **Delta Qualification** is not a general shortcut. It is permitted only for
+one precommitted, named **monotonic** safety repair whose manifest binds all of
+the following: one reviewed parent sanitized report, the exact former hard
+violation, the only affected case and arm, an allowlisted source diff, and a
+machine-checked postcondition. It runs without resume and may only be combined
+with—not substituted for—the parent full qualification. Any unlisted source
+path, parent digest mismatch, changed model, changed suite, or failed
+postcondition fails closed before a provider call.
+
+The currently accepted manifest, `activation-claim-v1`, confirms only the
+repair that blocks a local activation claim. It binds the reviewed
+`89f342…` parent report, requires `activation_status: "unverified"` in both
+the output schema and driver, and fixes the scope to the candidate arm of
+`phased-current-boundary`. Its provider budget is exactly **3 attempts / 3
+turns**; it does not produce a paired comparison or a new independent full
+qualification.
+
+After freezing a clean candidate commit, run the fixed manifest as follows.
+Use new output and attempt roots for every execution, and review only the
+resulting sanitized report:
+
+```powershell
+$Python = (Get-Command python).Source
+$Codex = (Resolve-Path "C:\path\to\trusted\codex.exe").Path
+$Driver = (Resolve-Path "evaluation/v2/adapters/codex_cli_driver.py").Path
+$ParentReport = (Resolve-Path "dist/evaluation/v2/ga-2.0.0-89f342-network4/sanitized-report.json").Path
+$SourceRevision = (git rev-parse HEAD).Trim()
+$AdapterRevision = (& $Python scripts/run-v2-benchmark.py --print-canonical-adapter-revision).Trim()
+$RunId = "delta-activation-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+$AttemptRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-attempts-$RunId"
+$OutputRoot = Join-Path (Get-Location) "dist/evaluation/v2/codex-live-$RunId"
+
+python scripts/run-v2-benchmark.py `
+  --suite beta-smoke `
+  --evidence-class behavior `
+  --adapter-executable $Python `
+  --adapter-arg $Driver `
+  --adapter-arg=--codex-executable `
+  --adapter-arg $Codex `
+  --adapter-arg=--attempt-root `
+  --adapter-arg $AttemptRoot `
+  --adapter-arg=--model `
+  --adapter-arg gpt-5.6-sol `
+  --repeats 3 `
+  --timeout-seconds 180 `
+  --output-dir $OutputRoot `
+  --authorized-source-revision $SourceRevision `
+  --authorized-adapter-revision $AdapterRevision `
+  --delta-qualification activation-claim-v1 `
+  --parent-sanitized-report $ParentReport `
+  --confirm-live-run
+```
+
+The report must retain the parent evidence binding, record the fixed
+`activation-claim-v1` scope, show exactly 3 candidate attempts / 3 model
+turns, and contain zero candidate hard violations. A trusted maintainer must
+then attest that this narrow evidence bridge and its parent full run together
+support the frozen release source.
+
 ## Claim and review policy
 
 - `reference-driver` demonstrates orchestration only. It is not Behavior or Outcome evidence.

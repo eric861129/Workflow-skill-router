@@ -101,4 +101,20 @@ The contract scores public-safe classification source/reason codes, local author
 
 The deterministic reference-driver validates the protocol and scoring pipeline; it does not prove real-model behavior. The GA candidate has no fresh final model qualification until an explicitly authorized 36-attempt / 42-turn run is reviewed and attested.
 
+## Delta Qualification is deliberately narrow
+
+The full paired smoke remains the normal final Behavior qualification: 36
+attempts and 42 model turns. **Delta Qualification** is available only for a
+precommitted, named **monotonic** safety repair. It must bind the reviewed
+parent sanitized report and its exact hard violation, a fixed case and arm, an
+allowlisted diff, and an automated postcondition. It cannot resume an old
+attempt or become a user-selected way to reduce a normal evaluation budget.
+
+`activation-claim-v1` is the first and only approved delta manifest. It checks
+the candidate `phased-current-boundary` case after a repair that makes local
+activation claims impossible at the public output boundary. Its scope is
+exactly **3 attempts / 3 turns**. It produces no paired performance comparison
+and is not an independent replacement for the parent 36/42 evidence; both
+reports require review and a maintainer attestation before release.
+
 The paired arms now declare different product execution modes instead of pretending both are instruction-only: baseline is `model-only`, candidate is `hybrid-router`. On a candidate consent follow-up, the fresh model returns only `approved`, `rejected`, or `unclear`; the deterministic Router applies that intent to the persisted proposal. Model behavior evidence and deterministic MCP integration evidence must share the same source revision before attestation.

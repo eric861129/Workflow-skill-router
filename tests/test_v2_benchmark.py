@@ -87,6 +87,195 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertIn("authorized_source_revision", destinations)
         self.assertIn("authorized_adapter_revision", destinations)
 
+    def test_activation_claim_delta_qualification_is_fixed_to_three_candidate_attempts(self):
+        manifest_path = (
+            V2 / "qualifications" / "activation-claim-v1.json"
+        )
+        self.assertTrue(manifest_path.is_file())
+        self.assertTrue(hasattr(RUNNER, "load_delta_qualification"))
+        self.assertTrue(hasattr(RUNNER, "resolve_delta_scope"))
+
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        cases, arms = RUNNER.resolve_delta_scope(
+            qualification,
+            RUNNER.load_cases(qualification["suite"]),
+        )
+
+        self.assertEqual(["phased-current-boundary"], [case["id"] for case in cases])
+        self.assertEqual(("candidate",), arms)
+        self.assertEqual(3, qualification["repeats"])
+        self.assertEqual(3, len(cases) * len(arms) * qualification["repeats"])
+        self.assertEqual(3, qualification["expected_model_turns"])
+
+    def test_delta_qualification_requires_exact_parent_violation_and_change_set(self):
+        self.assertTrue(hasattr(RUNNER, "validate_delta_parent_report"))
+        self.assertTrue(hasattr(RUNNER, "validate_delta_changed_paths"))
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        parent_report = {
+            "suite": "beta-smoke",
+            "attempt_count": 36,
+            "provenance": {
+                "source_revision": "89f342fca705766c4fe6645f8c5d51e54f4b2750",
+                "adapter_revision": (
+                    "sha256:29e2f05cbc84aa6732b0c2c05963b3750d377848d69506a982e495548051126c"
+                ),
+                "model_identifier": "gpt-5.6-sol",
+            },
+            "comparison": {"candidate": {"hard_violation_count": 1}},
+            "attempts": [{
+                "arm": "candidate",
+                "case_id": "phased-current-boundary",
+                "hard_violations": ["local-activation-claim"],
+            }],
+        }
+        parent_bytes = json.dumps(
+            parent_report,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        qualification = copy.deepcopy(qualification)
+        qualification["parent_evidence"]["sanitized_report_sha256"] = (
+            "sha256:" + sha256(parent_bytes).hexdigest()
+        )
+
+        RUNNER.validate_delta_parent_report(
+            qualification,
+            parent_report,
+            parent_bytes,
+        )
+        invalid_parent = copy.deepcopy(parent_report)
+        invalid_parent["attempts"] = []
+        invalid_bytes = json.dumps(
+            invalid_parent,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        qualification["parent_evidence"]["sanitized_report_sha256"] = (
+            "sha256:" + sha256(invalid_bytes).hexdigest()
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "delta_parent_violation_missing",
+        ):
+            RUNNER.validate_delta_parent_report(
+                qualification,
+                invalid_parent,
+                invalid_bytes,
+            )
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "delta_changed_path_unapproved",
+        ):
+            RUNNER.validate_delta_changed_paths(
+                qualification,
+                {
+                    *qualification["required_changed_paths"],
+                    "README.md",
+                },
+            )
+
+    def test_delta_qualification_runner_executes_only_three_candidate_attempts(self):
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        cases, arms = RUNNER.resolve_delta_scope(
+            qualification,
+            RUNNER.load_cases("beta-smoke"),
+        )
+        source_revision = "b" * 40
+        adapter_revision = "sha256:" + "2" * 64
+
+        class DeltaAdapter:
+            def __init__(self, *_args, **_kwargs):
+                self.count = 0
+
+            def start_attempt(self, _payload, _nonce):
+                self.count += 1
+                return f"{self.count:032x}"
+
+            def execute_turn(self, request):
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": f"{self.count:032x}",
+                    "route": {
+                        "envelope": "phased",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:systematic-debugging",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "Current phase remains diagnosis.",
+                        "evaluation_evidence": {
+                            "classification": {
+                                "source": "deterministic-analyzer",
+                                "reason_codes": ["multi-stage-sequence"],
+                            },
+                            "authority": {
+                                "mode": "router-local",
+                                "native_goal_mutated": False,
+                            },
+                            "profile_explain": {
+                                "status": "not-requested",
+                                "reason_codes": [],
+                            },
+                            "activation_status": "unverified",
+                            "semantic_candidate_persisted": False,
+                        },
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "delta-output"
+            parent = Path(directory) / "parent.json"
+            parent.write_text("{}", encoding="utf-8")
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "prepare_delta_qualification",
+                    return_value=(qualification, cases, arms),
+                ),
+                patch.object(RUNNER.LocalEvidenceProtector, "verify_directory", return_value=True),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", DeltaAdapter),
+            ):
+                self.assertEqual(0, RUNNER.main([
+                    "--suite", "beta-smoke",
+                    "--evidence-class", "behavior",
+                    "--adapter-executable", sys.executable,
+                    "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                    "--adapter-arg=--model",
+                    "--adapter-arg", "gpt-test",
+                    "--repeats", "3",
+                    "--output-dir", str(output),
+                    "--confirm-live-run",
+                    "--authorized-source-revision", source_revision,
+                    "--authorized-adapter-revision", adapter_revision,
+                    "--delta-qualification", "activation-claim-v1",
+                    "--parent-sanitized-report", str(parent),
+                ]))
+            report = json.loads(
+                (output / "sanitized-report.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(3, report["attempt_count"])
+        self.assertEqual(1, report["arm_count"])
+        self.assertEqual("activation-claim-v1", report["qualification"]["id"])
+        self.assertEqual(
+            "not-run-delta-qualification",
+            report["comparison"]["comparison_status"],
+        )
+        self.assertEqual({"candidate"}, {attempt["arm"] for attempt in report["attempts"]})
+
     def test_behavior_runbook_supplies_frozen_source_and_adapter_revisions(self):
         runbook = (ROOT / "evaluation" / "README.md").read_text(encoding="utf-8")
 

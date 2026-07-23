@@ -94,6 +94,24 @@ The server-side scoring-spec digest seals every private route/evidence oracle pl
 
 The reference-driver validates deterministic protocol and scoring composition only; it does not prove real-model behavior. No fresh final GA model qualification exists until a frozen 36-attempt / 42-turn run receives explicit quota authorization and its sanitized output is reviewed and attested.
 
+## Delta Qualification has a fixed safety scope
+
+The full paired beta smoke remains the normal final Behavior qualification: 36
+attempts and 42 model turns. **Delta Qualification** is never a general way to
+reduce that budget. It is accepted only for a precommitted, named **monotonic**
+safety repair, and its manifest binds a reviewed parent sanitized report, the
+former precise hard violation, a fixed case and arm, an allowlisted source diff,
+and a machine-checked postcondition. Any mismatch fails closed before a model
+call; a delta cannot resume an older attempt.
+
+`activation-claim-v1` is currently the sole approved manifest. It confirms the
+candidate `phased-current-boundary` repair that forces
+`activation_status: "unverified"`. Its provider budget is exactly **3 attempts
+/ 3 turns**. The result is a narrow evidence bridge: it has no paired
+performance comparison and cannot independently replace the parent full
+qualification. The parent and delta reports both require review and trusted
+maintainer attestation before release.
+
 Historical reports keep their original case and instruction digests. Never rescore an older run against a newer contract revision. The runner recomputes the canonical path-and-SHA-256 manifest before execution and fails closed when the instruction package no longer matches its declared digest.
 
 ## Process protocol

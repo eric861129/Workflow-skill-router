@@ -192,6 +192,12 @@ class V2DocumentationTests(unittest.TestCase):
                     self.assertIn("does not prove real-model behavior", text)
                 self.assertIn("36 attempts", text)
                 self.assertIn("42", text)
+                self.assertIn("Delta Qualification", text)
+                self.assertIn("3 attempts", text)
+                if "/zh-tw/" in relative:
+                    self.assertIn("單調", text)
+                else:
+                    self.assertIn("monotonic", text)
 
         roadmap_zh = (
             ROOT / "site/src/content/docs/zh-tw/contributing/roadmap.md"

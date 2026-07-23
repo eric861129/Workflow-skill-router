@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "id": "activation-claim-v1",
+  "kind": "monotonic-safety-delta",
+  "suite": "beta-smoke",
+  "arms": ["candidate"],
+  "case_ids": ["phased-current-boundary"],
+  "repeats": 3,
+  "expected_model_attempts": 3,
+  "expected_model_turns": 3,
+  "parent_evidence": {
+    "sanitized_report_sha256": "sha256:ec0fb6515f854e9a9a4dd5e88d8277782b5e764e1db3a114821ef52ecb100372",
+    "source_revision": "89f342fca705766c4fe6645f8c5d51e54f4b2750",
+    "adapter_revision": "sha256:29e2f05cbc84aa6732b0c2c05963b3750d377848d69506a982e495548051126c",
+    "model_identifier": "gpt-5.6-sol",
+    "attempt_count": 36,
+    "candidate_hard_violation": {
+      "case_id": "phased-current-boundary",
+      "code": "local-activation-claim",
+      "count": 1
+    }
+  },
+  "required_changed_paths": [
+    "evaluation/v2/adapters/codex_cli_driver.py",
+    "evaluation/v2/schemas/codex-route-output.schema.json",
+    "tests/test_codex_cli_driver.py"
+  ],
+  "allowed_changed_paths": [
+    "evaluation/README.md",
+    "evaluation/v2/README.md",
+    "evaluation/v2/adapters/codex_cli_driver.py",
+    "evaluation/v2/qualifications/activation-claim-v1.json",
+    "evaluation/v2/schemas/codex-route-output.schema.json",
+    "release/notes/v2.0.0.md",
+    "scripts/run-v2-benchmark.py",
+    "site/src/content/docs/reference/model-evaluation.md",
+    "site/src/content/docs/zh-tw/reference/model-evaluation.md",
+    "tests/test_codex_cli_driver.py",
+    "tests/test_v2_benchmark.py",
+    "tests/test_v2_documentation.py"
+  ],
+  "required_postconditions": {
+    "activation_status_enum": ["unverified"],
+    "driver_required_source": "value.get(\"activation_status\") == \"unverified\"",
+    "driver_forbidden_source": "claimed-activated"
+  }
+}

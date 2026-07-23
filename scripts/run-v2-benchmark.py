@@ -32,6 +32,9 @@ from workflow_skill_router.schemas.artifacts import canonical_json_bytes
 
 
 V2 = ROOT / "evaluation" / "v2"
+DELTA_QUALIFICATIONS = {
+    "activation-claim-v1": V2 / "qualifications" / "activation-claim-v1.json",
+}
 CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
 CANONICAL_BEHAVIOR_SCHEMA = V2 / "schemas" / "codex-route-output.schema.json"
 CANONICAL_CONSENT_SCHEMA = V2 / "schemas" / "codex-consent-intent.schema.json"
@@ -105,6 +108,222 @@ def invoke_with_binding_checks(
         return operation()
     finally:
         verify_binding()
+
+
+def load_delta_qualification(qualification_id: str) -> dict[str, Any]:
+    """載入唯一可執行的、受版本控制的最小模型資格確認範圍。"""
+
+    path = DELTA_QUALIFICATIONS.get(qualification_id)
+    if path is None:
+        raise EvaluationIntegrityError("delta_qualification_unknown")
+    try:
+        qualification = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise EvaluationIntegrityError("delta_qualification_invalid") from error
+    if not isinstance(qualification, dict):
+        raise EvaluationIntegrityError("delta_qualification_invalid")
+
+    required = {
+        "schema_version", "id", "kind", "suite", "arms", "case_ids",
+        "repeats", "expected_model_attempts", "expected_model_turns",
+        "parent_evidence", "required_changed_paths", "allowed_changed_paths",
+        "required_postconditions",
+    }
+    if set(qualification) != required:
+        raise EvaluationIntegrityError("delta_qualification_invalid")
+    if (
+        qualification["schema_version"] != "1.0"
+        or qualification["id"] != qualification_id
+        or qualification["kind"] != "monotonic-safety-delta"
+        or qualification["suite"] != "beta-smoke"
+        or qualification["arms"] != ["candidate"]
+        or qualification["case_ids"] != ["phased-current-boundary"]
+        or qualification["repeats"] != 3
+        or qualification["expected_model_attempts"] != 3
+        or qualification["expected_model_turns"] != 3
+    ):
+        raise EvaluationIntegrityError("delta_qualification_scope_invalid")
+    for key in ("required_changed_paths", "allowed_changed_paths"):
+        paths = qualification[key]
+        if not isinstance(paths, list) or paths != sorted(set(paths)):
+            raise EvaluationIntegrityError("delta_qualification_paths_invalid")
+        if not all(isinstance(value, str) and value for value in paths):
+            raise EvaluationIntegrityError("delta_qualification_paths_invalid")
+
+    parent = qualification["parent_evidence"]
+    if not isinstance(parent, dict) or set(parent) != {
+        "sanitized_report_sha256", "source_revision", "adapter_revision",
+        "model_identifier", "attempt_count", "candidate_hard_violation",
+    }:
+        raise EvaluationIntegrityError("delta_qualification_parent_invalid")
+    if (
+        not isinstance(parent["sanitized_report_sha256"], str)
+        or not SHA256_REVISION.fullmatch(parent["sanitized_report_sha256"])
+        or not isinstance(parent["source_revision"], str)
+        or not FULL_GIT_COMMIT.fullmatch(parent["source_revision"])
+        or not isinstance(parent["adapter_revision"], str)
+        or not SHA256_REVISION.fullmatch(parent["adapter_revision"])
+        or parent["model_identifier"] != "gpt-5.6-sol"
+        or parent["attempt_count"] != 36
+    ):
+        raise EvaluationIntegrityError("delta_qualification_parent_invalid")
+    violation = parent["candidate_hard_violation"]
+    if violation != {
+        "case_id": "phased-current-boundary",
+        "code": "local-activation-claim",
+        "count": 1,
+    }:
+        raise EvaluationIntegrityError("delta_qualification_parent_invalid")
+    postconditions = qualification["required_postconditions"]
+    if postconditions != {
+        "activation_status_enum": ["unverified"],
+        "driver_required_source": 'value.get("activation_status") == "unverified"',
+        "driver_forbidden_source": "claimed-activated",
+    }:
+        raise EvaluationIntegrityError("delta_qualification_postconditions_invalid")
+    return qualification
+
+
+def resolve_delta_scope(
+    qualification: Mapping[str, Any],
+    suite_cases: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    by_id = {case["id"]: case for case in suite_cases}
+    case_ids = qualification.get("case_ids")
+    arms = qualification.get("arms")
+    if not isinstance(case_ids, list) or not isinstance(arms, list):
+        raise EvaluationIntegrityError("delta_qualification_scope_invalid")
+    try:
+        cases = [by_id[case_id] for case_id in case_ids]
+    except KeyError as error:
+        raise EvaluationIntegrityError("delta_qualification_case_unknown") from error
+    if len(cases) != 1 or tuple(arms) != ("candidate",):
+        raise EvaluationIntegrityError("delta_qualification_scope_invalid")
+    return cases, tuple(arms)
+
+
+def validate_delta_parent_report(
+    qualification: Mapping[str, Any],
+    parent_report: Mapping[str, Any],
+    parent_bytes: bytes,
+) -> None:
+    parent = qualification["parent_evidence"]
+    actual_digest = "sha256:" + sha256(parent_bytes).hexdigest()
+    if actual_digest != parent["sanitized_report_sha256"]:
+        raise EvaluationIntegrityError("delta_parent_report_digest_mismatch")
+    provenance = parent_report.get("provenance")
+    if not isinstance(provenance, Mapping) or any(
+        provenance.get(key) != parent[key]
+        for key in ("source_revision", "adapter_revision", "model_identifier")
+    ):
+        raise EvaluationIntegrityError("delta_parent_provenance_mismatch")
+    if (
+        parent_report.get("suite") != qualification["suite"]
+        or parent_report.get("attempt_count") != parent["attempt_count"]
+    ):
+        raise EvaluationIntegrityError("delta_parent_scope_mismatch")
+    comparison = parent_report.get("comparison")
+    candidate = comparison.get("candidate") if isinstance(comparison, Mapping) else None
+    violation = parent["candidate_hard_violation"]
+    if not isinstance(candidate, Mapping) or candidate.get("hard_violation_count") != violation["count"]:
+        raise EvaluationIntegrityError("delta_parent_violation_mismatch")
+    attempts = parent_report.get("attempts")
+    matches = [
+        item for item in attempts
+        if isinstance(item, Mapping)
+        and item.get("arm") == "candidate"
+        and item.get("case_id") == violation["case_id"]
+        and violation["code"] in item.get("hard_violations", [])
+    ] if isinstance(attempts, list) else []
+    if len(matches) != violation["count"]:
+        raise EvaluationIntegrityError("delta_parent_violation_missing")
+
+
+def validate_delta_changed_paths(
+    qualification: Mapping[str, Any],
+    changed_paths: set[str],
+) -> None:
+    allowed = set(qualification["allowed_changed_paths"])
+    required = set(qualification["required_changed_paths"])
+    if not required.issubset(changed_paths):
+        raise EvaluationIntegrityError("delta_changed_path_required_missing")
+    if not changed_paths.issubset(allowed):
+        raise EvaluationIntegrityError("delta_changed_path_unapproved")
+
+
+def changed_paths_since(parent_revision: str, source_revision: str) -> set[str]:
+    try:
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", parent_revision, source_revision],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        changed = subprocess.check_output(
+            ["git", "diff", "--name-only", parent_revision, source_revision],
+            text=True,
+        )
+    except subprocess.CalledProcessError as error:
+        raise EvaluationIntegrityError("delta_parent_revision_unreachable") from error
+    return {line for line in changed.splitlines() if line}
+
+
+def validate_delta_postconditions(qualification: Mapping[str, Any]) -> None:
+    postconditions = qualification["required_postconditions"]
+    try:
+        schema = json.loads(CANONICAL_BEHAVIOR_SCHEMA.read_text(encoding="utf-8"))
+        driver_source = CANONICAL_BEHAVIOR_ADAPTER.read_text(encoding="utf-8")
+        activation_status = schema["properties"]["evaluation_evidence"]["properties"][
+            "activation_status"
+        ]["enum"]
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        raise EvaluationIntegrityError("delta_postcondition_read_failed") from error
+    if activation_status != postconditions["activation_status_enum"]:
+        raise EvaluationIntegrityError("delta_postcondition_schema_invalid")
+    if (
+        postconditions["driver_required_source"] not in driver_source
+        or postconditions["driver_forbidden_source"] in driver_source
+    ):
+        raise EvaluationIntegrityError("delta_postcondition_driver_invalid")
+
+
+def prepare_delta_qualification(
+    qualification_id: str,
+    parent_report_path: Path | None,
+    source_revision: str | None,
+    *,
+    suite: str,
+    repeats: int,
+    evidence_class: str,
+    resume_attempt_root: Path | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]], tuple[str, ...]]:
+    if evidence_class != "behavior" or parent_report_path is None or source_revision is None:
+        raise EvaluationIntegrityError("delta_qualification_behavior_only")
+    if resume_attempt_root is not None:
+        raise EvaluationIntegrityError("delta_qualification_resume_forbidden")
+    qualification = load_delta_qualification(qualification_id)
+    if suite != qualification["suite"] or repeats != qualification["repeats"]:
+        raise EvaluationIntegrityError("delta_qualification_scope_mismatch")
+    try:
+        parent_bytes = parent_report_path.read_bytes()
+        parent_report = json.loads(parent_bytes)
+    except (OSError, json.JSONDecodeError) as error:
+        raise EvaluationIntegrityError("delta_parent_report_invalid") from error
+    if not isinstance(parent_report, Mapping):
+        raise EvaluationIntegrityError("delta_parent_report_invalid")
+    validate_delta_parent_report(qualification, parent_report, parent_bytes)
+    validate_delta_changed_paths(
+        qualification,
+        changed_paths_since(
+            qualification["parent_evidence"]["source_revision"],
+            source_revision,
+        ),
+    )
+    validate_delta_postconditions(qualification)
+    return qualification, *resolve_delta_scope(
+        qualification,
+        load_cases(qualification["suite"]),
+    )
 
 
 def load_cases(suite: str) -> list[dict[str, Any]]:
@@ -643,6 +862,7 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
 def case_diagnostics(
     records: list[dict[str, Any]],
     cases: list[dict[str, Any]],
+    arms_to_report: tuple[str, ...] = ("baseline", "candidate"),
 ) -> list[dict[str, Any]]:
     """輸出不含 prompt、expected/actual route value 的案例級聚合診斷。"""
 
@@ -650,7 +870,7 @@ def case_diagnostics(
     for case in cases:
         expected = case["expected"]
         arms: dict[str, dict[str, Any]] = {}
-        for arm in ("baseline", "candidate"):
+        for arm in arms_to_report:
             arm_records = [
                 record
                 for record in records
@@ -714,12 +934,14 @@ def case_diagnostics(
                     for name in EVALUATION_DIMENSIONS
                 },
             }
-        baseline = arms["baseline"]
-        candidate = arms["candidate"]
-        diagnostics.append({
+        diagnostic: dict[str, Any] = {
             "case_id": case["id"],
             "arms": arms,
-            "candidate_minus_baseline": {
+        }
+        if {"baseline", "candidate"}.issubset(arms):
+            baseline = arms["baseline"]
+            candidate = arms["candidate"]
+            diagnostic["candidate_minus_baseline"] = {
                 "pass_rate": (
                     candidate["pass_rate"] - baseline["pass_rate"]
                     if candidate["pass_rate"] is not None
@@ -756,8 +978,8 @@ def case_diagnostics(
                     )
                     for name in EVALUATION_DIMENSIONS
                 },
-            },
-        })
+            }
+        diagnostics.append(diagnostic)
     return diagnostics
 
 
@@ -1246,6 +1468,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--excluded-preflight-attempts", type=int, default=0)
     parser.add_argument("--resume-attempt-root", type=Path)
     parser.add_argument("--execution-resumed-attempts", type=int)
+    parser.add_argument("--delta-qualification", choices=tuple(DELTA_QUALIFICATIONS))
+    parser.add_argument("--parent-sanitized-report", type=Path)
     return parser
 
 
@@ -1291,7 +1515,22 @@ def main(argv: list[str] | None = None) -> int:
         if behavior_python_cache is not None:
             verify_behavior_python_cache(behavior_python_cache, protector)
 
-    cases = load_cases(args.suite)
+    qualification: dict[str, Any] | None = None
+    if args.delta_qualification:
+        qualification, cases, selected_arms = prepare_delta_qualification(
+            args.delta_qualification,
+            args.parent_sanitized_report,
+            source_revision,
+            suite=args.suite,
+            repeats=args.repeats,
+            evidence_class=args.evidence_class,
+            resume_attempt_root=args.resume_attempt_root,
+        )
+    else:
+        if args.parent_sanitized_report is not None:
+            raise EvaluationIntegrityError("delta_parent_report_without_qualification")
+        cases = load_cases(args.suite)
+        selected_arms = ("baseline", "candidate")
     profiles = load_profiles()
     configured_model = adapter_option(args.adapter_arg, "--model")
     model_version = (
@@ -1329,12 +1568,20 @@ def main(argv: list[str] | None = None) -> int:
     records: list[dict[str, Any]] = []
     elapsed_values: list[float] = []
     resumed_attempt_count = 0
-    expected_attempts = len(cases) * 2 * args.repeats
+    expected_attempts = len(cases) * len(selected_arms) * args.repeats
+    if qualification is not None and expected_attempts != qualification["expected_model_attempts"]:
+        raise EvaluationIntegrityError("delta_qualification_attempt_count_invalid")
     resume_root = args.resume_attempt_root.resolve() if args.resume_attempt_root else None
     checkpoint_path = restricted_dir / "checkpoint.json"
     checkpoint_protected = False
 
-    for arm, profile in profiles.items():
+    run_identity = (
+        f"delta:{qualification['id']}:{args.suite}"
+        if qualification is not None
+        else args.suite
+    )
+    for arm in selected_arms:
+        profile = profiles[arm]
         for case in cases:
             prompt = model_prompt(case, profile)
             payload = ModelExecutionPayload(
@@ -1360,7 +1607,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 case_scoring_spec_digest = scoring_spec_digest(case)
                 nonce = make_attempt_nonce(
-                    args.suite,
+                    run_identity,
                     arm,
                     case["id"],
                     repeat,
@@ -1477,6 +1724,10 @@ def main(argv: list[str] | None = None) -> int:
     contexts = [record["fresh_context_id"] for record in records]
     if len(records) != expected_attempts or len(set(nonces)) != expected_attempts or len(set(contexts)) != expected_attempts:
         raise EvaluationIntegrityError("benchmark_attempt_integrity_failed")
+    if qualification is not None and sum(record["turn_count"] for record in records) != qualification[
+        "expected_model_turns"
+    ]:
+        raise EvaluationIntegrityError("delta_qualification_turn_count_invalid")
     if any(not record["trace_digest"] for record in records):
         raise EvaluationIntegrityError("benchmark_trace_digest_missing")
     if not protector.verify_file(checkpoint_path):
@@ -1491,7 +1742,7 @@ def main(argv: list[str] | None = None) -> int:
     live_elapsed = elapsed_values if args.evidence_class == "behavior" else []
     records_by_arm = {
         arm: [record for record in records if record["arm"] == arm]
-        for arm in ("baseline", "candidate")
+        for arm in selected_arms
     }
     metrics_by_arm = {
         arm: arm_metrics(arm_records, cases)
@@ -1515,12 +1766,16 @@ def main(argv: list[str] | None = None) -> int:
         "profile_explain_match_rate",
         "unnecessary_consent_violation_rate",
     )
-    comparison_deltas = {
-        name: metrics_by_arm["candidate"][name] - metrics_by_arm["baseline"][name]
-        for name in delta_fields
-        if metrics_by_arm["candidate"][name] is not None
-        and metrics_by_arm["baseline"][name] is not None
-    }
+    comparison_deltas = (
+        {
+            name: metrics_by_arm["candidate"][name] - metrics_by_arm["baseline"][name]
+            for name in delta_fields
+            if metrics_by_arm["candidate"][name] is not None
+            and metrics_by_arm["baseline"][name] is not None
+        }
+        if {"baseline", "candidate"}.issubset(metrics_by_arm)
+        else None
+    )
     public_case_set_digest = digest([public_case_payload(case) for case in cases])
     skill_catalog_digest = digest(profiles["baseline"]["skill_catalog"])
     arm_manifests = {
@@ -1552,21 +1807,50 @@ def main(argv: list[str] | None = None) -> int:
     }
     summary = {
         "suite": args.suite,
+        "qualification": (
+            {
+                "id": qualification["id"],
+                "kind": qualification["kind"],
+                "scope": {
+                    "arms": list(selected_arms),
+                    "case_ids": [case["id"] for case in cases],
+                    "repeats": args.repeats,
+                    "expected_model_attempts": qualification["expected_model_attempts"],
+                    "expected_model_turns": qualification["expected_model_turns"],
+                },
+                "parent_evidence": qualification["parent_evidence"],
+                "postconditions": qualification["required_postconditions"],
+            }
+            if qualification is not None
+            else None
+        ),
         "case_count": len(cases),
-        "arm_count": 2,
+        "arm_count": len(selected_arms),
         "attempt_count": len(records),
         "attempt_nonces": nonces,
         "fresh_context_ids": contexts,
-        "paired_case_ids": [case["id"] for case in cases],
+        "paired_case_ids": (
+            [case["id"] for case in cases]
+            if {"baseline", "candidate"}.issubset(selected_arms)
+            else []
+        ),
         "arm_manifests": arm_manifests,
-        "comparison": {
-            "paired_attempt_count": len(records_by_arm["baseline"]),
-            "baseline": metrics_by_arm["baseline"],
-            "candidate": metrics_by_arm["candidate"],
-            "candidate_minus_baseline": comparison_deltas,
-            "interpretation_status": "review-required",
-        },
-        "case_diagnostics": case_diagnostics(records, cases),
+        "comparison": (
+            {
+                "paired_attempt_count": len(records_by_arm["baseline"]),
+                "baseline": metrics_by_arm["baseline"],
+                "candidate": metrics_by_arm["candidate"],
+                "candidate_minus_baseline": comparison_deltas,
+                "interpretation_status": "review-required",
+            }
+            if {"baseline", "candidate"}.issubset(records_by_arm)
+            else {
+                "comparison_status": "not-run-delta-qualification",
+                "candidate": metrics_by_arm["candidate"],
+                "interpretation_status": "review-required",
+            }
+        ),
+        "case_diagnostics": case_diagnostics(records, cases, selected_arms),
         "metrics": {
             "pass_rate": {"value": sum(pass_values) / len(pass_values), "metric_status": metric_status},
             "variance": {"value": statistics.pvariance(pass_values), "metric_status": metric_status},

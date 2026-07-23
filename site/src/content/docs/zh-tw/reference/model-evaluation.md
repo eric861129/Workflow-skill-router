@@ -154,3 +154,18 @@ digest，不會套用新版規則重算。
 Deterministic reference-driver 只驗證 protocol 與 scoring pipeline，無法證明真實模型的行為。
 只有取得明確模型額度授權、完成 fresh model execution、人工審查與
 attestation 後，才能建立新的模型行為證據。
+
+## Delta Qualification 的嚴格邊界
+
+完整的 paired smoke 仍是正式 Behavior 資格驗證的預設：36 attempts、42 model
+turns。**Delta Qualification** 不是一般縮減評測預算的捷徑；它只能用於預先登錄、
+名稱固定的**單調安全收斂**修正。manifest 必須同時綁定已審查的 parent sanitized
+report 與當時的精確 hard violation、固定 case 與 arm、允許的 source diff，以及可由
+程式檢查的 postcondition。它不能 resume 舊 attempt，也不能由使用者任意選擇來縮小
+正常評測範圍。
+
+目前唯一核准的 delta manifest 是 `activation-claim-v1`。它只確認讓公開輸出不可能
+宣稱本機 Skill 已啟用的修正，固定檢查 candidate 的
+`phased-current-boundary` case。其額度正好是 **3 attempts / 3 turns**，不會產生
+paired performance comparison，也不能單獨取代 parent 的 36/42 證據。parent 與
+delta 兩份報告都必須完成審查與 maintainer attestation，才能支持正式發布。
