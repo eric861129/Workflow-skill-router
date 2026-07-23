@@ -43,7 +43,7 @@ jobs:
                   "Dispatch must run from the default branch with explicit confirmation."
               )
       - name: Checkout trusted release contract
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
@@ -117,7 +117,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout frozen release source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-source.outputs.source_revision }}
           fetch-depth: 0
@@ -178,7 +178,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout frozen release source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve-source.outputs.source_revision }}
           fetch-depth: 0
