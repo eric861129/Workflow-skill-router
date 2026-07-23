@@ -1,8 +1,8 @@
 {
   "public_surface": "v2-first",
   "stable_channel": "latest",
-  "release_lifecycle": "prepared-local-candidate",
-  "release_source_revision": "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1",
+  "release_lifecycle": "reviewed-attested-publishable",
+  "release_source_revision": "14c942bc388c72fde2fb2faf24f177fe35054864",
   "published_v2_version": "2.0.1",
   "v1_pinned_version": "1.3.1",
   "v2_version": "2.0.1",
