@@ -1,0 +1,48 @@
+{
+  "schema_version": "workflow-skill-router/release-evidence-attestation/1.0",
+  "record_type": "maintainer-release-evidence-review",
+  "attestation_status": "reviewed",
+  "reviewed_at": "2026-07-23T02:46:58Z",
+  "reviewer": "codex-under-maintainer-authorization",
+  "release_version": "2.0.1",
+  "release_source_revision": "856ebd237865c1b351b865cf883fb6864cedaf7c",
+  "deterministic_evidence": {
+    "status": "passed",
+    "scope": "Astro and Starlight security patch, Router Core, MCP bundle, release artifacts, documentation, site smoke, and visual contracts",
+    "site_dependency_audit": {
+      "lockfile": "site/package-lock.json",
+      "vulnerability_total": 0,
+      "astro_version": "7.1.3",
+      "starlight_version": "0.41.4"
+    }
+  },
+  "behavior_evidence": {
+    "evidence_class": "unchanged-routing-behavior",
+    "evaluation_contract": "workflow-skill-router.behavior-routing@2.3.0",
+    "basis": "The frozen source changes the documentation-site dependency graph, release version surfaces, generated release metadata, and documentation only. Router Core routing logic, MCP tool semantics, persisted schema, and evaluation scoring are unchanged; the reviewed V2.0.0 behavior evidence therefore remains the bounded reference rather than being relabeled as a new run.",
+    "inherited_evidence": {
+      "release_version": "2.0.0",
+      "release_source_revision": "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1",
+      "model_identifier": "gpt-5.6-sol",
+      "attempt_count": 36,
+      "turn_count": 42,
+      "sanitized_report_sha256": "sha256:ec0fb6515f854e9a9a4dd5e88d8277782b5e764e1db3a114821ef52ecb100372"
+    }
+  },
+  "known_limitations": [
+    "This security patch does not establish a new real-model behavior qualification and does not claim an additional routing-quality result.",
+    "Real Skill activation, token reduction, and task outcome remain unobservable in the inherited routing-contract evidence.",
+    "The Plugin's separate, documented MCP SDK transitive dependency exception remains outside the site dependency tree fixed by this patch."
+  ],
+  "release_decision": {
+    "status": "publishable-security-patch",
+    "basis": "The frozen source has passed the deterministic release gates, the site lockfile audit reports zero vulnerabilities, and the patch does not modify Router behavior.",
+    "forbidden_claims": [
+      "hybrid-full conformance",
+      "verified Skill activation",
+      "measured token reduction",
+      "measured task outcome improvement",
+      "a new real-model qualification"
+    ]
+  }
+}
