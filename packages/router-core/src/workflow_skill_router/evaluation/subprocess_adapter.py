@@ -20,6 +20,7 @@ class SubprocessExecutionAdapter:
         command: tuple[str, ...],
         timeout_seconds: int = 120,
         maximum_output_bytes: int = 1_048_576,
+        environment: Mapping[str, str] | None = None,
     ) -> None:
         if (
             not isinstance(command, tuple)
@@ -33,9 +34,22 @@ class SubprocessExecutionAdapter:
             raise ValueError("subprocess_timeout_must_be_positive")
         if maximum_output_bytes <= 0:
             raise ValueError("subprocess_output_limit_must_be_positive")
+        if environment is not None and (
+            not isinstance(environment, Mapping)
+            or not all(
+                isinstance(name, str)
+                and isinstance(value, str)
+                and "\0" not in name
+                and "=" not in name
+                and "\0" not in value
+                for name, value in environment.items()
+            )
+        ):
+            raise ValueError("subprocess_environment_invalid")
         self._command = command
         self._timeout_seconds = timeout_seconds
         self._maximum_output_bytes = maximum_output_bytes
+        self._environment = None if environment is None else dict(environment)
         self._context_ids: set[str] = set()
         self._active: tuple[str, str] | None = None
 
@@ -87,6 +101,7 @@ class SubprocessExecutionAdapter:
                 capture_output=True,
                 timeout=self._timeout_seconds,
                 check=False,
+                env=self._environment,
             )
         except subprocess.TimeoutExpired as error:
             raise EvaluationIntegrityError("subprocess_timeout") from error

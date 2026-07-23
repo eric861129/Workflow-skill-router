@@ -10,8 +10,11 @@ if (outputIndex !== -1 && !explicitOutput) throw new Error("--output requires a 
 if (tests && explicitOutput) throw new Error("--output cannot be combined with --tests");
 const testSources = [
   ["bundled-runtime", "ts"],
+  ["core-client", "ts"],
   ["python-discovery", "ts"],
   ["runtime-readiness", "ts"],
+  ["runtime-output-validation", "ts"],
+  ["startup-diagnostics", "ts"],
   ["state-path", "ts"],
   ["tool-metadata", "ts"],
   ["tool-output", "ts"],

@@ -117,13 +117,25 @@ test('explicit skill rejection keeps support inactive', async ({ page }) => {
   await expect(page.getByTestId('demo-audit-proposal')).toContainText('router-recommended');
   await expect(page.getByTestId('demo-active-support')).toHaveCount(0);
   await expect(page.getByTestId('demo-activation-event')).toHaveCount(0);
-  await expect(page.getByTestId('demo-explicit-coverage')).toContainText('satisfied');
+  await expect(page.getByTestId('demo-explicit-lock')).toContainText('locked');
+  await expect(page.getByTestId('demo-explicit-lock')).toContainText('skill:api-designer');
+  await expect(page.getByTestId('demo-planned-skills')).toContainText('skill:api-designer');
+  await expect(page.getByTestId('demo-planned-skills')).not.toContainText('skill:qa-support');
+
+  await page.getByTestId('demo-consent-approve').click();
+  await expect(page.getByTestId('demo-planned-skills')).toContainText('skill:qa-support');
+  await expect(page.getByTestId('demo-actual-activation')).toHaveText('unverified');
 });
 
 test('auto routing never renders support consent controls', async ({ page }) => {
   await page.goto('./');
+  await page.getByTestId('demo-preset-medium-auto').click();
   await expect(page.getByTestId('demo-consent-approve')).toBeHidden();
   await expect(page.getByTestId('demo-consent-reject')).toBeHidden();
+  await expect(page.getByTestId('demo-planned-skills')).toContainText('skill:systematic-debugging');
+  await expect(page.getByTestId('demo-planned-skills')).toContainText('skill:playwright');
+  await expect(page.getByTestId('demo-explicit-lock')).toContainText('not-applied');
+  await expect(page.getByTestId('demo-explicit-lock')).toContainText('no locked Skill');
 });
 
 test('personal profile demo exposes intended current-phase routing without consent', async ({ page }) => {
@@ -164,6 +176,9 @@ test('verified host fixture exposes the complete scheduler flow and fixture boun
 test('real evaluation reports its evidence and review gate without reference-driver claims', async ({ page }) => {
   await page.goto('./');
   await page.getByTestId('demo-preset-real-model-evaluation').click();
+  await expect(page.getByTestId('demo-planned-skills')).toHaveText('none');
+  await expect(page.getByTestId('demo-planned-non-skill-selections')).toHaveText('evaluation:runner');
+  await expect(page.getByTestId('demo-actual-activation')).toHaveText('unverified');
   await expect(page.getByTestId('demo-evaluation-status')).toContainText(/manual-required|review-required/);
   await expect(page.getByTestId('demo-evaluation-gate')).toContainText('review-required');
   await expect(page.getByTestId('demo-evaluation-class')).toContainText('behavior');

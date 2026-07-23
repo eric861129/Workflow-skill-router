@@ -3,13 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from workflow_skill_router.host_integration.contracts import (
+    HostIntegrationContractError,
+    validate_host_manifest,
+)
+from workflow_skill_router.ports import HostIntegrationAdapterPort
 from workflow_skill_router.service import RouterService
 from workflow_skill_router.runtime import SystemClock, UuidFactory
 
 
 @dataclass(frozen=True, slots=True)
 class RouterCompositionPorts:
-    """RouterService 的明確組合邊界；所有權威資料只能由伺服器端 adapter 提供。"""
+    """RouterService 的明確組合邊界；權威資料只能由伺服器端 Host adapter 提供。"""
 
     authorizer: object
     runtime_authority: object
@@ -35,7 +40,7 @@ class RouterCompositionPorts:
 
 
 def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
-    """以單一、可稽核的 production composition root 建立 RouterService。"""
+    """透過單一且可稽核的正式組合根建立 RouterService。"""
 
     return RouterService(
         authorizer=ports.authorizer,
@@ -65,7 +70,7 @@ def compose_router_service(ports: RouterCompositionPorts) -> RouterService:
 def open(
     database: Path,
     artifact_root: Path,
-    runtime_adapter,
+    runtime_adapter: HostIntegrationAdapterPort,
     request_authorizer,
     instruction_content_resolver,
     artifact_protector,
@@ -74,8 +79,14 @@ def open(
     clock=None,
     id_factory=None,
 ) -> RouterService:
-    """唯一 production factory；adapter 只能回傳明確的 RouterCompositionPorts。"""
+    """唯一正式 factory；Host adapter 只能回傳明確的 RouterCompositionPorts。"""
 
+    try:
+        validate_host_manifest(runtime_adapter.host_manifest())
+    except (AttributeError, TypeError, ValueError) as error:
+        if isinstance(error, HostIntegrationContractError):
+            raise
+        raise HostIntegrationContractError() from error
     ports = runtime_adapter.build_router_ports(
         database=database,
         artifact_root=artifact_root,

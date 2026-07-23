@@ -11,7 +11,11 @@ test("all public tools expose actionable MCP metadata", () => {
     assert.ok(definition.outputSchema, definition.name);
     assert.equal(typeof definition.annotations.readOnlyHint, "boolean", definition.name);
     assert.equal(typeof definition.annotations.idempotentHint, "boolean", definition.name);
-    assert.match(definition.runtimeRequirement, /local-r0|verified-host|configured-adapter/, definition.name);
+    assert.match(
+      definition.runtimeRequirement,
+      /local-r0|conditional-local|verified-host|configured-adapter/,
+      definition.name,
+    );
   }
 });
 

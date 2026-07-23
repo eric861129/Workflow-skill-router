@@ -7,13 +7,20 @@ import toolData from '../../../../data/mcp-tools.generated.json';
 
 本頁直接呈現由 MCP server contracts 產生的 `site/src/data/mcp-tools.generated.json`，不另外手寫重複的 description 或 readiness。
 
+`plan_work` 會把 **deterministic automatic classification** 與 **optional deterministic Profile** 當成兩種不同來源回傳。Planned Skill intent 與 actual activation 明確分開；Runtime Capability Discovery 尚未提供證據前，activation 維持 `unverified`。Explicit Skill Lock 與 scoped consent 仍然有效。本機 bundled R0 core 不是 semantic model，不會啟用 Skills、不會修改 native Codex Goal，也不會授予 deployment/production authority。
+
 ## Runtime profile
 
 目前產生的 profile：**{toolData.runtime_profile}**
 
+此 generated profile 描述 **已準備的 GA candidate**，能力 **not included in published beta.3**。它清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
+
+Native Goal boundary 依工具區分：next work 使用 `verified-host-scheduler`，formal progress 使用 `verified-event-store` 與 `activation-receipt-verifier`，gate 使用 `verified-evidence-store` 與 `gate-authority`。缺少 graph 時透過 `router-owned-work-graph` 要求本機建立或 replay；graph 損毀則回傳已清理的 `internal-error`。所有不可用或不安全分支都必須 **fail closed**。
+
 | Availability | 意義 |
 | --- | --- |
 | `local-ready` | 可在 bundled local R0 control plane 執行 |
+| `conditional-local` | 僅限 Router-owned work graph；local progress 與 local gate evidence 都是 advisory |
 | `verified-host-required` | 需要已驗證的 Host authority 或 stores |
 | `configured-adapter-required` | 需要 server 端已設定的 evaluation adapter |
 
@@ -27,6 +34,7 @@ import toolData from '../../../../data/mcp-tools.generated.json';
       <li><strong>Risk:</strong> <code>{tool.risk_class}</code></li>
       <li><strong>Runtime requirement:</strong> <code>{tool.runtime_requirement}</code></li>
       <li><strong>Required capabilities:</strong> {tool.required_capabilities.join(', ') || 'none'}</li>
+      <li><strong>Local conditions:</strong> {tool.local_conditions.join(', ') || 'not conditional-local'}</li>
       <li><strong>Fallback:</strong> {tool.fallback_action}</li>
     </ul>
     <h3>Input schema</h3>

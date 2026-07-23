@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Fail closed unless trusted release metadata is explicitly publishable."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+SCRIPT_DIRECTORY = Path(__file__).resolve().parent
+if str(SCRIPT_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIRECTORY))
+
+from release_path_safety import parse_safe_relative_posix_path
+
+
+PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
+V1_PINNED_VERSION = "1.3.1"
+REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
+TAG_PATTERN = re.compile(r"v2\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?")
+ARTIFACT_BUILDER_PATH = "scripts/build-release-artifacts.py"
+ARTIFACT_BUILDER_DEPENDENCY_PATHS = (
+    "scripts/release_path_safety.py",
+)
+
+
+class PublicationGateError(ValueError):
+    """指出受信任的 release metadata 尚未符合發布條件。"""
+
+
+def _required_string(metadata: dict[str, Any], key: str) -> str:
+    value = metadata.get(key)
+    if not isinstance(value, str) or not value:
+        raise PublicationGateError(f"Release metadata {key!r} is missing or invalid.")
+    return value
+
+
+def _load_publication_binding(metadata_path: Path) -> tuple[str, str, str, str]:
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise PublicationGateError("Release metadata could not be read.") from error
+    if not isinstance(metadata, dict):
+        raise PublicationGateError("Release metadata must be a JSON object.")
+
+    lifecycle = _required_string(metadata, "release_lifecycle")
+    if lifecycle != PUBLISHABLE_LIFECYCLE:
+        raise PublicationGateError(
+            f"Release lifecycle {lifecycle!r} is not publishable; expected "
+            f"{PUBLISHABLE_LIFECYCLE!r}. A manual confirmation cannot bypass "
+            "trusted reviewed and attested release metadata."
+        )
+
+    source_revision = _required_string(metadata, "release_source_revision")
+    if not REVISION_PATTERN.fullmatch(source_revision):
+        raise PublicationGateError("Release metadata source revision is invalid.")
+
+    release_version = _required_string(metadata, "v2_version")
+    release_tag = f"v{release_version}"
+    if not TAG_PATTERN.fullmatch(release_tag):
+        raise PublicationGateError("Release metadata V2 version is invalid.")
+
+    v1_pinned_version = _required_string(metadata, "v1_pinned_version")
+    if v1_pinned_version != V1_PINNED_VERSION:
+        raise PublicationGateError("Release metadata V1 pinned version is invalid.")
+    return source_revision, release_version, release_tag, v1_pinned_version
+
+
+def _verify_trusted_checkout(trusted_revision: str) -> None:
+    if not REVISION_PATTERN.fullmatch(trusted_revision):
+        raise PublicationGateError("Trusted metadata revision is invalid.")
+    try:
+        actual_revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True
+        ).strip()
+    except subprocess.CalledProcessError as error:
+        raise PublicationGateError("Trusted metadata checkout could not be verified.") from error
+    if actual_revision != trusted_revision:
+        raise PublicationGateError(
+            "Release metadata was not read from the trusted dispatch revision."
+        )
+
+
+def _git_show_bytes(revision: str, path: str) -> bytes:
+    try:
+        return subprocess.check_output(
+            ["git", "show", f"{revision}:{path}"],
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as error:
+        raise PublicationGateError(
+            f"Frozen release source is missing or cannot read {path!r}."
+        ) from error
+
+
+def _decode_utf8(path: str, content: bytes, description: str) -> str:
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise PublicationGateError(f"{description} cannot decode as UTF-8.") from error
+
+
+def _verify_allowlist_schema(path: str, allowlist_text: str) -> None:
+    try:
+        allowlist = json.loads(allowlist_text)
+    except json.JSONDecodeError as error:
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} is invalid JSON."
+        ) from error
+    if not isinstance(allowlist, dict):
+        raise PublicationGateError(f"Frozen release allowlist {path!r} is invalid.")
+
+    raw_files = allowlist.get("files")
+    if not isinstance(raw_files, list) or not all(
+        isinstance(value, str) for value in raw_files
+    ):
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} must define string file paths."
+        )
+    if raw_files != sorted(set(raw_files)):
+        raise PublicationGateError(
+            f"Frozen release allowlist {path!r} must be sorted and unique."
+        )
+    for relative_name in raw_files:
+        try:
+            parse_safe_relative_posix_path(relative_name)
+        except ValueError as error:
+            raise PublicationGateError(
+                f"Frozen release allowlist {path!r} contains an unsafe file path."
+            ) from error
+
+
+def _verify_python_source(path: str, source: str, description: str) -> None:
+    try:
+        compile(source, path, "exec")
+    except (SyntaxError, ValueError) as error:
+        raise PublicationGateError(f"{description} is invalid.") from error
+
+
+def _verify_frozen_builder_closure(source_revision: str) -> str:
+    builder_source = ""
+    closure_paths = (ARTIFACT_BUILDER_PATH, *ARTIFACT_BUILDER_DEPENDENCY_PATHS)
+    for path in closure_paths:
+        frozen_source = _git_show_bytes(source_revision, path)
+        trusted_source = _git_show_bytes("HEAD", path)
+        description = (
+            "Frozen release artifact builder"
+            if path == ARTIFACT_BUILDER_PATH
+            else "Frozen release artifact builder dependency"
+        )
+        if frozen_source != trusted_source:
+            if path == ARTIFACT_BUILDER_PATH:
+                raise PublicationGateError(
+                    "Frozen release artifact builder differs from trusted release contract."
+                )
+            raise PublicationGateError(
+                "Frozen release artifact builder dependency differs from trusted "
+                "release contract."
+            )
+        decoded_source = _decode_utf8(path, frozen_source, description)
+        _verify_python_source(path, decoded_source, description)
+        if path == ARTIFACT_BUILDER_PATH:
+            builder_source = decoded_source
+    return builder_source
+
+
+def _verify_frozen_source_contract(
+    source_revision: str,
+    release_version: str,
+    release_tag: str,
+    trusted_v1_pinned_version: str,
+) -> None:
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{source_revision}^{{commit}}"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", source_revision, "HEAD"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as error:
+        raise PublicationGateError(
+            "Declared release source is not a reachable trusted revision."
+        ) from error
+
+    try:
+        frozen_metadata = json.loads(
+            _decode_utf8(
+                "release/version.json",
+                _git_show_bytes(source_revision, "release/version.json"),
+                "Frozen release metadata",
+            )
+        )
+    except json.JSONDecodeError as error:
+        raise PublicationGateError("Frozen release metadata is invalid JSON.") from error
+    if not isinstance(frozen_metadata, dict) or (
+        frozen_metadata.get("v2_version") != release_version
+    ):
+        raise PublicationGateError(
+            "Frozen release metadata does not match trusted release version."
+        )
+    frozen_v1_pinned_version = frozen_metadata.get("v1_pinned_version")
+    if (
+        not isinstance(frozen_v1_pinned_version, str)
+        or frozen_v1_pinned_version != trusted_v1_pinned_version
+    ):
+        raise PublicationGateError(
+            "Frozen release metadata does not match trusted V1 channel contract."
+        )
+
+    notes_path = f"release/notes/{release_tag}.md"
+    notes_bytes = _git_show_bytes(source_revision, notes_path)
+    trusted_notes_bytes = _git_show_bytes("HEAD", notes_path)
+    if notes_bytes != trusted_notes_bytes:
+        raise PublicationGateError(
+            "Frozen release notes differ from trusted release contract."
+        )
+    notes = _decode_utf8(notes_path, notes_bytes, "Frozen release notes")
+    required_notes = (
+        f"# Workflow Skill Router {release_tag}",
+        f"workflow-skill-router-plugin-v{release_version}.zip",
+        f"workflow-skill-router-skill-v{release_version}.zip",
+        "checksums.sha256",
+        "maintainer-attestation",
+    )
+    if any(required not in notes for required in required_notes):
+        raise PublicationGateError(
+            "Frozen release notes do not match the trusted artifact contract."
+        )
+
+    builder = _verify_frozen_builder_closure(source_revision)
+    required_builder_contract = (
+        'RELEASE / "allowlists" / "plugin-runtime-files.json"',
+        'RELEASE / "allowlists" / "skill-package.json"',
+        'plugin_name = f"workflow-skill-router-plugin-v{version}.zip"',
+        'skill_name = f"workflow-skill-router-skill-v{version}.zip"',
+        'output_dir / "checksums.sha256"',
+    )
+    if any(required not in builder for required in required_builder_contract):
+        raise PublicationGateError(
+            "Frozen release artifact builder does not match the trusted contract."
+        )
+
+    for path in (
+        "release/allowlists/plugin-runtime-files.json",
+        "release/allowlists/skill-package.json",
+    ):
+        frozen_allowlist_bytes = _git_show_bytes(source_revision, path)
+        trusted_allowlist_bytes = _git_show_bytes("HEAD", path)
+        if frozen_allowlist_bytes != trusted_allowlist_bytes:
+            raise PublicationGateError(
+                f"Frozen release allowlist {path!r} differs from trusted release contract."
+            )
+        frozen_allowlist_text = _decode_utf8(
+            path,
+            frozen_allowlist_bytes,
+            "Frozen release allowlist",
+        )
+        _verify_allowlist_schema(path, frozen_allowlist_text)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--metadata", type=Path, required=True)
+    parser.add_argument("--trusted-revision", required=True)
+    parser.add_argument("--github-output", type=Path, required=True)
+    arguments = parser.parse_args()
+
+    try:
+        _verify_trusted_checkout(arguments.trusted_revision)
+        (
+            source_revision,
+            release_version,
+            release_tag,
+            trusted_v1_pinned_version,
+        ) = _load_publication_binding(arguments.metadata)
+        _verify_frozen_source_contract(
+            source_revision,
+            release_version,
+            release_tag,
+            trusted_v1_pinned_version,
+        )
+        arguments.github_output.write_text(
+            f"source_revision={source_revision}\nrelease_tag={release_tag}\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    except PublicationGateError as error:
+        print(str(error), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

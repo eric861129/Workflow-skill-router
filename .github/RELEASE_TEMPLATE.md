@@ -28,17 +28,21 @@ The versioned contract currently requires these GitHub Actions checks:
 
 - `Core, documentation, and policy contracts`
 - `Site visual regression`
+- `Required cross-platform V2 gate`
 
-Audit the live rule before a release:
+Verify remote release governance before the release dispatch:
 
 ```bash
-gh api repos/eric861129/Workflow-skill-router/branches/main/protection \
-  --jq '.required_status_checks | {strict, checks}'
+python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
 ```
 
-If a workflow job's display name changes, update the workflow and
-`.github/branch-protection.json` together, then update the live GitHub rule in the
-same pull request cycle.
+This command is read-only and does not change GitHub configuration. A pass confirms
+the captured configuration meets the checked-in contract; it does not prove a
+release workflow has successfully exercised the Release GitHub App bypass. A failure
+means remote settings have not been proven and blocks this release checklist.
+
+For privileged UI or API application of the remote settings, see
+[`docs/governance/remote-release-governance.md`](../docs/governance/remote-release-governance.md).
 
 ## Supply Chain
 

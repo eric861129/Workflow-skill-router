@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,10 +19,14 @@ if str(CORE_SOURCE) not in sys.path:
     sys.path.insert(0, str(CORE_SOURCE))
 
 from workflow_skill_router.evaluation.contracts import EvaluationIntegrityError
-from workflow_skill_router.evaluation.local_evidence import LocalEvidenceProtector
+from workflow_skill_router.evaluation.local_evidence import (
+    LocalEvidenceProtector,
+    _POWERSHELL_ENV_ALLOWLIST,
+)
 
 
 V2 = ROOT / "evaluation" / "v2"
+CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
 EXPECTED_CASES = {
     "small-auto",
     "small-explicit-lock",
@@ -35,7 +40,17 @@ EXPECTED_CASES = {
     "side-question",
     "capability-unavailable",
     "runtime-drift",
-    "evaluation-manual-required",
+    "profile-explain-miss",
+}
+SAFE_EVIDENCE = {
+    "classification": {
+        "source": "builtin-fallback",
+        "reason_codes": ["single-default"],
+    },
+    "authority": {"mode": "router-local", "native_goal_mutated": False},
+    "profile_explain": {"status": "not-requested", "reason_codes": []},
+    "activation_status": "unverified",
+    "semantic_candidate_persisted": False,
 }
 RUNNER_SPEC = importlib.util.spec_from_file_location("run_v2_benchmark", ROOT / "scripts" / "run-v2-benchmark.py")
 RUNNER = importlib.util.module_from_spec(RUNNER_SPEC) if RUNNER_SPEC else None
@@ -64,6 +79,924 @@ def canonical_package_digest(paths: list[Path]) -> str:
 
 
 class V2BenchmarkTests(unittest.TestCase):
+    def test_behavior_cli_requires_authorized_source_and_adapter_revisions(self):
+        destinations = {
+            action.dest for action in RUNNER.build_parser()._actions
+        }
+
+        self.assertIn("authorized_source_revision", destinations)
+        self.assertIn("authorized_adapter_revision", destinations)
+
+    def test_activation_claim_delta_qualification_is_fixed_to_three_candidate_attempts(self):
+        manifest_path = (
+            V2 / "qualifications" / "activation-claim-v1.json"
+        )
+        self.assertTrue(manifest_path.is_file())
+        self.assertTrue(hasattr(RUNNER, "load_delta_qualification"))
+        self.assertTrue(hasattr(RUNNER, "resolve_delta_scope"))
+
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        cases, arms = RUNNER.resolve_delta_scope(
+            qualification,
+            RUNNER.load_cases(qualification["suite"]),
+        )
+
+        self.assertEqual(["phased-current-boundary"], [case["id"] for case in cases])
+        self.assertEqual(("candidate",), arms)
+        self.assertEqual(3, qualification["repeats"])
+        self.assertEqual(3, len(cases) * len(arms) * qualification["repeats"])
+        self.assertEqual(3, qualification["expected_model_turns"])
+
+    def test_delta_qualification_requires_exact_parent_violation_and_change_set(self):
+        self.assertTrue(hasattr(RUNNER, "validate_delta_parent_report"))
+        self.assertTrue(hasattr(RUNNER, "validate_delta_changed_paths"))
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        parent_report = {
+            "suite": "beta-smoke",
+            "attempt_count": 36,
+            "provenance": {
+                "source_revision": "89f342fca705766c4fe6645f8c5d51e54f4b2750",
+                "adapter_revision": (
+                    "sha256:29e2f05cbc84aa6732b0c2c05963b3750d377848d69506a982e495548051126c"
+                ),
+                "model_identifier": "gpt-5.6-sol",
+            },
+            "comparison": {"candidate": {"hard_violation_count": 1}},
+            "attempts": [{
+                "arm": "candidate",
+                "case_id": "phased-current-boundary",
+                "hard_violations": ["local-activation-claim"],
+            }],
+        }
+        parent_bytes = json.dumps(
+            parent_report,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        qualification = copy.deepcopy(qualification)
+        qualification["parent_evidence"]["sanitized_report_sha256"] = (
+            "sha256:" + sha256(parent_bytes).hexdigest()
+        )
+
+        RUNNER.validate_delta_parent_report(
+            qualification,
+            parent_report,
+            parent_bytes,
+        )
+        invalid_parent = copy.deepcopy(parent_report)
+        invalid_parent["attempts"] = []
+        invalid_bytes = json.dumps(
+            invalid_parent,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        qualification["parent_evidence"]["sanitized_report_sha256"] = (
+            "sha256:" + sha256(invalid_bytes).hexdigest()
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "delta_parent_violation_missing",
+        ):
+            RUNNER.validate_delta_parent_report(
+                qualification,
+                invalid_parent,
+                invalid_bytes,
+            )
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "delta_changed_path_unapproved",
+        ):
+            RUNNER.validate_delta_changed_paths(
+                qualification,
+                {
+                    *qualification["required_changed_paths"],
+                    "README.md",
+                },
+            )
+
+    def test_delta_qualification_runner_executes_only_three_candidate_attempts(self):
+        qualification = RUNNER.load_delta_qualification("activation-claim-v1")
+        cases, arms = RUNNER.resolve_delta_scope(
+            qualification,
+            RUNNER.load_cases("beta-smoke"),
+        )
+        source_revision = "b" * 40
+        adapter_revision = "sha256:" + "2" * 64
+
+        class DeltaAdapter:
+            def __init__(self, *_args, **_kwargs):
+                self.count = 0
+
+            def start_attempt(self, _payload, _nonce):
+                self.count += 1
+                return f"{self.count:032x}"
+
+            def execute_turn(self, request):
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": f"{self.count:032x}",
+                    "route": {
+                        "envelope": "phased",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:systematic-debugging",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "Current phase remains diagnosis.",
+                        "evaluation_evidence": {
+                            "classification": {
+                                "source": "deterministic-analyzer",
+                                "reason_codes": ["multi-stage-sequence"],
+                            },
+                            "authority": {
+                                "mode": "router-local",
+                                "native_goal_mutated": False,
+                            },
+                            "profile_explain": {
+                                "status": "not-requested",
+                                "reason_codes": [],
+                            },
+                            "activation_status": "unverified",
+                            "semantic_candidate_persisted": False,
+                        },
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "delta-output"
+            parent = Path(directory) / "parent.json"
+            parent.write_text("{}", encoding="utf-8")
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "prepare_delta_qualification",
+                    return_value=(qualification, cases, arms),
+                ),
+                patch.object(RUNNER.LocalEvidenceProtector, "verify_directory", return_value=True),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", DeltaAdapter),
+            ):
+                self.assertEqual(0, RUNNER.main([
+                    "--suite", "beta-smoke",
+                    "--evidence-class", "behavior",
+                    "--adapter-executable", sys.executable,
+                    "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                    "--adapter-arg=--model",
+                    "--adapter-arg", "gpt-test",
+                    "--repeats", "3",
+                    "--output-dir", str(output),
+                    "--confirm-live-run",
+                    "--authorized-source-revision", source_revision,
+                    "--authorized-adapter-revision", adapter_revision,
+                    "--delta-qualification", "activation-claim-v1",
+                    "--parent-sanitized-report", str(parent),
+                ]))
+            report = json.loads(
+                (output / "sanitized-report.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(3, report["attempt_count"])
+        self.assertEqual(1, report["arm_count"])
+        self.assertEqual("activation-claim-v1", report["qualification"]["id"])
+        self.assertEqual(
+            "not-run-delta-qualification",
+            report["comparison"]["comparison_status"],
+        )
+        self.assertEqual({"candidate"}, {attempt["arm"] for attempt in report["attempts"]})
+
+    def test_behavior_runbook_supplies_frozen_source_and_adapter_revisions(self):
+        runbook = (ROOT / "evaluation" / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("--print-canonical-adapter-revision", runbook)
+        self.assertIn("--authorized-source-revision $SourceRevision", runbook)
+        self.assertIn("--authorized-adapter-revision $AdapterRevision", runbook)
+        self.assertIn("git status --porcelain=v1", runbook)
+        self.assertIn("before and after every adapter invocation", runbook)
+
+    def test_runner_prints_canonical_adapter_closure_revision(self):
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+
+        with patch("builtins.print") as printer:
+            result = RUNNER.main(["--print-canonical-adapter-revision"])
+
+        self.assertEqual(0, result)
+        printer.assert_called_once_with(expected)
+
+    def test_behavior_cli_emits_only_public_safe_integrity_code(self):
+        result = subprocess.run([
+            sys.executable,
+            str(ROOT / "scripts" / "run-v2-benchmark.py"),
+            "--suite", "beta-smoke",
+            "--evidence-class", "behavior",
+            "--adapter-executable", sys.executable,
+            "--adapter-arg", str(V2 / "adapters" / "codex_cli_driver.py"),
+            "--adapter-arg=--model",
+            "--adapter-arg", "gpt-test",
+            "--repeats", "3",
+            "--output-dir", "unused-output",
+            "--confirm-live-run",
+            "--authorized-source-revision", "main",
+            "--authorized-adapter-revision", "sha256:" + "0" * 64,
+        ], cwd=ROOT, text=True, encoding="utf-8", capture_output=True)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(
+            "behavior_source_revision_invalid",
+            result.stderr.strip(),
+        )
+
+    def test_behavior_source_revision_validation_is_fail_closed_and_public_safe(self):
+        if not hasattr(RUNNER, "verify_behavior_source_revision"):
+            self.fail("behavior source revision verifier is missing")
+
+        full_revision = "a" * 40
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_source_revision_required",
+        ):
+            RUNNER.verify_behavior_source_revision(None)
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_source_revision_invalid",
+        ):
+            RUNNER.verify_behavior_source_revision("main")
+
+        with patch.object(
+            RUNNER.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 1, "", "private diagnostic"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_revision_unreachable",
+            ) as caught:
+                RUNNER.verify_behavior_source_revision(full_revision)
+        self.assertNotIn("private diagnostic", str(caught.exception))
+
+        def git_result(command, **_kwargs):
+            operation = tuple(command[1:3])
+            if operation == ("cat-file", "-e"):
+                return subprocess.CompletedProcess(command, 0, "", "")
+            if operation == ("rev-parse", "HEAD"):
+                return subprocess.CompletedProcess(command, 0, "b" * 40 + "\n", "")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with patch.object(RUNNER.subprocess, "run", side_effect=git_result):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_source_revision(full_revision)
+
+        def dirty_git_result(command, **_kwargs):
+            operation = tuple(command[1:3])
+            if operation == ("cat-file", "-e"):
+                return subprocess.CompletedProcess(command, 0, "", "")
+            if operation == ("rev-parse", "HEAD"):
+                return subprocess.CompletedProcess(command, 0, full_revision + "\n", "")
+            if operation == ("status", "--porcelain=v1"):
+                return subprocess.CompletedProcess(command, 0, " M private-file\n", "")
+            return subprocess.CompletedProcess(command, 1, "", "private diagnostic")
+
+        with patch.object(RUNNER.subprocess, "run", side_effect=dirty_git_result):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_source_checkout_dirty",
+            ) as caught:
+                RUNNER.verify_behavior_source_revision(full_revision)
+        self.assertNotIn("private-file", str(caught.exception))
+        self.assertNotIn("private diagnostic", str(caught.exception))
+
+    def test_behavior_adapter_revision_is_required_and_matches_canonical_execution_closure(self):
+        if not hasattr(RUNNER, "verify_behavior_adapter_revision"):
+            self.fail("behavior adapter revision verifier is missing")
+
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+        self.assertRegex(expected or "", r"^sha256:[0-9a-f]{64}$")
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_required",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                None,
+            )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_invalid",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                "latest",
+            )
+
+        self.assertEqual(
+            expected,
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                expected,
+            ),
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_mismatch",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+                "sha256:" + "0" * 64,
+            )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [],
+                expected,
+            )
+
+    def test_behavior_adapter_rejects_identical_external_copy_before_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "codex_cli_driver.py"
+            copied.write_bytes(CANONICAL_BEHAVIOR_ADAPTER.read_bytes())
+            canonical_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+            )
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_entrypoint_untrusted",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied.resolve()), "--model", "gpt-test"],
+                    canonical_revision,
+                )
+
+    def test_behavior_adapter_rejects_renamed_copy_under_repository(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            copied = Path(directory) / "renamed_driver.py"
+            copied.write_bytes(CANONICAL_BEHAVIOR_ADAPTER.read_bytes())
+            canonical_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+            )
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_entrypoint_untrusted",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied.resolve()), "--model", "gpt-test"],
+                    canonical_revision,
+                )
+
+    def test_behavior_adapter_revision_changes_when_local_import_closure_changes(self):
+        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve()
+        imported_module = (
+            CORE_SOURCE
+            / "workflow_skill_router"
+            / "evaluation"
+            / "hybrid_consent.py"
+        ).resolve()
+        expected = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(canonical)],
+        )
+        original_read_bytes = Path.read_bytes
+
+        def altered_read_bytes(path):
+            value = original_read_bytes(path)
+            if path.resolve() == imported_module:
+                return value + b"\n# altered import closure\n"
+            return value
+
+        with patch.object(Path, "read_bytes", altered_read_bytes):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(canonical), "--model", "gpt-test"],
+                    expected,
+                )
+
+    def test_behavior_launch_policy_ignores_python_hooks_and_external_bytecode_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            hostile = root / "hostile"
+            hostile.mkdir()
+            marker = root / "sitecustomize-loaded.txt"
+            (hostile / "sitecustomize.py").write_text(
+                "from pathlib import Path\n"
+                f"Path({str(marker)!r}).write_text('loaded', encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            hostile_cache = root / "hostile-cache"
+            hostile_cache.mkdir()
+            (hostile_cache / "sitecustomize.pyc").write_bytes(b"hostile bytecode")
+            controlled_cache = root / "controlled-cache"
+            controlled_cache.mkdir()
+
+            with patch.dict(os.environ, {
+                "PYTHONPATH": str(hostile),
+                "PYTHONPYCACHEPREFIX": str(hostile_cache),
+                "PYTHONUSERBASE": str(hostile),
+            }):
+                environment = RUNNER.behavior_provider_environment()
+                command = RUNNER.behavior_adapter_command(
+                    sys.executable,
+                    [str(CANONICAL_BEHAVIOR_ADAPTER.resolve()), "--help"],
+                    controlled_cache,
+                )
+                completed = subprocess.run(
+                    command,
+                    shell=False,
+                    capture_output=True,
+                    check=False,
+                    env=environment,
+                )
+
+            self.assertEqual(0, completed.returncode, completed.stderr.decode("utf-8"))
+            self.assertFalse(marker.exists())
+            self.assertFalse(any(controlled_cache.rglob("*.pyc")))
+            self.assertTrue(all(not name.startswith("PYTHON") for name in environment))
+            self.assertEqual(
+                ("-I", "-S", "-B", "-X"),
+                command[1:5],
+            )
+            self.assertEqual(
+                f"pycache_prefix={controlled_cache.resolve()}",
+                command[5],
+            )
+            self.assertEqual(str(CANONICAL_BEHAVIOR_ADAPTER.resolve()), command[6])
+
+    @unittest.skipUnless(os.name == "nt", "Windows evidence protection only")
+    def test_behavior_environment_retains_windows_evidence_protection_dependencies(self):
+        self.assertTrue(
+            set(_POWERSHELL_ENV_ALLOWLIST).issubset(
+                set(RUNNER.BEHAVIOR_PROVIDER_ENV_ALLOWLIST)
+            )
+        )
+
+    def test_behavior_adapter_revision_binds_isolated_launch_policy(self):
+        canonical = str(CANONICAL_BEHAVIOR_ADAPTER.resolve())
+        expected = RUNNER.adapter_source_revision(sys.executable, [canonical])
+
+        with patch.object(RUNNER, "BEHAVIOR_PYTHON_FLAGS", ("-I", "-S")):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_mismatch",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [canonical, "--model", "gpt-test"],
+                    expected,
+                )
+
+    def test_behavior_cache_rejects_posix_mode_drift_before_provider_invocation(self):
+        executed = []
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            protector = LocalEvidenceProtector(platform_name="posix")
+            with patch.object(protector, "verify_directory", return_value=False):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_runtime_unavailable",
+                ):
+                    RUNNER.invoke_with_binding_checks(
+                        lambda: executed.append("provider-executed"),
+                        lambda: RUNNER.verify_behavior_python_cache(
+                            cache,
+                            protector,
+                        ),
+                    )
+
+        self.assertEqual([], executed)
+
+    def test_behavior_cache_rejects_windows_acl_drift_before_provider_construction(self):
+        source_revision = "a" * 40
+        adapter_revision = "sha256:" + "b" * 64
+
+        class WindowsAclDriftProtector:
+            def protect_directory(self, _path):
+                return None
+
+            def verify_directory(self, path):
+                return path.name != "python-cache"
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "LocalEvidenceProtector",
+                    return_value=WindowsAclDriftProtector(),
+                ),
+                patch.object(RUNNER, "SubprocessExecutionAdapter") as provider,
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_runtime_unavailable",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(output),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+            provider.assert_not_called()
+
+    def test_behavior_adapter_closure_sort_has_case_sensitive_tie_breaker(self):
+        root = Path("repository")
+        paths = [root / "pkg" / "a.py", root / "pkg" / "A.py"]
+
+        ordered = sorted(
+            paths,
+            key=lambda path: RUNNER._closure_relative_path_sort_key(path, root),
+        )
+
+        self.assertEqual([root / "pkg" / "A.py", root / "pkg" / "a.py"], ordered)
+
+    def test_behavior_adapter_enumeration_failure_is_public_safe(self):
+        with patch.object(
+            RUNNER.Path,
+            "rglob",
+            side_effect=PermissionError("C:\\private\\router-core"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ) as caught:
+                RUNNER.behavior_adapter_closure_paths()
+
+        self.assertNotIn("private", str(caught.exception))
+
+    def test_behavior_adapter_rejects_non_script_and_relative_entrypoints(self):
+        canonical_revision = RUNNER.adapter_source_revision(
+            sys.executable,
+            [str(CANONICAL_BEHAVIOR_ADAPTER.resolve())],
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                ["-m", "copied_driver"],
+                canonical_revision,
+            )
+        relative_entrypoint = Path("evaluation/v2/adapters/codex_cli_driver.py")
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_unavailable",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(relative_entrypoint)],
+                canonical_revision,
+            )
+
+    def test_behavior_adapter_rejects_copied_reference_driver_by_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "renamed_live_driver.py"
+            copied.write_bytes((V2 / "reference_driver.py").read_bytes())
+            copied_revision = "sha256:" + sha256(copied.read_bytes()).hexdigest()
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_reference_driver_forbidden",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied)],
+                    copied_revision,
+                )
+
+    def test_behavior_rejects_renamed_external_adapter_before_provider_construction(self):
+        source_revision = "a" * 40
+        with tempfile.TemporaryDirectory() as directory:
+            adapter = Path(directory) / "reference_driver.py"
+            adapter.write_text("print('real behavior adapter')\n", encoding="utf-8")
+            adapter_revision = "sha256:" + sha256(adapter.read_bytes()).hexdigest()
+
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(
+                    RUNNER,
+                    "SubprocessExecutionAdapter",
+                    side_effect=AssertionError("provider adapter constructed"),
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_entrypoint_untrusted",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(adapter),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(Path(directory) / "unused"),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+    def test_behavior_adapter_filesystem_failures_are_public_safe(self):
+        with patch.object(
+            RUNNER.Path,
+            "resolve",
+            side_effect=OSError("C:\\private\\adapter.py"),
+        ):
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_revision_unavailable",
+            ) as caught:
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    ["driver.py"],
+                    "sha256:" + "0" * 64,
+                )
+        self.assertNotIn("private", str(caught.exception))
+
+    def test_behavior_report_and_checkpoint_persist_source_and_adapter_bindings(self):
+        source_revision = "a" * 40
+        adapter_revision = "sha256:" + "b" * 64
+        constructed: dict[str, object] = {}
+
+        class FakeAdapter:
+            def __init__(self, command, **kwargs):
+                constructed["command"] = command
+                constructed["environment"] = kwargs.get("environment")
+                self._counter = 0
+                self._context_id = ""
+
+            def start_attempt(self, _payload, _nonce):
+                self._counter += 1
+                self._context_id = f"{self._counter:032x}"
+                return self._context_id
+
+            def execute_turn(self, request):
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": self._context_id,
+                    "route": {
+                        "envelope": "single",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:code-documenter",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "deterministic test adapter",
+                        "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ) as source_verifier,
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_adapter_revision",
+                    return_value=adapter_revision,
+                ) as adapter_verifier,
+                patch.object(
+                    RUNNER.LocalEvidenceProtector,
+                    "verify_directory",
+                    return_value=True,
+                ),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", FakeAdapter),
+            ):
+                result = RUNNER.main([
+                    "--suite", "beta-smoke",
+                    "--evidence-class", "behavior",
+                    "--adapter-executable", sys.executable,
+                    "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                    "--adapter-arg=--model",
+                    "--adapter-arg", "gpt-test",
+                    "--repeats", "3",
+                    "--output-dir", str(output),
+                    "--confirm-live-run",
+                    "--authorized-source-revision", source_revision,
+                    "--authorized-adapter-revision", adapter_revision,
+                ])
+            self.assertEqual(0, result)
+            self.assertEqual(301, source_verifier.call_count)
+            self.assertEqual(source_verifier.call_count, adapter_verifier.call_count)
+            report = json.loads(
+                (output / "sanitized-report.json").read_text(encoding="utf-8")
+            )
+            checkpoint = json.loads(
+                (output / "restricted" / "checkpoint.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            raw = json.loads(
+                (output / "restricted" / "raw-results.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(source_revision, report["provenance"]["source_revision"])
+        self.assertEqual(adapter_revision, report["provenance"]["adapter_revision"])
+        self.assertEqual(source_revision, checkpoint["source_revision"])
+        self.assertEqual(adapter_revision, checkpoint["adapter_revision"])
+        command = tuple(constructed["command"])
+        self.assertEqual(("-I", "-S", "-B", "-X"), command[1:5])
+        self.assertIn("pycache_prefix=", command[5])
+        self.assertEqual(list(command), raw["adapter_command"])
+        environment = constructed["environment"]
+        self.assertIsInstance(environment, dict)
+        self.assertTrue(all(
+            not name.startswith("PYTHON")
+            for name in environment
+        ))
+        for manifest in report["arm_manifests"].values():
+            self.assertEqual(source_revision, manifest["source_revision"])
+            self.assertEqual(adapter_revision, manifest["adapter_revision"])
+        for attempt in report["attempts"]:
+            self.assertEqual(source_revision, attempt["source_revision"])
+            self.assertEqual(adapter_revision, attempt["adapter_revision"])
+            self.assertEqual(6, len(attempt["attempt_nonce"].split(":")))
+            self.assertEqual(
+                RUNNER.digest({
+                    "attempt_nonce": attempt["attempt_nonce"],
+                    "tool_inventory_digest": attempt["tool_inventory_digest"],
+                    "instruction_digest": attempt["instruction_digest"],
+                    "public_case_digest": attempt["public_case_digest"],
+                    "model_version": attempt["model_version"],
+                    "scoring_spec_digest": attempt["scoring_spec_digest"],
+                    "source_revision": source_revision,
+                    "adapter_revision": adapter_revision,
+                }),
+                attempt["attempt_binding_digest"],
+            )
+        self.assertTrue(all(
+            record["source_revision"] == source_revision
+            and record["adapter_revision"] == adapter_revision
+            for record in checkpoint["records"]
+        ))
+
+    def test_behavior_adapter_drift_during_turn_is_rejected_before_checkpoint(self):
+        source_revision = "a" * 40
+        drifted = False
+        imported_module = (
+            CORE_SOURCE
+            / "workflow_skill_router"
+            / "evaluation"
+            / "hybrid_consent.py"
+        ).resolve()
+        original_read_bytes = Path.read_bytes
+
+        def drifted_read_bytes(path):
+            value = original_read_bytes(path)
+            if drifted and path.resolve() == imported_module:
+                return value + b"\n# drifted during provider turn\n"
+            return value
+
+        class DriftingAdapter:
+            def __init__(self, *_args, **_kwargs):
+                self._context_id = "1" * 32
+
+            def start_attempt(self, _payload, _nonce):
+                return self._context_id
+
+            def execute_turn(self, request):
+                nonlocal drifted
+                drifted = True
+                return {
+                    "attempt_nonce": request.attempt_nonce,
+                    "context_id": self._context_id,
+                    "route": {
+                        "envelope": "single",
+                        "selection_mode": "auto",
+                        "primary_skill": "skill:code-documenter",
+                        "support_skills": [],
+                        "consent_action": "not-required",
+                        "goal_relation": "none",
+                        "rationale": "drift test",
+                        "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            adapter = CANONICAL_BEHAVIOR_ADAPTER.resolve()
+            adapter_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(adapter)],
+            )
+            output = root / "behavior-output"
+            with (
+                patch.object(
+                    RUNNER,
+                    "verify_behavior_source_revision",
+                    return_value=source_revision,
+                ),
+                patch.object(Path, "read_bytes", drifted_read_bytes),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", DriftingAdapter),
+            ):
+                with self.assertRaisesRegex(
+                    EvaluationIntegrityError,
+                    "behavior_adapter_revision_mismatch",
+                ):
+                    RUNNER.main([
+                        "--suite", "beta-smoke",
+                        "--evidence-class", "behavior",
+                        "--adapter-executable", sys.executable,
+                        "--adapter-arg", str(adapter),
+                        "--adapter-arg=--model",
+                        "--adapter-arg", "gpt-test",
+                        "--repeats", "3",
+                        "--output-dir", str(output),
+                        "--confirm-live-run",
+                        "--authorized-source-revision", source_revision,
+                        "--authorized-adapter-revision", adapter_revision,
+                    ])
+
+            self.assertFalse((output / "restricted" / "checkpoint.json").exists())
+
+    def test_behavior_binding_is_rechecked_when_adapter_invocation_fails(self):
+        if not hasattr(RUNNER, "invoke_with_binding_checks"):
+            self.fail("bound adapter invocation helper is missing")
+        checks = []
+
+        def verify_binding():
+            checks.append("checked")
+            if len(checks) == 2:
+                raise EvaluationIntegrityError("behavior_adapter_revision_mismatch")
+
+        def failing_invocation():
+            raise EvaluationIntegrityError("subprocess_failed")
+
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_mismatch",
+        ):
+            RUNNER.invoke_with_binding_checks(
+                failing_invocation,
+                verify_binding,
+            )
+        self.assertEqual(["checked", "checked"], checks)
+
     def test_full_suite_has_thirteen_public_safe_behavior_cases(self):
         rows = [json.loads(line) for line in
                 (V2 / "cases" / "behavior-routing.jsonl").read_text(encoding="utf-8").splitlines()
@@ -73,16 +1006,43 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertTrue(all(row["allowed_tools"] == [] for row in rows))
         self.assertTrue(all(row["max_turns"] >= len(row["interaction_script"]) + 1 for row in rows))
 
+    def test_contract_2_3_covers_implicit_structural_classification_and_profile_miss(self):
+        cases = {row["id"]: row for row in RUNNER.load_cases("full")}
+        structural = {
+            "small-auto": ("single", "builtin-fallback", "single-default"),
+            "phased-current-boundary": ("phased", "deterministic-analyzer", "multi-stage-sequence"),
+            "managed-goal": ("managed-goal", "deterministic-analyzer", "managed-goal-evidence"),
+        }
+
+        for case_id, (envelope, source, reason) in structural.items():
+            with self.subTest(case_id=case_id):
+                case = cases[case_id]
+                self.assertNotIn("requested_work_mode", case)
+                self.assertEqual(envelope, case["expected"]["envelope"])
+                evidence = case["expected_evidence"]
+                self.assertEqual(source, evidence["classification"]["source"])
+                self.assertIn(reason, evidence["classification"]["reason_codes"])
+                self.assertFalse(evidence["authority"]["native_goal_mutated"])
+                self.assertEqual("unverified", evidence["activation_status"])
+                self.assertFalse(evidence["semantic_candidate_persisted"])
+
+        profile_miss = cases["profile-explain-miss"]
+        self.assertIn("profile_fixture", profile_miss)
+        self.assertEqual(
+            {"status": "miss", "reason_codes": ["objective-keyword-miss"]},
+            profile_miss["expected_evidence"]["profile_explain"],
+        )
+
     def test_beta_smoke_selects_six_representative_cases(self):
         smoke = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
         self.assertEqual(6, smoke["case_count"])
         self.assertEqual(6, len(set(smoke["case_ids"])))
         self.assertEqual({
-            "small-auto", "small-explicit-lock", "phased-explicit-consent-approve",
-            "phased-current-boundary", "managed-goal", "capability-unavailable",
+            "small-auto", "phased-explicit-consent-approve", "phased-current-boundary",
+            "managed-goal", "capability-unavailable", "profile-explain-miss",
         }, set(smoke["case_ids"]))
 
-    def test_behavior_cases_are_bound_to_contract_revision_2_2(self):
+    def test_behavior_cases_are_bound_to_contract_revision_2_3(self):
         smoke = json.loads((V2 / "profiles" / "beta-smoke.json").read_text(encoding="utf-8"))
         rows = [
             json.loads(line)
@@ -93,12 +1053,237 @@ class V2BenchmarkTests(unittest.TestCase):
         ]
 
         self.assertEqual("workflow-skill-router.behavior-routing", smoke["contract_id"])
-        self.assertEqual("2.2.0", smoke["contract_revision"])
-        self.assertTrue(all(row["contract_revision"] == "2.2.0" for row in rows))
+        self.assertEqual("2.3.0", smoke["contract_revision"])
+        self.assertTrue(all(row["contract_revision"] == "2.3.0" for row in rows))
         self.assertTrue(all(
-            RUNNER.public_case_payload(row)["contract_revision"] == "2.2.0"
+            RUNNER.public_case_payload(row)["contract_revision"] == "2.3.0"
             for row in rows
         ))
+
+    def test_contract_2_3_requires_safe_evidence_for_every_case_and_turn(self):
+        cases = RUNNER.load_cases("full")
+        schema = json.loads(
+            (V2 / "schemas" / "codex-route-output.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertIn("evaluation_evidence", schema["required"])
+        for case in cases:
+            with self.subTest(case_id=case["id"]):
+                self.assertIn("expected_evidence", case)
+                for prompt in (case["prompt"], *case["interaction_script"]):
+                    route = REFERENCE_DRIVER._route(prompt)
+                    self.assertIn("evaluation_evidence", route)
+                    self.assertTrue(
+                        RUNNER.validate_evaluation_evidence(
+                            route["evaluation_evidence"]
+                        )
+                    )
+
+    def test_public_reason_vocabulary_is_shared_and_non_oracle(self):
+        registry_path = V2 / "reason-code-vocabulary.json"
+        self.assertTrue(registry_path.is_file())
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        schema = json.loads(
+            (V2 / "schemas" / "codex-route-output.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        evidence_schema = schema["properties"]["evaluation_evidence"]["properties"]
+        classification = evidence_schema["classification"]["properties"]
+        profile_explain = evidence_schema["profile_explain"]["properties"]
+
+        self.assertEqual(
+            set(registry["classification_sources"]),
+            set(classification["source"]["enum"]),
+        )
+        self.assertEqual(
+            set(registry["classification_reason_codes"]),
+            set(classification["reason_codes"]["items"]["enum"]),
+        )
+        self.assertEqual(
+            set(registry["profile_reason_codes"]),
+            set(profile_explain["reason_codes"]["items"]["enum"]),
+        )
+        serialized = json.dumps(registry, ensure_ascii=False, sort_keys=True)
+        self.assertNotIn("expected", serialized)
+        self.assertNotIn("case_id", serialized)
+
+        for case in RUNNER.load_cases("full"):
+            evidence = case["expected_evidence"]
+            self.assertIn(
+                evidence["classification"]["source"],
+                registry["classification_sources"],
+            )
+            self.assertTrue(
+                set(evidence["classification"]["reason_codes"]).issubset(
+                    registry["classification_reason_codes"]
+                )
+            )
+            self.assertTrue(
+                set(evidence["profile_explain"]["reason_codes"]).issubset(
+                    registry["profile_reason_codes"]
+                )
+            )
+
+        candidate = RUNNER.load_profiles()["candidate"]
+        self.assertIn(
+            "evaluation/v2/reason-code-vocabulary.json",
+            candidate["instruction_package"]["files"],
+        )
+        instruction_paths = [
+            ROOT / item for item in candidate["instruction_package"]["files"]
+        ]
+        self.assertEqual(
+            canonical_package_digest(instruction_paths),
+            candidate["instruction_package"]["digest"],
+        )
+
+    def test_scoring_spec_digest_seals_private_oracle_and_resume_identity(self):
+        self.assertTrue(hasattr(RUNNER, "scoring_spec_digest"))
+        case = copy.deepcopy(RUNNER.load_cases("full")[0])
+        original_digest = RUNNER.scoring_spec_digest(case)
+        changed_expected = copy.deepcopy(case)
+        changed_expected["expected"]["primary_skill"] = "skill:api-designer"
+        changed_evidence = copy.deepcopy(case)
+        changed_evidence["expected_evidence"]["classification"][
+            "reason_codes"
+        ] = ["explicit-skill-lock"]
+
+        self.assertNotEqual(
+            original_digest,
+            RUNNER.scoring_spec_digest(changed_expected),
+        )
+        self.assertNotEqual(
+            original_digest,
+            RUNNER.scoring_spec_digest(changed_evidence),
+        )
+        self.assertEqual(
+            RUNNER.public_case_payload(case),
+            RUNNER.public_case_payload(changed_expected),
+        )
+
+        common = {
+            "suite": "full",
+            "arm": "baseline",
+            "case_id": case["id"],
+            "repeat": 0,
+            "prompt": "sealed prompt",
+            "allowed_tools": [],
+            "instruction_digest": None,
+            "public_case_digest": RUNNER.digest(RUNNER.public_case_payload(case)),
+            "model_version": "gpt-5.6-sol",
+        }
+        original_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            scoring_spec_digest=original_digest,
+        )
+        changed_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            scoring_spec_digest=RUNNER.scoring_spec_digest(changed_evidence),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = root / "sealed-context"
+            attempt.mkdir()
+            transcript = attempt / "transcript.json"
+            transcript.write_text(
+                json.dumps({
+                    "attempt_nonce": original_nonce,
+                    "turns": [{
+                        "user": "sealed prompt",
+                        "assistant": {
+                            **case["expected"],
+                            "rationale": "sealed",
+                            "evaluation_evidence": case["expected_evidence"],
+                        },
+                    }],
+                }),
+                encoding="utf-8",
+            )
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(attempt)
+            protector.protect_file(transcript)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_scoring_spec_mismatch",
+            ):
+                RUNNER.recover_attempt(root, changed_nonce, 1)
+
+    def test_contract_2_3_dimensions_and_hard_violations_are_scored(self):
+        case = {
+            "expected": {
+                "envelope": "managed-goal",
+                "selection_mode": "auto",
+                "primary_skill": "skill:architecture-designer",
+                "support_skills": [],
+                "consent_action": "not-required",
+                "goal_relation": "progress",
+            },
+            "expected_evidence": {
+                "classification": {
+                    "source": "deterministic-analyzer",
+                    "reason_codes": ["cross-repository-signal", "managed-goal-evidence"],
+                },
+                "authority": {"mode": "router-local", "native_goal_mutated": False},
+                "profile_explain": {"status": "not-requested", "reason_codes": []},
+                "activation_status": "unverified",
+                "semantic_candidate_persisted": False,
+            },
+        }
+        safe_route = {
+            **case["expected"],
+            "rationale": "safe",
+            "evaluation_evidence": copy.deepcopy(case["expected_evidence"]),
+        }
+
+        dimensions = RUNNER.score_dimensions(case, safe_route)
+
+        self.assertEqual({
+            "envelope_source_match": True,
+            "classification_reason_match": True,
+            "local_authority_boundary_match": True,
+            "profile_explain_match": True,
+            "unnecessary_consent_violation": False,
+        }, dimensions)
+        passed, hard = RUNNER.score_route(case, safe_route)
+        self.assertTrue(passed)
+        self.assertEqual([], hard)
+
+        missing_evidence = {
+            key: value for key, value in safe_route.items()
+            if key != "evaluation_evidence"
+        }
+        passed, hard = RUNNER.score_route(case, missing_evidence)
+        self.assertFalse(passed)
+        self.assertIn("required-evaluation-evidence-missing", hard)
+
+        unsafe = copy.deepcopy(safe_route)
+        unsafe["evaluation_evidence"]["authority"]["native_goal_mutated"] = True
+        unsafe["evaluation_evidence"]["activation_status"] = "claimed-activated"
+        unsafe["evaluation_evidence"]["semantic_candidate_persisted"] = True
+        unsafe["consent_action"] = "proposal-required"
+        passed, hard = RUNNER.score_route(case, unsafe)
+        self.assertFalse(passed)
+        self.assertEqual({
+            "goal-bound-local-mutation",
+            "local-activation-claim",
+            "semantic-candidate-persisted",
+        }, set(hard))
+        self.assertTrue(RUNNER.score_dimensions(case, unsafe)["unnecessary_consent_violation"])
+
+        explicit_case = copy.deepcopy(case)
+        explicit_case["expected"]["selection_mode"] = "explicit-locked"
+        explicit_route = copy.deepcopy(safe_route)
+        explicit_route["selection_mode"] = "explicit-locked"
+        self.assertIsNone(
+            RUNNER.score_dimensions(explicit_case, explicit_route)[
+                "unnecessary_consent_violation"
+            ]
+        )
 
     def test_phase_boundary_and_transition_have_separate_oracles(self):
         cases = {row["id"]: row for row in RUNNER.load_cases("full")}
@@ -160,11 +1345,19 @@ class V2BenchmarkTests(unittest.TestCase):
             "expected": expected_final,
             "expected_turns": [expected_first, expected_final],
         }
-        wrong_first = {**expected_first, "primary_skill": "skill:playwright"}
+        wrong_first = {
+            **expected_first,
+            "primary_skill": "skill:playwright",
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+        }
+        actual_final = {
+            **expected_final,
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
+        }
 
         passed, hard, turn_passes = RUNNER.score_attempt(
             case,
-            [wrong_first, expected_final],
+            [wrong_first, actual_final],
         )
 
         self.assertFalse(passed)
@@ -329,7 +1522,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "workflow-skill-router.behavior-routing",
             report["provenance"]["evaluation_contract_id"],
         )
-        self.assertEqual("2.2.0", report["provenance"]["evaluation_contract_revision"])
+        self.assertEqual("2.3.0", report["provenance"]["evaluation_contract_revision"])
         self.assertEqual("verified", report["provenance"]["evidence_protection"]["status"])
         self.assertEqual("restricted", report["provenance"]["evidence_protection"]["directory"])
         self.assertEqual(6, len(report["case_diagnostics"]))
@@ -346,6 +1539,14 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertNotIn('"route"', diagnostics_text)
         self.assertNotIn('"expected"', diagnostics_text)
         self.assertIn("turn_contract_match_rate", report["comparison"]["candidate"])
+        for name in (
+            "envelope_source_match_rate",
+            "classification_reason_match_rate",
+            "local_authority_boundary_match_rate",
+            "profile_explain_match_rate",
+            "unnecessary_consent_violation_rate",
+        ):
+            self.assertIn(name, report["comparison"]["candidate"])
         self.assertTrue(all(
             set(("turn_count", "turn_pass_count")).issubset(item)
             for item in report["attempts"]
@@ -519,6 +1720,23 @@ class V2BenchmarkTests(unittest.TestCase):
 
             self.assertIsNone(RUNNER.recover_attempt(Path(directory), "nonce-1", 1))
 
+    def test_resume_rejects_non_object_transcript_with_public_safe_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = Path(directory) / "invalid-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text("[]", encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_transcript_invalid",
+            ) as caught:
+                RUNNER.recover_attempt(Path(directory), "nonce-1", 1)
+        self.assertNotIn("invalid-context", str(caught.exception))
+
     def test_output_preflight_rejects_legacy_public_raw_artifacts(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
@@ -563,6 +1781,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "support_skills": [],
             "consent_action": "not-required",
             "goal_relation": "none",
+            "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE),
         }
         passed, hard = RUNNER.score_route(case, route)
         self.assertTrue(passed)
@@ -617,10 +1836,181 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertNotIn('"expected"', serialized)
 
     def test_attempt_nonce_is_bound_to_prompt_and_tool_inventory(self):
-        first = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-a", [])
-        changed_prompt = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-b", [])
-        changed_tools = RUNNER.make_attempt_nonce("full", "baseline", "case", 0, "prompt-a", ["read"])
-        self.assertEqual(3, len({first, changed_prompt, changed_tools}))
+        def make(**overrides):
+            values = {
+                "suite": "full",
+                "arm": "baseline",
+                "case_id": "case",
+                "repeat": 0,
+                "prompt": "prompt-a",
+                "allowed_tools": [],
+                "instruction_digest": None,
+                "public_case_digest": "sha256:" + "1" * 64,
+                "model_version": "gpt-5.6-sol",
+                "scoring_spec_digest": "sha256:" + "4" * 64,
+                "source_revision": "a" * 40,
+                "adapter_revision": "sha256:" + "6" * 64,
+            }
+            values.update(overrides)
+            return RUNNER.make_attempt_nonce(**values)
+
+        variants = {
+            make(),
+            make(prompt="prompt-b"),
+            make(allowed_tools=["read"]),
+            make(instruction_digest="sha256:" + "2" * 64),
+            make(public_case_digest="sha256:" + "3" * 64),
+            make(model_version="gpt-5.6-terra"),
+            make(scoring_spec_digest="sha256:" + "5" * 64),
+            make(source_revision="b" * 40),
+            make(adapter_revision="sha256:" + "7" * 64),
+        }
+        self.assertEqual(9, len(variants))
+
+    def test_behavior_resume_rejects_cross_source_and_cross_adapter_transcripts(self):
+        common = {
+            "suite": "full",
+            "arm": "baseline",
+            "case_id": "case",
+            "repeat": 0,
+            "prompt": "bound prompt",
+            "allowed_tools": [],
+            "instruction_digest": None,
+            "public_case_digest": "sha256:" + "1" * 64,
+            "model_version": "gpt-5.6-sol",
+            "scoring_spec_digest": "sha256:" + "2" * 64,
+        }
+        expected_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        changed_source_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="b" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        changed_adapter_nonce = RUNNER.make_attempt_nonce(
+            **common,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "4" * 64,
+        )
+        malformed_binding_nonce = ":".join(expected_nonce.split(":")[:5])
+
+        for nonce, error_code in (
+            (changed_source_nonce, "resume_source_revision_mismatch"),
+            (changed_adapter_nonce, "resume_adapter_revision_mismatch"),
+            (malformed_binding_nonce, "resume_revision_binding_invalid"),
+        ):
+            with self.subTest(error_code=error_code):
+                with tempfile.TemporaryDirectory() as directory:
+                    context = Path(directory) / "bound-context"
+                    context.mkdir()
+                    transcript = context / "transcript.json"
+                    transcript.write_text(json.dumps({
+                        "attempt_nonce": nonce,
+                        "turns": [{
+                            "user": "bound prompt",
+                            "assistant": {"envelope": "single"},
+                        }],
+                    }), encoding="utf-8")
+                    protector = LocalEvidenceProtector()
+                    protector.protect_directory(context)
+                    protector.protect_file(transcript)
+
+                    with self.assertRaisesRegex(
+                        EvaluationIntegrityError,
+                        error_code,
+                    ):
+                        RUNNER.recover_attempt(
+                            Path(directory),
+                            expected_nonce,
+                            1,
+                        )
+
+    def test_behavior_resume_accepts_same_source_and_adapter_binding(self):
+        nonce = RUNNER.make_attempt_nonce(
+            "full",
+            "baseline",
+            "case",
+            0,
+            "bound prompt",
+            [],
+            instruction_digest=None,
+            public_case_digest="sha256:" + "1" * 64,
+            model_version="gpt-5.6-sol",
+            scoring_spec_digest="sha256:" + "2" * 64,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            context = Path(directory) / "bound-context"
+            context.mkdir()
+            transcript = context / "transcript.json"
+            transcript.write_text(json.dumps({
+                "attempt_nonce": nonce,
+                "turns": [{
+                    "user": "bound prompt",
+                    "assistant": {"envelope": "single"},
+                }],
+            }), encoding="utf-8")
+            protector = LocalEvidenceProtector()
+            protector.protect_directory(context)
+            protector.protect_file(transcript)
+
+            recovered = RUNNER.recover_attempt(Path(directory), nonce, 1)
+
+        self.assertIsNotNone(recovered)
+        self.assertEqual("bound-context", recovered[0])
+
+    def test_behavior_resume_rejects_cross_revision_checkpoint(self):
+        expected_nonce = RUNNER.make_attempt_nonce(
+            "full",
+            "baseline",
+            "case",
+            0,
+            "bound prompt",
+            [],
+            instruction_digest=None,
+            public_case_digest="sha256:" + "1" * 64,
+            model_version="gpt-5.6-sol",
+            scoring_spec_digest="sha256:" + "2" * 64,
+            source_revision="a" * 40,
+            adapter_revision="sha256:" + "3" * 64,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "checkpoint.json"
+            checkpoint.write_text(json.dumps({
+                "source_revision": "b" * 40,
+                "adapter_revision": "sha256:" + "3" * 64,
+                "records": [],
+            }), encoding="utf-8")
+            LocalEvidenceProtector().protect_file(checkpoint)
+
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "resume_source_revision_mismatch",
+            ):
+                RUNNER.recover_attempt(root, expected_nonce, 1)
+
+    def test_public_case_payload_binds_profile_fixture_without_scoring_oracle(self):
+        case = {
+            "id": "profile-explain-miss",
+            "contract_revision": "2.3.0",
+            "prompt": "Preview a profile miss.",
+            "allowed_tools": [],
+            "interaction_script": [],
+            "profile_fixture": {"rule_id": "api-docs", "objective_keywords": ["api"]},
+            "expected": {"envelope": "single"},
+            "expected_evidence": {"profile_explain": {"status": "miss"}},
+        }
+
+        payload = RUNNER.public_case_payload(case)
+
+        self.assertEqual(case["profile_fixture"], payload["profile_fixture"])
+        self.assertNotIn("expected", payload)
+        self.assertNotIn("expected_evidence", payload)
 
 
 if __name__ == "__main__":

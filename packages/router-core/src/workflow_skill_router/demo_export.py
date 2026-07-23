@@ -4,13 +4,16 @@ from hashlib import sha256
 from io import StringIO
 import json
 from pathlib import Path
+import re
 from tempfile import TemporaryDirectory
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 from workflow_skill_router.bridge import serve
 from workflow_skill_router.capabilities.models import RiskLevel
 from workflow_skill_router.composition import RouterCompositionPorts, compose_router_service
 from workflow_skill_router.local_control import LocalControlPlaneService
+from workflow_skill_router.local_work import local_evidence_digest
+from workflow_skill_router.profiles.contract import is_canonical_skill_id
 from workflow_skill_router.routing.models import (
     ExplicitSemantics,
     GoalRelation,
@@ -22,6 +25,7 @@ from workflow_skill_router.routing.models import (
 from workflow_skill_router.routing.profiler import decide_request
 from workflow_skill_router.schemas.artifacts import canonical_json, canonical_json_bytes
 from workflow_skill_router.service_models import (
+    ClassificationDecisionView,
     NextWorkResult,
     PlanWorkResult,
     RouterDiagnostics,
@@ -35,6 +39,29 @@ _SERVICE_SEMANTICS = {
     "allowed-set": "only",
     "required-all": "all",
 }
+
+_PUBLIC_NON_SKILL_SELECTION_ID = re.compile(
+    r"^(?!skill:)[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._/-]*$"
+)
+
+
+def _split_planned_selection_ids(
+    selection_ids: Iterable[object],
+) -> tuple[list[str], list[str]]:
+    """依識別碼 namespace 分離 Skill 與非 Skill 的規劃選項。"""
+
+    skill_ids: list[str] = []
+    non_skill_ids: list[str] = []
+    for selection_id in selection_ids:
+        if not isinstance(selection_id, str):
+            raise ValueError("demo planned selection identifier is invalid")
+        if is_canonical_skill_id(selection_id):
+            skill_ids.append(selection_id)
+        elif _PUBLIC_NON_SKILL_SELECTION_ID.fullmatch(selection_id) is not None:
+            non_skill_ids.append(selection_id)
+        else:
+            raise ValueError("demo planned selection identifier is invalid")
+    return skill_ids, non_skill_ids
 
 
 def _stable_id(prefix: str, *parts: str) -> str:
@@ -83,7 +110,11 @@ class _VerifiedPlanner:
             command.context.session_id,
             command.idempotency_key,
         )
-        envelope = command.requested_work_mode or "single"
+        envelope = (
+            "managed-goal"
+            if command.goal_binding_id is not None
+            else command.requested_work_mode or "single"
+        )
         result = PlanWorkResult(
             status="planned-verified-host-fixture",
             workflow_run_id=workflow_run_id,
@@ -103,6 +134,24 @@ class _VerifiedPlanner:
                 "intended-unverified" if command.explicit_skill_ids else "not-planned"
             ),
             profile_warnings=(),
+            classification=ClassificationDecisionView(
+                source=(
+                    "native-goal-binding"
+                    if command.goal_binding_id is not None
+                    else "caller-work-mode-hint"
+                    if command.requested_work_mode is not None
+                    else "builtin-fallback"
+                ),
+                confidence="low",
+                classifier_revision="verified-host-fixture-v1",
+                reason_codes=(
+                    ("native-goal-binding",)
+                    if command.goal_binding_id is not None
+                    else ("caller-work-mode-hint",)
+                    if command.requested_work_mode is not None
+                    else ("single-default",)
+                ),
+            ),
         )
         self.plans[workflow_run_id] = result
         return result
@@ -248,6 +297,22 @@ class DemoScenarioExporter:
             "support_selections": planned_skill_ids[1:] if profile_applied else [],
             "selection_mode": plan_result["selection_mode"],
         }
+        routing_evidence = {
+            "classification": plan_result["classification"],
+            "classification_limit": "work-envelope-only",
+            "plan_route_source": plan_result["route_source"],
+            "profile_match": {
+                "status": "applied" if profile_applied else "not-applied",
+                "source": plan_result["route_source"] if profile_applied else None,
+                "profile_ids": plan_result["routing_profile_ids"],
+                "matched_rule_id": plan_result["matched_profile_rule_id"],
+            },
+            "authority": {
+                "native_goal_mutation": False,
+                "deployment": False,
+                "production": False,
+            },
+        }
         events = [{
             "event_type": "ROUTE_DECIDED",
             "payload": {
@@ -278,6 +343,7 @@ class DemoScenarioExporter:
             "branches": branches,
             "phases": item.get("phases", []),
             "work_items": item.get("work_items", []),
+            "routing_evidence": routing_evidence,
             **trace,
         }
         if item["id"] == "real-model-evaluation":
@@ -311,7 +377,11 @@ class DemoScenarioExporter:
                 "context": context,
                 "objective": item["request"]["en"],
                 "goal_binding_id": goal_binding_id,
-                "requested_work_mode": envelope,
+                "requested_work_mode": (
+                    None
+                    if item.get("explicit_skills")
+                    else envelope
+                ),
                 "explicit_skill_ids": list(item.get("explicit_skills", ())),
                 "explicit_semantics": _SERVICE_SEMANTICS.get(item.get("explicit_semantics")),
                 "expected_state_version": 0,
@@ -328,6 +398,74 @@ class DemoScenarioExporter:
 
         workflow_run_id = results[0]["result"]["workflow_run_id"]
         follow_up_calls: list[dict[str, Any]] = []
+        if item.get("runtime_fixture") == "router-local-work-loop":
+            next_call = {
+                "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                "tool": "get_next_work",
+                "arguments": {
+                    "context": context,
+                    "workflow_run_id": workflow_run_id,
+                },
+            }
+            next_result = _execute_bridge(dispatcher, [next_call])[0]
+            calls.append(next_call)
+            results.append(next_result)
+            if not next_result["ok"]:
+                return self._trace_metadata(verified_host, calls, results)
+
+            work_item = next_result["result"]["work_item"]
+            phase_id = str(work_item["phase_id"])
+            work_item_id = str(work_item["work_item_id"])
+            check_id = str(
+                results[0]["result"]["planned_skill_tree"][0]["exit_gate"]
+            )
+            for transition, state_version, check_ids in (
+                ("start", 1, []),
+                ("submit", 2, [check_id]),
+            ):
+                record_call = {
+                    "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                    "tool": "record_work_event",
+                    "arguments": {
+                        "context": context,
+                        "workflow_run_id": workflow_run_id,
+                        "phase_id": phase_id,
+                        "observation": {
+                            "work_item_id": work_item_id,
+                            "transition": transition,
+                            "check_ids": check_ids,
+                            "reported_outcome": (
+                                "Local exit check reported."
+                                if transition == "submit"
+                                else None
+                            ),
+                        },
+                        "activation_receipt_ref": None,
+                        "expected_state_version": state_version,
+                        "idempotency_key": f"demo-local-{transition}-{scenario_id}",
+                        "correlation_id": f"demo-local-{transition}-{scenario_id}",
+                    },
+                }
+                calls.append(record_call)
+                results.extend(_execute_bridge(dispatcher, [record_call]))
+
+            gate_call = {
+                "request_id": f"{scenario_id}:{len(calls) + 1:02d}",
+                "tool": "evaluate_gate",
+                "arguments": {
+                    "context": context,
+                    "workflow_run_id": workflow_run_id,
+                    "phase_id": phase_id,
+                    "expected_state_version": 3,
+                    "expected_plan_revision": 1,
+                    "expected_evidence_digest": local_evidence_digest((check_id,)),
+                    "evidence_refs": [],
+                    "idempotency_key": f"demo-local-gate-{scenario_id}",
+                    "correlation_id": f"demo-local-gate-{scenario_id}",
+                },
+            }
+            calls.append(gate_call)
+            results.extend(_execute_bridge(dispatcher, [gate_call]))
         support = item.get("support")
         explicit_semantics = item.get("explicit_semantics")
         if support and explicit_semantics in {"preferred-primary", "required-all"}:
@@ -459,6 +597,14 @@ class DemoScenarioExporter:
         trace: Mapping[str, Any],
     ) -> list[dict[str, Any]]:
         support = item.get("support")
+        explicit_skill_ids = list(item.get("explicit_skills", ()))
+        consent_boundary = (
+            "phase-scoped-user-decision"
+            if support_policy is SupportPolicy.ASK
+            else "explicit-set-closed"
+            if support_policy is SupportPolicy.FORBID
+            else "router-owned-recommendation"
+        )
         if support and support_policy is SupportPolicy.AUTO:
             automatic_route = {**route, "support_selections": [support]}
             automatic_events = [
@@ -477,6 +623,8 @@ class DemoScenarioExporter:
                 automatic_events,
                 "已自動選入最小必要輔助能力",
                 "Minimal support auto-selected",
+                explicit_skill_ids,
+                consent_boundary,
             )]
         if support and support_policy is SupportPolicy.ASK:
             consent_results = {
@@ -539,6 +687,8 @@ class DemoScenarioExporter:
                     rejected_events,
                     "僅使用指定 SKILL",
                     "Requested SKILL only",
+                    explicit_skill_ids,
+                    consent_boundary,
                 ),
                 self._branch(
                     "support-approved",
@@ -550,17 +700,50 @@ class DemoScenarioExporter:
                     approved_events,
                     "已核准輔助能力；啟用仍受 Host gate 控制",
                     "Support approved; activation remains host-gated",
+                    explicit_skill_ids,
+                    consent_boundary,
                 ),
             ]
-        return [self._branch("default", route, events, "路由已就緒", "Route ready")]
+        return [self._branch(
+            "default",
+            route,
+            events,
+            "路由已就緒",
+            "Route ready",
+            explicit_skill_ids,
+            consent_boundary,
+        )]
 
     @staticmethod
-    def _branch(branch_id, route, events, status_zh, status_en):
+    def _branch(
+        branch_id,
+        route,
+        events,
+        status_zh,
+        status_en,
+        explicit_skill_ids,
+        consent_boundary,
+    ):
+        planned_skill_ids, planned_non_skill_selection_ids = (
+            _split_planned_selection_ids([
+                route["primary_selection"],
+                *route["support_selections"],
+            ])
+        )
         return {
             "branch_id": branch_id,
             "route": route,
             "events": events,
-            "explicit_skill_coverage": {"status": "satisfied"},
+            "routing_evidence": {
+                "planned_skill_ids": planned_skill_ids,
+                "planned_non_skill_selection_ids": planned_non_skill_selection_ids,
+                "actual_activation": "unverified",
+                "explicit_skill_lock": {
+                    "status": "locked" if explicit_skill_ids else "not-applied",
+                    "skill_ids": list(explicit_skill_ids),
+                },
+                "consent_boundary": consent_boundary,
+            },
             "status": {"en": status_en, "zh-TW": status_zh},
         }
 

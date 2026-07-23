@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from workflow_skill_router.evaluation.contracts import (
     EvaluationExecutionMode,
@@ -111,6 +114,48 @@ class SubprocessAdapterTests(unittest.TestCase):
         adapter.start_attempt(self.payload, "attempt-001")
 
         self.assertEqual([marker], json.loads(record.read_text(encoding="utf-8")))
+
+    def test_explicit_environment_is_copied_and_used_for_every_invocation(self):
+        environment = {"SystemRoot": os.environ.get("SystemRoot", "C:\\Windows")}
+        adapter = self.adapter(environment=environment)
+        environment["PYTHONPATH"] = "hostile"
+        responses = (
+            subprocess.CompletedProcess(
+                [],
+                0,
+                json.dumps({
+                    "attempt_nonce": "attempt-001",
+                    "context_id": "ctx-001",
+                }).encode("utf-8"),
+                b"",
+            ),
+            subprocess.CompletedProcess(
+                [],
+                0,
+                json.dumps({
+                    "attempt_nonce": "attempt-001",
+                    "context_id": "ctx-001",
+                }).encode("utf-8"),
+                b"",
+            ),
+        )
+
+        with patch(
+            "workflow_skill_router.evaluation.subprocess_adapter.subprocess.run",
+            side_effect=responses,
+        ) as run:
+            adapter.start_attempt(self.payload, "attempt-001")
+            adapter.execute_turn(
+                ModelTurnRequest("attempt-001", 0, "continue", ()),
+            )
+
+        self.assertEqual(2, run.call_count)
+        for invocation in run.call_args_list:
+            self.assertEqual(
+                {"SystemRoot": environment["SystemRoot"]},
+                invocation.kwargs["env"],
+            )
+            self.assertNotIn("PYTHONPATH", invocation.kwargs["env"])
 
     def test_rejects_nonce_mismatch(self):
         adapter = self.adapter("wrong-nonce")

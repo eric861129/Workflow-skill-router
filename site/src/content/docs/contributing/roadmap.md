@@ -34,16 +34,38 @@ description: Track evidence-backed milestones from alpha to GA.
 - [x] Bind Pages publication to the validated trusted `main` revision
 - [x] Publish a new immutable prerelease and move only `latest-v2`
 
-## Next beta milestone
+## Beta 2.0.0-beta.4 — historical preparation
+
+- [x] Add explainable no-hint classification for Single, Phased, and Managed Goal work
+- [x] Add deterministic Profile explain/lint and the Contract 2.3.0 Profile-miss case
+- [x] Seal attempt nonce, tool inventory, instruction digest, public case digest, model version, and private scoring-spec digest
+- [x] Prepare deterministic Plugin and Skill-only release artifacts locally
+- [ ] Obtain explicit authorization for the 36-attempt / 42-turn model run
+- [ ] Review sanitized evidence, attest zero hard violations, and publish the immutable prerelease
+
+The reference-driver validates the offline contract but does not prove real-model behavior. This historical beta.4 preparation is not a published release.
+
+## 2.0.0 — formal GA candidate
+
+- [x] Add the Router-owned Local Work Loop: `get_next_work`, `record_work_event`, and `evaluate_gate` as bounded `conditional-local` operations
+- [x] Preserve Explicit Skill Lock, scoped consent, Native Goal protection, and fail-closed authority separation
+- [x] Add the Host Integration Kit, reference adapter, capability manifest, and cross-platform conformance suite
+- [x] Freeze the twenty-task local Pilot protocol, verified-Host lane, and semantic-recommender decision gate
+- [x] Prepare the formal GA candidate while keeping `latest` on V1.3.1 and published `latest-v2` on historical beta.3
+- [ ] Execute and independently review at least 20 real local Pilot tasks
+- [ ] Complete a real verified-Host Pilot or publish reviewed `capability-unavailable` evidence
+- [ ] Obtain explicit authorization before a fresh 36-attempt / 42-turn behavior-model run
+- [ ] Review sanitized evidence, attest the exact frozen candidate SHA, and qualify the immutable GA release
+
+The prepared GA candidate is not released. Its `release_source_revision` is rebound only by the later trusted metadata-only promotion commit after evidence and review.
+
+## Remaining formal qualification
 
 - [ ] Exercise a verified Host scheduler/evidence integration beyond fixtures
-
-## GA — promotion gate
-
 - [ ] Pass the 13-case, 78-attempt, 96-model-turn paired Behavior suite
 - [ ] Maintain zero hard violations
 - [ ] Complete security review, dependency/SBOM checks, docs parity, and release rehearsal
 - [ ] Remove reviewed V1 public clutter through the manual manifest gate
-- [ ] Promote `latest` only after every required gate passes
+- [ ] Record the maintainer attestation and promote `latest` only after every required gate passes
 
 Roadmap items are not availability claims. Current readiness remains the generated runtime matrix.

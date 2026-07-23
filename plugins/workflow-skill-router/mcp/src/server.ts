@@ -2,19 +2,24 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import path from "node:path";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
+import { startupFailureMessage } from "./startup-diagnostics.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
+import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
+import { PLAN_WORK_INPUT_SCHEMA } from "./tool-schemas.js";
 import {
   WorkspaceRootTrustError,
   bindPlanWorkWorkspaceRoot,
   collectTrustedWorkspaceRoots,
 } from "./workspace-roots.js";
 
+export const MCP_SERVER_VERSION = "2.0.0";
+
 const core = new CoreClient();
-try { await core.start(); } catch {
-  process.stderr.write("Workflow Skill Router：Python runtime 不可用，切換為 skill-only-fallback。\n");
+try { await core.start(); } catch (error) {
+  process.stderr.write(startupFailureMessage(error));
   process.exit(78);
 }
-const server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.3" });
+const server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });
 const trustedWorkspaceRoots = async () => {
   let clientRoots: { uri: string }[] = [];
   if (server.server.getClientCapabilities()?.roots) {
@@ -45,7 +50,13 @@ for (const definition of TOOL_DEFINITIONS) {
             await trustedWorkspaceRoots(),
           )
           : arguments_;
-        const result = await core.call(definition.name, boundArguments);
+        // MCP SDK registration accepts object shapes; parse after root binding to
+        // enforce plan_work cross-field constraints declared with superRefine.
+        const validatedArguments = definition.name === "plan_work"
+          ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments)
+          : boundArguments;
+        const rawResult = await core.call(definition.name, validatedArguments);
+        const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
           structuredContent: result as Record<string, unknown>,

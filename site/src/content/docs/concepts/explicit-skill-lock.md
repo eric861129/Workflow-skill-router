@@ -13,9 +13,13 @@ Users need their named SKILLs respected, but asking for consent on every Router-
 
 When no SKILL is named, selection mode is `auto`; the Router chooses minimal support without asking permission for its own recommendation. When the user names one or more SKILLs, selection mode is `explicit-locked`:
 
-- `use`: prefer the named SKILL as primary; outside support needs consent.
-- `only`: the named set is the full allowed set; outside support is forbidden.
-- `all`: every named SKILL must be activated or explicitly waived before completion.
+| Directive | Routing contract |
+| --- | --- |
+| `use` | Prefer a named SKILL as primary; added support requires the current Phase's concrete consent. |
+| `only` | Constrain routing to the named set; no added support is allowed. |
+| `all` | Every named SKILL must be covered; added support remains consent-scoped. |
+
+The public MCP input accepts `use`, `only`, and `all`; it does not accept internal routing values. No directive grants SKILL activation or authority. Activation remains gated, and Host permission remains authoritative for file writes, deployment, messages, secrets, and production access. If a named SKILL is unavailable or insufficient, the Router narrows the outcome or reports a block; it does not automatically fall back or silently substitute.
 
 In Plugin mode, consent is not a second free-form route generation. `propose_support_consent` persists the current Phase route and concrete support set before the question is shown. The follow-up model turn classifies only `approved`, `rejected`, or `unclear`; `transition_support_consent` materializes the bound route and rejects stale scope, revision, or context. Skill-only mode follows the same policy as advisory instructions but cannot claim durable enforcement.
 
@@ -36,7 +40,7 @@ In Plugin mode, consent is not a second free-form route generation. `propose_sup
 
 - Rejected support appears in the audit trail but never in activation events.
 - The same rejected proposal cannot be asked again after a cosmetic phase-ID change.
-- If the requested SKILL cannot complete mandatory work, the Router narrows the outcome or reports a block; it does not substitute silently.
+- If the requested SKILL cannot complete mandatory work, the Router narrows the outcome or reports a block; it does not automatically fall back or substitute silently.
 
 <a id="security-boundary"></a>
 ## Security and authority boundary

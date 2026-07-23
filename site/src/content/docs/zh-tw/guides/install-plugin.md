@@ -69,4 +69,4 @@ Profile 放在 Plugin cache 外；輸出是 `intended-unverified`，直到 Runti
 codex plugin remove workflow-skill-router@workflow-skill-router
 ```
 
-移除 Plugin 不會刪除外部 Router state。移除 audit history 前，先閱讀[本機狀態](/Workflow-skill-router/zh-tw/reference/local-state/)說明。
+Router state 會解析到 Plugin 安裝／快取邊界之外。自動化的 local-root replacement 演練只驗證：保留外部 state path 時，resolver 可持續運作；它不代表已驗證真實 `codex plugin remove` 後再重新安裝仍會保留 state。Windows/macOS/Linux 的完整生命週期驗證仍是尚未完成的 release-candidate migration evidence。移除 audit history 前，先閱讀[本機狀態](/Workflow-skill-router/zh-tw/reference/local-state/)說明。

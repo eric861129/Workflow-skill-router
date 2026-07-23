@@ -8,12 +8,162 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from workflow_skill_router.profiles.contract import decode_routing_profile
-from workflow_skill_router.profiles.resolver import RoutingMatchContext, resolve_profile_route
+from workflow_skill_router.profiles.resolver import (
+    RoutingMatchContext,
+    explain_profile_route,
+    lint_profile,
+    resolve_profile_route,
+)
 
-from .test_contract import profile_document
+if __package__:
+    from .test_contract import profile_document
+else:
+    from test_contract import profile_document
 
 
 class RoutingProfileResolverTests(unittest.TestCase):
+    def test_explain_returns_public_safe_trace_for_every_candidate_rule(self) -> None:
+        document = profile_document()
+        document["rules"][0]["match"] = {
+            "objective_keywords": ["應用程式介面"],
+            "domains": [],
+            "tags": [],
+            "work_modes": ["phased"],
+        }
+        matched_rule = profile_document()["rules"][0]
+        matched_rule["rule_id"] = "backend-api"
+        matched_rule["match"] = {
+            "objective_keywords": ["api"],
+            "domains": [],
+            "tags": [],
+            "work_modes": ["phased"],
+        }
+        document["rules"].append(matched_rule)
+
+        traces = explain_profile_route(
+            (decode_routing_profile(document),),
+            objective=r"Inspect C:\Users\developer\private API instructions",
+            default_work_mode="phased",
+            context=RoutingMatchContext(lock_work_mode=True),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "rule_id": "api-delivery",
+                    "matched": False,
+                    "matched_dimensions": ["work_modes"],
+                    "unmatched_dimensions": ["objective_keywords"],
+                    "reason_codes": ["objective-keyword-miss"],
+                },
+                {
+                    "rule_id": "backend-api",
+                    "matched": True,
+                    "matched_dimensions": ["objective_keywords", "work_modes"],
+                    "unmatched_dimensions": [],
+                    "reason_codes": [],
+                },
+            ],
+            [trace.to_dict() for trace in traces],
+        )
+        serialized = repr([trace.to_dict() for trace in traces])
+        self.assertNotIn(r"C:\Users\developer", serialized)
+        self.assertNotIn("private API instructions", serialized)
+
+    def test_lint_reports_deterministic_rule_conflicts_and_shadowing(self) -> None:
+        document = profile_document()
+        duplicate = profile_document()["rules"][0]
+        duplicate["rule_id"] = "api-copy"
+        document["rules"].append(duplicate)
+
+        issues = lint_profile(decode_routing_profile(document))
+
+        self.assertEqual(
+            ["duplicate-rule"],
+            [issue.code for issue in issues if issue.severity == "error"],
+        )
+
+        shadowed_document = profile_document()
+        shadowed = profile_document()["rules"][0]
+        shadowed["rule_id"] = "openapi-lower-priority"
+        shadowed["priority"] = 10
+        shadowed["match"]["objective_keywords"] = ["openapi"]
+        shadowed_document["rules"].append(shadowed)
+
+        issues = lint_profile(decode_routing_profile(shadowed_document))
+
+        self.assertIn("shadowed-rule", [issue.code for issue in issues])
+
+        conflict_document = profile_document()
+        conflict = profile_document()["rules"][0]
+        conflict["rule_id"] = "service-contract"
+        conflict["match"]["objective_keywords"] = ["service"]
+        conflict["route"]["skill_tree"][0]["primary_skill_id"] = "skill:architecture-designer"
+        conflict_document["rules"].append(conflict)
+
+        issues = lint_profile(decode_routing_profile(conflict_document))
+
+        self.assertIn("equal-rank-conflict", [issue.code for issue in issues])
+
+    def test_lint_reports_missing_current_phase_and_alias_omission(self) -> None:
+        issues = lint_profile(
+            decode_routing_profile(profile_document()),
+            current_phase_id="implementation",
+        )
+
+        self.assertIn("missing-current-phase", [issue.code for issue in issues])
+        alias_issue = next(issue for issue in issues if issue.code == "lexical-alias-omission")
+        self.assertEqual("advisory", alias_issue.severity)
+        self.assertIn("應用程式介面", alias_issue.message)
+
+    def test_lint_models_locked_and_unlocked_cross_route_shadowing(self) -> None:
+        shadowed_document = profile_document()
+        higher = shadowed_document["rules"][0]
+        higher["rule_id"] = "higher-single-route"
+        higher["match"]["work_modes"] = ["single"]
+        higher["route"]["work_mode"] = "single"
+        higher["route"]["skill_tree"] = higher["route"]["skill_tree"][:1]
+        lower = profile_document()["rules"][0]
+        lower["rule_id"] = "lower-cross-route"
+        lower["priority"] = 10
+        lower["match"]["work_modes"] = ["single"]
+        lower["route"]["work_mode"] = "phased"
+        shadowed_document["rules"].append(lower)
+
+        issues = lint_profile(decode_routing_profile(shadowed_document))
+
+        self.assertIn(
+            ("shadowed-rule", "lower-cross-route", "higher-single-route"),
+            [
+                (issue.code, issue.rule_id, issue.related_rule_id)
+                for issue in issues
+            ],
+        )
+
+        reachable_document = profile_document()
+        higher = reachable_document["rules"][0]
+        higher["rule_id"] = "higher-single-route"
+        higher["match"]["work_modes"] = ["phased"]
+        higher["route"]["work_mode"] = "single"
+        higher["route"]["skill_tree"] = higher["route"]["skill_tree"][:1]
+        lower = profile_document()["rules"][0]
+        lower["rule_id"] = "lower-phased-route"
+        lower["priority"] = 10
+        lower["match"]["work_modes"] = ["phased"]
+        lower["route"]["work_mode"] = "phased"
+        reachable_document["rules"].append(lower)
+
+        issues = lint_profile(decode_routing_profile(reachable_document))
+
+        self.assertNotIn(
+            "lower-phased-route",
+            [
+                issue.rule_id
+                for issue in issues
+                if issue.code == "shadowed-rule"
+            ],
+        )
+
     def test_workspace_profile_wins_as_one_complete_tree_without_deep_merge(self) -> None:
         personal_document = profile_document(scope="personal")
         workspace_document = profile_document(scope="workspace")

@@ -256,12 +256,6 @@
   font-size: 1.08rem;
 }
 
-.router-demo-coverage {
-  margin-top: 0.5rem;
-  color: var(--router-muted);
-  font-size: 0.64rem;
-}
-
 .router-demo-mcp-step {
   border: 1px solid var(--router-line);
   border-bottom: 0;

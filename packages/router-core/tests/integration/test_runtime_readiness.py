@@ -31,9 +31,29 @@ class RuntimeReadinessTests(unittest.TestCase):
             "local-ready", RUNTIME_READINESS["get_router_status"].availability
         )
         self.assertEqual(
-            "verified-host-required",
+            "conditional-local",
             RUNTIME_READINESS["get_next_work"].availability,
         )
+        self.assertEqual(
+            (
+                "router-owned-work-graph",
+                "no-native-goal-authority-required",
+            ),
+            RUNTIME_READINESS["get_next_work"].local_conditions,
+        )
+        for tool_name in ("record_work_event", "evaluate_gate"):
+            with self.subTest(tool_name=tool_name):
+                self.assertEqual(
+                    "conditional-local",
+                    RUNTIME_READINESS[tool_name].availability,
+                )
+                self.assertEqual(
+                    (
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ),
+                    RUNTIME_READINESS[tool_name].local_conditions,
+                )
         self.assertEqual(
             "configured-adapter-required",
             RUNTIME_READINESS["run_model_evaluation"].availability,
@@ -68,10 +88,41 @@ class RuntimeReadinessTests(unittest.TestCase):
         response = json.loads(output.getvalue())
         self.assertFalse(response["ok"])
         self.assertEqual("capability-unavailable", response["error"]["code"])
+        self.assertEqual("conditional-local", response["error"]["availability"])
         self.assertEqual(
-            "verified-host-required", response["error"]["availability"]
+            ["router-owned-work-graph"],
+            response["error"]["required_capabilities"],
         )
         self.assertNotIn("traceback", output.getvalue().lower())
+
+    def test_conditional_dispatch_decodes_before_local_capability_guard(self) -> None:
+        from workflow_skill_router.local_control import LocalControlPlaneService
+        from workflow_skill_router.service_codecs import ServiceCodecError
+        from workflow_skill_router.tool_dispatch import ToolDispatcher
+
+        with tempfile.TemporaryDirectory() as temporary:
+            dispatcher = ToolDispatcher(
+                LocalControlPlaneService(Path(temporary) / "router.db")
+            )
+            with self.assertRaises(ServiceCodecError):
+                dispatcher.dispatch("get_next_work", {"workflow_run_id": "workflow-1"})
+
+    def test_static_unavailable_dispatch_preserves_guard_before_decode(self) -> None:
+        from workflow_skill_router.local_control import LocalControlPlaneService
+        from workflow_skill_router.runtime_readiness import CapabilityUnavailable
+        from workflow_skill_router.tool_dispatch import ToolDispatcher
+
+        with tempfile.TemporaryDirectory() as temporary:
+            dispatcher = ToolDispatcher(
+                LocalControlPlaneService(Path(temporary) / "router.db")
+            )
+            with self.assertRaises(CapabilityUnavailable) as unavailable:
+                dispatcher.dispatch("validate_route", {})
+
+        self.assertEqual(
+            "verified-host-required",
+            unavailable.exception.public_payload()["availability"],
+        )
 
     def test_doctor_exposes_the_same_readiness_matrix(self) -> None:
         from workflow_skill_router.cli import main
@@ -90,6 +141,23 @@ class RuntimeReadinessTests(unittest.TestCase):
             "verified-host-required",
             document["tools"]["validate_route"]["availability"],
         )
+        for tool_name in (
+            "get_next_work",
+            "record_work_event",
+            "evaluate_gate",
+        ):
+            with self.subTest(tool_name=tool_name):
+                self.assertEqual(
+                    "conditional-local",
+                    document["tools"][tool_name]["availability"],
+                )
+                self.assertEqual(
+                    [
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ],
+                    document["tools"][tool_name]["local_conditions"],
+                )
 
 
 if __name__ == "__main__":

@@ -11,6 +11,134 @@ def _public_task(prompt: str) -> str:
     return prompt.rsplit(marker, 1)[-1] if marker in prompt else prompt
 
 
+def _evaluation_evidence(lowered: str) -> dict[str, object]:
+    common: dict[str, object] = {
+        "authority": {"mode": "router-local", "native_goal_mutated": False},
+        "profile_explain": {"status": "not-requested", "reason_codes": []},
+        "activation_status": "unverified",
+        "semantic_candidate_persisted": False,
+    }
+    if "troubleshooting note" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default"],
+            },
+        }
+    if "review one endpoint response contract" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default", "explicit-skill-lock"],
+            },
+        }
+    if "first plan the diagnosis" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": ["multi-stage-sequence"],
+            },
+        }
+    if "phase transition has entered browser verification" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": ["phase-transition-signal"],
+            },
+        }
+    if (
+        "api contract design and contract-test planning" in lowered
+        or "approve the proposed contract-testing support" in lowered
+        or "do not use the proposed supporting skill" in lowered
+    ):
+        return {
+            **common,
+            "classification": {
+                "source": "caller-work-mode-hint",
+                "reason_codes": ["explicit-phased-signal", "explicit-skill-lock"],
+            },
+        }
+    if (
+        "resumable cross-repository migration" in lowered
+        and "dependency graph" in lowered
+    ):
+        return {
+            **common,
+            "classification": {
+                "source": "deterministic-analyzer",
+                "reason_codes": [
+                    "cross-repository-signal",
+                    "resumable-signal",
+                    "dependency-signal",
+                    "managed-goal-evidence",
+                ],
+            },
+        }
+    if "report current progress and the next incomplete work item" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-status-query"],
+            },
+        }
+    if "steer the active migration goal" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-steer-request"],
+            },
+        }
+    if "answer this side question only" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "native-goal-binding",
+                "reason_codes": ["goal-side-question"],
+            },
+        }
+    if "exact canonical capability identified by the verified snapshot" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default", "capability-unavailable"],
+            },
+        }
+    if "runtime capability snapshot changed after planning" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "caller-work-mode-hint",
+                "reason_codes": ["explicit-phased-signal", "runtime-drift-revalidation"],
+            },
+        }
+    if "against the supplied routing profile" in lowered:
+        return {
+            **common,
+            "classification": {
+                "source": "builtin-fallback",
+                "reason_codes": ["single-default"],
+            },
+            "profile_explain": {
+                "status": "miss",
+                "reason_codes": ["objective-keyword-miss"],
+            },
+        }
+    return {
+        **common,
+        "classification": {
+            "source": "builtin-fallback",
+            "reason_codes": ["single-default"],
+        },
+    }
+
+
 def _route(prompt: str) -> dict[str, object]:
     lowered = _public_task(prompt).lower()
     if "phase transition has entered browser verification" in lowered:
@@ -22,6 +150,7 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "not-required",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     if "i approve the proposed contract-testing support" in lowered:
         return {
@@ -32,6 +161,7 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "approved",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     if "do not use the proposed supporting skill" in lowered:
         return {
@@ -42,10 +172,18 @@ def _route(prompt: str) -> dict[str, object]:
             "consent_action": "rejected",
             "goal_relation": "none",
             "rationale": "Deterministic protocol demonstration; this is not model evidence.",
+            "evaluation_evidence": _evaluation_evidence(lowered),
         }
     skills = re.findall(r"skill:[a-z0-9-]+", lowered)
     explicit = "use skill:" in lowered
-    if "managed goal" in lowered or "active migration goal" in lowered:
+    if (
+        "managed goal" in lowered
+        or "active migration goal" in lowered
+        or (
+            "resumable cross-repository migration" in lowered
+            and "dependency graph" in lowered
+        )
+    ):
         envelope = "managed-goal"
     elif "design and verify" in lowered or any(
         term in lowered
@@ -63,7 +201,7 @@ def _route(prompt: str) -> dict[str, object]:
         primary = "skill:code-documenter"
     elif "frontend regression" in lowered or "phased frontend repair" in lowered:
         primary = "skill:systematic-debugging"
-    elif "managed goal" in lowered:
+    elif "managed goal" in lowered or "resumable cross-repository migration" in lowered:
         primary = "skill:architecture-designer"
     elif "browser runtime" in lowered or "exact canonical capability" in lowered:
         primary = "skill:playwright"
@@ -96,7 +234,7 @@ def _route(prompt: str) -> dict[str, object]:
         )
         else []
     )
-    return {
+    route = {
         "envelope": envelope,
         "selection_mode": "explicit-locked" if explicit else "auto",
         "primary_skill": primary,
@@ -105,6 +243,8 @@ def _route(prompt: str) -> dict[str, object]:
         "goal_relation": relation,
         "rationale": "Deterministic protocol demonstration; this is not model evidence.",
     }
+    route["evaluation_evidence"] = _evaluation_evidence(lowered)
+    return route
 
 
 def handle(request: dict[str, object]) -> dict[str, object]:

@@ -3768,6 +3768,7 @@ var require_fast_uri = __commonJS({
       return uriTokens.join("");
     }
     var URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u;
+    var AUTHORITY_PREFIX = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
     function getParseError(parsed, matches) {
       if (matches[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
         return 'URI path must start with "/" when authority is present.';
@@ -3796,6 +3797,11 @@ var require_fast_uri = __commonJS({
         } else {
           uri = "//" + uri;
         }
+      }
+      const authorityMatch = uri.match(AUTHORITY_PREFIX);
+      if (authorityMatch !== null && authorityMatch[1].indexOf("\\") !== -1) {
+        parsed.error = "URI authority must not contain a literal backslash.";
+        malformedAuthorityOrPort = true;
       }
       const matches = uri.match(URI_PARSE);
       if (matches) {
@@ -28986,6 +28992,12 @@ import path2 from "node:path";
 
 // mcp/src/python-discovery.ts
 import { spawn } from "node:child_process";
+var PythonDiscoveryError = class extends Error {
+  constructor() {
+    super("python-3.11-unavailable");
+    this.name = "PythonDiscoveryError";
+  }
+};
 function candidates(platform) {
   return platform === "win32" ? [{ command: "py", prefixArgs: ["-3.11"] }, { command: "python", prefixArgs: [] }] : [{ command: "python3", prefixArgs: [] }, { command: "python", prefixArgs: [] }];
 }
@@ -28997,7 +29009,12 @@ async function defaultProbe(candidate) {
       { shell: false, stdio: ["ignore", "pipe", "ignore"] }
     );
     let output = "";
-    const timer = setTimeout(() => {
+    let timer;
+    const rejectProbe = (error46) => {
+      if (timer) clearTimeout(timer);
+      reject(error46);
+    };
+    timer = setTimeout(() => {
       child.kill();
       reject(new Error("python-probe-timeout"));
     }, 3e3);
@@ -29005,23 +29022,32 @@ async function defaultProbe(candidate) {
     child.stdout.on("data", (chunk) => {
       output += chunk;
     });
-    child.once("error", reject);
+    child.once("error", rejectProbe);
     child.once("close", (code) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       code === 0 ? resolve(output.trim()) : reject(new Error("python-probe-failed"));
     });
   });
 }
 async function discoverPython(platform, probe = defaultProbe, override = process.env.WORKFLOW_SKILL_ROUTER_PYTHON) {
   const choices = override ? [{ command: override, prefixArgs: [] }] : candidates(platform);
+  let confirmedUnsupported = false;
+  let lastFailure;
   for (const choice of choices) {
     try {
       const [major, minor] = (await probe(choice)).split(".").map(Number);
+      if (!Number.isInteger(major) || !Number.isInteger(minor)) {
+        lastFailure = new Error("python-version-probe-invalid");
+        continue;
+      }
       if (major > 3 || major === 3 && minor >= 11) return choice;
-    } catch {
+      confirmedUnsupported = true;
+    } catch (error46) {
+      lastFailure = error46 instanceof Error ? error46 : new Error("python-probe-failed");
     }
   }
-  throw new Error("python-3.11-unavailable");
+  if (confirmedUnsupported) throw new PythonDiscoveryError();
+  throw lastFailure ?? new Error("python-probe-failed");
 }
 
 // mcp/src/state-path.ts
@@ -29044,6 +29070,9 @@ async function resolveState(platform, pluginRoot, env = process.env, home = os.h
 }
 
 // mcp/src/core-client.ts
+var DEFAULT_MAX_QUEUED_WRITES = 64;
+var STARTUP_HANDSHAKE_TIMEOUT_MS = 5e3;
+var STARTUP_HANDSHAKE_TOOL = "__workflow_skill_router_bridge_ready__";
 var CoreBridgeError = class extends Error {
   constructor(code, details) {
     super(code);
@@ -29055,22 +29084,99 @@ var CoreBridgeError = class extends Error {
   details;
 };
 var CoreClient = class {
-  constructor(pluginRoot = path2.resolve(import.meta.dirname, "..")) {
+  constructor(pluginRoot = path2.resolve(import.meta.dirname, ".."), bridgeSpawner, options = {}) {
     this.pluginRoot = pluginRoot;
+    this.bridgeSpawner = bridgeSpawner;
+    this.options = options;
   }
   pluginRoot;
+  bridgeSpawner;
+  options;
   child;
+  startPromise;
   generation = 0;
   sequence = 0;
   pending = /* @__PURE__ */ new Map();
+  writeState;
+  startupHandshake;
   buffer = "";
   async start() {
     if (this.child) return;
+    if (this.startPromise) return await this.startPromise;
+    this.startPromise = this.startBridge();
+    try {
+      await this.startPromise;
+    } finally {
+      this.startPromise = void 0;
+    }
+  }
+  async startBridge() {
+    const child = this.bridgeSpawner ? await this.bridgeSpawner() : await this.spawnBridge();
+    this.generation += 1;
+    const generation = this.generation;
+    this.child = child;
+    this.buffer = "";
+    this.writeState = {
+      generation,
+      queued: 0,
+      chain: Promise.resolve(),
+      closed: false,
+      drainWaiters: /* @__PURE__ */ new Set()
+    };
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => this.onData(child, generation, chunk));
+    child.stderr.on("data", (chunk) => {
+      if (this.isActiveBridge(child, generation)) process.stderr.write(chunk);
+    });
+    let resolveStartup;
+    let rejectStartup;
+    const startup = new Promise((resolve, reject) => {
+      resolveStartup = resolve;
+      rejectStartup = reject;
+    });
+    this.startupHandshake = { child, generation, resolve: resolveStartup, reject: rejectStartup };
+    child.once("spawn", () => {
+      this.beginStartupHandshake(child, generation);
+    });
+    child.once("error", (error46) => {
+      if (this.isActiveBridge(child, generation)) this.failGeneration(error46, true);
+    });
+    for (const stream of [child.stdin, child.stdout, child.stderr]) {
+      stream.on("error", (error46) => {
+        if (this.isActiveBridge(child, generation)) this.failGeneration(error46, true);
+      });
+    }
+    child.once("exit", () => {
+      const error46 = new Error("bridge-restarted");
+      if (this.isActiveBridge(child, generation)) this.failGeneration(error46, false);
+    });
+    await startup;
+  }
+  beginStartupHandshake(child, generation) {
+    const handshake = this.startupHandshake;
+    if (!handshake || handshake.child !== child || handshake.generation !== generation || !this.isActiveBridge(child, generation)) return;
+    const requestId = `g${generation}:startup`;
+    handshake.requestId = requestId;
+    handshake.timer = setTimeout(() => {
+      if (this.isActiveBridge(child, generation)) {
+        this.failGeneration(new Error("bridge-startup-timeout"), true);
+      }
+    }, STARTUP_HANDSHAKE_TIMEOUT_MS);
+    try {
+      child.stdin.write(JSON.stringify({
+        request_id: requestId,
+        tool: STARTUP_HANDSHAKE_TOOL,
+        arguments: {}
+      }) + "\n");
+    } catch (error46) {
+      this.failGeneration(error46 instanceof Error ? error46 : new Error("bridge-write-failed"), true);
+    }
+  }
+  async spawnBridge() {
     const python = await discoverPython(process.platform);
     const state = await resolveState(process.platform, this.pluginRoot);
     const pyz = path2.join(this.pluginRoot, "runtime", "workflow_skill_router.pyz");
-    this.generation += 1;
-    this.child = spawn2(
+    return spawn2(
       python.command,
       [...python.prefixArgs, pyz, "serve-jsonl", "--database", state.database],
       {
@@ -29084,12 +29190,12 @@ var CoreClient = class {
         stdio: ["pipe", "pipe", "pipe"]
       }
     );
-    this.child.stdout.setEncoding("utf8");
-    this.child.stdout.on("data", (chunk) => this.onData(chunk));
-    this.child.stderr.on("data", (chunk) => process.stderr.write(chunk));
-    this.child.once("exit", () => this.failGeneration(new Error("bridge-restarted"), false));
   }
-  onData(chunk) {
+  isActiveBridge(child, generation) {
+    return this.child === child && this.generation === generation;
+  }
+  onData(child, generation, chunk) {
+    if (!this.isActiveBridge(child, generation)) return;
     this.buffer += chunk;
     for (; ; ) {
       const index = this.buffer.indexOf("\n");
@@ -29098,46 +29204,164 @@ var CoreClient = class {
       this.buffer = this.buffer.slice(index + 1);
       try {
         const response = JSON.parse(line);
+        if (!response || typeof response.request_id !== "string" || typeof response.ok !== "boolean") {
+          this.failGeneration(new Error("bridge-protocol-error"), true);
+          return;
+        }
+        if (this.isStartupHandshakeResponse(child, generation, response)) {
+          if (response.ok === false && response.error?.code === "unknown-tool") {
+            this.resolveStartupHandshake();
+          } else {
+            this.failGeneration(new Error("bridge-readiness-failed"), true);
+          }
+          continue;
+        }
         const pending = this.pending.get(response.request_id);
-        if (!pending || !response.request_id.startsWith(`g${this.generation}:`)) continue;
-        clearTimeout(pending.timer);
+        if (!pending || !response.request_id.startsWith(`g${generation}:`)) continue;
         this.pending.delete(response.request_id);
+        clearTimeout(pending.timer);
+        pending.signal?.removeEventListener("abort", pending.abortListener);
         response.ok ? pending.resolve(response.result) : pending.reject(new CoreBridgeError(
-          response.error?.code ?? "bridge-error",
-          response.error ?? { code: "bridge-error" }
+          typeof response.error?.code === "string" ? response.error.code : "bridge-error",
+          response.error && typeof response.error === "object" ? response.error : { code: "bridge-error" }
         ));
       } catch {
-        process.stderr.write("Workflow Skill Router\uFF1A\u5FFD\u7565\u7121\u6548 bridge \u56DE\u61C9\u3002\n");
+        this.failGeneration(new Error("bridge-protocol-error"), true);
+        return;
       }
     }
   }
+  isStartupHandshakeResponse(child, generation, response) {
+    const handshake = this.startupHandshake;
+    return handshake?.child === child && handshake.generation === generation && handshake.requestId === response.request_id;
+  }
+  resolveStartupHandshake() {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = void 0;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.resolve();
+  }
+  rejectStartupHandshake(error46) {
+    const handshake = this.startupHandshake;
+    if (!handshake) return;
+    this.startupHandshake = void 0;
+    if (handshake.timer) clearTimeout(handshake.timer);
+    handshake.reject(error46);
+  }
   failGeneration(error46, terminate) {
     const child = this.child;
+    const writeState = this.writeState;
+    this.rejectStartupHandshake(error46);
     this.child = void 0;
+    this.writeState = void 0;
     this.buffer = "";
-    for (const pending of this.pending.values()) {
-      clearTimeout(pending.timer);
-      pending.reject(error46);
+    if (writeState) {
+      writeState.closed = true;
+      for (const rejectDrainWaiter of writeState.drainWaiters) rejectDrainWaiter(error46);
+      writeState.drainWaiters.clear();
     }
-    this.pending.clear();
+    for (const requestId of this.pending.keys()) this.expireRequest(requestId, error46);
     if (terminate && child && !child.killed) child.kill();
+  }
+  expireRequest(requestId, error46) {
+    const pending = this.pending.get(requestId);
+    if (!pending) return;
+    this.pending.delete(requestId);
+    clearTimeout(pending.timer);
+    pending.signal?.removeEventListener("abort", pending.abortListener);
+    pending.reject(error46);
+  }
+  requestTimeout(tool) {
+    return this.options.requestTimeout?.(tool) ?? (tool === "run_model_evaluation" ? 30 * 6e4 : 15e3);
+  }
+  queueWrite(child, generation, requestId, payload) {
+    const writeState = this.writeState;
+    if (!writeState || writeState.closed || writeState.generation !== generation || !this.isActiveBridge(child, generation)) {
+      this.expireRequest(requestId, new Error("bridge-restarted"));
+      return;
+    }
+    if (writeState.queued >= (this.options.maxQueuedWrites ?? DEFAULT_MAX_QUEUED_WRITES)) {
+      this.expireRequest(requestId, new Error("bridge-write-queue-full"));
+      return;
+    }
+    writeState.queued += 1;
+    const write = async () => {
+      try {
+        if (!this.pending.has(requestId) || writeState.closed || !this.isActiveBridge(child, generation)) return;
+        if (!child.stdin.write(payload)) await this.waitForDrain(child, generation, writeState);
+      } catch (error46) {
+        if (this.isActiveBridge(child, generation) && !writeState.closed) {
+          this.failGeneration(error46 instanceof Error ? error46 : new Error("bridge-write-failed"), true);
+        }
+      } finally {
+        writeState.queued -= 1;
+      }
+    };
+    const scheduled = writeState.chain.then(write, write);
+    writeState.chain = scheduled.catch(() => void 0);
+  }
+  async waitForDrain(child, generation, writeState) {
+    await new Promise((resolve, reject) => {
+      let finished = false;
+      const cleanup = () => {
+        child.stdin.removeListener("drain", onDrain);
+        child.stdin.removeListener("error", onError);
+        child.stdin.removeListener("close", onClose);
+        writeState.drainWaiters.delete(onGenerationFailure);
+      };
+      const finish = (error46) => {
+        if (finished) return;
+        finished = true;
+        cleanup();
+        error46 ? reject(error46) : resolve();
+      };
+      const onDrain = () => finish();
+      const onError = (error46) => finish(error46);
+      const onClose = () => finish(new Error("bridge-write-closed"));
+      const onGenerationFailure = (error46) => finish(error46);
+      child.stdin.once("drain", onDrain);
+      child.stdin.once("error", onError);
+      child.stdin.once("close", onClose);
+      writeState.drainWaiters.add(onGenerationFailure);
+      if (writeState.closed || !this.isActiveBridge(child, generation)) {
+        onGenerationFailure(new Error("bridge-restarted"));
+      }
+    });
   }
   async call(tool, arguments_, options = {}) {
     await this.start();
     const child = this.child;
-    const requestId = `g${this.generation}:${++this.sequence}`;
-    const deadline = tool === "run_model_evaluation" ? 30 * 6e4 : 15e3;
+    const generation = this.generation;
+    const requestId = `g${generation}:${++this.sequence}`;
+    const deadline = this.requestTimeout(tool);
     return await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => this.failGeneration(new Error("bridge-timeout"), true), deadline);
-      this.pending.set(requestId, { resolve, reject, timer });
-      options.signal?.addEventListener("abort", () => this.failGeneration(new Error("cancelled"), true), { once: true });
-      child.stdin.write(JSON.stringify({ request_id: requestId, tool, arguments: arguments_ }) + "\n");
+      const timer = setTimeout(() => this.expireRequest(requestId, new Error("bridge-timeout")), deadline);
+      const pending = { resolve, reject, timer };
+      this.pending.set(requestId, pending);
+      if (options.signal) {
+        pending.signal = options.signal;
+        pending.abortListener = () => this.expireRequest(requestId, new Error("cancelled"));
+        options.signal.addEventListener("abort", pending.abortListener, { once: true });
+        if (options.signal.aborted) {
+          pending.abortListener();
+          return;
+        }
+      }
+      this.queueWrite(child, generation, requestId, JSON.stringify({ request_id: requestId, tool, arguments: arguments_ }) + "\n");
     });
   }
   async close() {
     this.failGeneration(new Error("bridge-closed"), true);
   }
 };
+
+// mcp/src/startup-diagnostics.ts
+var PYTHON_STARTUP_FAILURE = "Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n";
+var GENERIC_STARTUP_FAILURE = "Workflow Skill Router\uFF1AMCP \u555F\u52D5\u5931\u6557\u3002\u8ACB\u78BA\u8A8D\u672C\u6A5F\u72C0\u614B\u76EE\u9304\u3001\u6A94\u6848\u7CFB\u7D71\u6B0A\u9650\u8207 Plugin \u5B89\u88DD\u8A2D\u5B9A\u5F8C\u518D\u8A66\u3002\n";
+function startupFailureMessage(error46) {
+  return error46 instanceof PythonDiscoveryError ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE;
+}
 
 // mcp/src/tool-schemas.ts
 var context = external_exports3.object({
@@ -29181,6 +29405,25 @@ var routingContext = external_exports3.object({
     "Current Phase identifier; only that Phase's Primary and immediate support become current intent."
   )
 }).strict();
+var PLAN_WORK_INPUT_SCHEMA = external_exports3.object({
+  ...mutation,
+  objective: external_exports3.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
+  goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
+  requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
+  explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
+  explicit_semantics: external_exports3.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
+  routing_context: routingContext.optional().describe(
+    "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
+  )
+}).strict().superRefine((value, context2) => {
+  if (value.explicit_skill_ids.length === 0 && value.explicit_semantics !== null) {
+    context2.addIssue({
+      code: "custom",
+      path: ["explicit_semantics"],
+      message: "explicit_semantics requires at least one explicit_skill_id."
+    });
+  }
+});
 var TOOL_INPUT_SHAPES = {
   sync_runtime_context: external_exports3.object({
     ...mutation,
@@ -29190,17 +29433,7 @@ var TOOL_INPUT_SHAPES = {
       agent_runtime_snapshot: agentSnapshot.describe("Runtime capabilities directly observed by the active agent.")
     }).strict().describe("Inputs to verified runtime capability discovery.")
   }).strict().shape,
-  plan_work: external_exports3.object({
-    ...mutation,
-    objective: external_exports3.string().min(1).describe("The user-visible outcome this workflow must achieve."),
-    goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
-    requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows Router classification."),
-    explicit_skill_ids: external_exports3.array(external_exports3.string()).describe("Skill IDs explicitly selected by the user; an empty array means automatic routing."),
-    explicit_semantics: external_exports3.enum(["use", "only"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
-    routing_context: routingContext.optional().describe(
-      "Optional user-owned routing profile context. Omission preserves the V2 beta.1 request contract."
-    )
-  }).strict().shape,
+  plan_work: PLAN_WORK_INPUT_SCHEMA.shape,
   propose_support_consent: external_exports3.object({
     ...mutation,
     workflow_run_id: external_exports3.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),
@@ -29305,6 +29538,136 @@ var plannedSkillPhase = external_exports3.object({
   exit_gate: external_exports3.string()
 }).strict();
 var sha256Digest = external_exports3.string().regex(/^sha256:[0-9a-f]{64}$/);
+var classificationDecision = external_exports3.object({
+  source: external_exports3.enum([
+    "native-goal-binding",
+    "caller-work-mode-hint",
+    "deterministic-analyzer",
+    "profile-route",
+    "builtin-fallback",
+    "legacy-replay"
+  ]).describe("Authoritative source for the deterministic work-envelope decision."),
+  confidence: external_exports3.enum(["high", "medium", "low"]),
+  classifier_revision: external_exports3.string(),
+  reason_codes: external_exports3.array(external_exports3.string())
+}).strict().describe(
+  "Deterministic classification trace for the work envelope only; it neither selects runtime capabilities nor grants authority."
+);
+var routerLocalWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  workflow_run_id: external_exports3.string(),
+  phase_id: external_exports3.string(),
+  dependency_ids: external_exports3.array(external_exports3.string()),
+  primary_skill_id: external_exports3.string().nullable(),
+  support_skill_ids: external_exports3.array(external_exports3.string()).max(3),
+  status: external_exports3.enum([
+    "pending",
+    "ready",
+    "active",
+    "verifying",
+    "paused",
+    "completed",
+    "failed",
+    "decomposition-required",
+    "host-scheduler-required"
+  ]),
+  authority_mode: external_exports3.literal("router-local")
+}).strict();
+var verifiedHostSummaryWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  routing_envelope: external_exports3.enum(["single", "phased", "managed-goal"]),
+  status: external_exports3.string()
+}).strict();
+var verifiedHostGraphWorkItem = external_exports3.object({
+  work_item_id: external_exports3.string(),
+  milestone_id: external_exports3.string(),
+  title: external_exports3.string(),
+  required: external_exports3.boolean(),
+  status: external_exports3.string(),
+  envelope: external_exports3.enum(["single", "phased", "managed-goal"]),
+  dependency_ids: external_exports3.array(external_exports3.string()),
+  read_resources: external_exports3.array(external_exports3.string()),
+  write_resources: external_exports3.array(external_exports3.string()),
+  scope: external_exports3.array(external_exports3.string()),
+  skill_policy_ref: external_exports3.string(),
+  phase_ids: external_exports3.array(external_exports3.string())
+}).strict();
+var verifiedHostWorkItem = external_exports3.union([
+  verifiedHostSummaryWorkItem,
+  verifiedHostGraphWorkItem
+]);
+var laneAwareWorkItem = external_exports3.union([
+  routerLocalWorkItem,
+  verifiedHostWorkItem
+]);
+var nextWorkFields = {
+  status: external_exports3.string(),
+  refresh_requirements: external_exports3.array(external_exports3.string()),
+  work_item: laneAwareWorkItem.nullable()
+};
+var recordWorkEvent = external_exports3.object({
+  event_ids: external_exports3.array(external_exports3.string()),
+  resulting_state_version: external_exports3.number().int().nonnegative(),
+  replayed: external_exports3.boolean(),
+  authority_mode: external_exports3.literal("router-local").optional(),
+  evidence_class: external_exports3.literal("user-or-agent-reported-local").optional(),
+  host_transition_authorized: external_exports3.literal(false).optional()
+}).strict().superRefine((value, context2) => {
+  const isLocal = value.authority_mode === "router-local";
+  if (isLocal && (value.evidence_class !== "user-or-agent-reported-local" || value.host_transition_authorized !== false)) {
+    context2.addIssue({
+      code: "custom",
+      message: "Router-local records require local evidence and deny Host transition authority."
+    });
+  }
+  if (!isLocal && (value.evidence_class !== void 0 || value.host_transition_authorized !== void 0)) {
+    context2.addIssue({
+      code: "custom",
+      message: "Verified-Host records cannot carry Router-local-only fields."
+    });
+  }
+});
+var gateEvaluation = external_exports3.object({
+  status: external_exports3.string(),
+  passed: external_exports3.boolean(),
+  failures: external_exports3.array(external_exports3.string()).optional(),
+  mandatory_failures: external_exports3.array(external_exports3.string()).optional(),
+  evidence_digest: sha256Digest,
+  resulting_state_version: external_exports3.number().int().nonnegative().optional(),
+  replayed: external_exports3.boolean().optional(),
+  gate_scope: external_exports3.literal("router-local").optional(),
+  authority_mode: external_exports3.literal("router-local").optional(),
+  evidence_class: external_exports3.literal("user-or-agent-reported-local").optional(),
+  host_transition_authorized: external_exports3.literal(false).optional()
+}).strict().superRefine((value, context2) => {
+  const isLocal = value.authority_mode === "router-local";
+  const localFieldsComplete = value.status === "evaluated-local" && value.failures !== void 0 && value.resulting_state_version !== void 0 && value.replayed !== void 0 && value.gate_scope === "router-local" && value.evidence_class === "user-or-agent-reported-local" && value.host_transition_authorized === false && value.mandatory_failures === void 0;
+  if (isLocal && !localFieldsComplete) {
+    context2.addIssue({
+      code: "custom",
+      message: "Router-local gates require the complete local evidence boundary and no Host-only fields."
+    });
+  }
+  if (isLocal && value.failures !== void 0 && value.passed !== (value.failures.length === 0)) {
+    context2.addIssue({
+      code: "custom",
+      message: "Router-local gate pass state must agree with the failures list."
+    });
+  }
+  const carriesLocalOnlyField = value.failures !== void 0 || value.resulting_state_version !== void 0 || value.replayed !== void 0 || value.gate_scope !== void 0 || value.evidence_class !== void 0 || value.host_transition_authorized !== void 0;
+  if (!isLocal && (value.mandatory_failures === void 0 || carriesLocalOnlyField)) {
+    context2.addIssue({
+      code: "custom",
+      message: "Verified-Host gates require mandatory_failures and cannot carry Router-local-only fields."
+    });
+  }
+  if (!isLocal && value.status === "evaluated-local") {
+    context2.addIssue({
+      code: "custom",
+      message: "Verified-Host gates cannot claim Router-local evaluation status."
+    });
+  }
+});
 var TOOL_OUTPUT_SCHEMAS = {
   sync_runtime_context: external_exports3.object({
     snapshot: unknownObject,
@@ -29321,28 +29684,50 @@ var TOOL_OUTPUT_SCHEMAS = {
     routing_envelope: external_exports3.string(),
     selection_mode: external_exports3.string(),
     support_consent_required: external_exports3.boolean(),
-    planned_skill_ids: external_exports3.array(external_exports3.string()),
+    planned_skill_ids: external_exports3.array(external_exports3.string()).describe(
+      "Planned Skill intent from an explicit lock or deterministic Profile; it does not prove runtime activation."
+    ),
     runtime_mode: external_exports3.string(),
     route_source: external_exports3.enum([
       "user-explicit",
       "workspace-profile",
       "personal-profile",
       "builtin-default"
-    ]),
+    ]).describe("Source of planned Skill intent, distinct from work-envelope classification."),
     routing_profile_ids: external_exports3.array(external_exports3.string()),
     routing_profile_digest: sha256Digest.nullable(),
     matched_profile_rule_id: external_exports3.string().nullable(),
     planned_skill_tree: external_exports3.array(plannedSkillPhase),
-    activation_status: external_exports3.enum(["not-planned", "intended-unverified"]),
-    profile_warnings: external_exports3.array(external_exports3.string())
+    activation_status: external_exports3.enum(["not-planned", "intended-unverified"]).describe(
+      "Planning evidence only; intended-unverified never proves actual activation."
+    ),
+    profile_warnings: external_exports3.array(external_exports3.string()),
+    classification: classificationDecision
   }).strict(),
   propose_support_consent: supportConsent,
   transition_support_consent: supportConsent,
   get_next_work: external_exports3.object({
-    status: external_exports3.string(),
-    refresh_requirements: external_exports3.array(external_exports3.string()),
-    work_item: external_exports3.unknown().nullable()
-  }).strict(),
+    ...nextWorkFields,
+    authority_mode: external_exports3.enum(["router-local", "verified-host"]),
+    host_goal_mutated: external_exports3.boolean()
+  }).strict().superRefine((value, context2) => {
+    if (value.authority_mode === "router-local" && value.host_goal_mutated) {
+      context2.addIssue({
+        code: "custom",
+        message: "Router-local scheduling cannot claim a Host Goal mutation."
+      });
+    }
+    if (value.work_item !== null) {
+      const expectedLane = value.authority_mode === "router-local" ? routerLocalWorkItem : verifiedHostWorkItem;
+      if (!expectedLane.safeParse(value.work_item).success) {
+        context2.addIssue({
+          code: "custom",
+          path: ["work_item"],
+          message: "Nested work item does not match the declared authority lane."
+        });
+      }
+    }
+  }),
   validate_route: external_exports3.object({
     valid: external_exports3.boolean(),
     violations: external_exports3.array(unknownObject),
@@ -29352,17 +29737,8 @@ var TOOL_OUTPUT_SCHEMAS = {
     outcome_mode: external_exports3.string(),
     exit_gate: external_exports3.string().nullable()
   }).strict(),
-  record_work_event: external_exports3.object({
-    event_ids: external_exports3.array(external_exports3.string()),
-    resulting_state_version: external_exports3.number().int().nonnegative(),
-    replayed: external_exports3.boolean()
-  }).strict(),
-  evaluate_gate: external_exports3.object({
-    status: external_exports3.string(),
-    passed: external_exports3.boolean(),
-    mandatory_failures: external_exports3.array(external_exports3.string()),
-    evidence_digest: external_exports3.string()
-  }).strict(),
+  record_work_event: recordWorkEvent,
+  evaluate_gate: gateEvaluation,
   get_router_status: external_exports3.object({
     goal_binding_id: nullableIdentifier,
     workflow_run_id: nullableIdentifier,
@@ -29434,13 +29810,13 @@ var TITLES = {
 };
 var DESCRIPTIONS = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime can apply strict user-owned personal and trusted-root workspace routing profiles while preserving explicit Skill locks. Profile choices remain intended routes until Runtime Discovery validates activation, and no speculative support-consent prompt is created.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
-  get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",
+  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. Native Goal scheduling requires verified-host-scheduler. A missing graph requests Router-owned graph creation or replay; a corrupt graph returns only a sanitized internal-error correlation. All unavailable or unsafe branches fail closed.",
   validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
-  record_work_event: "Append a semantic work observation after validating activation receipts and reporting authority. This idempotent mutation requires the verified-host event store and fails closed locally.",
-  evaluate_gate: "Evaluate and persist a phase gate against current state, plan revision, and evidence digest. This idempotent mutation requires verified-host evidence and gate authority.",
+  record_work_event: "For a validated Router-owned work graph with no Native Goal authority, append only user-or-agent-reported-local progress and return host_transition_authorized=false. Native Goal work requires verified-event-store and activation-receipt-verifier. A missing graph requests local graph creation or replay; a corrupt graph returns a sanitized internal-error. All unavailable or unsafe branches fail closed.",
+  evaluate_gate: "For a validated Router-owned work graph with no Native Goal authority, evaluate only persisted local check IDs as a router-local advisory gate with host_transition_authorized=false. A local pass is not Skill activation, Native Goal completion, deployment, or production approval. Native Goal gates require verified-evidence-store and gate-authority; missing graphs request local creation or replay, while corrupt graphs return a sanitized internal-error. All unavailable or unsafe branches fail closed.",
   get_router_status: "Read durable Router plan counts and native Goal status candidates without mutating the host Goal. This read is available from the bundled local R0 control plane.",
   run_model_evaluation: "Run fresh attempts from a sealed case through a server-configured evaluation adapter. This quota-consuming operation requires configured-adapter authority and never accepts executable paths from model input.",
   compare_evaluations: "Compare authorized baseline and candidate evaluation runs without fabricating unavailable metrics. This read requires configured evaluation evidence and remains review-required until attested.",
@@ -29451,10 +29827,10 @@ var RUNTIME_REQUIREMENTS = {
   plan_work: "local-r0",
   propose_support_consent: "local-r0",
   transition_support_consent: "local-r0",
-  get_next_work: "verified-host",
+  get_next_work: "conditional-local",
   validate_route: "verified-host",
-  record_work_event: "verified-host",
-  evaluate_gate: "verified-host",
+  record_work_event: "conditional-local",
+  evaluate_gate: "conditional-local",
   get_router_status: "local-r0",
   run_model_evaluation: "configured-adapter",
   compare_evaluations: "configured-adapter",
@@ -29555,14 +29931,15 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
 }
 
 // mcp/src/server.ts
+var MCP_SERVER_VERSION = "2.0.0";
 var core = new CoreClient();
 try {
   await core.start();
-} catch {
-  process.stderr.write("Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF0C\u5207\u63DB\u70BA skill-only-fallback\u3002\n");
+} catch (error46) {
+  process.stderr.write(startupFailureMessage(error46));
   process.exit(78);
 }
-var server = new McpServer({ name: "workflow-skill-router", version: "2.0.0-beta.3" });
+var server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });
 var trustedWorkspaceRoots = async () => {
   let clientRoots = [];
   if (server.server.getClientCapabilities()?.roots) {
@@ -29591,7 +29968,9 @@ for (const definition of TOOL_DEFINITIONS) {
           arguments_,
           await trustedWorkspaceRoots()
         ) : arguments_;
-        const result = await core.call(definition.name, boundArguments);
+        const validatedArguments = definition.name === "plan_work" ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments) : boundArguments;
+        const rawResult = await core.call(definition.name, validatedArguments);
+        const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],
           structuredContent: result
@@ -29627,3 +30006,6 @@ process.once("SIGTERM", async () => {
   process.exit(0);
 });
 await server.connect(new StdioServerTransport());
+export {
+  MCP_SERVER_VERSION
+};

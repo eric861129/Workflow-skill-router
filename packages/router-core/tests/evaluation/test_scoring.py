@@ -28,5 +28,24 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(1, score.failure_count)
         self.assertGreater(score.variance, 0)
 
+    def test_contract_2_3_hard_violations_block_release(self):
+        expected = {
+            "goal-bound-local-mutation",
+            "local-activation-claim",
+            "semantic-candidate-persisted",
+            "required-evaluation-evidence-missing",
+            "required-evaluation-evidence-invalid",
+        }
+        score = score_attempts("run-2.3", [{
+            "passed": True,
+            "explicit_skill_preserved": True,
+            "unapproved_support_activations": 0,
+            "hard_violations": sorted(expected),
+        }], ReleasePolicy())
+
+        self.assertEqual(expected, set(score.hard_violations))
+        self.assertFalse(score.release_eligible)
+        self.assertFalse(evaluate_release_gate(score).allowed)
+
 
 if __name__ == "__main__": unittest.main()

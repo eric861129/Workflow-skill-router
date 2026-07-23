@@ -27,6 +27,14 @@ One decision never implies the next.
 
 R0 local planning may run in the bundled control plane. R1 requires stronger runtime validation; R2/R3 remain subject to Codex sandbox, approval, and permission boundaries. A lower-risk routing label never downgrades the Host's own risk decision.
 
+## Dependency decisions
+
+The Plugin lockfile excludes known High and Critical dependency findings before a
+release candidate is accepted. A current upstream-tracked Moderate exception in
+the MCP SDK's transitive HTTP adapter is documented with its exposure boundary
+and removal criterion in the [Plugin dependency security decision](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md).
+The Plugin itself starts an MCP stdio transport, not an HTTP listener.
+
 ## Report a vulnerability
 
 Follow [SECURITY.md](https://github.com/eric861129/Workflow-skill-router/blob/main/SECURITY.md). Do not include secrets, private repository data, or exploit details in a public issue.

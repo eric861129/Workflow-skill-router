@@ -7,6 +7,7 @@ This document gives maintainers one compact map of the V2 trust and execution bo
 - [ADR 0001: V2-first public surface](../adr/0001-v2-first-public-surface.md) defines the Plugin/MCP-first product, the supported SKILL-only fallback, and the V1 recovery boundary.
 - [ADR 0002: Release assets outside Git](../adr/0002-release-assets-outside-git.md) defines source-built packages, provenance, channel behavior, and the separation between product and persisted-schema versions.
 - [ADR 0003: Deterministic support consent](../adr/0003-deterministic-support-consent-state-machine.md) moves explicit-lock support decisions from model route rewriting into a persisted fail-closed MCP state machine.
+- [ADR 0004: Explainable classification and runtime modes](../adr/0004-explainable-classification-and-runtime-modes.md) freezes classification provenance, local-versus-Host authority, and runtime readiness boundaries.
 
 ## System context
 
@@ -30,7 +31,7 @@ flowchart LR
 | SKILL fallback | Instruction-only classification, consent policy, usage disclosure | Cannot claim durable state, host exposure, or `hybrid-full` |
 | Plugin transport | Loads canonical SKILL, MCP bundle, and Python runtime | Installation does not grant runtime or production permission |
 | Router core | Capability merge, envelope policy, phase/Goal state, evidence contracts | Accepts authority only through verified ports and receipts |
-| Bundled local R0 control plane | Persists plans, Phase-scoped support proposals, consent transitions, and status | Does not schedule next work or validate protected routes |
+| Bundled local R0 control plane | Persists plans, Phase-scoped support proposals, consent transitions, status, and bounded Router-owned work-loop state | Does not validate protected routes or claim Native Goal authority |
 | Verified host adapters | Supply authoritative snapshots, scheduler, stores, and activation preflight | Host-owned; model input cannot construct these ports |
 | Evaluation adapters | Run sealed fresh attempts and store evidence | Executable configuration is server-owned and quota-gated |
 
@@ -40,11 +41,51 @@ Discovery merges filesystem metadata, Plugin handshake facts, agent observations
 
 ## Routing and state
 
-The profiler selects `single`, `phased`, or `managed-goal`. Explicit user-selected SKILLs create a lock; Router-recommended support needs consent only when it falls outside that lock. The phase state machine derives transitions from semantic observations, state versions, plan revisions, evidence digests, and side-effect outcomes.
+Classification happens before execution work. Goal status and side questions are control/read-only requests. Native Goal progress or steer establishes the outer `managed-goal` envelope; the Router never mutates native Codex Goal from local state. For a detached request or the current work item, the Router then considers `requested_work_mode`, the deterministic structural analyzer, a deterministic Profile route, and the builtin fallback, in that order.
+
+The analyzer revision is `deterministic-objective-v1`. It records `classification_source` and `classification_reason_codes` so the result is explainable and replayable. It analyzes bounded structural signals; it does not understand every task semantically and never authorizes Skills, tools, or side effects. A semantic adapter may suggest a candidate but cannot directly rewrite a persisted route.
+
+Explicit user-selected SKILLs create a lock; Router-recommended support needs consent only when it falls outside that lock. The phase state machine derives transitions from observations, state versions, plan revisions, evidence digests, and side-effect outcomes.
 
 Support consent uses a narrower local state machine: `pending -> approved | rejected`. The model may classify the user's intent, but it cannot replace the proposal's primary SKILL, support set, Phase scope, Goal revision, plan revision, or context fingerprint during transition.
 
 Managed Goal orchestration maintains a dependency graph but never mutates the native Codex Goal directly. It produces host-safe status candidates backed by evidence. See the routing, phase, and Goal concepts in `site/src/content/docs/concepts/`.
+
+### Published beta.3 matrix (`published-beta.3`)
+
+| Current class | Tools | Authority and fail-closed behavior |
+| --- | --- | --- |
+| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Bundled R0 supports their documented Router-local scope. |
+| `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires verified Host state, policy, and receipts; local calls fail closed. |
+| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a server-configured adapter, authorization, and applicable attestation. |
+
+### Prepared GA candidate matrix (`prepared-ga-candidate`)
+
+This candidate implements the `conditional-local` work, but it is **not included in published beta.3** and is not a released GA version. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed GA candidate SHA before dispatch.
+
+| Source class | Tools | Authority and fail-closed behavior |
+| --- | --- | --- |
+| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Unchanged Router-local R0 operations. |
+| `conditional-local` (3) | `get_next_work`, `record_work_event`, `evaluate_gate` | Router-owned graphs and local advisory evidence only; results use `authority_mode=router-local` and `host_transition_authorized=false`. |
+| `verified-host` (2) | `sync_runtime_context`, `validate_route` | Host authority remains mandatory. |
+| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Configured-adapter authority remains mandatory. |
+
+Host-authoritative operations use a distinct `authority_mode=verified-host`; evaluation operations use `authority_mode=configured-adapter`. A Router-local gate passing is not Skill activation, a native Goal transition, formal evidence, deployment approval, or production permission. GA is not defined as all 12 tools being locally usable.
+
+| Condition | `get_next_work` | `record_work_event` | `evaluate_gate` |
+| --- | --- | --- | --- |
+| Valid Router-owned graph | Router-local result | Router-local report | Router-local advisory gate |
+| Native Goal | `verified-host-scheduler` | `verified-event-store` + `activation-receipt-verifier` | `verified-evidence-store` + `gate-authority` |
+| Missing graph | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally | `router-owned-work-graph`; create or replay locally |
+| Corrupt graph | Sanitized `internal-error` | Sanitized `internal-error` | Sanitized `internal-error` |
+
+Fail-closed examples:
+
+- Published beta.3 keeps `get_next_work`, `record_work_event`, and `evaluate_gate` on the verified-Host path.
+- In the prepared GA candidate, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
+- Missing graphs request local creation or replay; corrupt graphs return only a sanitized `internal-error` correlation.
+- A missing activation receipt prevents a Host transition even if a Router-local advisory gate passed.
+- A semantic route candidate remains advisory and cannot replace the persisted deterministic route.
 
 ## Stores and replay
 

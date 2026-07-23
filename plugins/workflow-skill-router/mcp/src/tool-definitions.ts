@@ -10,7 +10,11 @@ export const PUBLIC_TOOL_NAMES = [
 ] as const;
 
 type PublicToolName = typeof PUBLIC_TOOL_NAMES[number];
-type RuntimeRequirement = "local-r0" | "verified-host" | "configured-adapter";
+type RuntimeRequirement =
+  | "local-r0"
+  | "conditional-local"
+  | "verified-host"
+  | "configured-adapter";
 
 const TITLES: Record<PublicToolName, string> = {
   sync_runtime_context: "Sync Runtime Capabilities",
@@ -29,13 +33,13 @@ const TITLES: Record<PublicToolName, string> = {
 
 const DESCRIPTIONS: Record<PublicToolName, string> = {
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan. The bundled local R0 runtime can apply strict user-owned personal and trusted-root workspace routing profiles while preserving explicit Skill locks. Profile choices remain intended routes until Runtime Discovery validates activation, and no speculative support-consent prompt is created.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
-  get_next_work: "Read the next schedulable work item after refreshing Goal, workspace, capability, and evidence state. This read requires the verified-host scheduler and is unavailable in bundled local R0.",
+  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. Native Goal scheduling requires verified-host-scheduler. A missing graph requests Router-owned graph creation or replay; a corrupt graph returns only a sanitized internal-error correlation. All unavailable or unsafe branches fail closed.",
   validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
-  record_work_event: "Append a semantic work observation after validating activation receipts and reporting authority. This idempotent mutation requires the verified-host event store and fails closed locally.",
-  evaluate_gate: "Evaluate and persist a phase gate against current state, plan revision, and evidence digest. This idempotent mutation requires verified-host evidence and gate authority.",
+  record_work_event: "For a validated Router-owned work graph with no Native Goal authority, append only user-or-agent-reported-local progress and return host_transition_authorized=false. Native Goal work requires verified-event-store and activation-receipt-verifier. A missing graph requests local graph creation or replay; a corrupt graph returns a sanitized internal-error. All unavailable or unsafe branches fail closed.",
+  evaluate_gate: "For a validated Router-owned work graph with no Native Goal authority, evaluate only persisted local check IDs as a router-local advisory gate with host_transition_authorized=false. A local pass is not Skill activation, Native Goal completion, deployment, or production approval. Native Goal gates require verified-evidence-store and gate-authority; missing graphs request local creation or replay, while corrupt graphs return a sanitized internal-error. All unavailable or unsafe branches fail closed.",
   get_router_status: "Read durable Router plan counts and native Goal status candidates without mutating the host Goal. This read is available from the bundled local R0 control plane.",
   run_model_evaluation: "Run fresh attempts from a sealed case through a server-configured evaluation adapter. This quota-consuming operation requires configured-adapter authority and never accepts executable paths from model input.",
   compare_evaluations: "Compare authorized baseline and candidate evaluation runs without fabricating unavailable metrics. This read requires configured evaluation evidence and remains review-required until attested.",
@@ -47,10 +51,10 @@ const RUNTIME_REQUIREMENTS: Record<PublicToolName, RuntimeRequirement> = {
   plan_work: "local-r0",
   propose_support_consent: "local-r0",
   transition_support_consent: "local-r0",
-  get_next_work: "verified-host",
+  get_next_work: "conditional-local",
   validate_route: "verified-host",
-  record_work_event: "verified-host",
-  evaluate_gate: "verified-host",
+  record_work_event: "conditional-local",
+  evaluate_gate: "conditional-local",
   get_router_status: "local-r0",
   run_model_evaluation: "configured-adapter",
   compare_evaluations: "configured-adapter",

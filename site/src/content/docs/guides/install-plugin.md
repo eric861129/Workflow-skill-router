@@ -69,4 +69,4 @@ Profiles stay outside the Plugin cache. Their output is `intended-unverified` un
 codex plugin remove workflow-skill-router@workflow-skill-router
 ```
 
-Uninstalling does not delete external Router state. Review the [local state guide](/Workflow-skill-router/reference/local-state/) before removing audit history.
+Router state resolves outside the Plugin installation/cache boundary. The automated local-root replacement rehearsal verifies resolver continuity while the external state path is retained; it does not verify a real `codex plugin remove` followed by reinstall. Windows/macOS/Linux lifecycle verification remains release-candidate migration evidence that has not yet been completed. Review the [local state guide](/Workflow-skill-router/reference/local-state/) before removing audit history.

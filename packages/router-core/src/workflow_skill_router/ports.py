@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from .service_models import RequestContext
 
@@ -87,3 +87,27 @@ class StatusReaderPort(Protocol):
 class DiagnosticsReaderPort(Protocol):
     def read(self): ...
 
+
+class ArtifactProtectorPort(Protocol):
+    def protect(self, content: bytes, purpose: str): ...
+
+
+class EvaluationPort(Protocol):
+    def run(self, command): ...
+    def compare(self, command): ...
+    def export(self, command): ...
+
+
+@runtime_checkable
+class HostIntegrationAdapterPort(Protocol):
+    """只能由伺服器端 composition root 解析與建立的 Host adapter。"""
+
+    def host_manifest(self): ...
+    def build_router_ports(self, **server_owned_resources): ...
+
+
+@runtime_checkable
+class HostConformanceAdapterPort(HostIntegrationAdapterPort, Protocol):
+    """僅在開發與整合測試中提供 conformance probe inputs 的 adapter。"""
+
+    def build_conformance_probe(self): ...

@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "contract_revision": "2.3.0",
+  "description": "Public, non-oracle vocabulary for bounded routing evidence.",
+  "classification_sources": [
+    "native-goal-binding",
+    "caller-work-mode-hint",
+    "deterministic-analyzer",
+    "profile-route",
+    "builtin-fallback",
+    "legacy-replay"
+  ],
+  "classification_reason_codes": [
+    "single-default",
+    "explicit-skill-lock",
+    "multi-stage-sequence",
+    "phase-transition-signal",
+    "explicit-phased-signal",
+    "cross-repository-signal",
+    "resumable-signal",
+    "dependency-signal",
+    "managed-goal-evidence",
+    "goal-status-query",
+    "goal-steer-request",
+    "goal-side-question",
+    "capability-unavailable",
+    "runtime-drift-revalidation"
+  ],
+  "profile_reason_codes": [
+    "objective-keyword-miss"
+  ]
+}

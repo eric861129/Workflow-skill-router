@@ -1,0 +1,68 @@
+{
+  "schema_version": "workflow-skill-router/host-conformance-pilot-plan/1.0",
+  "protocol_id": "v2-beta5-host-conformance-pilot",
+  "execution_status": "protocol-frozen-awaiting-real-pilot",
+  "purpose": "Keep offline development conformance, a genuine verified Host Pilot, and capability-unavailable evidence distinct.",
+  "evidence_lanes": {
+    "offline-reference-conformance": {
+      "claim_limit": "development-evidence-only",
+      "counts_as_verified_host_pilot": false,
+      "required_inputs": [
+        "reference-adapter-source-revision",
+        "conformance-report-digest",
+        "human-reviewer"
+      ],
+      "prohibited_claims": [
+        "verified-host-pilot",
+        "production-authority",
+        "hybrid-full"
+      ]
+    },
+    "verified-host-pilot": {
+      "requires_actual_host_authority": true,
+      "requires_host_receipts": true,
+      "requires_human_review": true,
+      "required_inputs": [
+        "frozen-source-revision",
+        "runtime-package-digest",
+        "actual-host-identity-attestation",
+        "authority-and-receipt-manifest",
+        "sanitized-reviewed-evidence"
+      ],
+      "claim_boundary": "Eligible only after actual Host-side execution and independent human attestation."
+    },
+    "capability-unavailable": {
+      "condition": "real-host-apis-absent",
+      "requires_reviewed_attestation": true,
+      "required_fields": [
+        "checked-capability",
+        "authority-boundary",
+        "safe-diagnostic",
+        "reviewer",
+        "timestamp"
+      ],
+      "claim_boundary": "Honest unavailable evidence; it is not a failed or successful verified Host Pilot."
+    }
+  },
+  "claims": {
+    "reference_adapter_is_verified_host": false,
+    "hybrid_full_permitted": false,
+    "production_ready_claim_permitted": false
+  },
+  "public_artifact_policy": {
+    "allowed_evidence_classes": [
+      "sanitized-aggregate",
+      "case-safe-diagnostic",
+      "reviewed-capability-unavailable-attestation"
+    ],
+    "prohibited_public_fields": [
+      "raw_host_receipts",
+      "host_secrets",
+      "repository_paths",
+      "workspace_paths",
+      "raw_transcripts",
+      "unreviewed_evidence"
+    ]
+  },
+  "authorization_boundary": "This plan does not authorize access to a real Host, execution of a Host Pilot, or any hybrid-full claim."
+}

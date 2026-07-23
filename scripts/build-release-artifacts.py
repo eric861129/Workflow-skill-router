@@ -3,14 +3,42 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from hashlib import sha256
+import importlib.util
 import io
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import subprocess
 import sys
 import zipfile
+
+SCRIPT_DIRECTORY = Path(__file__).resolve().parent
+
+
+def _load_release_path_safety():
+    """Load the release helper only from this builder's exact sibling path."""
+
+    helper_path = SCRIPT_DIRECTORY / "release_path_safety.py"
+    specification = importlib.util.spec_from_file_location(
+        "workflow_skill_router_release_path_safety",
+        helper_path,
+    )
+    if specification is None or specification.loader is None:
+        raise ImportError(f"cannot load release path safety helper: {helper_path}")
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    parser = getattr(module, "parse_safe_relative_posix_path", None)
+    if not callable(parser):
+        raise ImportError(
+            f"release path safety helper is missing its parser: {helper_path}"
+        )
+    return parser
+
+
+# The publication gate binds this exact helper's Git blob to the trusted contract
+# before a frozen release builder is allowed to execute in the release workflow.
+parse_safe_relative_posix_path = _load_release_path_safety()
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,9 +79,7 @@ def zip_bytes(entries: list[tuple[str, bytes]]) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_STORED) as archive:
         for name, content in sorted(entries):
-            pure = PurePosixPath(name)
-            if pure.is_absolute() or ".." in pure.parts:
-                raise ValueError(f"unsafe archive path: {name}")
+            parse_safe_relative_posix_path(name)
             info = zipfile.ZipInfo(name, FIXED_TIME)
             info.create_system = 3
             info.external_attr = 0o100644 << 16
@@ -95,19 +121,27 @@ def safe_allowlist_entries(
     if raw_files != sorted(set(raw_files)):
         raise ValueError(f"allowlist must be sorted and unique: {allowlist_path.relative_to(ROOT)}")
 
+    resolved_source_root = source_root.resolve()
     entries: list[tuple[str, bytes]] = []
     for relative_name in raw_files:
-        relative = PurePosixPath(relative_name)
-        if relative.is_absolute() or ".." in relative.parts:
-            raise ValueError(f"unsafe allowlist path: {relative_name}")
+        relative = parse_safe_relative_posix_path(relative_name)
         path = source_root.joinpath(*relative.parts)
+        try:
+            path.resolve(strict=False).relative_to(resolved_source_root)
+        except ValueError as error:
+            raise ValueError(f"unsafe allowlist path: {relative_name!r}") from error
         if not path.is_file():
             if require_all:
-                raise FileNotFoundError(path)
+                raise FileNotFoundError(
+                    "required allowlist file is missing or not a regular file: "
+                    f"{relative_name}"
+                )
             continue
         if path.is_symlink():
             raise ValueError(f"symlink forbidden: {path.relative_to(ROOT)}")
-        entries.append((f"{archive_root}/{relative.as_posix()}", path.read_bytes()))
+        archive_name = f"{archive_root}/{relative.as_posix()}"
+        parse_safe_relative_posix_path(archive_name)
+        entries.append((archive_name, path.read_bytes()))
     return entries
 
 
@@ -182,7 +216,7 @@ def artifacts(
             PLUGIN_ROOT,
             "workflow-skill-router",
             RELEASE / "allowlists" / "plugin-runtime-files.json",
-            require_all=False,
+            require_all=True,
         )
     )
     skill = zip_bytes(

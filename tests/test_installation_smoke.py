@@ -30,6 +30,9 @@ class InstallationSmokeTests(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
+                "-I",
+                "-S",
+                "-B",
                 str(BUILDER),
                 "--output-dir",
                 str(cls.output),
@@ -119,10 +122,21 @@ class InstallationSmokeTests(unittest.TestCase):
         readiness = json.loads(doctor.stdout)
         self.assertEqual("bundled-local-r0", readiness["runtime_profile"])
         self.assertEqual("local-ready", readiness["tools"]["plan_work"]["availability"])
-        self.assertEqual(
-            "verified-host-required",
-            readiness["tools"]["get_next_work"]["availability"],
-        )
+        for tool_name in (
+            "get_next_work",
+            "record_work_event",
+            "evaluate_gate",
+        ):
+            with self.subTest(tool_name=tool_name):
+                tool = readiness["tools"][tool_name]
+                self.assertEqual("conditional-local", tool["availability"])
+                self.assertEqual(
+                    [
+                        "router-owned-work-graph",
+                        "no-native-goal-authority-required",
+                    ],
+                    tool["local_conditions"],
+                )
 
     def test_missing_mcp_fallback_never_lowers_r2_r3(self) -> None:
         archive_path = self.output / f"workflow-skill-router-skill-v{self.version}.zip"

@@ -83,7 +83,7 @@ Set `WORKFLOW_SKILL_ROUTER_DATA_DIR` to choose another external state directory.
 codex plugin remove workflow-skill-router@workflow-skill-router
 ```
 
-Uninstalling the Plugin does not silently delete Router state. Review and remove the external state directory separately only when its audit history is no longer needed.
+Router state resolves outside the Plugin installation/cache boundary. The automated local-root replacement rehearsal verifies resolver continuity while that external state path is retained. It does not verify that a real `codex plugin remove` followed by reinstall preserves state. Windows/macOS/Linux lifecycle verification remains release-candidate migration evidence that has not yet been completed. Review and remove the explicit external state directory separately only when its audit history is no longer needed.
 
 ## Troubleshooting
 

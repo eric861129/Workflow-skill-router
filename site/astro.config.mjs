@@ -164,6 +164,7 @@ export default defineConfig({
             { slug: 'guides/install-plugin' },
             { slug: 'guides/install-skill' },
             { slug: 'guides/adoption' },
+            { slug: 'guides/verified-host-integration' },
             { slug: 'guides/troubleshooting' },
           ],
         },

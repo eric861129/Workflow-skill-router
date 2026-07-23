@@ -26,6 +26,8 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile v
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile install .\my-profile.json
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile list
 python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付 API" --work-mode phased --domain api
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile preview --objective "交付應用程式介面" --work-mode phased --domain api --explain
+python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile lint .\my-profile.json
 ```
 
 安裝包含本功能的 prerelease 後，可在 Plugin 目錄改用 `python runtime/workflow_skill_router.pyz profile ...`。只有另外安裝 Router Core 的 Python console script 時，才會有 `workflow-skill-router profile ...` 簡寫。
@@ -35,6 +37,14 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile p
 MCP 的 `workspace_root` 只能位於 Client 公告 root，或維護者設定的 `WORKFLOW_SKILL_ROUTER_WORKSPACE_ROOTS` 之內。模型任意提供的其他本機路徑必須回 `workspace-root-untrusted`，不得讀取。只有一個 trusted root 且 caller 省略 `routing_context` 時，Plugin 可以自動綁定；多個 roots 必須明確選擇。
 
 SKILL-only 模式沒有 deterministic loader 或 durable state；只有在 Host 允許讀取 workspace 與 Router data directory 的固定位置時，才能讀取相同契約並依本文件做 advisory routing，且必須明示 `skill-only-fallback`。若 Host 不提供 filesystem access，就只能使用對話中明確提供的 Profile 內容，不能宣稱已載入本機檔案。JSON 無效、scope 不符、Phase 不存在或規則衝突時必須 fail closed，不能默默忽略再聲稱 Profile 已套用。
+
+## 建立、檢查與除錯 Profile
+
+`profile preview --explain` 會為每個已啟用 Profile 的候選 rule 回傳固定格式的 trace，包括 `rule_id`、是否命中、命中與未命中的維度，以及穩定的 reason codes。Trace 不會回傳完整 objective、本機絕對路徑或任何 SKILL instruction body。這是 matcher 的可觀測資料，不是新的權限或執行機制。
+
+`profile lint` 會檢查重複或永遠被遮蔽的 rules、相同 priority 與 specificity 的衝突，以及相同 Primary/support SKILL。若要驗證 phased tree 是否包含目前 Phase，請明確提供 `--current-phase <phase-id>`。Error 會以 exit code `2` 結束；純 advisory 仍回 `0`。
+
+Matcher 仍只做 schema `1.0.0` 定義的 deterministic lexical matching，不會執行程式碼、使用 embedding，或自動展開同義詞。若希望 `API` 與 `應用程式介面` 都能命中，請像範例一樣把兩者明確列入 `objective_keywords`。Linter 可以提醒常見 lexical alias 遺漏，但不會替使用者改寫 Profile。
 
 ## 安全契約
 

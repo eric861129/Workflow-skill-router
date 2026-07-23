@@ -67,6 +67,14 @@ class PlannedSkillPhase(ResultCodec):
 
 
 @dataclass(frozen=True, slots=True)
+class ClassificationDecisionView(ResultCodec):
+    source: str
+    confidence: str
+    classifier_revision: str
+    reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class PlanWorkResult(ResultCodec):
     status: str
     workflow_run_id: str | None
@@ -84,6 +92,7 @@ class PlanWorkResult(ResultCodec):
     planned_skill_tree: tuple[PlannedSkillPhase, ...]
     activation_status: str
     profile_warnings: tuple[str, ...]
+    classification: ClassificationDecisionView
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,6 +155,8 @@ class NextWorkResult(ResultCodec):
     status: str
     refresh_requirements: tuple[str, ...]
     work_item: object | None
+    authority_mode: str = "verified-host"
+    host_goal_mutated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +198,16 @@ class RecordWorkEventResult(ResultCodec):
 
 
 @dataclass(frozen=True, slots=True)
+class LocalRecordWorkEventResult(ResultCodec):
+    event_ids: tuple[str, ...]
+    resulting_state_version: int
+    replayed: bool
+    authority_mode: str = "router-local"
+    evidence_class: str = "user-or-agent-reported-local"
+    host_transition_authorized: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class EvaluateGate:
     context: RequestContext
     workflow_run_id: str
@@ -197,6 +218,20 @@ class EvaluateGate:
     evidence_refs: tuple[str, ...]
     idempotency_key: str
     correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class EvaluateGateResult(ResultCodec):
+    status: str
+    passed: bool
+    failures: tuple[str, ...]
+    evidence_digest: str
+    resulting_state_version: int
+    replayed: bool
+    gate_scope: str = "router-local"
+    authority_mode: str = "router-local"
+    evidence_class: str = "user-or-agent-reported-local"
+    host_transition_authorized: bool = False
 
 
 @dataclass(frozen=True, slots=True)

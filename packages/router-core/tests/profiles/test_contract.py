@@ -7,6 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+import workflow_skill_router.profiles.contract as profile_contract
 from workflow_skill_router.profiles.contract import (
     RoutingProfileContractError,
     decode_routing_profile,
@@ -54,6 +55,34 @@ def profile_document(*, scope: str = "personal") -> dict[str, object]:
 
 
 class RoutingProfileContractTests(unittest.TestCase):
+    def test_shared_skill_id_predicate_matches_profile_validation(self) -> None:
+        predicate = getattr(profile_contract, "is_canonical_skill_id", None)
+        self.assertTrue(callable(predicate))
+
+        longest_local_id = "A" * 128
+        accepted = ("skill:API:Design.V2", f"skill:{longest_local_id}")
+        rejected = (
+            "skill:",
+            "Skill:api-designer",
+            "evaluation:runner",
+            f"skill:{'a' * 129}",
+        )
+        for skill_id in accepted:
+            with self.subTest(skill_id=skill_id):
+                self.assertTrue(predicate(skill_id))
+        for skill_id in rejected:
+            with self.subTest(skill_id=skill_id):
+                self.assertFalse(predicate(skill_id))
+
+        document = profile_document()
+        phase = document["rules"][0]["route"]["skill_tree"][0]
+        phase["primary_skill_id"] = accepted[0]
+        phase["support_skill_ids"] = [accepted[1]]
+        profile = decode_routing_profile(document)
+        decoded_phase = profile.rules[0].route.skill_tree[0]
+        self.assertEqual(accepted[0], decoded_phase.primary_skill_id)
+        self.assertEqual((accepted[1],), decoded_phase.support_skill_ids)
+
     def test_decodes_a_strict_non_executable_skill_tree(self) -> None:
         profile = decode_routing_profile(profile_document(), expected_scope="personal")
 

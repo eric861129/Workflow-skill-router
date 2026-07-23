@@ -30,10 +30,24 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
+          cache: npm
+          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
       - name: Check deterministic source-built artifacts
-        run: python scripts/build-release-artifacts.py --check
+        run: python -I -S -B scripts/build-release-artifacts.py --check
       - name: Test release and installation contracts
         run: python -m unittest tests/test_release_artifacts.py tests/test_installation_smoke.py -v
+      - name: Check deterministic Plugin runtime
+        run: python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Test Router Core
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+      - name: Install Plugin/MCP dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
+      - name: Type-check and test Plugin/MCP
+        working-directory: plugins/workflow-skill-router
+        run: npm run check
 
   validate:
     name: Core, documentation, and policy contracts
@@ -110,10 +124,36 @@ jobs:
         working-directory: site
         run: npm run test:site:visual
 
+  required-v2:
+    name: Required cross-platform V2 gate
+    if: ${{ always() }}
+    needs: [release-artifacts, validate, site-visual]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require every V2 dependency to succeed
+        shell: python
+        env:
+          RELEASE_ARTIFACTS_RESULT: ${{ needs.release-artifacts.result }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          SITE_VISUAL_RESULT: ${{ needs.site-visual.result }}
+        run: |
+          import os
+
+          results = {
+              "release-artifacts": os.environ["RELEASE_ARTIFACTS_RESULT"],
+              "validate": os.environ["VALIDATE_RESULT"],
+              "site-visual": os.environ["SITE_VISUAL_RESULT"],
+          }
+          failed = {name: result for name, result in results.items() if result != 'success'}
+          if failed:
+              raise SystemExit(f"Required V2 dependencies did not all succeed: {failed}")
+
   build-pages:
     name: Build validated Pages artifact
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [release-artifacts, validate, site-visual]
+    needs: required-v2
     runs-on: ubuntu-latest
     permissions:
       contents: read

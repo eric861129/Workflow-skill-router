@@ -1,5 +1,77 @@
 # V2 model evaluation adapters
 
+## Frozen formal GA-candidate Pilot protocols
+
+The safe preparation artifacts are now frozen with
+`execution_status: protocol-frozen-awaiting-real-pilot`:
+
+- [`pilots/local-work-loop-plan.json`](pilots/local-work-loop-plan.json) freezes
+  the twenty-slot real local task mix, manifest, scoring gates, and sanitized
+  public evidence boundary.
+- [`pilots/restricted-binding-manifest.schema.json`](pilots/restricted-binding-manifest.schema.json)
+  defines the private pre-execution bindings. Exactly 20 records use a per-run
+  secret HMAC-SHA-256 for task/source identity, Profile revision, population
+  flags, and record integrity; the actual manifest and secret never become
+  public.
+- [`pilots/verify_restricted_manifest.py`](pilots/verify_restricted_manifest.py)
+  independently recomputes the byte-exact `wsr-beta5-pilot-hmac-v1`
+  commitments and returns only a safe `valid`/`code` result before task 1.
+- [`pilots/host-conformance-plan.json`](pilots/host-conformance-plan.json) keeps
+  offline reference conformance, a genuine verified Host Pilot, and reviewed
+  `capability-unavailable` evidence in separate lanes.
+- [`docs/evidence/v2-beta5-pilot-template.md`](../../docs/evidence/v2-beta5-pilot-template.md)
+  is the maintainer evidence template.
+
+No real Pilot task has been executed or counted. Published beta.3 remains the
+historical V2 snapshot, while `v2.0.0` is the prepared GA candidate and is not
+yet released.
+These protocols do not authorize a live model, a real Host, or a release.
+
+The binding-manifest commitment, task-set commitment, and reviewer-attestation
+commitment must be frozen before task 1. The restricted reviewer verifies real
+task status and uniqueness; commitments support audit but do not replace human
+review. Metric populations are also frozen: 20 manual-envelope slots, at least
+10 no-explicit-Skill slots, at least 4 Explicit Lock slots, and at least 10
+resume-eligible slots. Missing or changed records, duplicate commitments,
+digest mismatch, or an under-minimum denominator makes the run invalid, never
+ineligible; `0/0` never passes.
+
+The exact ordered slots are `single-01..06`, `phased-01..08`, and
+`goal-01..06`. Only the eight Phased slots are Profile-backed. Population
+membership is fixed at 20 manual-envelope, 10 no-explicit-Skill, 4 Explicit
+Lock, and 10 resume-eligible slots; no-explicit-Skill and Explicit Lock are
+mutually exclusive. Restricted raw task/source identities are opaque reviewer
+IDs, never objectives, prompts, or paths. A source identity is a unique
+task-specific source snapshot or brief, not a shared repository identity.
+
+`attested_at` and `frozen_at` use canonical RFC3339 UTC
+`YYYY-MM-DDTHH:MM:SSZ`. The reviewer HMAC binds `attested_at`, the manifest HMAC
+binds `frozen_at`, and the verifier requires `attested_at <= frozen_at`. A
+future real-Pilot runner must require `task_1_started_at > frozen_at` before it
+counts task 1; that execution check has not been performed.
+
+The HMAC message is UTF-8 `workflow-skill-router/beta5-pilot/v1`, NUL, the
+domain label, NUL, then each field encoded as `ASCII(decimal byte_length) +
+0x3A + UTF-8 field bytes`. It performs no implicit JSON serialization, Unicode
+normalization, or locale-dependent conversion. Verify the frozen manifest
+before task 1:
+
+```powershell
+python evaluation/v2/pilots/verify_restricted_manifest.py `
+  --manifest <restricted-manifest.json> `
+  --secret-file <restricted-32-byte-secret.bin>
+```
+
+Commitments are non-reversible without the per-run secret and support later
+audit, but they do not replace human review that every input is a real task.
+
+The default remains
+`deterministic-default-no-semantic-recommender`. An experimental recommender is
+eligible only if real Pilot data attributes `>=10%` of corrections to lexical
+synonym misses, `profile preview --explain` rules out deterministic
+configuration causes, and a server-configured advisory-only adapter exists.
+No Pilot data means the gate is unmet, not a negative performance claim.
+
 Workflow Skill Router V2 evaluates routing behavior through a sealed subprocess boundary. The adapter is an execution transport, not a scorer: it receives only an opaque case ID, the current prompt, the allowed tool names, a nonce, and an opaque provider context. Scoring keys and expected answers never cross this boundary.
 
 ## Evidence classes
@@ -14,7 +86,31 @@ Contract or reference-driver results do **not** prove real-model routing quality
 
 ## Versioned scoring contract
 
-Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.2.0`. This revision separates the route for the current Phase from a later Phase-transition route, binds scoped support to concrete current-Phase exit evidence, preserves unavailable canonical intent, and prevents future Phases or Managed Goal Work Items from leaking into current support. Cases with `expected_turns` are scored at every turn; the final `expected` value remains the final-route compatibility view. Reports expose the contract ID, revision, turn counts, and aggregate turn match rates without exposing scoring keys or route values. Historical `2.1.0` reports retain their original case digest and diagnostic status.
+Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.3.0`. The full suite remains 13 cases: the existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode` and bind public-safe classification evidence, while `profile-explain-miss` replaces `evaluation-manual-required`. The six-case beta smoke keeps one two-turn consent case, so a future authorized run remains 36 attempts and 42 model turns. The prepared GA candidate carries the sealed Contract 2.3.0 classification coverage without changing the frozen execution budget; historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
+
+Contract 2.3.0 adds aggregate dimensions for envelope source, classification reasons, local authority, Profile explain, and unnecessary consent. It also treats goal-bound local mutation, a local activation claim, direct semantic-candidate persistence, and missing or invalid required evidence as hard violations. Every turn must return `evaluation_evidence` using the public, non-oracle [reason-code vocabulary](reason-code-vocabulary.json). Expected evidence remains in the private scoring oracle; it is excluded from the public case payload and execution driver.
+
+The server-side scoring-spec digest seals every private route/evidence oracle plus the scoring policy, public vocabulary, and deterministic runner source bytes. The digest is embedded only as an irreversible segment of the attempt identity and sanitized server-side metadata. Resume fails closed when an otherwise identical execution transcript was produced under a different scoring spec.
+
+The reference-driver validates deterministic protocol and scoring composition only; it does not prove real-model behavior. No fresh final GA model qualification exists until a frozen 36-attempt / 42-turn run receives explicit quota authorization and its sanitized output is reviewed and attested.
+
+## Delta Qualification has a fixed safety scope
+
+The full paired beta smoke remains the normal final Behavior qualification: 36
+attempts and 42 model turns. **Delta Qualification** is never a general way to
+reduce that budget. It is accepted only for a precommitted, named **monotonic**
+safety repair, and its manifest binds a reviewed parent sanitized report, the
+former precise hard violation, a fixed case and arm, an allowlisted source diff,
+and a machine-checked postcondition. Any mismatch fails closed before a model
+call; a delta cannot resume an older attempt.
+
+`activation-claim-v1` is currently the sole approved manifest. It confirms the
+candidate `phased-current-boundary` repair that forces
+`activation_status: "unverified"`. Its provider budget is exactly **3 attempts
+/ 3 turns**. The result is a narrow evidence bridge: it has no paired
+performance comparison and cannot independently replace the parent full
+qualification. The parent and delta reports both require review and trusted
+maintainer attestation before release.
 
 Historical reports keep their original case and instruction digests. Never rescore an older run against a newer contract revision. The runner recomputes the canonical path-and-SHA-256 manifest before execution and fails closed when the instruction package no longer matches its declared digest.
 

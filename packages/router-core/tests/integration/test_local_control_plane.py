@@ -6,12 +6,15 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from workflow_skill_router.local_control import LocalControlPlaneService
 from workflow_skill_router.persistence.migrator import iter_complete_statements
 from workflow_skill_router.persistence.sqlite_store import IdempotencyConflict
+from workflow_skill_router.routing.models import TaskSignals
+from workflow_skill_router.routing.task_signal_analyzer import TaskSignalAnalysis
 from workflow_skill_router.schemas.artifacts import canonical_json
 from workflow_skill_router.service_models import (
     PlanWork,
@@ -63,6 +66,11 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertFalse(result.support_consent_required)
         self.assertEqual("single", result.routing_envelope)
         self.assertEqual("mcp-local-control-plane", result.runtime_mode)
+        self.assertEqual("caller-work-mode-hint", result.classification.source)
+        self.assertEqual(
+            "deterministic-objective-v1",
+            result.classification.classifier_revision,
+        )
         self.assertNotIn("修正小型文件問題", self.database.read_text("utf-8", errors="ignore"))
 
         with closing(sqlite3.connect(self.database)) as connection:
@@ -93,6 +101,72 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual("phased", result.routing_envelope)
         self.assertEqual("auto", result.selection_mode)
         self.assertFalse(result.support_consent_required)
+
+    def test_deterministic_analyzer_routes_new_multistage_plan(self) -> None:
+        result = self.service.plan_work(self.command(
+            objective="先規劃 API，再實作並驗證",
+            requested_work_mode=None,
+            idempotency_key="analyzer-plan",
+        ))
+
+        self.assertEqual("phased", result.routing_envelope)
+        self.assertEqual("deterministic-analyzer", result.classification.source)
+        self.assertEqual("high", result.classification.confidence)
+        self.assertEqual(
+            "deterministic-objective-v1",
+            result.classification.classifier_revision,
+        )
+        self.assertEqual(
+            ("multi-stage-sequence",),
+            result.classification.reason_codes,
+        )
+
+    def test_native_goal_binding_precedes_hint_and_analyzer(self) -> None:
+        result = self.service.plan_work(self.command(
+            objective="先規劃跨儲存庫工作，再實作並驗證",
+            requested_work_mode="single",
+            goal_binding_id="goal-native-precedence",
+            idempotency_key="native-precedence",
+        ))
+
+        self.assertEqual("managed-goal", result.routing_envelope)
+        self.assertEqual("native-goal-binding", result.classification.source)
+
+    def test_caller_work_mode_hint_precedes_analyzer(self) -> None:
+        result = self.service.plan_work(self.command(
+            objective="先規劃 API，再實作並驗證",
+            requested_work_mode="single",
+            idempotency_key="caller-precedence",
+        ))
+
+        self.assertEqual("single", result.routing_envelope)
+        self.assertEqual("caller-work-mode-hint", result.classification.source)
+
+    def test_free_form_work_mode_phrase_is_not_a_structured_caller_hint(self) -> None:
+        free_form = self.service.plan_work(self.command(
+            objective="請用分階段處理這項工作",
+            requested_work_mode=None,
+            idempotency_key="free-form-work-mode",
+        ))
+        structured = self.service.plan_work(self.command(
+            objective="請用分階段處理這項工作",
+            requested_work_mode="phased",
+            idempotency_key="structured-work-mode",
+        ))
+
+        self.assertNotEqual("caller-work-mode-hint", free_form.classification.source)
+        self.assertEqual("caller-work-mode-hint", structured.classification.source)
+
+    def test_builtin_single_fallback_is_explicit(self) -> None:
+        result = self.service.plan_work(self.command(
+            objective="修正登入頁空白",
+            requested_work_mode=None,
+            idempotency_key="builtin-fallback",
+        ))
+
+        self.assertEqual("single", result.routing_envelope)
+        self.assertEqual("builtin-fallback", result.classification.source)
+        self.assertEqual(("single-default",), result.classification.reason_codes)
 
     def test_personal_profile_routes_only_the_current_phase_without_consent(self) -> None:
         profile_dir = self.database.parent / "profiles/personal"
@@ -155,6 +229,48 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual("verify", result.planned_skill_tree[1].phase_id)
         self.assertEqual("intended-unverified", result.activation_status)
         self.assertFalse(result.support_consent_required)
+
+    def test_profile_can_change_unlocked_envelope_and_preserves_analyzer_trace(self) -> None:
+        profile_dir = self.database.parent / "profiles/personal"
+        profile_dir.mkdir(parents=True)
+        (profile_dir / "delivery.json").write_text(json.dumps({
+            "schema_id": "workflow-skill-router/routing-profile",
+            "schema_version": "1.0.0",
+            "artifact_kind": "routing-profile",
+            "profile_id": "personal:delivery",
+            "scope": "personal",
+            "enabled": True,
+            "rules": [{
+                "rule_id": "delivery",
+                "priority": 50,
+                "match": {
+                    "objective_keywords": ["交付"],
+                    "domains": [],
+                    "tags": [],
+                    "work_modes": ["single"],
+                },
+                "route": {
+                    "work_mode": "phased",
+                    "skill_tree": [{
+                        "phase_id": "delivery",
+                        "primary_skill_id": "skill:delivery",
+                        "support_skill_ids": [],
+                        "exit_gate": "delivered",
+                    }],
+                },
+            }],
+        }, ensure_ascii=False), encoding="utf-8")
+
+        result = self.service.plan_work(self.command(
+            objective="交付變更",
+            requested_work_mode=None,
+            idempotency_key="profile-classification",
+        ))
+
+        self.assertEqual("phased", result.routing_envelope)
+        self.assertEqual("profile-route", result.classification.source)
+        self.assertEqual(("single-default",), result.classification.reason_codes)
+        self.assertEqual(("skill:delivery",), result.planned_skill_ids)
 
     def test_explicit_skill_lock_overrides_workspace_and_personal_profiles(self) -> None:
         workspace = self.database.parent / "workspace"
@@ -239,6 +355,90 @@ class LocalControlPlaneTests(unittest.TestCase):
         with self.assertRaises(IdempotencyConflict):
             self.service.plan_work(self.command(objective="不同任務"))
 
+    def test_idempotent_replay_keeps_persisted_classifier_revision(self) -> None:
+        command = self.command(
+            requested_work_mode=None,
+            idempotency_key="classifier-replay",
+        )
+        first = self.service.plan_work(command)
+
+        with patch(
+            "workflow_skill_router.routing.task_signal_analyzer._CLASSIFIER_REVISION",
+            "deterministic-objective-v2",
+        ):
+            replay = self.service.plan_work(command)
+            new_plan = self.service.plan_work(self.command(
+                requested_work_mode=None,
+                idempotency_key="classifier-new-plan",
+            ))
+
+        self.assertEqual("deterministic-objective-v1", first.classification.classifier_revision)
+        self.assertEqual(first.classification, replay.classification)
+        self.assertEqual(
+            "deterministic-objective-v2",
+            new_plan.classification.classifier_revision,
+        )
+
+    def test_replay_ignores_profile_outcome_changes_from_analyzer_revision(self) -> None:
+        profile_dir = self.database.parent / "profiles/personal"
+        profile_dir.mkdir(parents=True)
+        (profile_dir / "replay.json").write_text(json.dumps({
+            "schema_id": "workflow-skill-router/routing-profile",
+            "schema_version": "1.0.0",
+            "artifact_kind": "routing-profile",
+            "profile_id": "personal:replay",
+            "scope": "personal",
+            "enabled": True,
+            "rules": [{
+                "rule_id": "single-only",
+                "priority": 50,
+                "match": {
+                    "objective_keywords": ["交付"],
+                    "domains": [],
+                    "tags": [],
+                    "work_modes": ["single"],
+                },
+                "route": {
+                    "work_mode": "phased",
+                    "skill_tree": [{
+                        "phase_id": "delivery",
+                        "primary_skill_id": "skill:delivery",
+                        "support_skill_ids": [],
+                        "exit_gate": "delivered",
+                    }],
+                },
+            }],
+        }, ensure_ascii=False), encoding="utf-8")
+        command = self.command(
+            objective="交付變更",
+            requested_work_mode=None,
+            idempotency_key="behavioral-revision-replay",
+        )
+        first = self.service.plan_work(command)
+        revised_analysis = TaskSignalAnalysis(
+            signals=TaskSignals(distinct_stages=2),
+            confidence="medium",
+            classifier_revision="deterministic-objective-v2",
+            reason_codes=("multi-action-family",),
+        )
+
+        with patch(
+            "workflow_skill_router.local_control.analyze_task_signals",
+            return_value=revised_analysis,
+        ):
+            try:
+                replay = self.service.plan_work(command)
+            except IdempotencyConflict as error:
+                self.fail(f"exact replay was rejected after analyzer revision: {error}")
+
+        self.assertEqual(first, replay)
+        self.assertEqual("profile-route", replay.classification.source)
+        self.assertEqual(
+            "deterministic-objective-v1",
+            replay.classification.classifier_revision,
+        )
+        self.assertIsNotNone(replay.routing_profile_digest)
+
     def test_beta_1_explicit_plan_migrates_without_losing_intent_or_replay(self) -> None:
         self.directory.cleanup()
         self.directory = tempfile.TemporaryDirectory()
@@ -302,6 +502,10 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual("user-explicit", replay.route_source)
         self.assertEqual(("skill:api-designer",), replay.planned_skill_ids)
         self.assertEqual("intended-unverified", replay.activation_status)
+        self.assertEqual("legacy-replay", replay.classification.source)
+        self.assertEqual("low", replay.classification.confidence)
+        self.assertEqual("pre-beta.4", replay.classification.classifier_revision)
+        self.assertEqual((), replay.classification.reason_codes)
         with self.assertRaises(IdempotencyConflict):
             self.service.plan_work(self.command(
                 objective=objective,

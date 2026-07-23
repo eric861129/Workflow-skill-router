@@ -2,23 +2,43 @@
   "schema_version": "1.0",
   "source": {
     "path": "site/src/data/router-demo-v2.generated.json",
-    "sha256": "e038471cf570e36db4bd537b1609e16a951183b3e1d3cb39cd54eb7b5d33b6d5"
+    "sha256": "2ff98d5751e0f15c44ab74e3741202d9cb587485f68f84f4866ca6dede292147"
+  },
+  "presentation": {
+    "source_preset_ids": [
+      "router-local-work-loop",
+      "goal-work-graph"
+    ],
+    "router_local": {
+      "authority_mode": "router-local",
+      "host_goal_mutated": false,
+      "evidence_class": "user-or-agent-reported-local",
+      "host_transition_authorized": false,
+      "gate_scope": "router-local"
+    },
+    "native_goal": {
+      "code": "capability-unavailable",
+      "availability": "conditional-local",
+      "required_capabilities": [
+        "verified-host-scheduler"
+      ]
+    }
   },
   "outputs": {
     "poster": {
-      "sha256": "46739b3b822aeb74aead31e45180eb237ec463ca8f24fed9df4787ff7827180a",
+      "sha256": "281a3c8887622e08f6eba95d6278199a76d850a5f4be884600d8d730c0daef79",
       "width": 1280,
       "height": 720,
       "codec": "webp"
     },
     "webm": {
-      "sha256": "6c3c9345909c911cda7918b61bc4161646cc7927de69e7bf4adb6bc2fc16ee92",
+      "sha256": "14f66d0c98308a6c1041099f90dd13f9984e726695ba275ab8ba0df03e2c6e16",
       "width": 1280,
       "height": 720,
       "codec": "vp9"
     },
     "mp4": {
-      "sha256": "d59df8e9821930fad09d2c20b393cb4ac4022566c79b7d9fef65e2975495fe6f",
+      "sha256": "c64b84a7e4f8e5070cd750eb498a47882685a1b74eb599240ba08273f6c063b2",
       "width": 1280,
       "height": 720,
       "codec": "h264"

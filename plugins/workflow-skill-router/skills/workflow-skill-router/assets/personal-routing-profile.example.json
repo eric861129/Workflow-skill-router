@@ -10,7 +10,7 @@
       "rule_id": "api-delivery",
       "priority": 100,
       "match": {
-        "objective_keywords": ["api", "openapi"],
+        "objective_keywords": ["api", "應用程式介面", "openapi"],
         "domains": ["api"],
         "tags": [],
         "work_modes": []

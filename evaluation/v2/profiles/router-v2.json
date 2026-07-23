@@ -69,8 +69,9 @@
     "sampling_settings": null
   },
   "instruction_package": {
-      "digest": "sha256:a2ae313ba6400bbde1d91516a352394369951cbc5088ae94452e061f965eb865",
+      "digest": "sha256:fdb66a8e7533b62779832da2e160b19d9298b9035676537beb0a6e030c1a9826",
     "files": [
+      "evaluation/v2/reason-code-vocabulary.json",
       "starter/v2/workflow-skill-router/references/evaluation-boundary.md",
       "starter/v2/workflow-skill-router/references/goal-protocol.md",
       "starter/v2/workflow-skill-router/references/personal-routing-profiles.md",

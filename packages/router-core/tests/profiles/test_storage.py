@@ -18,7 +18,10 @@ from workflow_skill_router.profiles.storage import (
     default_router_data_dir,
 )
 
-from .test_contract import profile_document
+if __package__:
+    from .test_contract import profile_document
+else:
+    from test_contract import profile_document
 
 
 class RoutingProfileStorageTests(unittest.TestCase):

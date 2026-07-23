@@ -114,6 +114,7 @@ const tools = listedTools.map((tool) => {
   const readiness = doctor.tools[tool.name];
   const runtimeRequirement = {
     "local-ready": "local-r0",
+    "conditional-local": "conditional-local",
     "verified-host-required": "verified-host",
     "configured-adapter-required": "configured-adapter",
   }[readiness.availability];
@@ -124,6 +125,7 @@ const tools = listedTools.map((tool) => {
     description: tool.description,
     fallback_action: readiness.fallback_action,
     inputSchema: tool.inputSchema,
+    local_conditions: readiness.local_conditions,
     name: tool.name,
     outputSchema: tool.outputSchema,
     required_capabilities: readiness.required_capabilities,

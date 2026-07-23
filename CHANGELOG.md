@@ -4,6 +4,57 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.0.0 (GA candidate, not yet released)
+
+### Changed
+
+- Established `v2.0.0` as the formal GA candidate while retaining immutable V1.3.1 recovery and historical published V2 beta.3 provenance.
+- Reframed the public product boundary as pre-execution Skill selection, not a substitute for permissions, approvals, sandboxing, Host authority, or production orchestration.
+- Replaced prerelease-target metadata with a single `v2_version` release gate and a formal GA-candidate release note.
+
+### Evidence
+
+- The candidate remains blocked by `prepared-local-candidate`. No fresh final GA model qualification, completed Pilot, verified Host deployment, maintainer attestation, tag, channel movement, or GitHub Release is claimed.
+- Promotion still requires fresh evidence bound to the frozen source SHA, trusted review, maintainer attestation, and a metadata-only transition to `reviewed-attested-publishable`.
+
+## 2.0.0-beta.5 (prepared, not yet published)
+
+### Added
+
+- Added the Router-owned Local Work Loop: `get_next_work`, `record_work_event`, and `evaluate_gate` are available only as bounded `conditional-local` operations for a validated Router-owned graph.
+- Added the verified Host Integration Kit, a reference adapter, capability manifest, and conformance suite without granting bundled local runtime Host authority.
+- Added frozen beta.5 Pilot protocols for twenty real local tasks, verified-Host evidence, and the semantic-recommender decision gate.
+
+### Changed
+
+- The prepared product surface now identifies `2.0.0-beta.5` while `latest` remains pinned to V1.3.1 and every public installation link remains on published beta.3.
+- The candidate reports **4 always local-ready + 3 Router-owned conditional-local** operations, never `7/12 local-ready`; Explicit Skill Lock, scoped consent, Native Goal protection, and fail-closed authority separation remain unchanged.
+
+### Evidence
+
+- The reference driver and deterministic conformance suites do not prove real-model behavior, Skill activation, task outcome, a completed Pilot, or a verified Host deployment.
+- No beta.5 live model evaluation, real Pilot result, maintainer attestation, external prerelease, tag, or channel update is claimed by this prepared candidate.
+
+## 2.0.0-beta.4 (prepared, not yet published)
+
+### Added
+
+- Added deterministic no-hint classification evidence for Single, Phased, and Managed Goal work plus public-safe `profile preview --explain` miss evidence.
+- Added sealed Contract 2.3.0 dimensions for envelope source, classification reasons, local authority, Profile explain, and unnecessary consent.
+- Added hard-violation detection for native Goal mutation by local output, false local activation claims, and direct semantic-candidate persistence.
+- Added mandatory bounded evidence, a shared public non-oracle reason-code vocabulary, and attestation-blocking failures for missing or invalid evidence.
+
+### Changed
+
+- Bound every evaluation attempt nonce to the tool inventory, instruction digest, public case payload, configured model or reference-driver version, and an irreversible scoring-spec digest covering the private oracle and scoring policy.
+- Kept the full suite at 13 cases and beta smoke at six cases with one two-turn consent case; `profile-explain-miss` replaces `evaluation-manual-required` to preserve the frozen 36-attempt / 42-turn beta budget.
+- Prepared local Plugin and Skill-only beta.4 metadata while keeping `latest` on V1.3.1 and the published V2 installation links on beta.3 until review and publication occur.
+
+### Evidence
+
+- Contract 2.3.0 reference-driver results are deterministic Tier 0 Contract evidence only. They do not prove real-model behavior, Skill activation, or task Outcome.
+- No beta.4 live model evaluation or external prerelease publication is claimed by this source preparation.
+
 ## 2.0.0-beta.3
 
 ### Security

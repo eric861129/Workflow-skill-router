@@ -9,7 +9,15 @@ from workflow_skill_router.evaluation.sealing import load_scoring_key, seal_auth
 
 
 CASE = {
-    "execution": {"prompt": "請只使用指定 SKILL", "profile": "behavior", "allowed_tools": []},
+    "execution": {
+        "prompt": "請只使用指定 SKILL",
+        "profile": "behavior",
+        "allowed_tools": [],
+        "attempt_nonce": "nonce-2.3",
+        "instruction_digest": "sha256:" + "1" * 64,
+        "case_payload_digest": "sha256:" + "2" * 64,
+        "model_version": "gpt-5.6-sol",
+    },
     "driver": {"replies": ["不同意輔助技能"]},
     "scoring": {"expected_envelope": "single", "hard_invariants": ["explicit-skill-preserved"]},
 }
@@ -28,6 +36,15 @@ class SealingTests(unittest.TestCase):
         self.assertEqual({"payload.json", "execution-manifest.json"}, {p.name for p in paths.execution_dir.iterdir()})
         self.assertNotIn("expected_envelope", paths.execution_payload.read_text("utf-8"))
         self.assertNotEqual(paths.execution_dir, paths.scoring_dir)
+        execution = json.loads(paths.execution_payload.read_text("utf-8"))
+        for name in (
+            "attempt_nonce",
+            "allowed_tools",
+            "instruction_digest",
+            "case_payload_digest",
+            "model_version",
+        ):
+            self.assertIn(name, execution)
 
     def test_scoring_key_rejects_result_from_other_payload(self):
         paths = seal_authoring_case(CASE, self.roots)
