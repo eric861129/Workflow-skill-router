@@ -15,6 +15,9 @@ const viewports = [
 
 const screenshotOverrides: Record<string, { maxDiffPixelRatio: number }> = {
   'home-mobile.png': { maxDiffPixelRatio: 0.12 },
+  // The four inline local-ready tool labels wrap differently across hosted
+  // Windows font images. Smoke tests keep the semantic inventory strict.
+  'downloads-desktop.png': { maxDiffPixelRatio: 0.12 },
 };
 
 for (const pageCase of pages) {
