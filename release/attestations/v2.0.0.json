@@ -1,0 +1,56 @@
+{
+  "schema_version": "workflow-skill-router/release-evidence-attestation/1.0",
+  "record_type": "maintainer-release-evidence-review",
+  "attestation_status": "reviewed",
+  "reviewed_at": "2026-07-23T01:02:21Z",
+  "reviewer": "codex-under-maintainer-authorization",
+  "release_version": "2.0.0",
+  "release_source_revision": "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1",
+  "deterministic_evidence": {
+    "status": "passed",
+    "test_module_count": 37,
+    "scope": "Router Core, MCP, release, documentation, security, and V2 evaluation contracts"
+  },
+  "behavior_evidence": {
+    "evidence_class": "behavior",
+    "evaluation_contract": "workflow-skill-router.behavior-routing@2.3.0",
+    "model_identifier": "gpt-5.6-sol",
+    "parent_full_run": {
+      "sanitized_report_sha256": "sha256:ec0fb6515f854e9a9a4dd5e88d8277782b5e764e1db3a114821ef52ecb100372",
+      "source_revision": "89f342fca705766c4fe6645f8c5d51e54f4b2750",
+      "adapter_revision": "sha256:29e2f05cbc84aa6732b0c2c05963b3750d377848d69506a982e495548051126c",
+      "attempt_count": 36,
+      "turn_count": 42,
+      "candidate_hard_violation": {
+        "case_id": "phased-current-boundary",
+        "code": "local-activation-claim",
+        "count": 1
+      }
+    },
+    "delta_qualification": {
+      "id": "activation-claim-v1",
+      "sanitized_report_sha256": "sha256:c182b2f94f1681a9997a29dcddfe34fa62842dc7482dd91cfcf278abd0e2e39d",
+      "source_revision": "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1",
+      "adapter_revision": "sha256:bebcc5155e2f5feb435409ccda93f1af5a9c07765cb822238fa5d2e5e2ed2aaf",
+      "case_id": "phased-current-boundary",
+      "attempt_count": 3,
+      "turn_count": 3,
+      "hard_violation_count": 0
+    }
+  },
+  "known_limitations": [
+    "The Delta Qualification confirms the monotonic activation-claim safety repair; it is not a standalone full qualification.",
+    "classification_reason_match for phased-current-boundary was 0.0 in both arms of the parent run and remains a non-hard known limitation.",
+    "Real Skill activation, token reduction, and task outcome remain not observable in this behavior evidence."
+  ],
+  "release_decision": {
+    "status": "publishable-with-bounded-evidence-bridge",
+    "basis": "The only candidate hard violation in the reviewed parent run is eliminated by the source-bound, fail-closed Delta Qualification.",
+    "forbidden_claims": [
+      "hybrid-full conformance",
+      "verified Skill activation",
+      "measured token reduction",
+      "measured task outcome improvement"
+    ]
+  }
+}

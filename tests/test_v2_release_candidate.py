@@ -156,6 +156,36 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         self.assertIn("SBOM", notes)
         self.assertIn("maintainer-attestation", notes)
 
+    def test_ga_evidence_attestation_binds_the_reviewed_delta_bridge(self) -> None:
+        attestation = json.loads(
+            (ROOT / "release" / "attestations" / "v2.0.0.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertEqual(
+            "workflow-skill-router/release-evidence-attestation/1.0",
+            attestation["schema_version"],
+        )
+        self.assertEqual("reviewed", attestation["attestation_status"])
+        self.assertEqual(GA_VERSION, attestation["release_version"])
+        self.assertEqual(
+            "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1",
+            attestation["release_source_revision"],
+        )
+        behavior = attestation["behavior_evidence"]
+        self.assertEqual("gpt-5.6-sol", behavior["model_identifier"])
+        self.assertEqual(36, behavior["parent_full_run"]["attempt_count"])
+        self.assertEqual(3, behavior["delta_qualification"]["attempt_count"])
+        self.assertEqual(3, behavior["delta_qualification"]["turn_count"])
+        self.assertEqual(0, behavior["delta_qualification"]["hard_violation_count"])
+        self.assertTrue(
+            any(
+                "not a standalone full qualification" in limitation
+                for limitation in attestation["known_limitations"]
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

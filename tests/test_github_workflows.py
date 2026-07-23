@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
 FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
-PREPARED_CANDIDATE_SOURCE_REVISION = "cc3aecd8a8921f3d016ca26c865d92eab3ce033c"
+FROZEN_GA_SOURCE_REVISION = "7dd7f9d2e99061a7664f6cfe065c553e95d92bb1"
 JOB_BLOCK_PATTERN = re.compile(
     r"(?ms)^  (?P<job>[A-Za-z0-9_-]+):\s*\n"
     r"(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*\n|\Z)"
@@ -527,10 +527,10 @@ class GitHubWorkflowTests(unittest.TestCase):
         declared_revision = metadata["release_source_revision"]
 
         self.assertRegex(declared_revision, r"^[0-9a-f]{40}$")
-        self.assertEqual(PREPARED_CANDIDATE_SOURCE_REVISION, declared_revision)
+        self.assertEqual(FROZEN_GA_SOURCE_REVISION, declared_revision)
         self.assertEqual("2.0.0", metadata["v2_version"])
         self.assertNotIn("target_prerelease", metadata)
-        self.assertEqual("prepared-local-candidate", metadata["release_lifecycle"])
+        self.assertEqual("reviewed-attested-publishable", metadata["release_lifecycle"])
         publication_gate = (ROOT / "scripts/release-publication-gate.py").read_text(
             encoding="utf-8"
         )
@@ -549,7 +549,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             release_job.index("- name: Install Plugin/MCP dependencies"),
         )
 
-    def test_prepared_ga_metadata_fails_the_executable_publication_gate(self) -> None:
+    def test_reviewed_ga_metadata_passes_the_executable_publication_gate(self) -> None:
         metadata_path = ROOT / "release" / "version.json"
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         trusted_revision = subprocess.check_output(
@@ -557,7 +557,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         ).strip()
 
         self.assertEqual(
-            "prepared-local-candidate", metadata.get("release_lifecycle")
+            "reviewed-attested-publishable", metadata.get("release_lifecycle")
         )
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "github-output.txt"
@@ -579,13 +579,13 @@ class GitHubWorkflowTests(unittest.TestCase):
                 timeout=30,
             )
 
-            self.assertFalse(output_path.exists())
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                "source_revision=" + FROZEN_GA_SOURCE_REVISION + "\nrelease_tag=v2.0.0\n",
+                output_path.read_text(encoding="utf-8"),
+            )
 
-        self.assertEqual(1, result.returncode, result.stderr)
-        self.assertIn("prepared-local-candidate", result.stderr)
-        self.assertIn("reviewed-attested-publishable", result.stderr)
-
-    def test_prepared_ga_metadata_needs_a_matching_frozen_ga_source_before_promotion(
+    def test_reviewed_ga_metadata_is_bound_to_the_frozen_candidate_source(
         self,
     ) -> None:
         trusted_revision = subprocess.check_output(
@@ -595,10 +595,9 @@ class GitHubWorkflowTests(unittest.TestCase):
             (ROOT / "release" / "version.json").read_text(encoding="utf-8")
         )
         self.assertEqual(
-            PREPARED_CANDIDATE_SOURCE_REVISION,
+            FROZEN_GA_SOURCE_REVISION,
             metadata["release_source_revision"],
         )
-        metadata["release_lifecycle"] = "reviewed-attested-publishable"
 
         with tempfile.TemporaryDirectory() as directory:
             directory_path = Path(directory)
@@ -625,9 +624,11 @@ class GitHubWorkflowTests(unittest.TestCase):
                 timeout=30,
             )
 
-            self.assertEqual(1, result.returncode)
-            self.assertIn("Frozen release metadata does not match", result.stderr)
-            self.assertFalse(output_path.exists())
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                "source_revision=" + FROZEN_GA_SOURCE_REVISION + "\nrelease_tag=v2.0.0\n",
+                output_path.read_text(encoding="utf-8"),
+            )
 
     def test_publishable_ga_metadata_without_target_prerelease_emits_ga_tag(
         self,
