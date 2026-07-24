@@ -269,6 +269,7 @@ class GitHubWorkflowTests(unittest.TestCase):
 
     def test_validate_and_plugin_smoke_run_local_v2_quality_gates(self) -> None:
         validate = workflow_text("validate.yml")
+        validation_job = workflow_job_body("validate.yml", "validate")
         plugin = workflow_text("v2-plugin-smoke.yml")
 
         for required in (
@@ -288,6 +289,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         plugin_install = validate.index("Install plugin build dependencies")
         repository_tests = validate.index("Run repository unit tests")
         self.assertLess(plugin_install, repository_tests)
+        self.assertIn("fetch-depth: 0", validation_job)
 
     def test_every_workflow_release_builder_launch_is_isolated(self) -> None:
         isolated_launch = "python -I -S -B scripts/build-release-artifacts.py"
