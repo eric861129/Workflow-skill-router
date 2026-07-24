@@ -521,7 +521,12 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         self.assertNotIn("Pilot result: passed", combined)
 
         release = self.read_json(ROOT / "release/version.json")
-        self.assertEqual("2.0.1", release["published_v2_version"])
+        expected_published_version = (
+            "2.0.2"
+            if release["release_lifecycle"] == "reviewed-attested-publishable"
+            else "2.0.1"
+        )
+        self.assertEqual(expected_published_version, release["published_v2_version"])
         self.assertEqual("2.0.2", release["v2_version"])
         self.assertNotIn("target_prerelease", release)
 

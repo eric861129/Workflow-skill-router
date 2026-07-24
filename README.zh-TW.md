@@ -38,10 +38,10 @@ Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或
 
 ## 五分鐘 Plugin + MCP quickstart
 
-一般使用者請固定安裝不可變的 `v2.0.1` marketplace snapshot：
+一般使用者請固定安裝不可變的 `v2.0.2` marketplace snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -61,13 +61,13 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
 目前 checkout 是 V2 正式版的來源。貢獻者必須區分 candidate 與受信任 release metadata：後續 metadata-only promotion 會把 `release_source_revision` 綁定到 exact reviewed source SHA，之後 `Release V2` 才能 dispatch。
 
-`v2.0.1` 是由受信任 release workflow 建立並驗證的 immutable GA tag；一般使用者應固定使用此 tag，而不是 mutable branch。
+`v2.0.2` 是下一個 immutable GA tag。受信任的 release workflow 會從此 candidate 建立並驗證它；正式發布後，一般使用者應固定使用此 tag，而不是 mutable branch。
 
 正式 Plugin 已包含 MCP bundle 與 Python runtime。執行需要 Node.js 24+ 與 Python 3.11+；只有從原始碼重建時需要 npm。完整說明請看 [Plugin 安裝](site/src/content/docs/zh-tw/guides/install-plugin.md)。
 
 ## 五分鐘 Skill-only quickstart
 
-一般使用者請下載 [`workflow-skill-router-skill-v2.0.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.1/workflow-skill-router-skill-v2.0.1.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+一般使用者請下載 [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
 
 需要修改 Router 的貢獻者可在 Windows checkout 中執行：
 

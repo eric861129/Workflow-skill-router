@@ -12,10 +12,10 @@ The released Plugin already contains the MCP bundle and Python runtime archive. 
 
 ## Install in Codex
 
-Install the immutable `v2.0.1` Git marketplace snapshot:
+Install the immutable `v2.0.2` Git marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -65,7 +65,7 @@ Workspace Profiles use `.codex/workflow-skill-router.json`; `plan_work.routing_c
 
 ## Skill-only fallback
 
-If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.1.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but scoped consent remains advisory because there is no persisted proposal or deterministic transition. It can load fixed Profile files only when the Host grants filesystem access to those locations. It also has no durable resume, CAS, complete drift detection, or sealed activation instrumentation, and must not be reported as `hybrid-full`.
+If Plugin or MCP loading is unavailable, install the separate `workflow-skill-router-skill-v2.0.2.zip` GitHub Release asset into the Codex Skills directory. Skill-only mode preserves routing instructions and Explicit Skill Lock, but scoped consent remains advisory because there is no persisted proposal or deterministic transition. It can load fixed Profile files only when the Host grants filesystem access to those locations. It also has no durable resume, CAS, complete drift detection, or sealed activation instrumentation, and must not be reported as `hybrid-full`.
 
 ## Local state and privacy
 

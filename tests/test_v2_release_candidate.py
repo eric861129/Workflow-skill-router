@@ -35,7 +35,12 @@ class V2ReleaseCandidateTests(unittest.TestCase):
 
         self.assertEqual(GA_VERSION, version["v2_version"])
         self.assertNotIn("target_prerelease", version)
-        self.assertEqual("2.0.1", version["published_v2_version"])
+        expected_published_version = (
+            GA_VERSION
+            if version["release_lifecycle"] == "reviewed-attested-publishable"
+            else "2.0.1"
+        )
+        self.assertEqual(expected_published_version, version["published_v2_version"])
         self.assertEqual("latest", version["stable_channel"])
         self.assertEqual("1.3.1", version["v1_pinned_version"])
         self.assertEqual("latest-v2", version["v2_channel"])
@@ -69,6 +74,26 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         for relative in ("README.md", "README.zh-TW.md"):
             with self.subTest(relative=relative):
                 self.assertIn(GA_VERSION, (ROOT / relative).read_text(encoding="utf-8"))
+
+    def test_current_release_copy_matches_the_metadata_lifecycle(self) -> None:
+        version = json.loads(
+            (ROOT / "release" / "version.json").read_text(encoding="utf-8")
+        )
+        english = (ROOT / "README.md").read_text(encoding="utf-8")
+        traditional_chinese = (ROOT / "README.zh-TW.md").read_text(encoding="utf-8")
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+
+        if version["release_lifecycle"] == "reviewed-attested-publishable":
+            self.assertIn("Current published V2 release: `2.0.2`", english)
+            self.assertIn("目前已發布的 V2 正式版：`2.0.2`", traditional_chinese)
+            self.assertIn("## 2.0.2", changelog)
+            self.assertNotIn("## 2.0.2 (prepared", changelog)
+            return
+
+        self.assertEqual("prepared-local-candidate", version["release_lifecycle"])
+        self.assertIn("Current published V2 release: `2.0.1`", english)
+        self.assertIn("目前已發布的 V2 正式版：`2.0.1`", traditional_chinese)
+        self.assertIn("## 2.0.2 (prepared", changelog)
 
     def test_release_version_does_not_silently_migrate_persisted_schema(self) -> None:
         codecs = (

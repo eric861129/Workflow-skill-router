@@ -12,6 +12,7 @@ VERSION_METADATA = json.loads(
 )
 VERSION = VERSION_METADATA["v2_version"]
 PUBLISHED_VERSION = VERSION_METADATA["published_v2_version"]
+INSTALL_VERSION = VERSION
 
 
 class ReleaseCopyTests(unittest.TestCase):
@@ -214,13 +215,13 @@ class ReleaseCopyTests(unittest.TestCase):
         ):
             text = (ROOT / relative).read_text(encoding="utf-8")
             quickstart = text.split(
-                f"--ref v{PUBLISHED_VERSION}", 1
+                f"--ref v{INSTALL_VERSION}", 1
             )[1].split(contributor_marker, 1)[0]
             with self.subTest(relative=relative):
                 self.assertIn("4 always local-ready", quickstart)
                 self.assertIn("5 verified-Host-required", quickstart)
                 self.assertNotIn("3 Router-owned conditional-local", quickstart)
-                self.assertIn(PUBLISHED_VERSION, text)
+                self.assertIn(INSTALL_VERSION, text)
                 self.assertNotIn("prepared beta.5 candidate", text)
 
     def test_conditional_local_failure_contract_is_tool_specific_and_public_safe(self) -> None:
@@ -467,7 +468,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            f"eric861129/Workflow-skill-router --ref v{PUBLISHED_VERSION}"
+            f"eric861129/Workflow-skill-router --ref v{INSTALL_VERSION}"
         )
 
         for relative in pages:
@@ -502,7 +503,7 @@ class ReleaseCopyTests(unittest.TestCase):
         )
         tagged_command = (
             "codex plugin marketplace add "
-            f"eric861129/Workflow-skill-router --ref v{PUBLISHED_VERSION}"
+            f"eric861129/Workflow-skill-router --ref v{INSTALL_VERSION}"
         )
 
         for relative, task_phrase, contributor_marker in pages:
@@ -525,7 +526,7 @@ class ReleaseCopyTests(unittest.TestCase):
             "site/src/content/docs/guides/install-skill.md",
             "site/src/content/docs/zh-tw/guides/install-skill.md",
         )
-        asset = f"workflow-skill-router-skill-v{PUBLISHED_VERSION}.zip"
+        asset = f"workflow-skill-router-skill-v{INSTALL_VERSION}.zip"
 
         for relative in pages:
             text = (ROOT / relative).read_text(encoding="utf-8")

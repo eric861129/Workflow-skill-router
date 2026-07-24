@@ -31,7 +31,7 @@ Workflow Skill Router 只負責選擇 routing envelope 與最小、合理的 SKI
 
 ## 保留使用者選擇
 
-使用 `v2.0.1` 時，先從一條重複工作流程的 Personal Routing Profile rule 開始。新增下一條前，用代表性的小型、phased 與 Managed Goal 請求執行 validate 與 `profile preview`。專案政策放在 `.codex/workflow-skill-router.json`；跨專案偏好放 personal。
+使用 `v2.0.2` 時，先從一條重複工作流程的 Personal Routing Profile rule 開始。新增下一條前，用代表性的小型、phased 與 Managed Goal 請求執行 validate 與 `profile preview`。專案政策放在 `.codex/workflow-skill-router.json`；跨專案偏好放 personal。
 
 Profile 結果一律視為 `intended-unverified`。Runtime Capability Discovery 仍是 activation gate，使用者明確指定 SKILL 永遠優先。
 

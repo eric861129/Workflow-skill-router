@@ -13,10 +13,10 @@ The released archive includes the MCP bundle and Python runtime. npm is required
 
 ## Tagged marketplace snapshot
 
-Use the immutable `v2.0.1` snapshot for normal installations:
+Use the immutable `v2.0.2` snapshot for normal installations:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -48,7 +48,7 @@ node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/wo
 
 ## What works locally
 
-The bundled local R0 runtime in `v2.0.1` supports Personal Routing Profile validation, installation, listing, and preview. From a contributor checkout, install the packaged personal example and preview it:
+The bundled local R0 runtime in `v2.0.2` supports Personal Routing Profile validation, installation, listing, and preview. From a contributor checkout, install the packaged personal example and preview it:
 
 ```powershell
 Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json

@@ -9,7 +9,7 @@ Use the standalone SKILL when the Host cannot load Plugins/MCP or when you need 
 
 ## Install a release asset
 
-Download [`workflow-skill-router-skill-v2.0.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.1/workflow-skill-router-skill-v2.0.1.zip) from the GitHub Release. Extract the inner `workflow-skill-router/` folder into the Codex Skills directory.
+Download [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) from the GitHub Release. Extract the inner `workflow-skill-router/` folder into the Codex Skills directory.
 
 Exact archive paths:
 

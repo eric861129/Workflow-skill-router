@@ -17,7 +17,7 @@ Confirm the runtime profile, telemetry state, Python version, content preflight 
 codex plugin list
 ```
 
-For a normal installation, ensure the marketplace is pinned to `v2.0.1`, reinstall `workflow-skill-router@workflow-skill-router`, and restart Codex. For a contributor checkout, ensure the marketplace points at the repository root before reinstalling.
+For a normal installation, ensure the marketplace is pinned to `v2.0.2`, reinstall `workflow-skill-router@workflow-skill-router`, and restart Codex. For a contributor checkout, ensure the marketplace points at the repository root before reinstalling.
 
 ## Plugin startup fails
 

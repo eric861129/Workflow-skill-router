@@ -39,10 +39,10 @@ Choose the Plugin when Codex supports Plugin/MCP loading. Choose the standalone 
 
 ## Five-minute Plugin + MCP quickstart
 
-For a normal installation, pin the immutable `v2.0.1` marketplace snapshot:
+For a normal installation, pin the immutable `v2.0.2` marketplace snapshot:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -62,13 +62,13 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
 The checkout is the source for the current V2 release. Contributors must keep the candidate and trusted release metadata distinct: the later metadata-only promotion binds `release_source_revision` to the exact reviewed source SHA before `Release V2` can dispatch.
 
-`v2.0.1` is an immutable GA tag created and verified by the trusted release workflow; normal installations should pin that tag instead of a mutable branch.
+`v2.0.2` is the next immutable GA tag. The trusted release workflow creates and verifies it from this candidate; normal installations should pin it instead of a mutable branch once publication completes.
 
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 
 ## Five-minute Skill-only quickstart
 
-For a normal installation, download [`workflow-skill-router-skill-v2.0.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.1/workflow-skill-router-skill-v2.0.1.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
+For a normal installation, download [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) and extract its inner `workflow-skill-router/` folder into the Codex Skills directory.
 
 For contributors working from a checkout on Windows:
 

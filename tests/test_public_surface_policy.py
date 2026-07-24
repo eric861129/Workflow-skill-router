@@ -39,7 +39,12 @@ class PublicSurfacePolicyTests(unittest.TestCase):
         self.assertEqual("v2-first", self.version["public_surface"])
         self.assertEqual("2.0.2", self.version["v2_version"])
         self.assertNotIn("target_prerelease", self.version)
-        self.assertEqual("2.0.1", self.version["published_v2_version"])
+        expected_published_version = (
+            "2.0.2"
+            if self.version["release_lifecycle"] == "reviewed-attested-publishable"
+            else "2.0.1"
+        )
+        self.assertEqual(expected_published_version, self.version["published_v2_version"])
         self.assertEqual("latest", self.version["stable_channel"])
         self.assertEqual("1.3.1", self.version["v1_pinned_version"])
 
