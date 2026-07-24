@@ -1081,6 +1081,27 @@ class GitHubWorkflowTests(unittest.TestCase):
             publish_tail_steps[:2],
         )
 
+    def test_release_recovers_only_when_an_existing_source_release_matches_exactly(
+        self,
+    ) -> None:
+        release_job = workflow_job_body("release-v2.yml", "release")
+
+        for required in (
+            "verify_source_release()",
+            "Source GitHub Release does not match the verified release tag and deterministic asset bundle.",
+            'repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG',
+            '--rawfile notes "release/notes/${RELEASE_TAG}.md"',
+            '.assets[] | [.name, .digest] | @tsv',
+            'cmp -s "$expected_assets" "$actual_assets"',
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, release_job)
+
+        release_lookup_index = release_job.index("SOURCE_RELEASE_RESPONSE")
+        release_create_index = release_job.index("gh release create")
+        self.assertLess(release_lookup_index, release_create_index)
+        self.assertGreaterEqual(release_job.count("verify_source_release"), 3)
+
     def test_plugin_distribution_publication_contract_is_explicit(self) -> None:
         contract = json.loads(
             (ROOT / "release" / "plugin-distribution.json").read_text(

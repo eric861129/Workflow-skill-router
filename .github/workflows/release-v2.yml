@@ -302,15 +302,66 @@ jobs:
           GH_TOKEN: ${{ steps.release-app-token.outputs.token }}
         run: |
           mapfile -t release_files < <(find dist/release -type f -print | sort)
-          release_flags=()
-          if [[ "$RELEASE_TAG" == *-* ]]; then
-            release_flags+=(--prerelease)
+          fail_source_release_check() {
+            echo "Source GitHub Release does not match the verified release tag and deterministic asset bundle."
+            exit 1
+          }
+
+          verify_source_release() {
+            SOURCE_RELEASE_JSON="$RUNNER_TEMP/source-release.json"
+            gh api --method GET \
+              "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+              >"$SOURCE_RELEASE_JSON" || fail_source_release_check
+
+            EXPECTED_PRERELEASE=false
+            if [[ "$RELEASE_TAG" == *-* ]]; then
+              EXPECTED_PRERELEASE=true
+            fi
+            jq -e \
+              --arg tag "$RELEASE_TAG" \
+              --arg title "Workflow Skill Router $RELEASE_TAG" \
+              --argjson prerelease "$EXPECTED_PRERELEASE" \
+              --rawfile notes "release/notes/${RELEASE_TAG}.md" \
+              '
+                .tag_name == $tag
+                and .draft == false
+                and .prerelease == $prerelease
+                and .name == $title
+                and .body == $notes
+              ' \
+              "$SOURCE_RELEASE_JSON" >/dev/null || fail_source_release_check
+
+            expected_assets="$RUNNER_TEMP/source-release-assets.expected.tsv"
+            actual_assets="$RUNNER_TEMP/source-release-assets.actual.tsv"
+            for release_file in "${release_files[@]}"; do
+              printf '%s\tsha256:%s\n' \
+                "$(basename "$release_file")" \
+                "$(sha256sum "$release_file" | awk '{print $1}')"
+            done | LC_ALL=C sort >"$expected_assets"
+            jq -r '.assets[] | [.name, .digest] | @tsv' \
+              "$SOURCE_RELEASE_JSON" | LC_ALL=C sort >"$actual_assets"
+            cmp -s "$expected_assets" "$actual_assets" || fail_source_release_check
+          }
+
+          SOURCE_RELEASE_RESPONSE="$RUNNER_TEMP/source-release-response.txt"
+          if gh api --include --method GET \
+            "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            >"$SOURCE_RELEASE_RESPONSE" 2>&1; then
+            verify_source_release
+          elif grep -Eq '^HTTP/[0-9.]+ 404[[:space:]]' "$SOURCE_RELEASE_RESPONSE"; then
+            release_flags=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create "$RELEASE_TAG" "${release_files[@]}" \
+              --verify-tag \
+              --title "Workflow Skill Router $RELEASE_TAG" \
+              --notes-file "release/notes/${RELEASE_TAG}.md" \
+              "${release_flags[@]}" || fail_source_release_check
+            verify_source_release
+          else
+            fail_source_release_check
           fi
-          gh release create "$RELEASE_TAG" "${release_files[@]}" \
-            --verify-tag \
-            --title "Workflow Skill Router $RELEASE_TAG" \
-            --notes-file "release/notes/${RELEASE_TAG}.md" \
-            "${release_flags[@]}"
 
   publish-plugin-distribution:
     name: Publish verified standalone Plugin repository
