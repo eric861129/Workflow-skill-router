@@ -1,8 +1,19 @@
-name: V2 routing failure
-description: Report a reproducible route that selected the wrong Skills, phase, or consent behavior.
-title: "[Routing failure]: "
+name: Routing Misclassification Report
+description: Report a reproducible route that selected the wrong work envelope, Skills, phase, or consent behavior.
+title: "[Routing misclassification]: "
 labels: ["routing", "needs-triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a reproducible routing result. Remove secrets, private prompts, repository names, hostnames, local paths, and personal data before submitting.
+  - type: textarea
+    id: original-request
+    attributes:
+      label: Original Request
+      description: Provide a public-safe, minimally sufficient request that reproduces the result.
+    validations:
+      required: true
   - type: dropdown
     id: task-size
     attributes:
@@ -13,6 +24,29 @@ body:
         - Large task / Goal mode
     validations:
       required: true
+  - type: dropdown
+    id: expected-work-envelope
+    attributes:
+      label: Expected Work Envelope
+      options:
+        - Single task
+        - Phased work
+        - Managed Goal
+        - No route should have been created
+    validations:
+      required: true
+  - type: dropdown
+    id: actual-work-envelope
+    attributes:
+      label: Actual Work Envelope
+      options:
+        - Single task
+        - Phased work
+        - Managed Goal
+        - No route was created
+        - Unable to determine
+    validations:
+      required: true
   - type: input
     id: phase
     attributes:
@@ -21,16 +55,24 @@ body:
     validations:
       required: true
   - type: textarea
-    id: request
+    id: runtime-state
     attributes:
-      label: Public-safe user request
+      label: Runtime State
+      description: Include Codex version, operating system, Plugin + MCP or Skill-only mode, Plugin version if installed, and any capability state relevant to the route.
     validations:
       required: true
   - type: textarea
-    id: skills
+    id: available-skills
     attributes:
       label: Available Skills
-      description: List only the Skills relevant to this reproduction.
+      description: List only the Skills relevant to this reproduction, including any explicitly user-specified Skill.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-skills
+    attributes:
+      label: Expected Skills
+      description: Identify the smallest expected Skill set and why each Skill belongs in the route.
     validations:
       required: true
   - type: input
@@ -41,17 +83,17 @@ body:
     validations:
       required: true
   - type: textarea
-    id: actual
+    id: actual-skills
     attributes:
-      label: Actual route
-      description: Include primary, supporting, omitted, and rejected Skills.
+      label: Actual Skills
+      description: Include primary, supporting, omitted, and rejected Skills selected by the Router.
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: why-incorrect
     attributes:
-      label: Expected route
-      description: Explain the expected phase and Skill selection.
+      label: Why this result is incorrect
+      description: Explain the mismatch between expected and actual work envelope, phase, Skill selection, or consent behavior.
     validations:
       required: true
   - type: dropdown
