@@ -5,10 +5,13 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +32,23 @@ def load_builder(test_case: unittest.TestCase):
     specification = importlib.util.spec_from_file_location(
         "workflow_skill_router_plugin_distribution_builder",
         BUILDER_PATH,
+    )
+    test_case.assertIsNotNone(specification)
+    test_case.assertIsNotNone(specification.loader)
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[specification.name] = module
+    specification.loader.exec_module(module)
+    return module
+
+
+def load_synchronizer(test_case: unittest.TestCase):
+    test_case.assertTrue(
+        SYNCHRONIZER_PATH.is_file(),
+        "plugin distribution synchronizer module is required",
+    )
+    specification = importlib.util.spec_from_file_location(
+        "workflow_skill_router_plugin_distribution_synchronizer",
+        SYNCHRONIZER_PATH,
     )
     test_case.assertIsNotNone(specification)
     test_case.assertIsNotNone(specification.loader)
@@ -385,6 +405,96 @@ class PluginDistributionRepoTests(unittest.TestCase):
 
 
 class PluginDistributionSynchronizerTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows junction test")
+    def test_is_link_like_detects_real_windows_junction_without_path_api(
+        self,
+    ) -> None:
+        synchronizer = load_synchronizer(self)
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            target = workspace / "junction-target"
+            target.mkdir()
+            junction = workspace / "junction"
+            created = subprocess.run(
+                (
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    (
+                        "New-Item -ItemType Junction "
+                        f"-Path '{junction}' "
+                        f"-Target '{target}' | Out-Null"
+                    ),
+                ),
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(created.returncode, 0, created.stderr)
+            self.assertTrue(
+                junction.lstat().st_file_attributes
+                & stat.FILE_ATTRIBUTE_REPARSE_POINT
+            )
+
+            with mock.patch.object(
+                Path,
+                "is_junction",
+                side_effect=AssertionError("Path.is_junction must not be required"),
+                create=True,
+            ):
+                self.assertTrue(synchronizer._is_link_like(junction))
+
+    def test_is_link_like_supports_python_311_path_without_is_junction(
+        self,
+    ) -> None:
+        synchronizer = load_synchronizer(self)
+
+        class Python311WindowsPath:
+            def is_symlink(self) -> bool:
+                return False
+
+            def lstat(self) -> SimpleNamespace:
+                return SimpleNamespace(
+                    st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT
+                )
+
+        path = Python311WindowsPath()
+        self.assertFalse(hasattr(path, "is_junction"))
+        with mock.patch.object(synchronizer.os, "name", "nt"):
+            self.assertTrue(synchronizer._is_link_like(path))
+
+    def test_case_variant_ownership_filename_fails_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            case_variant = ".WORKFLOW-SKILL-ROUTER-DISTRIBUTION.JSON"
+            generated_root = create_generated_root(
+                workspace,
+                {
+                    case_variant: "reserved\n",
+                    "README.md": "generated\n",
+                },
+            )
+            target_root = create_target_repository(
+                workspace,
+                {"README.md": "existing\n"},
+            )
+
+            completed = run_synchronizer(generated_root, target_root)
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertRegex(
+                completed.stderr,
+                r"(?i)reserved synchronizer path",
+            )
+            self.assertEqual(
+                (target_root / "README.md").read_text(encoding="utf-8"),
+                "existing\n",
+            )
+            self.assertFalse((target_root / case_variant).exists())
+            self.assertFalse((target_root / OWNERSHIP_FILENAME).exists())
+
     def test_wrong_origin_fails_before_mutation_with_target_identity_message(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             workspace = Path(directory)
@@ -581,7 +691,10 @@ class PluginDistributionSynchronizerTests(unittest.TestCase):
             self.assertRegex(completed.stderr, r"(?i)(symlink|junction|reparse)")
             self.assertTrue(link.exists())
             if used_junction:
-                self.assertTrue(link.is_junction())
+                self.assertTrue(
+                    link.lstat().st_file_attributes
+                    & stat.FILE_ATTRIBUTE_REPARSE_POINT
+                )
             else:
                 self.assertTrue(link.is_symlink())
                 self.assertEqual(os.readlink(link), "link-target.txt")

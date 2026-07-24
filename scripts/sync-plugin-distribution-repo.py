@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,11 @@ def _parse_distribution_path(value: str) -> PurePosixPath:
     relative = parse_safe_relative_posix_path(value)
     if relative.parts[0].casefold() == ".git":
         raise ValueError(f"reserved Git metadata path is unsafe: {value!r}")
+    if (
+        len(relative.parts) == 1
+        and relative.parts[0].casefold() == OWNERSHIP_FILENAME.casefold()
+    ):
+        raise ValueError(f"reserved synchronizer path is unsafe: {value!r}")
     return relative
 
 
@@ -65,8 +71,15 @@ def canonical_json(value: object) -> bytes:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or (callable(is_junction) and is_junction())
+    if path.is_symlink():
+        return True
+    if os.name != "nt":
+        return False
+    try:
+        attributes = path.lstat().st_file_attributes
+    except FileNotFoundError:
+        return False
+    return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def _run_git(target_root: Path, *arguments: str) -> subprocess.CompletedProcess[bytes]:
@@ -287,7 +300,10 @@ def _tracked_files(target_root: Path) -> set[PurePosixPath]:
         if not raw_name:
             continue
         name = _decode_git_output(raw_name, "tracked path")
-        result.add(_parse_distribution_path(name))
+        if name == OWNERSHIP_FILENAME:
+            result.add(OWNERSHIP_PATH)
+        else:
+            result.add(_parse_distribution_path(name))
     return result
 
 
