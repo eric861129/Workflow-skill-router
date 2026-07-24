@@ -459,10 +459,21 @@ jobs:
                   None,
               )
               if ruleset_id is None:
-                  continue
+                continue
               detail_case = f"ruleset-detail-{target}"
-              read_json(detail_case, f"repos/{repository}/rulesets/{ruleset_id}")
+              details = read_json(
+                  detail_case,
+                  f"repos/{repository}/rulesets/{ruleset_id}",
+              )
               print(f"PASS: target-governance-read-{detail_case}")
+              bypass_actors = (
+                  details.get("bypass_actors") if isinstance(details, dict) else None
+              )
+              bypass_shape = "list" if isinstance(bypass_actors, list) else "unavailable"
+              print(
+                  f"PASS: target-governance-read-bypass-actors-{target}="
+                  f"{bypass_shape}"
+              )
       - name: Verify target governance before generated publication
         shell: bash
         env:

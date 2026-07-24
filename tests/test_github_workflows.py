@@ -1138,6 +1138,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             'ruleset-detail-{target}',
             'target-governance-read-{list_case}',
             'target-governance-read-{detail_case}',
+            'target-governance-read-bypass-actors-{target}',
             "plugin-distribution-governance-unavailable:",
         ):
             with self.subTest(required=required):
