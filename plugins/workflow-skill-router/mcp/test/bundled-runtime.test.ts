@@ -512,13 +512,13 @@ test("bundled MCP server gives generic remediation when the bridge exits during 
 test("shipped MCP bundle advertises release metadata through MCP_SERVER_VERSION", async () => {
   const parent = path.resolve(import.meta.dirname, "..");
   const sourcePluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
-  const release = JSON.parse(await readFile(
-    path.resolve(sourcePluginRoot, "..", "..", "release", "version.json"),
+  const pluginManifest = JSON.parse(await readFile(
+    path.join(sourcePluginRoot, ".codex-plugin", "plugin.json"),
     "utf8",
-  )) as { v2_version: string };
+  )) as { version: string };
 
   const shippedServerInfo = await initializedServerInfo(sourcePluginRoot);
-  assert.equal(shippedServerInfo.version, release.v2_version);
+  assert.equal(shippedServerInfo.version, pluginManifest.version);
 
   const root = await mkdtemp(path.join(os.tmpdir(), "workflow-skill-router-version-mutation-"));
   const pluginRoot = path.join(root, "plugin");

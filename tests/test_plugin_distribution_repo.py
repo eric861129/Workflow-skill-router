@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path, PurePosixPath
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -206,6 +208,36 @@ class PluginDistributionRepoTests(unittest.TestCase):
 
             self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve me\n")
             self.assertEqual(list(output.iterdir()), [sentinel])
+
+    def test_generated_plugin_check_succeeds_outside_canonical_repository(self) -> None:
+        """Generated Plugin 的檢查不得依賴 canonical repository 祖先目錄。"""
+        builder = load_builder(self)
+        tree = builder.build_distribution_tree(
+            ROOT,
+            version=VERSION,
+            source_revision=SOURCE_REVISION,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="workflow-skill-router-plugin-") as directory:
+            output = Path(directory) / "plugin-repository"
+            builder.write_distribution_tree(tree, output)
+            npm = "npm.cmd" if os.name == "nt" else "npm"
+            for command in ((npm, "ci"), (npm, "run", "check")):
+                completed = subprocess.run(
+                    command,
+                    cwd=output,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(
+                    completed.returncode,
+                    0,
+                    "Command failed: "
+                    f"{' '.join(command)}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
+                )
 
     def test_invalid_version_and_revision_fail_before_reading_sources(self) -> None:
         builder = load_builder(self)
