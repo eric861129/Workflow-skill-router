@@ -51,6 +51,14 @@
       "template": false
     }
   ],
+  "publication": {
+    "app_client_id_variable": "WSR_RELEASE_APP_CLIENT_ID",
+    "app_private_key_secret": "WSR_RELEASE_APP_PRIVATE_KEY",
+    "branch": "main",
+    "repository": "eric861129/workflow-skill-router-plugin",
+    "scanner_workflow": "HOL Plugin Scanner",
+    "tag_pattern": "v*"
+  },
   "schema_version": "1.0",
   "source_allowlist": "release/allowlists/plugin-distribution-repository-files.json",
   "source_root": "plugins/workflow-skill-router",

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 ACTION_PATTERN = re.compile(r"\buses:\s*([^@\s]+)@([^\s#]+)")
-FULL_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+FULL_SHA_PATTERN = re.compile(r"\A[0-9a-f]{40}\Z")
 PUBLISHABLE_LIFECYCLE = "reviewed-attested-publishable"
 PREPARED_LIFECYCLE = "prepared-local-candidate"
 JOB_BLOCK_PATTERN = re.compile(
@@ -1078,6 +1078,92 @@ class GitHubWorkflowTests(unittest.TestCase):
             [guard_name, "Attest release assets from checksums"],
             publish_tail_steps[:2],
         )
+
+    def test_plugin_distribution_publication_contract_is_explicit(self) -> None:
+        contract = json.loads(
+            (ROOT / "release" / "plugin-distribution.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertEqual(
+            {
+                "app_client_id_variable": "WSR_RELEASE_APP_CLIENT_ID",
+                "app_private_key_secret": "WSR_RELEASE_APP_PRIVATE_KEY",
+                "branch": "main",
+                "repository": "eric861129/workflow-skill-router-plugin",
+                "scanner_workflow": "HOL Plugin Scanner",
+                "tag_pattern": "v*",
+            },
+            contract["publication"],
+        )
+
+    def test_release_publishes_plugin_distribution_only_after_source_release(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+
+        for required in (
+            "needs: [resolve-source, preflight, release]",
+            "group: plugin-distribution-release",
+            "cancel-in-progress: false",
+            "contents: read",
+            "ref: ${{ needs.resolve-source.outputs.source_revision }}",
+            "client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}",
+            "private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}",
+            "permission-actions: read",
+            "permission-contents: write",
+            '$RUNNER_TEMP/plugin-distribution',
+            '$RUNNER_TEMP/plugin-target',
+            "scripts/build-plugin-distribution-repo.py",
+            "scripts/sync-plugin-distribution-repo.py",
+            "git diff --cached --quiet",
+            "git push origin HEAD:main",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, publication_job)
+
+        self.assertNotIn("--force", publication_job)
+        self.assertNotIn("git clean", publication_job)
+
+        action_refs = ACTION_PATTERN.findall(publication_job)
+        self.assertGreater(len(action_refs), 0)
+        for action, ref in action_refs:
+            with self.subTest(action=action):
+                self.assertRegex(ref, FULL_SHA_PATTERN)
+
+    def test_plugin_distribution_tag_waits_for_exact_target_scanner_success(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+
+        for required in (
+            'TARGET_SCANNER_WORKFLOW: "HOL Plugin Scanner"',
+            'TARGET_TAG_PATTERN: "v*"',
+            '--workflow "$TARGET_SCANNER_WORKFLOW"',
+            '--commit "$TARGET_REVISION"',
+            "gh run watch",
+            "--exit-status",
+            "gh run view",
+            "--json headSha",
+            '"$SCANNER_HEAD_SHA" != "$TARGET_REVISION"',
+            'git tag -a "$RELEASE_TAG" "$TARGET_REVISION"',
+            'git push origin "refs/tags/$RELEASE_TAG"',
+            '"refs/tags/$RELEASE_TAG^{}"',
+            '"$REMOTE_TARGET_REVISION" != "$TARGET_REVISION"',
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, publication_job)
+
+        scanner_index = publication_job.index("gh run watch")
+        scanner_head_index = publication_job.index('"$SCANNER_HEAD_SHA" != "$TARGET_REVISION"')
+        tag_index = publication_job.index('git tag -a "$RELEASE_TAG" "$TARGET_REVISION"')
+        self.assertLess(scanner_index, scanner_head_index)
+        self.assertLess(scanner_head_index, tag_index)
 
     def test_dependabot_covers_both_node_projects_and_actions(self) -> None:
         content = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")

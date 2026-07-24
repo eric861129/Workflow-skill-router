@@ -311,3 +311,191 @@ jobs:
             --title "Workflow Skill Router $RELEASE_TAG" \
             --notes-file "release/notes/${RELEASE_TAG}.md" \
             "${release_flags[@]}"
+
+  publish-plugin-distribution:
+    name: Publish verified standalone Plugin repository
+    needs: [resolve-source, preflight, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: plugin-distribution-release
+      cancel-in-progress: false
+    env:
+      SOURCE_REVISION: ${{ needs.resolve-source.outputs.source_revision }}
+      RELEASE_TAG: ${{ needs.resolve-source.outputs.release_tag }}
+      TARGET_REPOSITORY: eric861129/workflow-skill-router-plugin
+      TARGET_BRANCH: main
+      TARGET_SCANNER_WORKFLOW: "HOL Plugin Scanner"
+      TARGET_TAG_PATTERN: "v*"
+    steps:
+      - name: Checkout frozen release source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.resolve-source.outputs.source_revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Mint least-privilege target App token
+        id: target-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: workflow-skill-router-plugin
+          permission-actions: read
+          permission-contents: write
+      - name: Build standalone Plugin distribution
+        shell: bash
+        run: |
+          python -I -S -B scripts/build-plugin-distribution-repo.py \
+            --output-dir "$RUNNER_TEMP/plugin-distribution" \
+            --source-revision "$SOURCE_REVISION" \
+            --version "${RELEASE_TAG#v}" \
+            --check-determinism
+      - name: Checkout target main branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+        run: |
+          gh repo clone "$TARGET_REPOSITORY" "$RUNNER_TEMP/plugin-target" -- \
+            --branch "$TARGET_BRANCH" \
+            --single-branch
+      - name: Synchronize and publish target main branch
+        id: publish-target
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+        run: |
+          python -I -S -B scripts/sync-plugin-distribution-repo.py \
+            --generated-root "$RUNNER_TEMP/plugin-distribution" \
+            --target-root "$RUNNER_TEMP/plugin-target" \
+            --expected-remote "https://github.com/${TARGET_REPOSITORY}.git"
+
+          cd "$RUNNER_TEMP/plugin-target"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "Generated Plugin distribution already matches target main."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "release: publish Workflow Skill Router $RELEASE_TAG"
+            gh auth setup-git
+            git push origin HEAD:main
+          fi
+
+          TARGET_REVISION="$(git rev-parse HEAD)"
+          REMOTE_MAIN_REVISION="$(
+            git ls-remote --exit-code origin "refs/heads/$TARGET_BRANCH" |
+              awk 'NR == 1 { print $1 }'
+          )"
+          if [[ -z "$REMOTE_MAIN_REVISION" || "$REMOTE_MAIN_REVISION" != "$TARGET_REVISION" ]]; then
+            echo "Target main does not resolve to the generated Plugin revision."
+            exit 1
+          fi
+          echo "target_revision=$TARGET_REVISION" >> "$GITHUB_OUTPUT"
+      - name: Wait for target HOL Plugin Scanner
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+          TARGET_REVISION: ${{ steps.publish-target.outputs.target_revision }}
+        run: |
+          SCANNER_RUN_ID=""
+          for attempt in $(seq 1 30); do
+            SCANNER_RUN_ID="$(
+              gh run list \
+                --repo "$TARGET_REPOSITORY" \
+                --workflow "$TARGET_SCANNER_WORKFLOW" \
+                --commit "$TARGET_REVISION" \
+                --limit 20 \
+                --json databaseId,headSha \
+                --jq "map(select(.headSha == \"$TARGET_REVISION\")) | first | .databaseId // empty"
+            )"
+            if [[ -n "$SCANNER_RUN_ID" ]]; then
+              break
+            fi
+            if [[ "$attempt" -eq 30 ]]; then
+              echo "No HOL Plugin Scanner run was found for target revision $TARGET_REVISION."
+              exit 1
+            fi
+            sleep 10
+          done
+
+          gh run watch "$SCANNER_RUN_ID" \
+            --repo "$TARGET_REPOSITORY" \
+            --exit-status
+          SCANNER_HEAD_SHA="$(
+            gh run view "$SCANNER_RUN_ID" \
+              --repo "$TARGET_REPOSITORY" \
+              --json headSha \
+              --jq .headSha
+          )"
+          if [[ "$SCANNER_HEAD_SHA" != "$TARGET_REVISION" ]]; then
+            echo "HOL Plugin Scanner did not verify the exact target revision."
+            exit 1
+          fi
+      - name: Create or verify target release tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+          TARGET_REVISION: ${{ steps.publish-target.outputs.target_revision }}
+        run: |
+          case "$RELEASE_TAG" in
+            $TARGET_TAG_PATTERN) ;;
+            *)
+              echo "Target release tag does not match $TARGET_TAG_PATTERN."
+              exit 1
+              ;;
+          esac
+
+          cd "$RUNNER_TEMP/plugin-target"
+          fail_target_tag_check() {
+            echo "Target release tag could not be verified against the scanned target revision."
+            exit 1
+          }
+
+          REMOTE_REFS="$(
+            git ls-remote origin \
+              "refs/tags/$RELEASE_TAG" \
+              "refs/tags/$RELEASE_TAG^{}"
+          )" || fail_target_tag_check
+          if [[ -z "$REMOTE_REFS" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$RELEASE_TAG" "$TARGET_REVISION" \
+              -m "Workflow Skill Router Plugin $RELEASE_TAG"
+            gh auth setup-git
+            git push origin "refs/tags/$RELEASE_TAG" || fail_target_tag_check
+            REMOTE_REFS="$(
+              git ls-remote origin \
+                "refs/tags/$RELEASE_TAG" \
+                "refs/tags/$RELEASE_TAG^{}"
+            )" || fail_target_tag_check
+          fi
+
+          DIRECT_REVISION=""
+          PEELED_REVISION=""
+          while IFS=$'\t' read -r revision reference; do
+            if [[ -z "$revision" && -z "$reference" ]]; then
+              continue
+            fi
+            case "$reference" in
+              "refs/tags/$RELEASE_TAG")
+                [[ -z "$DIRECT_REVISION" ]] || fail_target_tag_check
+                DIRECT_REVISION="$revision"
+                ;;
+              "refs/tags/$RELEASE_TAG^{}")
+                [[ -z "$PEELED_REVISION" ]] || fail_target_tag_check
+                PEELED_REVISION="$revision"
+                ;;
+              *)
+                fail_target_tag_check
+                ;;
+            esac
+          done <<< "$REMOTE_REFS"
+
+          [[ -n "$DIRECT_REVISION" ]] || fail_target_tag_check
+          REMOTE_TARGET_REVISION="${PEELED_REVISION:-$DIRECT_REVISION}"
+          if [[ "$REMOTE_TARGET_REVISION" != "$TARGET_REVISION" ]]; then
+            fail_target_tag_check
+          fi
