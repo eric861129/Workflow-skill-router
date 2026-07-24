@@ -155,15 +155,21 @@ def _ruleset_details(
     return details
 
 
-def _ref_includes(ruleset: dict[str, object]) -> list[str]:
+def _ref_conditions(
+    ruleset: dict[str, object],
+) -> tuple[list[str], list[str]]:
     conditions = ruleset.get("conditions")
     ref_name = conditions.get("ref_name") if isinstance(conditions, dict) else None
     includes = ref_name.get("include") if isinstance(ref_name, dict) else None
-    if not isinstance(includes, list) or not all(
-        isinstance(item, str) for item in includes
+    excludes = ref_name.get("exclude") if isinstance(ref_name, dict) else None
+    if (
+        not isinstance(includes, list)
+        or not all(isinstance(item, str) for item in includes)
+        or not isinstance(excludes, list)
+        or not all(isinstance(item, str) for item in excludes)
     ):
         raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE)
-    return includes
+    return includes, excludes
 
 
 def _rule_entries(ruleset: dict[str, object]) -> list[dict[str, object]]:
@@ -187,11 +193,14 @@ def _matching_rulesets(
             for field in ("name", "target", "enforcement")
         ):
             raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE)
+        includes, excludes = _ref_conditions(ruleset)
+        target_ref = desired["ref_name_include"]
         if (
             ruleset["name"] == desired["name"]
             and ruleset["target"] == desired["target"]
             and ruleset["enforcement"] == desired["enforcement"]
-            and desired["ref_name_include"] in _ref_includes(ruleset)
+            and target_ref in includes
+            and not excludes
         ):
             matches.append(ruleset)
     return matches
@@ -298,29 +307,41 @@ def evaluate_governance(
         raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE)
 
     matching_branches = _matching_rulesets(desired_branch, branch_rulesets)
-    if not any(
-        _has_required_rules(ruleset, desired_branch)
+    branch_rule_candidates = [
+        ruleset
         for ruleset in matching_branches
-    ):
+        if _has_required_rules(ruleset, desired_branch)
+    ]
+    if not branch_rule_candidates:
         violations.append("target-branch-rules-missing")
-    if not any(
-        _has_scanner(ruleset, scanner) for ruleset in matching_branches
-    ):
+    branch_scanner_candidates = [
+        ruleset
+        for ruleset in branch_rule_candidates or matching_branches
+        if _has_scanner(ruleset, scanner)
+    ]
+    if not branch_scanner_candidates:
         violations.append("scanner-requirement-missing")
     if not any(
         _has_release_app_bypass(ruleset, bypass)
-        for ruleset in matching_branches
+        for ruleset in (
+            branch_scanner_candidates
+            or branch_rule_candidates
+            or matching_branches
+        )
     ):
         violations.append("release-app-bypass-missing")
 
     matching_tags = _matching_rulesets(desired_tag, tag_rulesets)
-    if not any(
-        _has_required_rules(ruleset, desired_tag) for ruleset in matching_tags
-    ):
+    tag_rule_candidates = [
+        ruleset
+        for ruleset in matching_tags
+        if _has_required_rules(ruleset, desired_tag)
+    ]
+    if not tag_rule_candidates:
         violations.append("tag-protection-missing")
     if not any(
         _has_release_app_bypass(ruleset, bypass)
-        for ruleset in matching_tags
+        for ruleset in tag_rule_candidates or matching_tags
     ) and "release-app-bypass-missing" not in violations:
         violations.append("release-app-bypass-missing")
     return violations

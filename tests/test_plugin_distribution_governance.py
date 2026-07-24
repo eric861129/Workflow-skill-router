@@ -284,6 +284,90 @@ class PluginDistributionGovernanceTests(unittest.TestCase):
                 self.assertEqual(1, result)
                 self.assertIn("release-app-bypass-missing", output)
 
+    def test_split_branch_rulesets_cannot_collectively_satisfy_contract(
+        self,
+    ) -> None:
+        branch_controls = branch_ruleset()
+        branch_controls["rules"] = [
+            rule
+            for rule in branch_controls["rules"]  # type: ignore[index]
+            if rule["type"] != "required_status_checks"
+        ]
+        scanner_only = branch_ruleset()
+        scanner_only["id"] = 102
+        scanner_only["rules"] = [
+            rule
+            for rule in scanner_only["rules"]  # type: ignore[index]
+            if rule["type"] == "required_status_checks"
+        ]
+
+        violations = self.verifier.evaluate_governance(
+            self.verifier.load_contract(CONTRACT_PATH),
+            repository_payload(),
+            branch_payload(),
+            [branch_controls, scanner_only],
+            [tag_ruleset()],
+        )
+
+        self.assertIn("scanner-requirement-missing", violations)
+
+    def test_split_tag_rulesets_cannot_collectively_satisfy_contract(
+        self,
+    ) -> None:
+        tag_controls = tag_ruleset()
+        tag_controls["bypass_actors"] = []
+        bypass_only = tag_ruleset()
+        bypass_only["id"] = 203
+        bypass_only["rules"] = []
+
+        violations = self.verifier.evaluate_governance(
+            self.verifier.load_contract(CONTRACT_PATH),
+            repository_payload(),
+            branch_payload(),
+            [branch_ruleset()],
+            [tag_controls, bypass_only],
+        )
+
+        self.assertIn("release-app-bypass-missing", violations)
+
+    def test_ruleset_excluding_its_included_target_ref_is_rejected(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "branch",
+                branch_ruleset(),
+                "refs/heads/main",
+                "target-branch-rules-missing",
+            ),
+            ("tag", tag_ruleset(), "refs/tags/v*", "tag-protection-missing"),
+        )
+        for target, excluded_ruleset, excluded_ref, expected in cases:
+            with self.subTest(target=target):
+                excluded_ruleset["conditions"]["ref_name"]["exclude"] = [  # type: ignore[index]
+                    excluded_ref
+                ]
+                branch_rules = (
+                    [excluded_ruleset]
+                    if target == "branch"
+                    else [branch_ruleset()]
+                )
+                tag_rules = (
+                    [excluded_ruleset]
+                    if target == "tag"
+                    else [tag_ruleset()]
+                )
+
+                violations = self.verifier.evaluate_governance(
+                    self.verifier.load_contract(CONTRACT_PATH),
+                    repository_payload(),
+                    branch_payload(),
+                    branch_rules,
+                    tag_rules,
+                )
+
+                self.assertIn(expected, violations)
+
     def test_fetch_json_explicitly_uses_get_without_request_body(self) -> None:
         with patch.object(
             self.verifier.subprocess,
