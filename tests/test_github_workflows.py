@@ -1134,6 +1134,22 @@ class GitHubWorkflowTests(unittest.TestCase):
             with self.subTest(action=action):
                 self.assertRegex(ref, FULL_SHA_PATTERN)
 
+    def test_plugin_distribution_sync_receives_target_repository_identity(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+
+        self.assertIn(
+            '--expected-remote "$TARGET_REPOSITORY"',
+            publication_job,
+        )
+        self.assertNotIn(
+            '--expected-remote "https://github.com/${TARGET_REPOSITORY}.git"',
+            publication_job,
+        )
+
     def test_plugin_distribution_tag_waits_for_exact_target_scanner_success(
         self,
     ) -> None:

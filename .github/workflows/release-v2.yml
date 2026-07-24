@@ -370,7 +370,7 @@ jobs:
           python -I -S -B scripts/sync-plugin-distribution-repo.py \
             --generated-root "$RUNNER_TEMP/plugin-distribution" \
             --target-root "$RUNNER_TEMP/plugin-target" \
-            --expected-remote "https://github.com/${TARGET_REPOSITORY}.git"
+            --expected-remote "$TARGET_REPOSITORY"
 
           cd "$RUNNER_TEMP/plugin-target"
           git add --all
