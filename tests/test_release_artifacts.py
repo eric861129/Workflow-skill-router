@@ -158,6 +158,7 @@ class ReleaseArtifactTests(unittest.TestCase):
         )
         packages = {package["name"]: package for package in sbom["packages"]}
         self.assertEqual("1.29.0", packages["@modelcontextprotocol/sdk"]["versionInfo"])
+        self.assertEqual("4.1.1", packages["@cfworker/json-schema"]["versionInfo"])
         self.assertEqual("4.1.12", packages["zod"]["versionInfo"])
         self.assertEqual("BUILD_TOOL", packages["esbuild"]["primaryPackagePurpose"])
 

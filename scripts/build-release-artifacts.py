@@ -167,6 +167,14 @@ def build_sbom(version: str) -> bytes:
             "versionInfo": dependencies["@modelcontextprotocol/sdk"],
         },
         {
+            "SPDXID": "SPDXRef-Package-CfworkerJsonSchema",
+            "downloadLocation": "NOASSERTION",
+            "licenseConcluded": "NOASSERTION",
+            "name": "@cfworker/json-schema",
+            "primaryPackagePurpose": "LIBRARY",
+            "versionInfo": dependencies["@cfworker/json-schema"],
+        },
+        {
             "SPDXID": "SPDXRef-Package-Zod",
             "downloadLocation": "NOASSERTION",
             "licenseConcluded": "MIT",

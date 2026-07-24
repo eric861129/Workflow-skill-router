@@ -7,6 +7,15 @@ import test from "node:test";
 
 type JsonRpcResponse = { id?: number; result?: Record<string, unknown>; error?: unknown };
 
+test("bundled MCP server avoids dynamic schema compilation", async () => {
+  const parent = path.resolve(import.meta.dirname, "..");
+  const pluginRoot = path.basename(parent) === "mcp" ? path.resolve(parent, "..") : parent;
+  const bundle = await readFile(path.join(pluginRoot, "mcp", "server.bundle.mjs"), "utf8");
+
+  assert.doesNotMatch(bundle, /\beval\s*\(/);
+  assert.doesNotMatch(bundle, /new\s+Function\s*\(/);
+});
+
 const INITIALIZE_PARAMS = {
   protocolVersion: "2025-06-18",
   capabilities: {},

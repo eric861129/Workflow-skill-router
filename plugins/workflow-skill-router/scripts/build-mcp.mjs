@@ -6,6 +6,17 @@ const root = path.resolve(import.meta.dirname, "..");
 const tests = process.argv.includes("--tests");
 const outputIndex = process.argv.indexOf("--output");
 const explicitOutput = outputIndex === -1 ? null : process.argv[outputIndex + 1];
+const sdkServerIndex = path.join(
+  root,
+  "node_modules",
+  "@modelcontextprotocol",
+  "sdk",
+  "dist",
+  "esm",
+  "server",
+  "index.js",
+);
+const cfWorkerProvider = path.join(root, "mcp", "src", "cfworker-json-schema-provider.ts");
 if (outputIndex !== -1 && !explicitOutput) throw new Error("--output requires a path");
 if (tests && explicitOutput) throw new Error("--output cannot be combined with --tests");
 const testSources = [
@@ -27,5 +38,22 @@ const entries = tests
   : [{ in: path.join(root, "mcp", "src", "server.ts"), out: explicitOutput ? path.resolve(explicitOutput) : path.join(root, "mcp", "server.bundle.mjs") }];
 for (const entry of entries) {
   fs.mkdirSync(path.dirname(entry.out), { recursive: true });
-  await build({ entryPoints: [entry.in], outfile: entry.out, platform: "node", format: "esm", target: "node24", bundle: true, sourcemap: false, logLevel: "warning" });
+  await build({
+    entryPoints: [entry.in],
+    outfile: entry.out,
+    platform: "node",
+    format: "esm",
+    target: "node24",
+    bundle: true,
+    sourcemap: false,
+    logLevel: "warning",
+    plugins: [{
+      name: "replace-mcp-sdk-ajv-provider",
+      setup(buildContext) {
+        buildContext.onResolve({ filter: /ajv-provider\.js$/ }, (args) => (
+          args.importer === sdkServerIndex ? { path: cfWorkerProvider } : undefined
+        ));
+      },
+    }],
+  });
 }

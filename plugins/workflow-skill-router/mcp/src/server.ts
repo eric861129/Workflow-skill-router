@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import path from "node:path";
+import { CfWorkerJsonSchemaValidator } from "./cfworker-json-schema-provider.js";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
 import { startupFailureMessage } from "./startup-diagnostics.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
@@ -19,7 +20,10 @@ try { await core.start(); } catch (error) {
   process.stderr.write(startupFailureMessage(error));
   process.exit(78);
 }
-const server = new McpServer({ name: "workflow-skill-router", version: MCP_SERVER_VERSION });
+const server = new McpServer(
+  { name: "workflow-skill-router", version: MCP_SERVER_VERSION },
+  { jsonSchemaValidator: new CfWorkerJsonSchemaValidator() },
+);
 const trustedWorkspaceRoots = async () => {
   let clientRoots: { uri: string }[] = [];
   if (server.server.getClientCapabilities()?.roots) {
