@@ -94,6 +94,9 @@ canonical release flow. Never patch or retag the generated target manually.
 
 The trusted distribution publication job repeats this verifier before it writes
 the target branch. Its scoped Release App token therefore needs
-**Administration: read** in addition to limited Actions and Contents
-permissions; if live rulesets drift or cannot be read, publication fails closed
-before the generated target changes.
+**Administration: read**, **Actions: read**, **Contents: write**, and
+**Workflows: write**. Workflows write is necessary because the generated target
+includes the Scanner workflow itself; if that checked-in workflow changes, the
+publication must update it atomically with the rest of the generated target.
+If live rulesets drift or cannot be read, publication fails closed before the
+generated target changes.

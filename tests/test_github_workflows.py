@@ -1116,6 +1116,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             "permission-administration: read",
             "permission-actions: read",
             "permission-contents: write",
+            "permission-workflows: write",
             "scripts/verify-plugin-distribution-governance.py",
             '$RUNNER_TEMP/plugin-distribution',
             '$RUNNER_TEMP/plugin-target',
@@ -1201,7 +1202,17 @@ class GitHubWorkflowTests(unittest.TestCase):
         tag_index = publication_job.index('git tag -a "$RELEASE_TAG" "$TARGET_REVISION"')
         release_index = publication_job.index('gh release create "$RELEASE_TAG"')
         self.assertLess(tag_index, release_index)
-        self.assertIn('gh release view "$RELEASE_TAG"', publication_job)
+        self.assertIn(
+            'gh api --include --method GET '
+            '"repos/$TARGET_REPOSITORY/releases/tags/$RELEASE_TAG"',
+            publication_job,
+        )
+        self.assertIn(
+            "grep -Eq '^HTTP/[0-9.]+ 404[[:space:]]'",
+            publication_job,
+        )
+        self.assertNotIn('gh release view "$RELEASE_TAG"', publication_job)
+        self.assertIn("verify_target_release", publication_job)
         self.assertIn('Workflow Skill Router Plugin $RELEASE_TAG', publication_job)
 
     def test_dependabot_covers_both_node_projects_and_actions(self) -> None:

@@ -346,6 +346,7 @@ jobs:
           permission-administration: read
           permission-actions: read
           permission-contents: write
+          permission-workflows: write
       - name: Verify target governance before generated publication
         shell: bash
         env:
@@ -517,20 +518,27 @@ jobs:
             exit 1
           }
 
-          if gh release view "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" \
-            --json tagName,isDraft,isPrerelease >/dev/null 2>&1; then
+          verify_target_release() {
             TARGET_RELEASE_STATE="$(
-              gh release view "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" \
-                --json tagName,isDraft,isPrerelease \
-                --jq '[.tagName, (.isDraft | tostring), (.isPrerelease | tostring)] | @tsv'
+              gh api --method GET \
+                "repos/$TARGET_REPOSITORY/releases/tags/$RELEASE_TAG" \
+                --jq '[.tag_name, (.draft | tostring), (.prerelease | tostring)] | @tsv'
             )" || fail_target_release_check
             [[ "$TARGET_RELEASE_STATE" == "$RELEASE_TAG"$'\tfalse\tfalse' ]] \
               || fail_target_release_check
-          else
+          }
+
+          TARGET_RELEASE_RESPONSE="$RUNNER_TEMP/target-release-response.txt"
+          if gh api --include --method GET "repos/$TARGET_REPOSITORY/releases/tags/$RELEASE_TAG" >"$TARGET_RELEASE_RESPONSE" 2>&1; then
+            verify_target_release
+          elif grep -Eq '^HTTP/[0-9.]+ 404[[:space:]]' "$TARGET_RELEASE_RESPONSE"; then
             gh release create "$RELEASE_TAG" \
               --repo "$TARGET_REPOSITORY" \
               --verify-tag \
               --title "Workflow Skill Router Plugin $RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/plugin-target/UPSTREAM.md" \
               || fail_target_release_check
+            verify_target_release
+          else
+            fail_target_release_check
           fi
