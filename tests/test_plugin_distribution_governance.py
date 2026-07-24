@@ -262,6 +262,29 @@ class PluginDistributionGovernanceTests(unittest.TestCase):
         self.assertEqual(1, result)
         self.assertIn("tag-protection-missing", output)
 
+    def test_cli_reports_a_sanitized_case_for_ruleset_list_access_failure(
+        self,
+    ) -> None:
+        output = io.StringIO()
+        with patch.object(
+            self.verifier,
+            "fetch_json",
+            side_effect=(
+                repository_payload(),
+                branch_payload(),
+                self.verifier.GovernanceUnavailableError(
+                    self.verifier.GOVERNANCE_UNAVAILABLE
+                ),
+            ),
+        ), redirect_stdout(output):
+            result = self.verifier.main(["--contract", str(CONTRACT_PATH)])
+
+        self.assertEqual(1, result)
+        self.assertEqual(
+            "plugin-distribution-governance-unavailable: ruleset-list-branch\n",
+            output.getvalue(),
+        )
+
     def test_missing_release_app_bypass_is_rejected_for_branch_or_tag(
         self,
     ) -> None:

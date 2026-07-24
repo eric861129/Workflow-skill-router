@@ -94,18 +94,26 @@ def fetch_json(repo: str, endpoint: str) -> object:
         raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE) from error
 
 
+def _unavailable_for(case: str) -> GovernanceUnavailableError:
+    """Return a safe failure that identifies a governance-read boundary."""
+    return GovernanceUnavailableError(f"{GOVERNANCE_UNAVAILABLE}: {case}")
+
+
 def _ruleset_summaries(repo: str, target: str) -> list[dict[str, object]]:
     """Fetch every summary page for one GitHub ruleset target."""
     summaries: list[dict[str, object]] = []
     page = 1
     while True:
-        response = fetch_json(
-            repo,
-            (
-                f"repos/{repo}/rulesets?targets={target}"
-                f"&per_page={PAGE_SIZE}&page={page}"
-            ),
-        )
+        try:
+            response = fetch_json(
+                repo,
+                (
+                    f"repos/{repo}/rulesets?targets={target}"
+                    f"&per_page={PAGE_SIZE}&page={page}"
+                ),
+            )
+        except GovernanceUnavailableError as error:
+            raise _unavailable_for(f"ruleset-list-{target}") from error
         if not isinstance(response, list) or not all(
             isinstance(item, dict) for item in response
         ):
@@ -146,9 +154,15 @@ def _ruleset_details(
     summaries: list[dict[str, object]],
 ) -> list[dict[str, object]]:
     """Fetch full details only for active rulesets eligible by contract."""
+    target = desired.get("target")
+    if not isinstance(target, str):
+        raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE)
     details: list[dict[str, object]] = []
     for ruleset_id in _eligible_ruleset_ids(desired, summaries):
-        response = fetch_json(repo, f"repos/{repo}/rulesets/{ruleset_id}")
+        try:
+            response = fetch_json(repo, f"repos/{repo}/rulesets/{ruleset_id}")
+        except GovernanceUnavailableError as error:
+            raise _unavailable_for(f"ruleset-detail-{target}") from error
         if not isinstance(response, dict):
             raise GovernanceUnavailableError(GOVERNANCE_UNAVAILABLE)
         details.append(response)
@@ -364,9 +378,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         repo = contract["repository"]
         if not isinstance(repo, str) or (args.repo and args.repo != repo):
             raise ValueError(GOVERNANCE_UNAVAILABLE)
-        repository = fetch_json(repo, f"repos/{repo}")
+        try:
+            repository = fetch_json(repo, f"repos/{repo}")
+        except GovernanceUnavailableError as error:
+            raise _unavailable_for("repository-metadata") from error
         branch_name = contract["default_branch"]
-        branch = fetch_json(repo, f"repos/{repo}/branches/{branch_name}")
+        try:
+            branch = fetch_json(repo, f"repos/{repo}/branches/{branch_name}")
+        except GovernanceUnavailableError as error:
+            raise _unavailable_for("target-branch") from error
         desired_branch = contract["branch_ruleset"]
         desired_tag = contract["tag_ruleset"]
         if not all(
@@ -395,6 +415,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             branch_rulesets,
             tag_rulesets,
         )
+    except GovernanceUnavailableError as error:
+        print(error)
+        return 1
     except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
         print(GOVERNANCE_UNAVAILABLE)
         return 1
