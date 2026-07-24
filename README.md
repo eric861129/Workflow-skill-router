@@ -4,9 +4,8 @@
 
 Workflow Skill Router is a pre-execution, runtime-aware Skill-selection layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do. It is not a substitute for permissions, approval policies, sandboxing, or production orchestration.
 
-> Current published V2 release: `2.0.1`. Prepared local candidate: `2.0.2`
-> (not yet published). The immutable V1.3.1 recovery path remains available
-> during migration.
+> Current published V2 release: `2.0.2`. The immutable V1.3.1 recovery path
+> remains available during migration.
 
 Every V2 release is source-bound. A candidate starts as `prepared-local-candidate`; only a reviewed metadata-only promotion that binds `release_source_revision`, records maintainer attestation, and sets `release_lifecycle` to `reviewed-attested-publishable` can unlock `CREATE_V2_RELEASE`. The trusted default-branch workflow then builds, tags, attests, and publishes the frozen source.
 
@@ -62,7 +61,8 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 
 The checkout is the source for the current V2 release. Contributors must keep the candidate and trusted release metadata distinct: the later metadata-only promotion binds `release_source_revision` to the exact reviewed source SHA before `Release V2` can dispatch.
 
-`v2.0.2` is the next immutable GA tag. The trusted release workflow creates and verifies it from this candidate; normal installations should pin it instead of a mutable branch once publication completes.
+`v2.0.2` is an immutable GA tag created and verified by the trusted release
+workflow; normal installations should pin that tag instead of a mutable branch.
 
 The released Plugin already contains the MCP bundle and Python runtime. Node.js 24+ and Python 3.11+ are required; npm is needed only when rebuilding from source. See [Plugin installation](site/src/content/docs/guides/install-plugin.md).
 

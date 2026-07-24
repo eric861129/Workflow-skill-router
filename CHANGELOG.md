@@ -4,7 +4,7 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-## 2.0.2 (prepared, not yet published)
+## 2.0.2
 
 ### Added
 
@@ -20,9 +20,8 @@ All notable changes to Workflow Skill Router are documented here.
 - Defined the generated Plugin repository as an installation target rather than
   an independent development surface. Scanner or tag failures now require a
   canonical fix and a newly authorized release instead of manual target repair.
-- Kept `2.0.1` as the published V2 version while `2.0.2` remains a
-  `prepared-local-candidate`; no target repository, tag, App installation,
-  ruleset, or live release has been changed by this source preparation.
+- Promoted reviewed, source-bound `2.0.2` metadata for trusted workflow
+  publication while preserving immutable V1.3.1 recovery.
 
 ## 2.0.1
 
