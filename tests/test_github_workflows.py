@@ -1121,6 +1121,34 @@ class GitHubWorkflowTests(unittest.TestCase):
             contract["publication"],
         )
 
+    def test_plugin_publication_diagnoses_target_app_governance_reads(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+        diagnostic_marker = "- name: Diagnose target App governance reads"
+        verifier_marker = "scripts/verify-plugin-distribution-governance.py"
+
+        for required in (
+            diagnostic_marker,
+            "target-governance-read-repository-metadata",
+            "target-governance-read-target-branch",
+            'ruleset-list-{target}',
+            'ruleset-detail-{target}',
+            'target-governance-read-{list_case}',
+            'target-governance-read-{detail_case}',
+            "plugin-distribution-governance-unavailable:",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, publication_job)
+
+        mint_index = publication_job.index("Mint least-privilege target App token")
+        diagnostic_index = publication_job.index(diagnostic_marker)
+        verifier_index = publication_job.index(verifier_marker)
+        self.assertLess(mint_index, diagnostic_index)
+        self.assertLess(diagnostic_index, verifier_index)
+
     def test_release_publishes_plugin_distribution_only_after_source_release(
         self,
     ) -> None:

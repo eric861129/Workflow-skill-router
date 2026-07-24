@@ -398,6 +398,71 @@ jobs:
           permission-actions: read
           permission-contents: write
           permission-workflows: write
+      - name: Diagnose target App governance reads
+        shell: python
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+        run: |
+          import json
+          import os
+          import subprocess
+
+          repository = os.environ["TARGET_REPOSITORY"]
+          branch = os.environ["TARGET_BRANCH"]
+          rulesets = (
+              ("branch", "Protected generated main"),
+              ("tag", "Immutable Plugin release tags"),
+          )
+
+          def fail(case: str) -> None:
+              print(f"plugin-distribution-governance-unavailable: {case}")
+              raise SystemExit(1)
+
+          def read_json(case: str, endpoint: str) -> object:
+              response = subprocess.run(
+                  ["gh", "api", "--method", "GET", endpoint],
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.DEVNULL,
+                  text=True,
+                  check=False,
+              )
+              if response.returncode != 0:
+                  fail(case)
+              try:
+                  return json.loads(response.stdout)
+              except json.JSONDecodeError:
+                  fail(case)
+
+          read_json("repository-metadata", f"repos/{repository}")
+          print("PASS: target-governance-read-repository-metadata")
+          read_json("target-branch", f"repos/{repository}/branches/{branch}")
+          print("PASS: target-governance-read-target-branch")
+
+          for target, name in rulesets:
+              list_case = f"ruleset-list-{target}"
+              summaries = read_json(
+                  list_case,
+                  f"repos/{repository}/rulesets?targets={target}&per_page=100&page=1",
+              )
+              if not isinstance(summaries, list):
+                  fail(list_case)
+              print(f"PASS: target-governance-read-{list_case}")
+              ruleset_id = next(
+                  (
+                      item.get("id")
+                      for item in summaries
+                      if isinstance(item, dict)
+                      and item.get("name") == name
+                      and item.get("enforcement") == "active"
+                      and isinstance(item.get("id"), int)
+                  ),
+                  None,
+              )
+              if ruleset_id is None:
+                  continue
+              detail_case = f"ruleset-detail-{target}"
+              read_json(detail_case, f"repos/{repository}/rulesets/{ruleset_id}")
+              print(f"PASS: target-governance-read-{detail_case}")
       - name: Verify target governance before generated publication
         shell: bash
         env:
