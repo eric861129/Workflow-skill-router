@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Workflow Skill Router</title>
+  <desc id="description">Three routes converging into one verified workflow</desc>
+  <rect width="512" height="512" rx="112" fill="#111827"/>
+  <path d="M128 136h72c31 0 56 25 56 56v128c0 31 25 56 56 56h72" fill="none" stroke="#38bdf8" stroke-linecap="round" stroke-width="40"/>
+  <path d="M128 256h256" fill="none" stroke="#a78bfa" stroke-linecap="round" stroke-width="40"/>
+  <path d="M128 376h72c31 0 56-25 56-56V192c0-31 25-56 56-56h72" fill="none" stroke="#34d399" stroke-linecap="round" stroke-width="40"/>
+  <circle cx="384" cy="256" r="52" fill="#f9fafb"/>
+  <path d="m361 256 16 16 31-35" fill="none" stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="18"/>
+</svg>

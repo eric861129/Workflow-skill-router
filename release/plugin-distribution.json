@@ -1,0 +1,59 @@
+{
+  "packaging_files": [
+    {
+      "source": "release/plugin-distribution/.codexignore",
+      "target": ".codexignore",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/.github/dependabot.yml",
+      "target": ".github/dependabot.yml",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/.github/workflows/hol-plugin-scanner.yml",
+      "target": ".github/workflows/hol-plugin-scanner.yml",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/.gitignore",
+      "target": ".gitignore",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/PRIVACY.md",
+      "target": "PRIVACY.md",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/README.md.tmpl",
+      "target": "README.md",
+      "template": true
+    },
+    {
+      "source": "release/plugin-distribution/SECURITY.md",
+      "target": "SECURITY.md",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/TERMS.md",
+      "target": "TERMS.md",
+      "template": false
+    },
+    {
+      "source": "release/plugin-distribution/UPSTREAM.md.tmpl",
+      "target": "UPSTREAM.md",
+      "template": true
+    },
+    {
+      "source": "release/plugin-distribution/assets/icon.svg",
+      "target": "assets/icon.svg",
+      "template": false
+    }
+  ],
+  "schema_version": "1.0",
+  "source_allowlist": "release/allowlists/plugin-distribution-repository-files.json",
+  "source_root": "plugins/workflow-skill-router",
+  "version_file": "release/version.json",
+  "version_key": "v2_version"
+}

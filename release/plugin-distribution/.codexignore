@@ -1,0 +1,4 @@
+.git/
+.test-build/
+node_modules/
+*.log

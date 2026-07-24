@@ -1,0 +1,27 @@
+# Workflow Skill Router Plugin
+
+Workflow Skill Router is a pre-execution Skill-selection layer for Codex. It
+classifies work as Single, Phased, or Managed Goal work, discovers the
+available capabilities, and selects the smallest sufficient Skill set without
+replacing runtime permissions, approval policies, or tool access controls.
+
+This standalone repository contains Plugin version `{{VERSION}}`, generated
+from canonical source revision `{{SOURCE_REVISION}}`.
+
+## Install
+
+Install this repository as a Codex Plugin from its repository root. The root
+contains the Plugin manifest, Skill, bundled MCP server, and deterministic
+Python runtime needed at execution time.
+
+## Validate
+
+```powershell
+npm ci
+npm run check
+node scripts/smoke-plugin.mjs
+```
+
+The Plugin stores routing state outside its installation directory. See
+`PRIVACY.md`, `SECURITY.md`, and `UPSTREAM.md` for operational boundaries and
+source provenance.
