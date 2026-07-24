@@ -91,3 +91,9 @@ release, or exercise the App bypass. Those are separately authorized external
 operations. If Scanner, branch, or tag verification fails, block publication,
 fix the canonical source or authorized live prerequisite, and rerun the
 canonical release flow. Never patch or retag the generated target manually.
+
+The trusted distribution publication job repeats this verifier before it writes
+the target branch. Its scoped Release App token therefore needs
+**Administration: read** in addition to limited Actions and Contents
+permissions; if live rulesets drift or cannot be read, publication fails closed
+before the generated target changes.

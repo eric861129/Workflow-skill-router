@@ -67,6 +67,8 @@ An already-reviewed unchanged candidate can be promoted through steps 3 and 4 wi
 
 The three-platform preflight and release build check out that frozen revision, not the branch that dispatches the workflow. Only after they pass does the workflow mint a scoped Release GitHub App token, create or verify the annotated V2 tag with that token, prove that the remote tag resolves to the same frozen revision, attest the assets, and publish the non-prerelease GitHub Release. A retry is valid only when the existing tag already resolves to that same revision.
 
+Before the generated Plugin target is synchronized, the distribution job uses its separate least-privilege App token to run the live, GET-only target-governance verifier. That token needs **Administration: read** solely for this fail-closed verification, alongside Actions read and Contents write. It then synchronizes `main`, waits for the exact target Scanner result, creates or verifies the immutable target tag, and creates or verifies a matching non-draft target GitHub Release. Ruleset drift, missing App bypass, a Scanner failure, a mismatched tag, or a mismatched target Release stops the job.
+
 Do not manually push a `v2.*` tag. Protect that tag pattern so that only the scoped Release GitHub App token minted by the release job is the authorized creator; otherwise an older workflow stored at a frozen source revision could run before the trusted dispatch has completed its checks. This repository contract cannot configure the live ruleset for you, so verify that protection separately before release.
 
 The generated target follows the same fail-closed rule. A target Scanner

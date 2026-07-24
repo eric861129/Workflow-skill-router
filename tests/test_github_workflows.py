@@ -1113,20 +1113,30 @@ class GitHubWorkflowTests(unittest.TestCase):
             "ref: ${{ needs.resolve-source.outputs.source_revision }}",
             "client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}",
             "private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}",
+            "permission-administration: read",
             "permission-actions: read",
             "permission-contents: write",
+            "scripts/verify-plugin-distribution-governance.py",
             '$RUNNER_TEMP/plugin-distribution',
             '$RUNNER_TEMP/plugin-target',
             "scripts/build-plugin-distribution-repo.py",
             "scripts/sync-plugin-distribution-repo.py",
             "git diff --cached --quiet",
             "git push origin HEAD:main",
+            'gh release create "$RELEASE_TAG"',
+            '--repo "$TARGET_REPOSITORY"',
         ):
             with self.subTest(required=required):
                 self.assertIn(required, publication_job)
 
         self.assertNotIn("--force", publication_job)
         self.assertNotIn("git clean", publication_job)
+
+        governance_index = publication_job.index(
+            "scripts/verify-plugin-distribution-governance.py"
+        )
+        publish_index = publication_job.index("git push origin HEAD:main")
+        self.assertLess(governance_index, publish_index)
 
         action_refs = ACTION_PATTERN.findall(publication_job)
         self.assertGreater(len(action_refs), 0)
@@ -1180,6 +1190,19 @@ class GitHubWorkflowTests(unittest.TestCase):
         tag_index = publication_job.index('git tag -a "$RELEASE_TAG" "$TARGET_REVISION"')
         self.assertLess(scanner_index, scanner_head_index)
         self.assertLess(scanner_head_index, tag_index)
+
+    def test_plugin_distribution_creates_or_verifies_target_release_after_tag(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+
+        tag_index = publication_job.index('git tag -a "$RELEASE_TAG" "$TARGET_REVISION"')
+        release_index = publication_job.index('gh release create "$RELEASE_TAG"')
+        self.assertLess(tag_index, release_index)
+        self.assertIn('gh release view "$RELEASE_TAG"', publication_job)
+        self.assertIn('Workflow Skill Router Plugin $RELEASE_TAG', publication_job)
 
     def test_dependabot_covers_both_node_projects_and_actions(self) -> None:
         content = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")

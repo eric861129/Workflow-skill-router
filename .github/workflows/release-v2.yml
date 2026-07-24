@@ -343,8 +343,16 @@ jobs:
           private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: workflow-skill-router-plugin
+          permission-administration: read
           permission-actions: read
           permission-contents: write
+      - name: Verify target governance before generated publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+        run: >-
+          python -I -S -B scripts/verify-plugin-distribution-governance.py
+          --repo "$TARGET_REPOSITORY"
       - name: Build standalone Plugin distribution
         shell: bash
         run: |
@@ -498,4 +506,31 @@ jobs:
           REMOTE_TARGET_REVISION="${PEELED_REVISION:-$DIRECT_REVISION}"
           if [[ "$REMOTE_TARGET_REVISION" != "$TARGET_REVISION" ]]; then
             fail_target_tag_check
+          fi
+      - name: Create or verify target GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
+        run: |
+          fail_target_release_check() {
+            echo "Target GitHub Release does not match the verified release tag."
+            exit 1
+          }
+
+          if gh release view "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" \
+            --json tagName,isDraft,isPrerelease >/dev/null 2>&1; then
+            TARGET_RELEASE_STATE="$(
+              gh release view "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" \
+                --json tagName,isDraft,isPrerelease \
+                --jq '[.tagName, (.isDraft | tostring), (.isPrerelease | tostring)] | @tsv'
+            )" || fail_target_release_check
+            [[ "$TARGET_RELEASE_STATE" == "$RELEASE_TAG"$'\tfalse\tfalse' ]] \
+              || fail_target_release_check
+          else
+            gh release create "$RELEASE_TAG" \
+              --repo "$TARGET_REPOSITORY" \
+              --verify-tag \
+              --title "Workflow Skill Router Plugin $RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/plugin-target/UPSTREAM.md" \
+              || fail_target_release_check
           fi

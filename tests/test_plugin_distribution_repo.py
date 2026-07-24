@@ -288,6 +288,22 @@ class PluginDistributionRepoTests(unittest.TestCase):
             self.assertNotIn("{{", text)
             self.assertNotIn("}}", text)
 
+        readme = tree.files[PurePosixPath("README.md")].decode("utf-8")
+        self.assertIn(
+            "codex plugin marketplace add "
+            "eric861129/workflow-skill-router-plugin --ref v2.0.2",
+            readme,
+        )
+        self.assertIn(
+            "codex plugin add workflow-skill-router@workflow-skill-router-plugin",
+            readme,
+        )
+        self.assertIn(
+            "https://huangchiyu.com/Workflow-skill-router/",
+            readme,
+        )
+        self.assertIn("HOL Plugin Scanner", readme)
+
         for path in (
             PurePosixPath(".codex-plugin/plugin.json"),
             PurePosixPath("package-lock.json"),

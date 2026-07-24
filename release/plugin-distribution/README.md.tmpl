@@ -15,11 +15,21 @@ replacing runtime permissions, approval policies, or tool access controls.
 This standalone repository contains Plugin version `{{VERSION}}`, generated
 from canonical source revision `{{SOURCE_REVISION}}`.
 
+[![HOL Plugin Scanner](https://github.com/eric861129/workflow-skill-router-plugin/actions/workflows/hol-plugin-scanner.yml/badge.svg?branch=main)](https://github.com/eric861129/workflow-skill-router-plugin/actions/workflows/hol-plugin-scanner.yml)
+
 ## Install
 
-Install this repository as a Codex Plugin from its repository root. The root
-contains the Plugin manifest, Skill, bundled MCP server, and deterministic
-Python runtime needed at execution time.
+Install the immutable release tag rather than the moving `main` branch:
+
+```powershell
+codex plugin marketplace add eric861129/workflow-skill-router-plugin --ref v{{VERSION}}
+codex plugin add workflow-skill-router@workflow-skill-router-plugin
+codex plugin list
+```
+
+The repository root contains the Plugin manifest, Skill, bundled MCP server,
+and deterministic Python runtime needed at execution time. For install modes,
+runtime boundaries, and troubleshooting, read the [canonical documentation](https://huangchiyu.com/Workflow-skill-router/).
 
 ## Validate
 
