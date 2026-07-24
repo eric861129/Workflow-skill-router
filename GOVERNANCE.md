@@ -19,6 +19,20 @@ When consensus is not reached, the release maintainer records the decision, alte
 
 Only maintainers named with release authority may approve a `v2.*` tag or GitHub release. Automation may build and attest a tagged revision, but it does not decide that the revision is ready. Real model evaluation quota, public evidence promotion, Pages deployment, stable-channel movement, and release publication remain separate approvals.
 
+## Canonical Plugin Distribution Ownership
+
+Plugin runtime, tests, Skill content, generated-target policy, and release
+automation are developed only in this canonical repository. The standalone
+Plugin repository is an installation target generated from a reviewed canonical
+revision; it is not an independent development surface.
+
+Target Scanner, protected-branch, or tag failures fail closed. Maintainers fix
+the canonical source or separately authorized live governance prerequisite and
+then run a newly authorized release. They do not manually repair target files,
+rewrite target history, bypass Scanner, or replace target tags. Installing the
+Release GitHub App, applying rulesets, and running a live release remain distinct
+privileged external operations.
+
 ## Security Authority
 
 Security maintainers coordinate private reports, embargoed fixes, advisories, and disclosure timing. Security-sensitive changes may receive a limited private review before a public patch is available.

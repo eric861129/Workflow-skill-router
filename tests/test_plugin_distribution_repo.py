@@ -17,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER_PATH = ROOT / "scripts" / "build-plugin-distribution-repo.py"
 SYNCHRONIZER_PATH = ROOT / "scripts" / "sync-plugin-distribution-repo.py"
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 SOURCE_REVISION = "a" * 40
 TARGET_REPOSITORY = "https://github.com/eric861129/workflow-skill-router-plugin"
 EXPECTED_REMOTE = "eric861129/workflow-skill-router-plugin"

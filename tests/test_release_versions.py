@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_GA_VERSION = "2.0.1"
+EXPECTED_GA_VERSION = "2.0.2"
 GA_VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 MCP_SERVER_VERSION_DECLARATION = re.compile(
     r'^(?:export\s+)?(?:const|var)\s+MCP_SERVER_VERSION\s*=\s*"(?P<version>[^"]+)"\s*;$',

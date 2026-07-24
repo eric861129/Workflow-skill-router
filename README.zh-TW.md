@@ -4,7 +4,8 @@
 
 Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 pre-execution、runtime-aware 的規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。它不能取代權限、核准政策、sandboxing 或 production orchestration。
 
-> 目前 V2 正式版：`2.0.1`。遷移期間仍可使用 immutable V1.3.1 復原路徑。
+> 目前已發布的 V2 正式版：`2.0.1`。本機已準備的 candidate：`2.0.2`
+>（尚未發布）。遷移期間仍可使用 immutable V1.3.1 復原路徑。
 
 每一個 V2 release 都會綁定來源。candidate 先處於 `prepared-local-candidate`；只有經審查的 metadata-only promotion 綁定 `release_source_revision`、記錄 maintainer attestation，並把 `release_lifecycle` 改為 `reviewed-attested-publishable` 後，才可以執行 `CREATE_V2_RELEASE`。受信任的預設分支 workflow 會再從凍結來源建置、建立 tag、attest 並發布。
 

@@ -65,6 +65,20 @@ python -I -S -B scripts/build-release-artifacts.py --output-dir dist/release-2.0
 
 Use a version-specific output directory. The builder fails closed before writing if any existing entry is not part of the current generated manifest; it never silently mixes or removes release generations.
 
+## `verify-plugin-distribution-governance.py`
+
+Reads the generated Plugin target's public repository metadata, protected
+default branch, branch/tag rulesets, required HOL Scanner check, and dedicated
+Release App bypass through explicit GitHub API `GET` requests.
+
+```bash
+python scripts/verify-plugin-distribution-governance.py
+```
+
+The verifier never installs the App, writes rulesets, dispatches a release, or
+repairs the generated target. Those remain separately authorized external
+operations.
+
 ## CI Usage
 
 The repository validation workflow runs:

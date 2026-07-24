@@ -1,10 +1,10 @@
 {
   "public_surface": "v2-first",
   "stable_channel": "latest",
-  "release_lifecycle": "reviewed-attested-publishable",
-  "release_source_revision": "14c942bc388c72fde2fb2faf24f177fe35054864",
+  "release_lifecycle": "prepared-local-candidate",
+  "release_source_revision": "bb294fdbbc323d7664a9707c17aae11b960f474e",
   "published_v2_version": "2.0.1",
   "v1_pinned_version": "1.3.1",
-  "v2_version": "2.0.1",
+  "v2_version": "2.0.2",
   "v2_channel": "latest-v2"
 }

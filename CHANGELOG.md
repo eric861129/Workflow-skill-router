@@ -4,6 +4,26 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.0.2 (prepared, not yet published)
+
+### Added
+
+- Added a deterministic standalone Plugin repository generated only from the
+  canonical source, with guarded local synchronization and source-bound release
+  publication.
+- Added a GET-only governance verifier for the public generated target, its
+  protected `main` branch, HOL Scanner requirement, immutable `v*` tags, and
+  dedicated Release App bypass.
+
+### Changed
+
+- Defined the generated Plugin repository as an installation target rather than
+  an independent development surface. Scanner or tag failures now require a
+  canonical fix and a newly authorized release instead of manual target repair.
+- Kept `2.0.1` as the published V2 version while `2.0.2` remains a
+  `prepared-local-candidate`; no target repository, tag, App installation,
+  ruleset, or live release has been changed by this source preparation.
+
 ## 2.0.1
 
 ### Security

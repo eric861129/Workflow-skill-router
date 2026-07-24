@@ -68,3 +68,26 @@ confirms the captured configuration meets the checked-in contract. It does not
 prove that a release workflow has successfully exercised the Release GitHub App
 bypass; that is a separate live release-workflow concern. A failure means the
 remote settings have not been proven and must block the release checklist.
+
+## Generated Plugin target governance
+
+The standalone `eric861129/workflow-skill-router-plugin` repository is generated
+from this canonical repository. Its checked-in desired-state contract is
+`.github/plugin-distribution-governance.json`. The target must remain public,
+use `main` as its default protected branch, require the `scan` Check Run from
+the `HOL Plugin Scanner` workflow, block branch deletion and non-fast-forward
+updates, protect `refs/tags/v*` against creation, update, and deletion, and grant
+the only `always` bypass to the dedicated Release GitHub App.
+
+Verify that target without mutation:
+
+```powershell
+python scripts/verify-plugin-distribution-governance.py
+```
+
+The verifier performs GitHub API `GET` requests only. It does not install the
+App, create or update rulesets, repair the generated repository, dispatch the
+release, or exercise the App bypass. Those are separately authorized external
+operations. If Scanner, branch, or tag verification fails, block publication,
+fix the canonical source or authorized live prerequisite, and rerun the
+canonical release flow. Never patch or retag the generated target manually.

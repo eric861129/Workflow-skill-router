@@ -34,13 +34,25 @@ Builder 會讀取排序後的 allowlists、正規化 ZIP metadata、產生 check
 
 ## 4. 透過受信任的發行 dispatch 推進
 
-在發行 dispatch 前，先驗證 GitHub 的即時治理設定：
+Plugin 開發與 distribution policy 只有一個 canonical source：
+`eric861129/Workflow-skill-router`。獨立的
+`eric861129/workflow-skill-router-plugin` repository 是生成後的安裝
+target，不是第二條開發分支。不得在 target 開 implementation change，也
+不得手動修補 generated files、branch history 或 tags。
+
+在發行 dispatch 前，先驗證兩個 GitHub 即時治理契約：
 
 ```powershell
 python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
+python scripts/verify-plugin-distribution-governance.py
 ```
 
-此命令為唯讀，不會變更 GitHub 設定。通過僅確認擷取到的設定符合已納入版控的契約；它不是實際發行工作流程的演練，也不表示 Release GitHub App 的繞過權限已成功執行。失敗代表尚未證明遠端設定正確，必須阻擋本次發行清單。套用或變更遠端規則屬於需要權限的外部作業；請依照 `docs/governance/remote-release-governance.md` 的維護者指南處理。
+此命令為唯讀，不會變更 GitHub 設定。通過僅確認擷取到的設定符合已納入版控的契約；它不是實際發行工作流程的演練，也不表示 Release GitHub App bypass 已成功執行。失敗代表尚未證明遠端設定正確，必須阻擋本次發行清單。
+
+Generated-target verifier 也遵守相同的唯讀邊界。安裝 App 或套用、變更
+rulesets 都屬於
+需要權限的外部作業；請依照
+`docs/governance/remote-release-governance.md` 的維護者指南處理。
 
 `Release V2` workflow 只能由受信任的預設分支透過 `workflow_dispatch` 執行，並且必須輸入完全相同的確認字串 `CREATE_V2_RELEASE`，但此字串不是發布 bypass。Workflow 會先 checkout 受信任的 dispatch revision，再從該 revision 的 `release/version.json` 同時讀取 `release_lifecycle` 與 `release_source_revision`。只有 `reviewed-attested-publishable` 可以執行；`prepared-local-candidate` 會讓 resolve-source job 在任何 preflight、建立 tag、asset attestation 或 GitHub Release 發布前失敗。凍結 source revision 也必須可從同一個受信任 checkout 到達。
 
@@ -56,6 +68,13 @@ python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-rout
 三平台 preflight 與 release build 都會 checkout 該凍結 revision，而不是 checkout 觸發 workflow 的分支。只有全部通過後，workflow 才會建立受範圍限制的 Release GitHub App token，以該 token 建立或驗證 annotated V2 tag、確認遠端 tag 解析為同一個凍結 revision、attest assets，並發布非 prerelease 的 GitHub Release。重試只在既有 tag 已解析為相同 revision 時才有效。
 
 不得手動 push `v2.*` tag。請保護該 tag pattern，讓僅能由 release job 建立的受範圍限制 Release GitHub App token 成為唯一授權建立者；否則儲存在凍結 source revision 的舊 workflow 可能會在受信任 dispatch 完成檢查前就先執行。此 repository contract 無法替你設定 GitHub 的 live ruleset，發行前必須另外確認。
+
+生成後 target 也採相同的 fail-closed 原則。Target Scanner 失敗時，發布
+會在建立 `v*` tag 前停止；target tag 缺少或指向錯誤 revision 時也會
+失敗，workflow 不會重寫 tag。應回到 canonical repository 診斷 source、
+deterministic builder 或 live governance prerequisite，修正後審查新的
+candidate，再透過已授權 dispatch 重跑。不得繞過 Scanner，也不得手動
+修補、push、delete 或 retag 生成後 target。
 
 `latest-v2` 保留歷史已審查 prerelease；在正式 V2 GA gate 通過前，`latest` 維持 V1.3.1。建立 tag、發布非 prerelease GitHub Release、推進 channel、部署 Pages 與 push 都是個別授權的 actions；本機驗證不會自動執行它們。
 

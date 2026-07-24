@@ -1,10 +1,11 @@
 import json
+import subprocess
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GA_VERSION = "2.0.1"
+GA_VERSION = "2.0.2"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):
@@ -131,16 +132,19 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         self.assertIn("dist/release", second)
         self.assertIn("schema", second.lower())
 
-    def test_changelog_has_a_security_patch_release_entry(self) -> None:
+    def test_changelog_has_a_distribution_governance_patch_entry(self) -> None:
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn(f"## {GA_VERSION}", changelog)
-        self.assertIn("Astro 7.1.3", changelog)
+        self.assertIn("canonical", changelog.lower())
+        self.assertIn("generated", changelog.lower())
 
-    def test_ga_release_notes_document_the_security_patch(self) -> None:
+    def test_ga_release_notes_document_distribution_governance(self) -> None:
         notes = (ROOT / "release" / "notes" / f"v{GA_VERSION}.md").read_text(encoding="utf-8")
-        self.assertIn("Astro 7.1.3", notes)
-        self.assertIn("Starlight 0.41.4", notes)
-        self.assertIn("0 vulnerabilities", notes)
+        self.assertIn("canonical", notes.lower())
+        self.assertIn("Scanner", notes)
+        self.assertIn("generated target", notes)
+        self.assertIn("prepared-local-candidate", notes)
+        self.assertIn("not yet published", notes)
         self.assertIn("checksums.sha256", notes)
         self.assertIn("SBOM", notes)
         self.assertIn("maintainer-attestation", notes)
@@ -180,6 +184,30 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         self.assertTrue(behavior["evaluation_contract"])
         self.assertTrue(behavior["basis"])
         self.assertTrue(attestation["known_limitations"])
+
+    def test_declared_release_source_revision_is_reachable(self) -> None:
+        release = json.loads(
+            (ROOT / "release" / "version.json").read_text(encoding="utf-8")
+        )
+        completed = subprocess.run(
+            (
+                "git",
+                "merge-base",
+                "--is-ancestor",
+                release["release_source_revision"],
+                "HEAD",
+            ),
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(
+            0,
+            completed.returncode,
+            completed.stdout + completed.stderr,
+        )
 
 
 if __name__ == "__main__":

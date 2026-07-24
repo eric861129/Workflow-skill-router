@@ -34,6 +34,7 @@ Verify remote release governance before the release dispatch:
 
 ```bash
 python scripts/verify-remote-governance.py --repo eric861129/Workflow-skill-router
+python scripts/verify-plugin-distribution-governance.py
 ```
 
 This command is read-only and does not change GitHub configuration. A pass confirms
@@ -43,6 +44,11 @@ means remote settings have not been proven and blocks this release checklist.
 
 For privileged UI or API application of the remote settings, see
 [`docs/governance/remote-release-governance.md`](../docs/governance/remote-release-governance.md).
+
+- [ ] Plugin changes originate only in the canonical repository.
+- [ ] The generated target `main` requires the HOL Scanner check and the target
+      `refs/tags/v*` ruleset is active.
+- [ ] No target file, branch history, or tag was manually repaired.
 
 ## Supply Chain
 

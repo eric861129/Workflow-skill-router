@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "repository": "eric861129/workflow-skill-router-plugin",
+  "visibility": "public",
+  "default_branch": "main",
+  "scanner": {
+    "workflow": "HOL Plugin Scanner",
+    "required_check": {
+      "context": "scan",
+      "integration_id": 15368,
+      "strict": true
+    }
+  },
+  "branch_ruleset": {
+    "name": "Protected generated main",
+    "target": "branch",
+    "enforcement": "active",
+    "ref_name_include": "refs/heads/main",
+    "required_rules": [
+      "deletion",
+      "non_fast_forward"
+    ]
+  },
+  "tag_ruleset": {
+    "name": "Immutable Plugin release tags",
+    "target": "tag",
+    "enforcement": "active",
+    "ref_name_include": "refs/tags/v*",
+    "required_rules": [
+      "creation",
+      "update",
+      "deletion"
+    ]
+  },
+  "release_app_bypass": {
+    "actor_id": 4361147,
+    "actor_type": "Integration",
+    "bypass_mode": "always"
+  }
+}

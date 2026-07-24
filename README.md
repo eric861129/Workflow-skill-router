@@ -4,7 +4,9 @@
 
 Workflow Skill Router is a pre-execution, runtime-aware Skill-selection layer for Codex. It keeps the agent focused on the smallest verifiable execution path, preserves user authority, and exposes what the runtime can actually do. It is not a substitute for permissions, approval policies, sandboxing, or production orchestration.
 
-> Current V2 release: `2.0.1`. The immutable V1.3.1 recovery path remains available during migration.
+> Current published V2 release: `2.0.1`. Prepared local candidate: `2.0.2`
+> (not yet published). The immutable V1.3.1 recovery path remains available
+> during migration.
 
 Every V2 release is source-bound. A candidate starts as `prepared-local-candidate`; only a reviewed metadata-only promotion that binds `release_source_revision`, records maintainer attestation, and sets `release_lifecycle` to `reviewed-attested-publishable` can unlock `CREATE_V2_RELEASE`. The trusted default-branch workflow then builds, tags, attests, and publishes the frozen source.
 
