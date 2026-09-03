@@ -104,6 +104,13 @@ class MemoryStoreTests(unittest.TestCase):
             ) as reopened:
                 self.assertEqual(snapshot_id, reopened.current_policy_snapshot.snapshot_id)
                 self.assertEqual(1, reopened.policy_snapshot_count())
+                persisted = reopened.load_policy_snapshot(snapshot_id)
+                self.assertIsNotNone(persisted)
+                assert persisted is not None
+                self.assertEqual(
+                    reopened.current_policy_snapshot.canonical_json(),
+                    persisted.canonical_json(),
+                )
             self.assertTrue(reopened.closed)
 
     def test_store_rejects_linked_data_root_parent_and_database(self) -> None:
