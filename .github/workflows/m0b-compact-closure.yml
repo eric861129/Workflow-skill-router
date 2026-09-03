@@ -1,0 +1,62 @@
+name: M0-B Compact Closure Evidence
+
+on:
+  push:
+    branches: [codex/memory-m0-policy-resolution]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m0b-compact-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: codex/memory-m0-policy-resolution
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Restore compact closure formatting
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("release/v2-inherited-change-closure.json")
+          document = json.loads(path.read_text(encoding="utf-8"))
+          lines = [
+              "{",
+              f'  "schema_version": {json.dumps(document["schema_version"])},',
+              f'  "baseline_manifest": {json.dumps(document["baseline_manifest"])},',
+              f'  "starting_head": {json.dumps(document["starting_head"])},',
+              f'  "entry_count": {document["entry_count"]},',
+              '  "entries": [',
+          ]
+          for index, entry in enumerate(document["entries"]):
+              suffix = "," if index + 1 < len(document["entries"]) else ""
+              lines.append(
+                  "    "
+                  + json.dumps(entry, ensure_ascii=False, separators=(",", ":"))
+                  + suffix
+              )
+          lines.extend(["  ]", "}"])
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+      - name: Verify closure remains valid
+        run: python -m unittest tests.test_inherited_change_closure -v
+      - name: Remove workflow and commit compact evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/m0b-compact-closure.yml
+          git add release/v2-inherited-change-closure.json .github/workflows/m0b-compact-closure.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(release): keep closure evidence reviewable"
+          git push origin HEAD:codex/memory-m0-policy-resolution
