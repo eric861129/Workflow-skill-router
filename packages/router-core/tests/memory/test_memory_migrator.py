@@ -47,6 +47,20 @@ class MemoryMigratorTests(unittest.TestCase):
             ).fetchall()
         return {str(row[0]) for row in rows}
 
+    def test_public_migrator_does_not_create_a_missing_parent(self) -> None:
+        root = Path(self.temporary_directory.name)
+        missing_parent = root / "missing-parent"
+        database = missing_parent / "workflow-memory.sqlite3"
+
+        with self.assertRaisesRegex(
+            MemoryMigrationError,
+            "memory-migration-parent-unavailable",
+        ):
+            migrate_memory_store(database)
+
+        self.assertFalse(missing_parent.exists())
+        self.assertFalse(database.exists())
+
     def test_packaged_initial_migration_creates_only_the_separate_memory_schema(self) -> None:
         package = resources.files("workflow_skill_router.memory.migrations")
         names = sorted(
