@@ -1,0 +1,86 @@
+{
+  "schema_id": "workflow-skill-router/memory-policy",
+  "schema_version": "1.0.0",
+  "artifact_kind": "memory-policy",
+  "policy_id": "personal:automatic",
+  "scope": "personal",
+  "mode": "automatic",
+  "storage": {
+    "backend": "local-sqlite",
+    "retention_days": 90,
+    "max_observations": 1000,
+    "candidate_retention_days": 30,
+    "rejected_suppression_days": 180,
+    "max_revisions_per_profile": 20,
+    "purge_on_disable": false
+  },
+  "privacy": {
+    "objective": "digest-only",
+    "workspace_identity": "digest-only",
+    "raw_prompt": "never",
+    "file_paths": "never",
+    "file_content": "never",
+    "tool_arguments": "never",
+    "secrets": "never",
+    "free_text_feedback": "never",
+    "export_redaction": "required"
+  },
+  "eligibility": {
+    "require_terminal_success": true,
+    "require_required_gate_pass": true,
+    "reject_unknown_side_effects": true,
+    "exclude_risk_levels": [
+      "r3"
+    ],
+    "minimum_distinct_runs_reviewed": 3,
+    "minimum_distinct_runs_automatic": 5,
+    "minimum_distinct_days_reviewed": 2,
+    "minimum_distinct_days_automatic": 3,
+    "minimum_success_rate_reviewed": 0.8,
+    "minimum_success_rate_automatic": 0.9,
+    "maximum_correction_rate_reviewed": 0.2,
+    "maximum_correction_rate_automatic": 0.1,
+    "minimum_route_consistency_reviewed": 0.75,
+    "minimum_route_consistency_automatic": 0.85
+  },
+  "features": {
+    "remember_this_workflow": {
+      "mode": "automatic",
+      "eligible_event": "terminal-success",
+      "default_target": "managed-personal"
+    },
+    "route_feedback": {
+      "mode": "automatic-metadata",
+      "allow_standard_reason_codes": true,
+      "allow_free_text": false
+    },
+    "history_analytics": {
+      "mode": "summary",
+      "run": "on-completion"
+    },
+    "candidate_generation": {
+      "mode": "on-completion",
+      "confidence_required": "high",
+      "backtest_required": true
+    },
+    "profile_promotion": {
+      "mode": "automatic-managed",
+      "target": "managed-personal",
+      "conflict_policy": "fail-closed",
+      "require_profile_lint": true,
+      "require_backtest": true
+    },
+    "profile_versioning": {
+      "mode": "required",
+      "diff": "semantic-and-json",
+      "rollback": "enabled",
+      "write_strategy": "compare-and-swap"
+    }
+  },
+  "notifications": {
+    "show_completion_prompt": false,
+    "show_candidate_created": true,
+    "show_auto_promotion": true,
+    "show_retention_purge": true
+  }
+}
