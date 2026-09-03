@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import replace
 from importlib import resources
 from pathlib import Path
@@ -40,7 +41,7 @@ class MemoryMigratorTests(unittest.TestCase):
         return connection
 
     def table_names(self) -> set[str]:
-        with self.connect() as connection:
+        with closing(self.connect()) as connection:
             rows = connection.execute(
                 "SELECT name FROM sqlite_master "
                 "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
@@ -91,7 +92,7 @@ class MemoryMigratorTests(unittest.TestCase):
 
         self.assertIsNone(first)
         self.assertIsNone(second)
-        with self.connect() as connection:
+        with closing(self.connect()) as connection:
             row = connection.execute(
                 "SELECT version, name, checksum FROM memory_schema_migrations"
             ).fetchone()
@@ -119,7 +120,7 @@ class MemoryMigratorTests(unittest.TestCase):
             ):
                 migrate_memory_store(self.database)
 
-        with self.connect() as connection:
+        with closing(self.connect()) as connection:
             count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
             ).fetchone()[0]
