@@ -1,0 +1,92 @@
+name: M1-A Public Interface Contract
+
+on:
+  push:
+    branches:
+      - codex/memory-m1-store
+
+permissions:
+  contents: write
+
+jobs:
+  interface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: codex/memory-m1-store
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+
+      - name: Verify approved M1-A public interfaces
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: |
+          python -m unittest discover -s packages/router-core/tests/memory -p "test_memory_migrator.py" -v
+          python -m unittest discover -s packages/router-core/tests/memory -p "test_memory_store.py" -v
+
+      - name: Build deterministic Plugin runtime
+        run: python plugins/workflow-skill-router/scripts/build-runtime.py
+
+      - name: Synchronize inherited closure digests without reformatting
+        shell: bash
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          from pathlib import Path
+          import re
+
+          closure = Path("release/v2-inherited-change-closure.json")
+          text = closure.read_text(encoding="utf-8")
+          pattern = re.compile(
+              r'("path":"(?P<path>[^"]+)"[^\n]*?"evidence":\{"kind":"current-content-digest","sha256":")'
+              r'(?P<digest>[0-9a-f]{64})(")'
+          )
+          matched = 0
+
+          def replace(match: re.Match[str]) -> str:
+              global matched
+              matched += 1
+              path = Path(match.group("path"))
+              if not path.is_file():
+                  raise SystemExit(
+                      f"closure current-content path missing: {path.as_posix()}"
+                  )
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              return match.group(1) + digest + match.group(4)
+
+          updated = pattern.sub(replace, text)
+          if matched == 0:
+              raise SystemExit("closure contains no current-content entries")
+          closure.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Verify deterministic runtime and full Core suite
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: |
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+          python -m unittest tests.test_inherited_change_closure -v
+          python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+
+      - name: Remove temporary workflow and commit generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/m1a-interface-contract.yml
+          git add \
+            plugins/workflow-skill-router/runtime/workflow_skill_router.pyz \
+            release/v2-inherited-change-closure.json \
+            .github/workflows/m1a-interface-contract.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(plugin): bundle approved M1-A public interfaces"
+          git push origin HEAD:codex/memory-m1-store

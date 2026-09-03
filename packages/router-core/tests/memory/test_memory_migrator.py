@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from importlib import resources
+from pathlib import Path
 import sqlite3
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -24,17 +26,25 @@ EXPECTED_TABLES = {
 
 class MemoryMigratorTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.connection = sqlite3.connect(":memory:", isolation_level=None)
-        self.connection.execute("PRAGMA foreign_keys = ON")
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        root = Path(self.temporary_directory.name)
+        self.database = root / "memory" / "workflow-memory.sqlite3"
+        self.database.parent.mkdir()
 
     def tearDown(self) -> None:
-        self.connection.close()
+        self.temporary_directory.cleanup()
+
+    def connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self.database)
+        connection.execute("PRAGMA foreign_keys = ON")
+        return connection
 
     def table_names(self) -> set[str]:
-        rows = self.connection.execute(
-            "SELECT name FROM sqlite_master "
-            "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
-        ).fetchall()
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
         return {str(row[0]) for row in rows}
 
     def test_packaged_initial_migration_creates_only_the_separate_memory_schema(self) -> None:
@@ -46,9 +56,9 @@ class MemoryMigratorTests(unittest.TestCase):
         )
         self.assertEqual(["0001_observations.sql"], names)
 
-        applied = migrate_memory_store(self.connection)
+        result = migrate_memory_store(self.database)
 
-        self.assertEqual((1,), applied)
+        self.assertIsNone(result)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
         self.assertNotIn("workflow_events", self.table_names())
         migration = _load_migrations()[0]
@@ -62,20 +72,26 @@ class MemoryMigratorTests(unittest.TestCase):
             self.assertNotIn(forbidden, migration.sql.lower())
 
     def test_rerunning_migrations_is_idempotent(self) -> None:
-        first = migrate_memory_store(self.connection)
-        second = migrate_memory_store(self.connection)
+        first = migrate_memory_store(self.database)
+        second = migrate_memory_store(self.database)
 
-        self.assertEqual((1,), first)
-        self.assertEqual((), second)
-        row = self.connection.execute(
-            "SELECT version, name, checksum FROM memory_schema_migrations"
-        ).fetchone()
+        self.assertIsNone(first)
+        self.assertIsNone(second)
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT version, name, checksum FROM memory_schema_migrations"
+            ).fetchone()
+            count = connection.execute(
+                "SELECT COUNT(*) FROM memory_schema_migrations"
+            ).fetchone()[0]
+        assert row is not None
         self.assertEqual(1, row[0])
         self.assertEqual("observations", row[1])
         self.assertRegex(str(row[2]), r"^[0-9a-f]{64}$")
+        self.assertEqual(1, count)
 
     def test_applied_migration_checksum_drift_fails_closed(self) -> None:
-        migrate_memory_store(self.connection)
+        migrate_memory_store(self.database)
         original = _load_migrations()[0]
         drifted = replace(original, checksum="0" * 64)
 
@@ -87,14 +103,13 @@ class MemoryMigratorTests(unittest.TestCase):
                 MemoryMigrationError,
                 "memory-migration-checksum-mismatch",
             ):
-                migrate_memory_store(self.connection)
+                migrate_memory_store(self.database)
 
-        self.assertEqual(
-            1,
-            self.connection.execute(
+        with self.connect() as connection:
+            count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
-            ).fetchone()[0],
-        )
+            ).fetchone()[0]
+        self.assertEqual(1, count)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
 
 

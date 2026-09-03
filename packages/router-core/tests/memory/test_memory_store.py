@@ -9,6 +9,7 @@ import unittest
 from workflow_skill_router.memory import (
     MemoryScope,
     decode_memory_policy,
+    memory_database_path,
     resolve_effective_policy,
 )
 from workflow_skill_router.memory.policy_io import PolicyLoadResult, PolicySource
@@ -56,6 +57,18 @@ class ExplodingPath:
 
 
 class MemoryStoreTests(unittest.TestCase):
+    def test_memory_database_path_is_fixed_and_noncreating(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            data_dir = Path(directory) / "missing-router-data"
+
+            result = memory_database_path(data_dir)
+
+            self.assertEqual(
+                data_dir / "memory" / "workflow-memory.sqlite3",
+                result,
+            )
+            self.assertFalse(data_dir.exists())
+
     def test_disabled_policy_returns_none_before_any_filesystem_access(self) -> None:
         store = MemoryStore.open_if_enabled(ExplodingPath(), disabled_policy())  # type: ignore[arg-type]
 
