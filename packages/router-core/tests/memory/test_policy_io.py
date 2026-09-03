@@ -134,6 +134,38 @@ class MemoryPolicyRepositoryTests(unittest.TestCase):
             self.assertEqual("invalid", result.status)
             self.assertIn("policy-source-link-forbidden", result.reason_codes)
 
+    def test_policy_parent_directories_cannot_escape_fixed_locations_via_symlink(self) -> None:
+        cases = (
+            ("personal", "config", policy_document()),
+            ("workspace", ".codex", policy_document(scope="workspace")),
+        )
+        for scope, directory_name, document in cases:
+            with self.subTest(scope=scope), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                outside = root / f"outside-{scope}"
+                outside.mkdir()
+                (outside / "workflow-memory.json").write_text(
+                    json.dumps(document), encoding="utf-8"
+                )
+                approved_root = root / ("state" if scope == "personal" else "workspace")
+                approved_root.mkdir()
+                linked_parent = approved_root / directory_name
+                try:
+                    linked_parent.symlink_to(outside, target_is_directory=True)
+                except (OSError, NotImplementedError):
+                    self.skipTest("directory symbolic links are unavailable on this runner")
+
+                repository = MemoryPolicyRepository(root / "state")
+                result = (
+                    repository.inspect_personal()
+                    if scope == "personal"
+                    else repository.inspect_workspace(approved_root)
+                )
+
+                self.assertEqual("invalid", result.status)
+                self.assertIsNone(result.source)
+                self.assertIn("policy-source-link-forbidden", result.reason_codes)
+
     def test_workspace_policy_uses_only_the_fixed_dot_codex_location(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
