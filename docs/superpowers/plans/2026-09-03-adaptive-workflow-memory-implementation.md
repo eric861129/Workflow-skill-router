@@ -21,17 +21,19 @@
 - Canonical JSON 是唯一 Digest 表示；語意等價的 JSON 與 YAML 必須得到相同 `sha256:` Digest。
 - 預設永久禁止保存 Raw Prompt、完整 Objective、Absolute Path、File Content、Tool Arguments、Secrets 與 Skill Instruction Body；Objective 與 Workspace Identity 只允許 Digest 或 `never`。
 - Optional Memory History 使用獨立 SQLite Store，支援 Retention 與 Purge；不得把可選學習歷史只寫入既有 append-only `workflow_events`。
-- 已發布的 Operational Migration 不得修改。Memory Store 使用自己的 append-only migration package、checksum 與 schema version。
+- 已發布的 Operational Migration 與已合併的 Memory Migration 都不得修改。每個新資料需求使用下一個 migration number、獨立 checksum 與 upgrade test。
 - `workflow-skill-router/routing-profile@1.0.0` 不加入 History、Confidence、Retention 或 Memory 欄位。
 - User-owned Personal／Workspace Profile 不得被 Automatic Mode 寫入。Automatic Mode 只能寫 Router-managed Personal 或 Router-managed Workspace-local Profile。
 - 每次 Router-mediated Profile Write 必須完成 Strict Decode、Profile Lint、Conflict Check、Backtest、Expected Digest、Compare-and-Swap、Atomic Replace、Post-write Validation 與 Profile Revision。
 - Rollback 以目前版本為基準建立新的 Forward Revision；不得刪除或改寫既有 Revision。
 - User explicit Skill Lock 永遠優先；Rejected Support Skill 不得因 Memory Candidate 被重新加入當次 route。
 - Remembered Skill Tree 仍是 `intended-unverified`；Memory 不安裝 Skill／Plugin、不啟用 Instructions、不授權 Filesystem／Network／Subprocess／Secrets、不授權 Deployment／Publication／Production，也不修改 Native Codex Goal。
+- 沒有 Activation Receipt 或 Verified Host Evidence 時，`actual_skill_consistency` 必須是 `unavailable`；Local History 只能計算 Planned Route、Reported Route 與 Gate Outcome，不得宣稱實際 Skill Activation。
 - 第一版只使用 deterministic route signatures、thresholds、pattern mining 與 backtest；不加入 Embedding 或 LLM direct persistence。
 - Default CI 不呼叫 Live Model、不消耗 Provider Quota，也不把 Fixture 宣稱為 Model Evidence。
 - 每個垂直切片從前一切片合併後的最新 `main` 建立獨立 Branch 與 Draft PR；使用者核准前不得轉 Ready 或 Merge。
 - 每個 Draft PR 必須在 exact pushed head 上完成 Focused Tests、Core Gate、Plugin Gate 及適用的 Site Gate；head 改變後重新跑 Gate。
+- 任一 Slice 修改 `packages/router-core/src/workflow_skill_router/**/*.py|json|sql` 時，必須執行 `build-runtime.py`、提交新的 `workflow_skill_router.pyz`，再以 `--check` 驗證 deterministic bundle。
 - 合併採 Squash Merge；合併後必須確認 `main` 的 push-triggered CI，而不是只依賴 PR Check。
 
 ---
@@ -61,13 +63,14 @@
 1. 使用 `superpowers:using-git-worktrees` 從最新 `main` 建立隔離 Worktree。
 2. 建立上表指定 Branch，立刻 Push 並開 Draft PR。
 3. 先寫失敗測試，再寫最小實作；一個行為群組一個 Commit。
-4. 執行 Slice Focused Tests，再執行 Repository Gate。
-5. 比對本機 SHA、Remote Branch SHA 與 PR Head SHA；三者必須一致。
-6. Required Checks 必須對 exact head 完成；不得以較舊 SHA 的綠燈取代。
-7. 回報 User-visible Contract、Diff、Proof 與 Remaining Limits，等待使用者核准。
-8. 核准後轉 Ready、Squash Merge、刪除遠端 Branch。
-9. 讀取 `main` 新 Merge SHA，確認 push-triggered CI。
-10. 下一 Slice 只能從此 `main` SHA 建立。
+4. 修改 Python Runtime Source 後重建 `.pyz`，並將 bundle 置於獨立 `build(plugin)` Commit。
+5. 執行 Slice Focused Tests，再執行 Repository Gate。
+6. 比對本機 SHA、Remote Branch SHA 與 PR Head SHA；三者必須一致。
+7. Required Checks 必須對 exact head 完成；不得以較舊 SHA 的綠燈取代。
+8. 回報 User-visible Contract、Diff、Proof 與 Remaining Limits，等待使用者核准。
+9. 核准後轉 Ready、Squash Merge、刪除遠端 Branch。
+10. 讀取 `main` 新 Merge SHA，確認 push-triggered CI。
+11. 下一 Slice 只能從此 `main` SHA 建立。
 
 ---
 
@@ -100,7 +103,8 @@ packages/router-core/src/workflow_skill_router/
       __init__.py
       0001_observations.sql
       0002_candidates.sql
-      0003_profile_changes.sql
+      0003_profile_update_proposals.sql
+      0004_profile_revisions.sql
   cli/
     memory.py
 ```
@@ -236,8 +240,6 @@ Reject Anchor/Alias/Merge, Tag, multiple documents, Duplicate Key, Tab indentati
 
 - [ ] **Step 7: Implement the zero-dependency parser**
 
-Algorithm:
-
 1. Normalize CRLF; reject NUL and BOM.
 2. Ignore blank lines and full-line comments only.
 3. Require indentation in multiples of two and reject tabs.
@@ -300,11 +302,11 @@ class MemoryPolicyRepository:
     def validate_explicit_file(self, path: Path, expected_scope: MemoryScope) -> MemoryPolicy: ...
 ```
 
-`inspect_*` never throws for malformed user configuration; it returns a sanitized invalid/ambiguous result so ordinary routing can continue with Memory disabled. `validate_explicit_file` is a CLI-only command and returns a non-zero error for invalid input.
+`inspect_*` never throws for malformed user configuration; it returns a sanitized invalid/ambiguous result so ordinary routing can continue with Memory disabled. `validate_explicit_file` is CLI-only and returns a non-zero error for invalid input.
 
 - [ ] **Step 1: Write fixed-location tests**
 
-Assert missing policy does not create the Data Root; exactly one JSON/YAML source loads; multiple formats return `ambiguous`; symlink, oversize and invalid UTF-8 return `invalid`; public result contains no absolute path.
+Assert missing policy does not create Data Root; exactly one JSON/YAML source loads; multiple formats return `ambiguous`; symlink, oversize and invalid UTF-8 return `invalid`; public result contains no absolute path.
 
 - [ ] **Step 2: Implement fixed source inspection**
 
@@ -332,8 +334,6 @@ def test_invalid_workspace_policy_disables_memory_for_workspace(self) -> None:
 
 - [ ] **Step 4: Implement deterministic intersection**
 
-Resolution order:
-
 ```text
 host hard disable
 -> explicit no-memory
@@ -349,8 +349,6 @@ Minimum evidence uses larger values; maximum rates/retention/counts use smaller 
 
 - [ ] **Step 5: Write and implement CLI tests**
 
-Commands:
-
 ```text
 workflow-skill-router memory status [--workspace <user-supplied-root>]
 workflow-skill-router memory policy validate <file> --scope personal|workspace
@@ -359,7 +357,7 @@ workflow-skill-router memory policy explain [--workspace <user-supplied-root>]
 
 `status` returns `disabled` and `personal-policy-missing` without creating a Memory DB. Stdout is canonical JSON and excludes full paths.
 
-- [ ] **Step 6: Run tests**
+- [ ] **Step 6: Run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_policy_io.py" -v
@@ -380,7 +378,7 @@ git commit -m "build(plugin): bundle memory policy resolution"
 
 ---
 
-### Task 3: M1-A — Optional Memory Store、Policy Snapshot 與 Migrations
+### Task 3: M1-A — Optional Store、Policy Snapshot 與 First Migration
 
 **Files:**
 - Create: `packages/router-core/src/workflow_skill_router/memory/migrator.py`
@@ -398,19 +396,17 @@ git commit -m "build(plugin): bundle memory policy resolution"
 - `memory_database_path(data_dir: Path) -> Path`, fixed to `memory/workflow-memory.sqlite3`.
 - `MemoryStore.open_if_enabled(data_dir: Path, policy: EffectiveMemoryPolicy) -> MemoryStore | None`.
 - `migrate_memory_store(database: Path) -> None` with independent checksums.
-- `MemoryPolicySnapshot` records effective modes, source class, Digest, feature decisions and reason codes without full source content/path.
+- `MemoryPolicySnapshot` stores effective modes, source class, Digest, feature decisions and reasons without full source/path.
 
 - [ ] **Step 1: Write Default-off and migration RED tests**
 
-Disabled Policy returns `None` before touching the filesystem. Enabled Policy creates only the separate Memory DB. Repeated migration is idempotent; modified migration checksum fails; operational `router-v2.sqlite3` is unchanged.
+Disabled returns `None` before filesystem access. Enabled creates only the separate Memory DB. Repeated migration is idempotent; checksum change fails; Operational DB is unchanged.
 
-- [ ] **Step 2: Add Policy Snapshot Schema and update expected Schema set**
+- [ ] **Step 2: Add Policy Snapshot Schema and update Expected Set**
 
-The Schema is strict, redacted and contains no path or raw Policy document. Add its filename to `EXPECTED_SCHEMA_FILES`.
+Strict redacted Schema contains no local path or raw Policy document.
 
-- [ ] **Step 3: Add memory migration package data**
-
-Update `pyproject.toml`:
+- [ ] **Step 3: Package Memory Migrations**
 
 ```toml
 [tool.setuptools.package-data]
@@ -421,13 +417,13 @@ workflow_skill_router = [
 ]
 ```
 
-Add a packaging test that builds/inspects the package or importlib resources and confirms `0001_observations.sql` is present.
+Add an importlib-resource/package test proving `0001_observations.sql` is included.
 
 - [ ] **Step 4: Create `0001_observations.sql`**
 
 Tables:
 
-```sql
+```text
 memory_schema_migrations
 memory_command_receipts
 memory_policy_snapshots
@@ -435,13 +431,13 @@ route_observations
 route_feedback
 ```
 
-Use strict checks for mode, eligibility status, feedback type and source class. `route_observations` stores only canonical JSON payload and Digests; no plaintext objective/path column exists.
+`route_observations` has no plaintext objective/path/tool argument columns. Constraints include all Feedback states needed by later M1-C so the migration never needs to be edited.
 
 - [ ] **Step 5: Implement Memory-only migrator and lazy store**
 
-The migrator scans only `workflow_skill_router.memory.migrations`. `open_if_enabled` does not create directories when capture is disabled; enabled modes reject symlink/reparse boundaries, migrate, enable foreign keys/WAL and expose bounded repository methods rather than raw writable connections.
+Scan only `workflow_skill_router.memory.migrations`. Enabled modes reject link/reparse boundaries, migrate, enable foreign keys/WAL and expose bounded repository methods rather than raw writable connections.
 
-- [ ] **Step 6: Run tests**
+- [ ] **Step 6: Run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_memory_migrator.py" -v
@@ -449,6 +445,8 @@ python -m unittest discover -s packages/router-core/tests/memory -p "test_memory
 python -m unittest discover -s packages/router-core/tests/memory -p "test_policy_snapshot.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
 python -m unittest discover -s packages/router-core/tests/persistence -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
 - [ ] **Step 7: Commit**
@@ -456,11 +454,13 @@ python -m unittest discover -s packages/router-core/tests/persistence -v
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/schemas/json/v2/memory-policy-snapshot.schema.json packages/router-core/pyproject.toml packages/router-core/tests
 git commit -m "feat(memory): add optional purgeable memory store"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle optional memory store"
 ```
 
 ---
 
-### Task 4: M1-B — Completed Workflow Reader、Eligibility、Observation 與 Remember
+### Task 4: M1-B — Completed Workflow、Eligibility、Observation 與 Remember
 
 **Files:**
 - Create: `packages/router-core/src/workflow_skill_router/memory/workflow_reader.py`
@@ -499,45 +499,43 @@ class RememberWorkflowCommand:
     correlation_id: str
 ```
 
-- [ ] **Step 1: Add Route Observation Schema and reader tests**
+- [ ] **Step 1: Add Observation Schema and reader tests**
 
 Use `LocalControlPlaneService` fixtures. Bind read to session, actor and Runtime Policy Snapshot; reject incomplete, cross-session, corrupt or Native Goal-owned records.
 
 - [ ] **Step 2: Implement read-only Completed Workflow projection**
 
-Read `local_control_plans`, ordered `local_work_items` and ordered `local_work_transitions.observation_json`. A completed local snapshot requires every required item `completed` and every phase a persisted `local-gate` with `passed=true`. Do not return `reported_outcome` free text to Memory.
+Read `local_control_plans`, ordered `local_work_items` and `local_work_transitions.observation_json`. Completed requires every required item `completed` and every phase a persisted `local-gate` with `passed=true`. Do not return `reported_outcome` free text to Memory.
 
-- [ ] **Step 3: Write route signature/privacy tests**
+- [ ] **Step 3: Implement route signature/privacy**
 
-Signature contains Envelope, ordered Phases, Primary/Support Skill IDs, Exit Gate IDs, Profile source class, Matcher Seed, required capability classes and local evidence class. It excludes Objective, path, file content, Tool Arguments and Secrets.
+Signature contains Envelope, ordered Phases, Primary/Support IDs, Exit Gates, Profile source class, Matcher Seed, required capability classes and evidence class. It excludes Objective, path, file content, Tool Arguments and Secrets.
 
 - [ ] **Step 4: Implement eligibility**
 
-Require terminal success, required gate pass, known side-effect outcome `none`/`known-success`, no `no-memory`, canonical Skill IDs, non-R3 risk, no pending consent and at least one Matcher Seed signal. User-explicit routes require Reviewed Mode or explicit `remember-once`; they are not automatically promotable.
+Require terminal success, required gate pass, side effect `none`/`known-success`, no `no-memory`, canonical Skill IDs, non-R3 risk, no pending consent and at least one Matcher Seed signal. User-explicit route requires Reviewed Mode or explicit `remember-once`; it is not automatically promotable.
 
-Matcher material may come only from trusted domains/tags, the already matched Profile matcher, or explicit structured `MatcherSeed`. Never derive keywords from Raw Objective. No signal returns `insufficient-match-signal` without persisting an Observation.
+Matcher material may come only from trusted domains/tags, already matched Profile matcher, or explicit structured `MatcherSeed`. Never derive keywords from Raw Objective. No signal returns `insufficient-match-signal` without Observation.
 
-- [ ] **Step 5: Implement `MemoryService.remember_workflow`**
+- [ ] **Step 5: Implement Remember flow**
 
 ```text
-resolve current effective policy
+resolve effective policy
 -> stop before Store open when disabled/no-memory
 -> read completed workflow
 -> normalize Matcher Seed
 -> evaluate eligibility
--> open Store only when capture is allowed
+-> open Store
 -> save redacted Policy Snapshot
 -> replay receipt or insert one Observation
 -> return public-safe result
 ```
 
-`workflow_run_id` is unique in Observation storage, so Resume does not increment history.
+Unique `workflow_run_id` prevents Resume double counting. Observation activation state is `unverified`; no actual Skill metric is populated.
 
-- [ ] **Step 6: Add CLI `memory remember`**
+- [ ] **Step 6: Add CLI, run tests and bundle**
 
-Accept repeated `--keyword`, `--domain`, `--tag`, a fixed target enum, Risk and Side-effect enum. Do not accept a Profile destination path.
-
-- [ ] **Step 7: Run tests**
+CLI accepts repeated `--keyword`, `--domain`, `--tag`, fixed target, Risk and Side-effect; no target path.
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_workflow_reader.py" -v
@@ -545,18 +543,22 @@ python -m unittest discover -s packages/router-core/tests/memory -p "test_observ
 python -m unittest discover -s packages/router-core/tests/memory -p "test_remember_workflow.py" -v
 python -m unittest discover -s packages/router-core/tests/integration -p "test_local_work_loop.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/cli/memory.py packages/router-core/src/workflow_skill_router/schemas/json/v2/route-observation.schema.json packages/router-core/tests
 git commit -m "feat(memory): capture eligible workflow observations"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle workflow observations"
 ```
 
 ---
 
-### Task 5: M1-C — Route Feedback、Analytics、Retention、Export 與 Purge
+### Task 5: M1-C — Feedback、Analytics、Retention、Export 與 Purge
 
 **Files:**
 - Create: `packages/router-core/src/workflow_skill_router/memory/feedback.py`
@@ -571,57 +573,49 @@ git commit -m "feat(memory): capture eligible workflow observations"
 - Modify: `packages/router-core/src/workflow_skill_router/cli/memory.py`
 - Modify: `packages/router-core/tests/schemas/test_schema_documents.py`
 
-**Interfaces:**
-- `RecordRouteFeedbackCommand` with typed feedback and standard reason code.
-- `HistorySummaryQuery`, `HistorySummary` and stable Summary Digest.
-- `PurgeMemoryCommand(scope, expected_summary_digest, include_managed_profiles, idempotency_key)`.
+- [ ] **Step 1: Add Feedback Schema and typed transitions**
 
-- [ ] **Step 1: Add Feedback Schema and contract tests**
+Allowed: `accepted`, `corrected`, `rejected`, `support-rejected`, `capability-unavailable`, `gate-failed`, `completed`, `abandoned`, `no-memory`. `corrected` requires original/corrected signature Digests and dimensions. Free text is rejected unless explicitly enabled and never enters Matcher generation.
 
-Allowed types: `accepted`, `corrected`, `rejected`, `support-rejected`, `capability-unavailable`, `gate-failed`, `completed`, `abandoned`, `no-memory`. `corrected` requires original/corrected signature Digests and correction dimensions. Free text is rejected unless explicitly enabled and never enters Matcher generation.
+Bind Feedback to Observation and Policy Digest; enforce idempotency and reject signature substitution.
 
-- [ ] **Step 2: Implement typed transitions**
+- [ ] **Step 2: Implement deterministic analytics**
 
-Bind Feedback to an existing Observation and Policy Digest. Enforce idempotency and reject cross-observation signature replacement.
+Calculate by distinct Workflow Run: Route frequency, completion, gate pass, correction, consent rejection, capability unavailable, reported-route consistency, distinct active days, Workspace distribution and Profile source distribution. `actual_skill_consistency` is `unavailable` unless Verified Host Activation Receipts exist.
 
-- [ ] **Step 3: Implement deterministic analytics**
+Confidence is `insufficient-evidence`, `low`, `medium` or `high`, never a model probability.
 
-Calculate by distinct `workflow_run_id`: Route frequency, completion, gate pass, correction, consent rejection, capability unavailable, planned/actual consistency class, distinct active days, Workspace distribution and Profile source distribution. Confidence is `insufficient-evidence`, `low`, `medium` or `high`, never a model probability.
+- [ ] **Step 3: Implement Retention and explicit Purge**
 
-- [ ] **Step 4: Implement Retention and explicit Purge**
+Scopes: `history-only`, `analytics-only`, `candidates-only`, `revisions-only`, `managed-profiles-only`, `all-memory-data`. M1 supports the first two and returns `scope-not-available` for future scopes. Purge requires exact Summary Digest and one transaction. Disabling does not delete unless `purge_on_disable=true`.
 
-Purge scopes: `history-only`, `analytics-only`, `candidates-only`, `revisions-only`, `managed-profiles-only`, `all-memory-data`. M1 implements the first two and returns `scope-not-available` for future scopes. Purge requires exact pre-operation Summary Digest and one transaction. Disabling does not delete unless `purge_on_disable` is explicitly true.
+- [ ] **Step 4: Implement redacted export**
 
-- [ ] **Step 5: Implement redacted export**
+Export canonical aggregate/optional sanitized Observation JSON. Scan output for forbidden objective/path/tool argument keys and Data Root before writing.
 
-Export canonical JSON with aggregate metrics and optional sanitized observations. Scan serialized output for objective/path/tool-argument keys and Router Data Root; reject on leak.
-
-- [ ] **Step 6: Extend CLI and run tests**
-
-```text
-memory feedback record
-memory history summary
-memory history export
-memory history purge --scope history-only --expected-summary-digest sha256:...
-```
+- [ ] **Step 5: Add CLI, run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_route_feedback.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_history_analytics.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_retention_and_purge.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/cli/memory.py packages/router-core/src/workflow_skill_router/schemas/json/v2/route-feedback.schema.json packages/router-core/tests
 git commit -m "feat(memory): add route feedback and history analytics"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle memory analytics"
 ```
 
 ---
 
-### Task 6: M2-A — Pattern Mining、Workflow Candidate 與 Suppression
+### Task 6: M2-A — Pattern Mining、Candidate 與 Suppression
 
 **Files:**
 - Create: `packages/router-core/src/workflow_skill_router/memory/migrations/0002_candidates.sql`
@@ -637,45 +631,39 @@ git commit -m "feat(memory): add route feedback and history analytics"
 - Modify: `packages/router-core/src/workflow_skill_router/cli/memory.py`
 - Modify: `packages/router-core/tests/schemas/test_schema_documents.py`
 
-**Interfaces:**
-- `PatternMetrics`, `WorkflowPattern`, `WorkflowCandidate`, `CandidateDecision`.
-- `CandidateEngine.rebuild(scope: MemoryScope, now: datetime) -> tuple[WorkflowCandidate, ...]`.
-- Candidate states: `proposed`, `rejected`, `expired`, `suppressed`, `superseded`, later `approved`/`auto-promoted`.
+- [ ] **Step 1: Add immutable Candidate migration and Schemas**
 
-- [ ] **Step 1: Add Candidate migration and strict schemas**
+Create `workflow_patterns`, `workflow_candidates`, `candidate_suppressions`. Candidate status constraint includes all anticipated values now: `proposed`, `approved`, `rejected`, `expired`, `suppressed`, `superseded`, `auto-promoted`; later slices do not edit `0002`.
 
-Create `workflow_patterns`, `workflow_candidates`, `candidate_suppressions`. Schemas expose sanitized Matcher, Route, evidence summary, confidence category, target class and Digests.
+Schemas expose sanitized Matcher, Route, evidence summary, confidence, target and Digests.
 
 - [ ] **Step 2: Implement deterministic grouping**
 
 Group by Scope, normalized Matcher Seed, Envelope, ordered Phase/Skill/Gate route, Workspace Digest for workspace-local target and Profile Source Class. Different Matcher or Workspace never merges.
 
-- [ ] **Step 3: Implement metrics and gates**
+- [ ] **Step 3: Implement gates**
 
-Reviewed default: 3 runs/2 days, success and gate `>=0.80`, correction `<=0.20`, route consistency `>=0.75`, zero hard violation.
+Reviewed: 3 runs/2 days, success/gate `>=0.80`, correction `<=0.20`, consistency `>=0.75`, zero hard violation.
 
-Automatic default: 5 runs/3 days, success and gate `>=0.90`, correction `<=0.10`, consistency `>=0.85`, canonical Skill IDs, managed target, zero hard violation.
+Automatic: 5 runs/3 days, success/gate `>=0.90`, correction `<=0.10`, consistency `>=0.85`, canonical Skills, managed target, zero hard violation.
 
-Return reason codes instead of a Candidate for insufficient evidence/signal, explicit route requiring review, unknown Skill, hard violation or non-managed automatic target.
+Consistency uses planned/reported route only. Actual activation is unavailable unless a future Verified Host receipt supplies it.
 
-- [ ] **Step 4: Implement rejection suppression**
+Return reason codes for insufficient evidence/signal, explicit route requiring review, unknown Skill, hard violation or non-managed automatic target.
 
-Unchanged `material_evidence_digest` remains suppressed until configured expiry. New distinct successful evidence changes the Digest and permits a new Candidate.
+- [ ] **Step 4: Implement suppression**
 
-- [ ] **Step 5: Add CLI and run tests**
+Unchanged `material_evidence_digest` stays suppressed. New distinct successful evidence changes Digest and permits a new Candidate.
 
-```text
-memory candidates rebuild
-memory candidates list
-memory candidates show <id>
-memory candidates reject <id> --reason <code>
-```
+- [ ] **Step 5: Add CLI, run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_candidate_migration.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_candidate_engine.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_candidate_suppression.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
 - [ ] **Step 6: Commit**
@@ -683,14 +671,16 @@ python -m unittest discover -s packages/router-core/tests/schemas -p "test_schem
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/cli/memory.py packages/router-core/src/workflow_skill_router/schemas/json/v2 packages/router-core/tests
 git commit -m "feat(memory): recommend deterministic workflow candidates"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle workflow candidates"
 ```
 
 ---
 
-### Task 7: M2-B — Profile Diff、Backtest 與 Bound Proposal
+### Task 7: M2-B — Diff、Backtest 與 Bound Proposal
 
 **Files:**
-- Create: `packages/router-core/src/workflow_skill_router/memory/migrations/0003_profile_changes.sql`
+- Create: `packages/router-core/src/workflow_skill_router/memory/migrations/0003_profile_update_proposals.sql`
 - Create: `packages/router-core/src/workflow_skill_router/memory/profile_diff.py`
 - Create: `packages/router-core/src/workflow_skill_router/memory/backtest.py`
 - Create: `packages/router-core/src/workflow_skill_router/memory/proposals.py`
@@ -703,34 +693,28 @@ git commit -m "feat(memory): recommend deterministic workflow candidates"
 - Modify: `packages/router-core/src/workflow_skill_router/memory/service.py`
 - Modify: `packages/router-core/tests/schemas/test_schema_documents.py`
 
-**Interfaces:**
-- `SemanticProfileDiff`, `JsonPatchOperation`, `BacktestSummary`, `ProfileUpdateProposal`.
-- `build_profile_document(candidate, current_profile) -> Mapping[str, object]`.
-- `diff_profiles(before, after) -> SemanticProfileDiff`.
-- `backtest_profile_update(current_layers, proposed_profile, observations) -> BacktestSummary`.
-- `transition_profile_update(proposal_id, action, expected_state_version, idempotency_key)`; action is `approve` or `reject` only.
+- [ ] **Step 1: Add Proposal migration and Schema**
 
-- [ ] **Step 1: Add proposal table and Schema**
-
-Migration creates `profile_update_proposals`; strict Schema binds Candidate, Target, expected Profile Digest, proposed Profile Digest, Diff Digest, Backtest Digest, Policy Digest and lifecycle.
+`0003` creates only `profile_update_proposals`, with Candidate, Target, expected/new Profile Digest, Diff, Backtest, Policy and lifecycle. Include `pending`, `approved`, `rejected`, `stale`, `expired`, `applied`, `failed`; never edit this migration later.
 
 - [ ] **Step 2: Implement stable Semantic + JSON Diff**
 
-Cover Rule add/remove/change, Matcher, Priority, Work Mode, Phase order, Primary Skill, Support Skill and Exit Gate. Stable order is Rule ID, Phase position, field name.
+Cover Rule add/remove/change, Matcher, Priority, Work Mode, Phase order, Primary, Support and Exit Gate. Stable order: Rule ID, Phase position, field name.
 
 - [ ] **Step 3: Implement deterministic Backtest**
 
-Decode proposed content through the existing Routing Profile contract and run the same lexical/domain/tag/work-mode matching against stored structured Matcher Seeds. Report coverage, unexpected matches, shadowed/equal-rank conflict, manual precedence, capability gap class and Workspace isolation.
+Decode through existing Routing Profile contract and use runtime lexical/domain/tag/work-mode matching over structured Matcher Seeds. Report coverage, unexpected matches, shadow/equal-rank conflict, manual precedence, capability gap class and Workspace isolation.
 
-- [ ] **Step 4: Implement bound Proposal lifecycle**
+- [ ] **Step 4: Implement bound lifecycle**
 
 ```text
 pending -> approved | rejected | stale | expired
+approved -> applied | stale | failed
 ```
 
-Transition input cannot include Candidate, Target, Diff, Matcher or Profile document. Creating a Proposal requires zero Profile Lint errors and acceptable Backtest. Approval records intent only; no file write in this slice.
+Transition input cannot contain Candidate, Target, Diff, Matcher or Profile document. Creating Proposal requires zero Lint errors and acceptable Backtest. Approval records intent only; no file write in this slice.
 
-- [ ] **Step 5: Run tests**
+- [ ] **Step 5: Run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_profile_diff.py" -v
@@ -738,6 +722,8 @@ python -m unittest discover -s packages/router-core/tests/memory -p "test_profil
 python -m unittest discover -s packages/router-core/tests/memory -p "test_profile_proposals.py" -v
 python -m unittest discover -s packages/router-core/tests/profiles -p "test_resolver.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
 - [ ] **Step 6: Commit**
@@ -745,13 +731,16 @@ python -m unittest discover -s packages/router-core/tests/schemas -p "test_schem
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/schemas/json/v2/profile-update-proposal.schema.json packages/router-core/tests
 git commit -m "feat(memory): create reviewable profile update proposals"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle profile proposals"
 ```
 
 ---
 
-### Task 8: M2-C — Revision、CAS、Atomic Materializer 與 Rollback
+### Task 8: M2-C — Revision、CAS、Atomic Write 與 Rollback
 
 **Files:**
+- Create: `packages/router-core/src/workflow_skill_router/memory/migrations/0004_profile_revisions.sql`
 - Create: `packages/router-core/src/workflow_skill_router/profiles/atomic_io.py`
 - Create: `packages/router-core/src/workflow_skill_router/memory/revisions.py`
 - Create: `packages/router-core/src/workflow_skill_router/memory/materializer.py`
@@ -766,20 +755,13 @@ git commit -m "feat(memory): create reviewable profile update proposals"
 - Modify: `packages/router-core/src/workflow_skill_router/cli/memory.py`
 - Modify: `packages/router-core/tests/schemas/test_schema_documents.py`
 
-**Interfaces:**
-- `secure_read_json(path, root, max_bytes)` and `atomic_write_canonical_json(path, root, document, expected_digest)`.
-- `ProfileTarget(target_class, profile_id, workspace_digest, fixed_path_class)`; no arbitrary path.
-- `ProfileRevisionStore.record/list/load_snapshot`.
-- `ProfileMaterializer.apply_approved(proposal, authority) -> ProfileRevision`.
-- `create_rollback_proposal(profile_id, selected_revision_id, current_digest)`.
+- [ ] **Step 1: Extract and test secure fixed-root I/O**
 
-- [ ] **Step 1: Extract and test secure I/O**
+Preserve current Profile behavior: root containment, regular non-link target, same-directory temp file, flush/fsync, atomic replace, cleanup and post-write Digest validation.
 
-Preserve current Personal Profile behavior: root containment, regular non-link target, temp file in same directory, flush/fsync, atomic replace, cleanup and post-write Digest validation.
+- [ ] **Step 2: Add `0004` Revision index and Schema**
 
-- [ ] **Step 2: Add Revision table/Schema and fixed snapshot layout**
-
-`0003_profile_changes.sql` also creates `profile_revision_index`. Snapshot path:
+`0004` creates only revision metadata/recovery tables. Snapshot path:
 
 ```text
 profiles/revisions/<target-class>/<profile-id>/<revision-id>.json
@@ -794,19 +776,17 @@ Schema records previous/new Digest, Proposal/Candidate, Policy, actor, authority
 - `user-personal`: reviewed approval plus local user-owned write authority.
 - `workspace-file`: reviewed approval plus verified Workspace Root and Host File Write Authority.
 
-No caller-supplied target path.
+No arbitrary target path.
 
-- [ ] **Step 4: Implement CAS and write recovery**
+- [ ] **Step 4: Implement CAS and recovery**
 
-Load approved Proposal, verify current Digest, record pending Revision, atomically write fixed target, strict re-read, finalize. Drift marks Proposal `stale` without overwrite. If file write succeeds but metadata finalization fails, reconcile by exact Snapshot Digest on replay rather than blindly rewriting.
+Load approved Proposal, verify current Digest, record pending Revision, atomically write fixed target, strict re-read, finalize. Drift marks Proposal `stale` without overwrite. If file write succeeds but metadata finalization fails, reconcile by exact Snapshot Digest on replay.
 
 - [ ] **Step 5: Implement Rollback as forward revision**
 
-Selected old Snapshot produces a new Proposal/Diff against current state, passes approval/CAS, writes content and creates a new `rollback` Revision. Old Revision rows/files remain unchanged.
+Selected old Snapshot creates a new Proposal/Diff against current state, passes approval/CAS, writes content and creates a `rollback` Revision. Old rows/files remain unchanged.
 
-- [ ] **Step 6: Extend CLI and run tests**
-
-Workspace writes remain unavailable from local CLI in this slice.
+- [ ] **Step 6: Run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/profiles -p "test_atomic_io.py" -v
@@ -814,6 +794,8 @@ python -m unittest discover -s packages/router-core/tests/memory -p "test_profil
 python -m unittest discover -s packages/router-core/tests/memory -p "test_profile_materializer.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_profile_rollback.py" -v
 python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
 
 - [ ] **Step 7: Commit**
@@ -821,11 +803,13 @@ python -m unittest discover -s packages/router-core/tests/schemas -p "test_schem
 ```powershell
 git add packages/router-core/src/workflow_skill_router/profiles packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/cli/memory.py packages/router-core/src/workflow_skill_router/schemas/json/v2/profile-revision.schema.json packages/router-core/tests
 git commit -m "feat(memory): version and rollback reviewed profiles"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle profile revisions"
 ```
 
 ---
 
-### Task 9: M3-A — Managed Profiles 與固定 Layer Precedence
+### Task 9: M3-A — Managed Profiles 與 Layer Precedence
 
 **Files:**
 - Create: `packages/router-core/src/workflow_skill_router/profiles/layers.py`
@@ -840,15 +824,7 @@ git commit -m "feat(memory): version and rollback reviewed profiles"
 - Modify: `packages/router-core/tests/profiles/test_resolver.py`
 - Modify: `packages/router-core/tests/integration/test_local_control_plane.py`
 
-**Interfaces:**
-- `ProfileSourceClass`: `user-workspace`, `managed-workspace`, `user-personal`, `managed-personal`.
-- `LayeredRoutingProfile(profile, source_class, source_digest, workspace_digest)`.
-- `RoutingProfileRepository.load_ranked_layers(workspace_root, workspace_digest)`.
-- `resolve_layered_profile_route(...)`; preserve existing `resolve_profile_route(...)` wrapper.
-
-- [ ] **Step 1: Write precedence tests**
-
-Exact order regardless of Rule Priority:
+- [ ] **Step 1: Write exact precedence tests**
 
 ```text
 user-owned Workspace
@@ -858,32 +834,34 @@ managed Personal
 built-in
 ```
 
-Explicit Skill bypasses all Profile layers.
+Source rank precedes Rule Priority/Specificity. Explicit Skill bypasses all layers.
 
-- [ ] **Step 2: Implement fixed managed paths**
+- [ ] **Step 2: Implement fixed paths**
 
 ```text
 profiles/managed/personal/adaptive-memory.json
 profiles/managed/workspace/<workspace-digest-without-prefix>/adaptive-memory.json
 ```
 
-Only verified Workspace Root produces the Digest. Reject invalid Digest and link/reparse boundaries.
+Only verified Workspace Root produces Digest. Reject invalid Digest and links/reparse points.
 
-- [ ] **Step 3: Add explicit Layer rank**
+- [ ] **Step 3: Add Layer wrapper/resolver**
 
-Rank source class before Rule Priority/Specificity. Do not alter Rule Priority. Add route sources `managed-workspace-profile` and `managed-personal-profile` to Python/TypeScript output contracts.
+`ProfileSourceClass`, `LayeredRoutingProfile`, `load_ranked_layers`, `resolve_layered_profile_route`; preserve existing resolver wrapper. Add `managed-workspace-profile` and `managed-personal-profile` route sources.
 
 - [ ] **Step 4: Define corrupt managed behavior**
 
-Corrupt Managed Profile disables only that managed layer, adds `managed-profile-invalid` warning and continues with User-owned/built-in route. Existing fail-closed behavior for corrupt User-owned Profile remains.
+Disable only the managed layer, add `managed-profile-invalid`, continue with User-owned/built-in. Existing User-owned corruption remains fail-closed.
 
-- [ ] **Step 5: Enable reviewed managed Workspace write and run tests**
+- [ ] **Step 5: Enable reviewed managed Workspace write, test and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/profiles -p "test_profile_layers.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_managed_profiles.py" -v
 python -m unittest discover -s packages/router-core/tests/profiles -p "test_resolver.py" -v
 python -m unittest discover -s packages/router-core/tests/integration -p "test_local_control_plane.py" -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 Set-Location plugins/workflow-skill-router
 npm run check
 Set-Location ../..
@@ -894,11 +872,13 @@ Set-Location ../..
 ```powershell
 git add packages/router-core/src/workflow_skill_router/profiles packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/local_control.py packages/router-core/tests plugins/workflow-skill-router/mcp/src/tool-output-schemas.ts
 git commit -m "feat(memory): route through managed profile layers"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle managed profile routing"
 ```
 
 ---
 
-### Task 10: M3-B — Automatic Managed Promotion 與 Notifications
+### Task 10: M3-B — Automatic Managed Promotion
 
 **Files:**
 - Create: `packages/router-core/tests/memory/test_automatic_promotion.py`
@@ -911,38 +891,39 @@ git commit -m "feat(memory): route through managed profile layers"
 - Modify: `packages/router-core/src/workflow_skill_router/memory/models.py`
 - Modify: `packages/router-core/src/workflow_skill_router/cli/memory.py`
 
-**Interfaces:**
-- `AutomaticPromotionDecision(status, candidate_id, target, gate_reasons, revision_id, notification)`.
-- `MemoryService.promote_eligible_candidates(now) -> tuple[AutomaticPromotionDecision, ...]`.
-- Notification types: `candidate-created`, `auto-promotion-applied`, `auto-promotion-suppressed`, `retention-purge`.
-
 - [ ] **Step 1: Write hard-invariant tests**
 
 Reject User-owned target, R3, user-explicit route without remember-once, unknown Skill, non-high confidence, hard violation, weaker thresholds, manual Profile conflict and missing Backtest.
 
 - [ ] **Step 2: Write successful automatic test**
 
-Five consistent successful runs on three dates produce one high Candidate, one Managed Revision, one fixed managed file, Candidate status `auto-promoted` and visible notification.
+Five consistent successful runs on three dates produce one high Candidate, one Managed Revision, one fixed managed file, Candidate `auto-promoted` and visible notification.
 
-- [ ] **Step 3: Implement promotion gate**
+- [ ] **Step 3: Implement gate and suppression**
 
-Run only under Effective `automatic`. Bind Candidate/Policy Digests, rerun Backtest immediately before write and reuse the reviewed CAS/Revision/Atomic path.
+Run only under Effective `automatic`. Bind Candidate/Policy Digests, rerun Backtest immediately before write and reuse reviewed CAS/Revision/Atomic path. Manual conflict stores suppression and never rewrites or silently selects another route.
 
-- [ ] **Step 4: Implement conflict suppression and mandatory disclosure**
+- [ ] **Step 4: Implement mandatory disclosure**
 
-Overlap/conflict with User-owned Profile stores suppression and does not rewrite or silently choose a different route. `show_auto_promotion` remains true in V1. Notifications contain IDs/Digests/reasons only.
+`show_auto_promotion` remains true in V1. Notifications contain IDs, Digests, target, revision and reasons only. CLI `promote-eligible` is an explicit local operation and does not claim a background scheduler.
 
-- [ ] **Step 5: Run tests and commit**
+- [ ] **Step 5: Run tests and bundle**
 
 ```powershell
 python -m unittest discover -s packages/router-core/tests/memory -p "test_automatic_promotion.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -p "test_memory_notifications.py" -v
 python -m unittest discover -s packages/router-core/tests/memory -v
+python plugins/workflow-skill-router/scripts/build-runtime.py
+python plugins/workflow-skill-router/scripts/build-runtime.py --check
 ```
+
+- [ ] **Step 6: Commit**
 
 ```powershell
 git add packages/router-core/src/workflow_skill_router/memory packages/router-core/src/workflow_skill_router/cli/memory.py packages/router-core/tests/memory
 git commit -m "feat(memory): promote safe managed workflows automatically"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle automatic memory promotion"
 ```
 
 ---
@@ -985,13 +966,13 @@ rollback_profile_revision
 purge_workflow_memory
 ```
 
-Existing 12 + new 8 = 20 tools. Python readiness, Python dispatcher/codecs, TypeScript definitions/schemas, MCP `tools/list` and generated reference must contain the identical set.
+Existing 12 + 8 = 20. Python readiness/dispatcher/codecs, TS definitions/schemas, MCP `tools/list` and generated reference must match exactly.
 
 - [ ] **Step 1: Write failing Python parity/codec tests**
 
-Strictly reject unknown fields and transition attempts that replace bound Candidate/Profile content. `LocalControlPlaneService` delegates to one `MemoryService` instance.
+Strictly reject unknown fields and transition attempts replacing bound Candidate/Profile content. `LocalControlPlaneService` delegates to one `MemoryService`.
 
-- [ ] **Step 2: Add readiness matrix**
+- [ ] **Step 2: Add readiness**
 
 | Tool | Availability | Risk |
 | --- | --- | --- |
@@ -1008,15 +989,15 @@ Do not describe all 20 as local-ready.
 
 - [ ] **Step 3: Generalize trusted Workspace binding**
 
-Extend the existing root binder to exact Memory tools containing `workspace_root`; reject unadvertised roots before Python. No binder accepts a target path.
+Bind exact Memory tools containing `workspace_root`; reject unadvertised roots before Python. No binder accepts target path.
 
-- [ ] **Step 4: Add strict Zod input/output and metadata**
+- [ ] **Step 4: Add strict Zod schemas/metadata**
 
-Enumerate Mode, Target, Feedback, Purge Scope, Candidate Status, Confidence, Authority, Digest and Reason. `transition_profile_update` cannot include Candidate, Target, Diff, Matcher or Profile document. Status/list/preview are read-only. Purge sets `destructiveHint: true`.
+Enumerate Mode, Target, Feedback, Purge Scope, Candidate Status, Confidence, Authority, Digest and Reasons. `transition_profile_update` cannot include Candidate, Target, Diff, Matcher or Profile. Status/list/preview are read-only; Purge is destructive.
 
 - [ ] **Step 5: Update reference cleanup and regenerate**
 
-Temporary cleanup removes Router DB and optional Memory DB WAL/SHM plus managed test artifacts. Absence is valid.
+Temporary cleanup removes Router DB and optional Memory DB WAL/SHM plus managed test artifacts; absence is valid.
 
 ```powershell
 python plugins/workflow-skill-router/scripts/build-runtime.py
@@ -1043,8 +1024,10 @@ python -m unittest discover -s packages/router-core/tests/integration -p "test_l
 - [ ] **Step 7: Commit**
 
 ```powershell
-git add packages/router-core/src packages/router-core/tests plugins/workflow-skill-router/mcp plugins/workflow-skill-router/runtime/workflow_skill_router.pyz scripts/build-mcp-reference-data.mjs site/src/data/mcp-tools.generated.json
+git add packages/router-core/src packages/router-core/tests plugins/workflow-skill-router/mcp scripts/build-mcp-reference-data.mjs site/src/data/mcp-tools.generated.json
 git commit -m "feat(plugin): expose adaptive workflow memory tools"
+git add plugins/workflow-skill-router/runtime/workflow_skill_router.pyz
+git commit -m "build(plugin): bundle adaptive memory tools"
 ```
 
 ---
@@ -1052,47 +1035,35 @@ git commit -m "feat(plugin): expose adaptive workflow memory tools"
 ### Task 12: M4-B — Public Docs、Examples、Flight Recorder 與 Pilot
 
 **Files:**
-- Create: `site/src/content/docs/concepts/adaptive-workflow-memory.md`
-- Create: `site/src/content/docs/zh-tw/concepts/adaptive-workflow-memory.md`
-- Create: `site/src/content/docs/guides/configure-workflow-memory.md`
-- Create: `site/src/content/docs/zh-tw/guides/configure-workflow-memory.md`
-- Create: `site/src/content/docs/guides/migrate-to-workflow-memory.md`
-- Create: `site/src/content/docs/zh-tw/guides/migrate-to-workflow-memory.md`
-- Create: `starter/v2/workflow-skill-router/assets/workflow-memory.disabled.yaml`
-- Create: `starter/v2/workflow-skill-router/assets/workflow-memory.reviewed.yaml`
-- Create: `starter/v2/workflow-skill-router/assets/workflow-memory.automatic.json`
-- Modify: `README.md`
-- Modify: `README.zh-TW.md`
-- Modify: `site/astro.config.mjs`
-- Modify: bilingual `reference/cli.md`, `reference/local-state.md`, `reference/security-boundaries.md`, `reference/mcp-tools.mdx`
-- Modify: `demo/v2-scenarios/schema.json`
-- Modify: `demo/v2-scenarios/inputs.json`
-- Modify: `scripts/build-v2-demo-data.py`
-- Modify: `site/src/components/HomeLanding.astro`
-- Modify: bilingual `showcase.md`
-- Modify: `tests/test_doc_parity.py`
-- Modify: `tests/test_v2_documentation.py`
-- Modify: `tests/test_skill_source_sync.py`
+- Create: bilingual `concepts/adaptive-workflow-memory.md`.
+- Create: bilingual `guides/configure-workflow-memory.md`.
+- Create: bilingual `guides/migrate-to-workflow-memory.md`.
+- Create: three canonical Memory Policy examples under `starter/v2/workflow-skill-router/assets/`.
+- Modify: `README.md`, `README.zh-TW.md`, `site/astro.config.mjs`.
+- Modify: bilingual `reference/cli.md`, `reference/local-state.md`, `reference/security-boundaries.md`, `reference/mcp-tools.mdx`, `showcase.md`.
+- Modify: `demo/v2-scenarios/schema.json`, `demo/v2-scenarios/inputs.json`, `scripts/build-v2-demo-data.py`.
+- Modify: `site/src/components/HomeLanding.astro`.
+- Modify: `tests/test_doc_parity.py`, `tests/test_v2_documentation.py`, `tests/test_skill_source_sync.py`.
 
 - [ ] **Step 1: Write failing documentation contracts**
 
-Require bilingual routes and exact concepts: Default-off, autonomy order, Workspace cannot elevate Personal, `automatic-managed`, `intended-unverified`, no telemetry and purge not deleting User-owned Profiles.
+Require bilingual routes and exact concepts: Default-off, autonomy order, Workspace cannot elevate Personal, `automatic-managed`, `intended-unverified`, no telemetry, no background learning and purge not deleting User-owned Profiles.
 
-- [ ] **Step 2: Publish configuration and migration guides**
+- [ ] **Step 2: Publish guides**
 
-Document OS paths, data-root override, Personal/Workspace resolution, ambiguity, safe YAML, feature overrides, Retention/Purge and copy-paste examples. Existing users remain disabled; recommend `observe -> reviewed -> automatic` progression. Skill-only cannot claim durable memory.
+Document OS paths, data-root override, Personal/Workspace resolution, ambiguity, safe YAML, feature overrides, Retention/Purge and copy-paste examples. Existing users stay disabled; recommend `observe -> reviewed -> automatic`. Skill-only cannot claim durable memory.
 
 - [ ] **Step 3: Package synchronized examples**
 
-Copy canonical examples to Starter and generated Plugin Skill assets through the established sync process. Add source-sync tests; do not edit generated archives.
+Use established source-sync generation. Add parity tests; never hand-edit generated archives.
 
 - [ ] **Step 4: Update Local State/Security/MCP references**
 
-Separate Operational and Optional Memory DB, document managed/revision paths and four authority decisions. Publish exact 20-tool readiness matrix.
+Separate Operational and Optional Memory DB, managed/revision paths and four authority decisions. Publish exact 20-tool matrix and mark actual Skill consistency unavailable without receipt evidence.
 
 - [ ] **Step 5: Add sanitized Flight Recorder scenarios**
 
-Scenarios: Policy Resolution, Observe, Reviewed Proposal, Automatic Managed Promotion and Purge. Evidence is `fixture-trace` or sanitized `runtime-trace`, never actual Personal Memory.
+Policy Resolution, Observe, Reviewed Proposal, Automatic Managed Promotion, Purge. Evidence is `fixture-trace` or sanitized `runtime-trace`, never actual Personal Memory.
 
 - [ ] **Step 6: Run docs/site/Pilot gates**
 
@@ -1114,7 +1085,7 @@ npm run audit:lighthouse
 Set-Location ..
 ```
 
-Pilot fixtures: at least 20 sanitized local records—6 Single, 8 Phased, 6 Goal-like; at least 8 use a Routing Profile. Verify Default-off, observe metrics, reviewed approval, automatic managed-only write, correction, suppression, rollback and purge. Label as deterministic local Pilot, not Model Evidence.
+Pilot: at least 20 sanitized local records—6 Single, 8 Phased, 6 Goal-like; at least 8 use Profile. Verify Default-off, observe metrics, reviewed approval, automatic managed-only write, correction, suppression, rollback and purge. Label as deterministic local Pilot, not Model Evidence.
 
 - [ ] **Step 7: Commit**
 
@@ -1188,7 +1159,7 @@ No live model evaluation runs as part of this feature. M5 starts only after a se
 | Automatic managed-only write | 10 |
 | 8 typed MCP tools | 11 |
 | Flight Recorder and bilingual docs | 12 |
-| Authority separation | Global Constraints, 9–12 |
+| Authority separation and honest activation observability | Global Constraints, 4–12 |
 | Semantic recommender remains gated | Global Constraints, Repository Gate |
 
 ---
@@ -1205,7 +1176,9 @@ Implementation is complete only when:
 6. Automatic Mode writes only fixed Router-managed targets after the stronger gate.
 7. User-owned Profiles outrank Managed Profiles without priority manipulation.
 8. Rollback creates a new Forward Revision.
-9. All 20 MCP tools, Python readiness, TypeScript schemas, generated reference and docs remain synchronized.
-10. Exact-head Required Checks and post-merge `main` CI pass for every Slice.
-11. Public docs never imply semantic learning, telemetry, automatic permission or verified Skill activation.
-12. M5 remains a separate evidence-based decision, not an implicit continuation.
+9. Existing and Memory Migrations remain immutable after merge.
+10. All 20 MCP tools, Python readiness, TypeScript schemas, generated reference and docs remain synchronized.
+11. Actual Skill consistency is unavailable until verified receipt evidence exists.
+12. Exact-head Required Checks and post-merge `main` CI pass for every Slice.
+13. Public docs never imply semantic learning, background telemetry, automatic permission or verified Skill activation.
+14. M5 remains a separate evidence-based decision, not an implicit continuation.
