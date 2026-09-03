@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 from .evaluation import configure_evaluation_parser, run_evaluation_cli
+from .memory import configure_memory_parser, run_memory_cli
 from .profiles import configure_profile_parser, run_profile_cli
 
 
@@ -29,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate, install, list, or preview user-owned routing profiles",
     )
     configure_profile_parser(profile)
+    memory = subparsers.add_parser(
+        "memory",
+        help="Inspect or validate the default-off Workflow Memory policy",
+    )
+    configure_memory_parser(memory)
     return parser
 
 
@@ -63,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_evaluation_cli(args)
     if args.command == "profile":
         return run_profile_cli(args)
+    if args.command == "memory":
+        return run_memory_cli(args)
     print("This command requires Plugin/MCP host context; use the bundled runtime tools.")
     return 2
 
