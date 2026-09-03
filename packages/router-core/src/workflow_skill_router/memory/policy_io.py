@@ -103,6 +103,22 @@ def _format_for_path(path: Path) -> PolicyFormat:
     raise MemoryPolicyError("unsupported-policy-format")
 
 
+def _inspect_fixed_directory(path: Path) -> bool:
+    """Return False for a missing directory and reject linked/non-directory boundaries."""
+
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as error:
+        raise MemoryPolicyError("policy-source-unavailable") from error
+    if _is_link_or_reparse(metadata):
+        raise MemoryPolicyError("policy-source-link-forbidden")
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise MemoryPolicyError("policy-source-parent-not-directory")
+    return True
+
+
 def _read_policy_text(path: Path) -> str:
     try:
         before = path.lstat()
@@ -165,6 +181,7 @@ class MemoryPolicyRepository:
 
     def inspect_personal(self) -> PolicyLoadResult:
         return self._inspect(
+            root=self.data_dir,
             parent=self.data_dir / "config",
             expected_scope=MemoryScope.PERSONAL,
             source_class="personal-policy",
@@ -172,8 +189,10 @@ class MemoryPolicyRepository:
         )
 
     def inspect_workspace(self, workspace_root: Path) -> PolicyLoadResult:
+        root = Path(workspace_root)
         return self._inspect(
-            parent=Path(workspace_root) / ".codex",
+            root=root,
+            parent=root / ".codex",
             expected_scope=MemoryScope.WORKSPACE,
             source_class="workspace-policy",
             missing_code="workspace-policy-missing",
@@ -210,11 +229,20 @@ class MemoryPolicyRepository:
     def _inspect(
         self,
         *,
+        root: Path,
         parent: Path,
         expected_scope: MemoryScope,
         source_class: str,
         missing_code: str,
     ) -> PolicyLoadResult:
+        try:
+            if not _inspect_fixed_directory(root):
+                return PolicyLoadResult("missing", None, (missing_code,))
+            if not _inspect_fixed_directory(parent):
+                return PolicyLoadResult("missing", None, (missing_code,))
+        except MemoryPolicyError as error:
+            return PolicyLoadResult("invalid", None, (str(error),))
+
         candidates = self._candidate_paths(parent)
         if not candidates:
             return PolicyLoadResult("missing", None, (missing_code,))
