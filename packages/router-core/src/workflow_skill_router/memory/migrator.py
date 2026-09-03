@@ -3,8 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 from importlib import resources
+import os
+from pathlib import Path
 import re
 import sqlite3
+import stat
 from typing import Iterable
 
 
@@ -85,8 +88,44 @@ def _rollback(connection: sqlite3.Connection) -> None:
         pass
 
 
-def migrate_memory_store(connection: sqlite3.Connection) -> tuple[int, ...]:
-    """Apply checksum-protected Memory migrations as one transaction."""
+def _is_link_or_reparse(metadata: os.stat_result) -> bool:
+    if stat.S_ISLNK(metadata.st_mode):
+        return True
+    attributes = int(getattr(metadata, "st_file_attributes", 0))
+    flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    return bool(attributes & flag)
+
+
+def _validated_database_path(database: Path) -> Path:
+    path = Path(database).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    path = path.absolute()
+
+    try:
+        parent_metadata = path.parent.lstat()
+    except OSError as error:
+        raise MemoryMigrationError("memory-migration-parent-unavailable") from error
+    if _is_link_or_reparse(parent_metadata):
+        raise MemoryMigrationError("memory-migration-parent-link-forbidden")
+    if not stat.S_ISDIR(parent_metadata.st_mode):
+        raise MemoryMigrationError("memory-migration-parent-not-directory")
+
+    try:
+        file_metadata = path.lstat()
+    except FileNotFoundError:
+        return path
+    except OSError as error:
+        raise MemoryMigrationError("memory-migration-file-unavailable") from error
+    if _is_link_or_reparse(file_metadata):
+        raise MemoryMigrationError("memory-migration-file-link-forbidden")
+    if not stat.S_ISREG(file_metadata.st_mode):
+        raise MemoryMigrationError("memory-migration-file-not-regular")
+    return path
+
+
+def _migrate_memory_connection(connection: sqlite3.Connection) -> tuple[int, ...]:
+    """Apply checksum-protected Memory migrations to an owned connection."""
 
     if not isinstance(connection, sqlite3.Connection):
         raise TypeError("connection must be sqlite3.Connection")
@@ -175,6 +214,37 @@ def migrate_memory_store(connection: sqlite3.Connection) -> tuple[int, ...]:
         _rollback(connection)
         raise
     return tuple(applied_now)
+
+
+def migrate_memory_store(database: Path) -> None:
+    """Open, migrate, and close one fixed Memory database path."""
+
+    # MemoryStore owns a long-lived connection while recording the current
+    # policy snapshot. Keep that existing internal call path bounded while the
+    # public contract remains Path-in/None-out.
+    if isinstance(database, sqlite3.Connection):
+        _migrate_memory_connection(database)
+        return
+
+    database_path = _validated_database_path(database)
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(
+            database_path,
+            isolation_level=None,
+            timeout=5.0,
+        )
+        _validated_database_path(database_path)
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        _migrate_memory_connection(connection)
+    except MemoryMigrationError:
+        raise
+    except sqlite3.Error as error:
+        raise MemoryMigrationError("memory-migration-open-failed") from error
+    finally:
+        if connection is not None:
+            connection.close()
 
 
 __all__ = [
