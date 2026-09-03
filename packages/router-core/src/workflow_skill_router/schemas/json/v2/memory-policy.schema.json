@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/memory-policy.schema.json",
+  "title": "Workflow Skill Router Adaptive Workflow Memory Policy",
+  "description": "Strict, non-executable policy for opt-in local workflow memory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "artifact_kind",
+    "policy_id",
+    "scope",
+    "mode"
+  ],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/memory-policy"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "memory-policy"},
+    "policy_id": {
+      "type": "string",
+      "pattern": "^(personal|workspace):[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "scope": {"enum": ["personal", "workspace"]},
+    "mode": {"enum": ["disabled", "observe", "reviewed", "automatic"]},
+    "storage": {"$ref": "#/$defs/storage"},
+    "privacy": {"$ref": "#/$defs/privacy"},
+    "eligibility": {"$ref": "#/$defs/eligibility"},
+    "features": {"$ref": "#/$defs/features"},
+    "notifications": {"$ref": "#/$defs/notifications"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"scope": {"const": "personal"}}, "required": ["scope"]},
+      "then": {
+        "properties": {
+          "policy_id": {
+            "pattern": "^personal:[a-z0-9][a-z0-9._-]{0,63}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"scope": {"const": "workspace"}}, "required": ["scope"]},
+      "then": {
+        "properties": {
+          "policy_id": {
+            "pattern": "^workspace:[a-z0-9][a-z0-9._-]{0,63}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"mode": {"const": "automatic"}}, "required": ["mode"]},
+      "then": {
+        "properties": {
+          "notifications": {
+            "type": "object",
+            "properties": {"show_auto_promotion": {"const": true}}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {"const": "local-sqlite"},
+        "retention_days": {"type": "integer", "minimum": 1, "maximum": 3650},
+        "max_observations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "candidate_retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "rejected_suppression_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "max_revisions_per_profile": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 1000
+        },
+        "purge_on_disable": {"type": "boolean"}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objective": {"enum": ["digest-only", "never"]},
+        "workspace_identity": {"enum": ["digest-only", "never"]},
+        "raw_prompt": {"const": "never"},
+        "file_paths": {"const": "never"},
+        "file_content": {"const": "never"},
+        "tool_arguments": {"const": "never"},
+        "secrets": {"const": "never"},
+        "free_text_feedback": {"enum": ["never", "explicit-opt-in"]},
+        "export_redaction": {"const": "required"}
+      }
+    },
+    "riskLevel": {"enum": ["r0", "r1", "r2", "r3"]},
+    "ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_terminal_success": {"type": "boolean"},
+        "require_required_gate_pass": {"type": "boolean"},
+        "reject_unknown_side_effects": {"type": "boolean"},
+        "exclude_risk_levels": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/riskLevel"}
+        },
+        "minimum_distinct_runs_reviewed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "minimum_distinct_runs_automatic": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "minimum_distinct_days_reviewed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "minimum_distinct_days_automatic": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "minimum_success_rate_reviewed": {"$ref": "#/$defs/ratio"},
+        "minimum_success_rate_automatic": {"$ref": "#/$defs/ratio"},
+        "maximum_correction_rate_reviewed": {"$ref": "#/$defs/ratio"},
+        "maximum_correction_rate_automatic": {"$ref": "#/$defs/ratio"},
+        "minimum_route_consistency_reviewed": {"$ref": "#/$defs/ratio"},
+        "minimum_route_consistency_automatic": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "profileTarget": {
+      "enum": [
+        "managed-personal",
+        "managed-workspace-local",
+        "user-personal",
+        "workspace-file"
+      ]
+    },
+    "rememberThisWorkflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "prompt", "automatic"]},
+        "eligible_event": {"const": "terminal-success"},
+        "default_target": {"$ref": "#/$defs/profileTarget"}
+      }
+    },
+    "routeFeedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "manual", "automatic-metadata"]},
+        "allow_standard_reason_codes": {"type": "boolean"},
+        "allow_free_text": {"type": "boolean"}
+      }
+    },
+    "historyAnalytics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "summary", "detailed-local"]},
+        "run": {"enum": ["on-demand", "on-completion", "scheduled-local"]}
+      }
+    },
+    "candidateGeneration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "on-demand", "on-completion"]},
+        "confidence_required": {"enum": ["medium", "high"]},
+        "backtest_required": {"type": "boolean"}
+      }
+    },
+    "profilePromotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "review-required", "automatic-managed"]},
+        "target": {"$ref": "#/$defs/profileTarget"},
+        "conflict_policy": {"const": "fail-closed"},
+        "require_profile_lint": {"type": "boolean"},
+        "require_backtest": {"type": "boolean"}
+      }
+    },
+    "profileVersioning": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {"enum": ["disabled", "required"]},
+        "diff": {"const": "semantic-and-json"},
+        "rollback": {"const": "enabled"},
+        "write_strategy": {"const": "compare-and-swap"}
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "remember_this_workflow": {"$ref": "#/$defs/rememberThisWorkflow"},
+        "route_feedback": {"$ref": "#/$defs/routeFeedback"},
+        "history_analytics": {"$ref": "#/$defs/historyAnalytics"},
+        "candidate_generation": {"$ref": "#/$defs/candidateGeneration"},
+        "profile_promotion": {"$ref": "#/$defs/profilePromotion"},
+        "profile_versioning": {"$ref": "#/$defs/profileVersioning"}
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "show_completion_prompt": {"type": "boolean"},
+        "show_candidate_created": {"type": "boolean"},
+        "show_auto_promotion": {"type": "boolean"},
+        "show_retention_purge": {"type": "boolean"}
+      }
+    }
+  }
+}

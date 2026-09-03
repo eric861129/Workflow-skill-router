@@ -17,7 +17,11 @@ from workflow_skill_router.memory import (
 )
 
 
-def minimal_policy(mode: str = "disabled", *, scope: str = "personal") -> dict[str, object]:
+def minimal_policy(
+    mode: str = "disabled",
+    *,
+    scope: str = "personal",
+) -> dict[str, object]:
     return {
         "schema_id": "workflow-skill-router/memory-policy",
         "schema_version": "1.0.0",
@@ -31,13 +35,17 @@ def minimal_policy(mode: str = "disabled", *, scope: str = "personal") -> dict[s
 class MemoryPolicyContractTests(unittest.TestCase):
     def test_minimal_policy_uses_disabled_preset(self) -> None:
         policy = decode_memory_policy(
-            minimal_policy(), expected_scope=MemoryScope.PERSONAL
+            minimal_policy(),
+            expected_scope=MemoryScope.PERSONAL,
         )
 
         self.assertEqual(MemoryMode.DISABLED, policy.mode)
         self.assertEqual(MemoryScope.PERSONAL, policy.scope)
         self.assertEqual("none", policy.capture)
-        self.assertEqual("disabled", policy.features.remember_this_workflow.mode)
+        self.assertEqual(
+            "disabled",
+            policy.features.remember_this_workflow.mode,
+        )
         self.assertEqual("disabled", policy.features.route_feedback.mode)
         self.assertEqual("disabled", policy.features.history_analytics.mode)
         self.assertEqual("disabled", policy.features.candidate_generation.mode)
@@ -48,16 +56,28 @@ class MemoryPolicyContractTests(unittest.TestCase):
     def test_mode_presets_expand_to_expected_feature_autonomy(self) -> None:
         expectations = {
             "observe": (
-                "minimal", "disabled", "automatic-metadata", "summary",
-                "disabled", "disabled",
+                "minimal",
+                "disabled",
+                "automatic-metadata",
+                "summary",
+                "disabled",
+                "disabled",
             ),
             "reviewed": (
-                "minimal", "prompt", "automatic-metadata", "summary",
-                "on-completion", "review-required",
+                "minimal",
+                "prompt",
+                "automatic-metadata",
+                "summary",
+                "on-completion",
+                "review-required",
             ),
             "automatic": (
-                "minimal", "automatic", "automatic-metadata", "summary",
-                "on-completion", "automatic-managed",
+                "minimal",
+                "automatic",
+                "automatic-metadata",
+                "summary",
+                "on-completion",
+                "automatic-managed",
             ),
         }
         for mode, expected in expectations.items():
@@ -105,7 +125,10 @@ class MemoryPolicyContractTests(unittest.TestCase):
                 "default_target": "managed-personal",
             }
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "feature-autonomy-exceeds-mode"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "feature-autonomy-exceeds-mode",
+        ):
             decode_memory_policy(document)
 
     def test_automatic_thresholds_cannot_be_weaker_than_reviewed(self) -> None:
@@ -114,7 +137,10 @@ class MemoryPolicyContractTests(unittest.TestCase):
             "minimum_distinct_runs_reviewed": 5,
             "minimum_distinct_runs_automatic": 4,
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "automatic-threshold-weaker"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "automatic-threshold-weaker",
+        ):
             decode_memory_policy(document)
 
         document = minimal_policy("automatic")
@@ -122,10 +148,13 @@ class MemoryPolicyContractTests(unittest.TestCase):
             "maximum_correction_rate_reviewed": 0.10,
             "maximum_correction_rate_automatic": 0.20,
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "automatic-threshold-weaker"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "automatic-threshold-weaker",
+        ):
             decode_memory_policy(document)
 
-    def test_automatic_managed_promotion_cannot_target_user_owned_profile(self) -> None:
+    def test_automatic_managed_promotion_cannot_target_user_profile(self) -> None:
         document = minimal_policy("automatic")
         document["features"] = {
             "profile_promotion": {
@@ -136,7 +165,25 @@ class MemoryPolicyContractTests(unittest.TestCase):
                 "require_backtest": True,
             }
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "automatic-target-not-managed"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "automatic-target-not-managed",
+        ):
+            decode_memory_policy(document)
+
+    def test_enabled_candidate_generation_requires_backtest(self) -> None:
+        document = minimal_policy("reviewed")
+        document["features"] = {
+            "candidate_generation": {
+                "mode": "on-completion",
+                "confidence_required": "medium",
+                "backtest_required": False,
+            }
+        }
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "candidate-backtest-required",
+        ):
             decode_memory_policy(document)
 
     def test_enabled_profile_promotion_requires_versioning(self) -> None:
@@ -156,16 +203,22 @@ class MemoryPolicyContractTests(unittest.TestCase):
                 "write_strategy": "compare-and-swap",
             },
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "promotion-requires-versioning"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "promotion-requires-versioning",
+        ):
             decode_memory_policy(document)
 
-    def test_automatic_mode_requires_visible_auto_promotion_notification(self) -> None:
+    def test_automatic_mode_requires_visible_promotion_notification(self) -> None:
         document = minimal_policy("automatic")
         document["notifications"] = {"show_auto_promotion": False}
-        with self.assertRaisesRegex(MemoryPolicyError, "automatic-notification-required"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "automatic-notification-required",
+        ):
             decode_memory_policy(document)
 
-    def test_privacy_contract_rejects_raw_or_executable_data_retention(self) -> None:
+    def test_privacy_contract_rejects_sensitive_data_retention(self) -> None:
         for field, value in (
             ("raw_prompt", "stored"),
             ("file_paths", "digest-only"),
@@ -188,16 +241,21 @@ class MemoryPolicyContractTests(unittest.TestCase):
                 "allow_free_text": True,
             }
         }
-        with self.assertRaisesRegex(MemoryPolicyError, "free-text-feedback-not-opted-in"):
+        with self.assertRaisesRegex(
+            MemoryPolicyError,
+            "free-text-feedback-not-opted-in",
+        ):
             decode_memory_policy(document)
 
         document["privacy"] = {"free_text_feedback": "explicit-opt-in"}
         policy = decode_memory_policy(document)
         self.assertTrue(policy.features.route_feedback.allow_free_text)
 
-    def test_duplicate_risk_levels_and_boolean_in_integer_field_are_rejected(self) -> None:
+    def test_duplicate_risk_and_boolean_integer_are_rejected(self) -> None:
         document = minimal_policy("reviewed")
-        document["eligibility"] = {"exclude_risk_levels": ["r3", "r3"]}
+        document["eligibility"] = {
+            "exclude_risk_levels": ["r3", "r3"],
+        }
         with self.assertRaisesRegex(MemoryPolicyError, "duplicate-value"):
             decode_memory_policy(document)
 

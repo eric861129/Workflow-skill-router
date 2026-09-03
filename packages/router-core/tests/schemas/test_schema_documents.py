@@ -41,7 +41,11 @@ class SchemaDocumentTests(unittest.TestCase):
         document = json.loads(
             (SCHEMA_ROOT / "capability.schema.json").read_text(encoding="utf-8")
         )
-        self.assertTrue({"installer_content_digest", "availability_by_risk"}.issubset(document["required"]))
+        self.assertTrue(
+            {"installer_content_digest", "availability_by_risk"}.issubset(
+                document["required"]
+            )
+        )
         availability = document["properties"]["availability_by_risk"]
         self.assertEqual(4, availability["minItems"])
         self.assertEqual(4, availability["maxItems"])
