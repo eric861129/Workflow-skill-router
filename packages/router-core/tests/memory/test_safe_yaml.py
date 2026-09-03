@@ -93,6 +93,20 @@ notifications:
 
 
 class SafeYamlTests(unittest.TestCase):
+    def test_repository_reviewed_example_decodes_with_expected_policy(self) -> None:
+        repository_root = Path(__file__).resolve().parents[4]
+        example = (
+            repository_root
+            / "docs/architecture/examples/workflow-memory.reviewed.yaml"
+        ).read_text(encoding="utf-8")
+
+        policy = decode_policy_text(example, format="yaml")
+
+        self.assertEqual(MemoryMode.REVIEWED, policy.mode)
+        self.assertEqual("prompt", policy.features.remember_this_workflow.mode)
+        self.assertEqual("review-required", policy.features.profile_promotion.mode)
+        self.assertEqual("required", policy.features.profile_versioning.mode)
+
     def test_parses_nested_policy_and_scalar_list(self) -> None:
         document = parse_safe_yaml(REVIEWED_YAML)
 
