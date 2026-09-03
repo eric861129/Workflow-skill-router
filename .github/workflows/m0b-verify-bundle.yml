@@ -35,7 +35,7 @@ jobs:
           python -m unittest discover -s packages/router-core/tests/cli -p "test_memory_cli.py" -v
       - name: Build deterministic runtime
         run: python plugins/workflow-skill-router/scripts/build-runtime.py
-      - name: Synchronize runtime closure digest
+      - name: Synchronize inherited closure digests
         shell: bash
         run: |
           python - <<'PY'
@@ -43,19 +43,16 @@ jobs:
           import json
           from pathlib import Path
 
-          bundle = Path("plugins/workflow-skill-router/runtime/workflow_skill_router.pyz")
           closure = Path("release/v2-inherited-change-closure.json")
           document = json.loads(closure.read_text(encoding="utf-8"))
-          digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
           for entry in document["entries"]:
-              if entry["path"] == bundle.as_posix():
-                  entry["evidence"] = {
-                      "kind": "current-content-digest",
-                      "sha256": digest,
-                  }
-                  break
-          else:
-              raise SystemExit("runtime closure entry missing")
+              evidence = entry.get("evidence", {})
+              if evidence.get("kind") != "current-content-digest":
+                  continue
+              path = Path(entry["path"])
+              if not path.is_file():
+                  raise SystemExit(f"closure current-content path missing: {path.as_posix()}")
+              evidence["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
           closure.write_text(
               json.dumps(document, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8",
