@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 import os
 from pathlib import Path
 import sqlite3
@@ -88,7 +89,7 @@ class MemoryStoreTests(unittest.TestCase):
                 self.assertFalse(hasattr(store, "connection"))
                 self.assertEqual(1, store.policy_snapshot_count())
 
-                with sqlite3.connect(expected) as connection:
+                with closing(sqlite3.connect(expected)) as connection:
                     tables = {
                         str(row[0])
                         for row in connection.execute(
