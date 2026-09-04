@@ -1,5 +1,6 @@
 name: M2-A Apply Implementation
 
+# Repair note: this definition binds the complete five-part source patch.
 on:
   push:
     branches: [codex/memory-m2a-repair]
