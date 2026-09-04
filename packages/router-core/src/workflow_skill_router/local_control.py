@@ -179,6 +179,9 @@ class LocalControlPlaneService:
         routing_profile_ids: tuple[str, ...] = ()
         routing_profile_digest = None
         matched_profile_rule_id = None
+        profile_objective_keywords: tuple[str, ...] = ()
+        profile_domains: tuple[str, ...] = ()
+        profile_tags: tuple[str, ...] = ()
         planned_skill_tree: tuple[PlannedSkillPhase, ...] = ()
         profile_warnings: tuple[str, ...] = ()
         activation_status = "not-planned"
@@ -218,6 +221,9 @@ class LocalControlPlaneService:
                 routing_profile_ids = resolved.applied_profile_ids
                 routing_profile_digest = resolved.profile_digest
                 matched_profile_rule_id = resolved.matched_rule_id
+                profile_objective_keywords = resolved.matched_objective_keywords
+                profile_domains = resolved.matched_domains
+                profile_tags = resolved.matched_tags
                 planned_skill_ids = resolved.current_skill_ids
                 planned_skill_tree = tuple(
                     PlannedSkillPhase(
@@ -364,6 +370,8 @@ class LocalControlPlaneService:
                 "planned_skill_tree_json", "activation_status", "profile_warnings_json",
                 "classification_source", "classification_confidence",
                 "classifier_revision", "classification_reason_codes_json",
+                "routing_domains_json", "routing_tags_json", "workspace_identity_digest",
+                "profile_objective_keywords_json", "profile_domains_json", "profile_tags_json",
                 "created_work_items", "local_work_graph_version", "state_version", "created_at",
             )
             values = (
@@ -398,6 +406,16 @@ class LocalControlPlaneService:
                     analysis.confidence,
                     analysis.classifier_revision,
                     canonical_json(list(analysis.reason_codes)),
+                    canonical_json(list(routing_context.domains)),
+                    canonical_json(list(routing_context.tags)),
+                    (
+                        None
+                        if routing_context.workspace_root is None
+                        else _digest(str(Path(routing_context.workspace_root).expanduser().resolve()))
+                    ),
+                    canonical_json(list(profile_objective_keywords)),
+                    canonical_json(list(profile_domains)),
+                    canonical_json(list(profile_tags)),
                     1,
                     1,
                     1,

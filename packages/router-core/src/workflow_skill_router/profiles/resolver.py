@@ -29,6 +29,9 @@ class ResolvedProfileRoute:
     current_phase: SkillTreePhase
     current_skill_ids: tuple[str, ...]
     activation_status: str
+    matched_objective_keywords: tuple[str, ...] = ()
+    matched_domains: tuple[str, ...] = ()
+    matched_tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -393,4 +396,7 @@ def resolve_profile_route(
         current_phase=current,
         current_skill_ids=(current.primary_skill_id, *current.support_skill_ids),
         activation_status="intended-unverified",
+        matched_objective_keywords=rule.match.objective_keywords,
+        matched_domains=rule.match.domains,
+        matched_tags=rule.match.tags,
     )

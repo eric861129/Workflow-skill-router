@@ -85,6 +85,10 @@ class MemoryStoreError(RuntimeError):
     """Raised when the optional Memory Store cannot be opened safely."""
 
 
+class MemoryCommandConflict(MemoryStoreError):
+    """Raised when an idempotency key is reused for a different command."""
+
+
 def _snapshot_error(
     code: str,
     field: str | None = None,
@@ -689,9 +693,11 @@ class MemoryStore:
             connection.execute("BEGIN IMMEDIATE")
             for table in (
                 "route_feedback",
+                "route_observation_documents",
                 "route_observations",
-                "memory_policy_snapshots",
+                "memory_command_results",
                 "memory_command_receipts",
+                "memory_policy_snapshots",
             ):
                 cursor = connection.execute(f"DELETE FROM {table}")
                 counts[table] = max(0, int(cursor.rowcount))
@@ -706,6 +712,179 @@ class MemoryStore:
             "route_observations": counts["route_observations"],
             "memory_policy_snapshots": counts["memory_policy_snapshots"],
         }
+
+
+    def record_route_observation(
+        self,
+        *,
+        observation_document: Mapping[str, object],
+        result_document: Mapping[str, object],
+        idempotency_key: str,
+        command_digest: str,
+    ) -> tuple[dict[str, object], bool]:
+        """Persist one sanitized Observation and an idempotent result receipt."""
+
+        if (
+            not isinstance(idempotency_key, str)
+            or not idempotency_key
+            or len(idempotency_key) > 160
+        ):
+            raise MemoryStoreError("invalid-memory-idempotency-key")
+        if not isinstance(command_digest, str) or not _DIGEST.fullmatch(command_digest):
+            raise MemoryStoreError("invalid-memory-command-digest")
+        from .observations import decode_route_observation
+
+        observation = decode_route_observation(observation_document)
+        connection = self._require_open()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            existing_receipt = connection.execute(
+                "SELECT command_digest,result_digest FROM memory_command_receipts "
+                "WHERE idempotency_key=?",
+                (idempotency_key,),
+            ).fetchone()
+            if existing_receipt is not None:
+                if str(existing_receipt[0]) != command_digest:
+                    raise MemoryCommandConflict("memory-idempotency-conflict")
+                result_row = connection.execute(
+                    "SELECT result_json FROM memory_command_results WHERE idempotency_key=?",
+                    (idempotency_key,),
+                ).fetchone()
+                if result_row is None:
+                    raise MemoryStoreError("memory-command-result-corrupt")
+                stored_json = str(result_row[0])
+                if "sha256:" + hashlib.sha256(stored_json.encode("utf-8")).hexdigest() != str(existing_receipt[1]):
+                    raise MemoryStoreError("memory-command-result-corrupt")
+                stored = json.loads(stored_json)
+                if not isinstance(stored, dict) or canonical_json(stored) != stored_json:
+                    raise MemoryStoreError("memory-command-result-corrupt")
+                connection.execute("COMMIT")
+                return stored, True
+
+            existing_observation = connection.execute(
+                "SELECT observation_json FROM route_observation_documents "
+                "WHERE workflow_run_digest=?",
+                (observation.workflow_run_digest,),
+            ).fetchone()
+            replayed_workflow = existing_observation is not None
+            if existing_observation is not None:
+                stored_observation_json = str(existing_observation[0])
+                stored_observation = decode_route_observation(json.loads(stored_observation_json))
+                if canonical_json(stored_observation.to_dict()) != stored_observation_json:
+                    raise MemoryStoreError("route-observation-corrupt")
+                result = dict(result_document)
+                result["observation_id"] = stored_observation.observation_id
+                result["observation_digest"] = stored_observation.observation_digest
+                result["route_signature_digest"] = stored_observation.route_signature_digest
+            else:
+                side_effect_status = (
+                    "none"
+                    if observation.side_effect_outcome == "none"
+                    else "unknown"
+                    if observation.side_effect_outcome == "unknown"
+                    else "known"
+                )
+                connection.execute(
+                    """
+                    INSERT INTO route_observations(
+                        observation_id,workflow_fingerprint,workspace_identity_digest,
+                        work_mode,route_digest,terminal_status,required_gates_passed,
+                        side_effect_status,risk_level,policy_snapshot_id,source_event_ref,observed_at
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        observation.observation_id,
+                        observation.workflow_fingerprint,
+                        observation.workspace_identity_digest,
+                        observation.work_mode,
+                        observation.route_signature_digest,
+                        observation.terminal_status,
+                        int(observation.required_gates_passed),
+                        side_effect_status,
+                        observation.risk_class,
+                        observation.policy_snapshot_id,
+                        observation.workflow_run_digest,
+                        observation.observed_at,
+                    ),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO route_observation_documents(
+                        observation_id,observation_digest,workflow_run_digest,
+                        matcher_source,target_profile_class,automatic_promotion_eligible,
+                        observation_json
+                    ) VALUES (?,?,?,?,?,?,?)
+                    """,
+                    (
+                        observation.observation_id,
+                        observation.observation_digest,
+                        observation.workflow_run_digest,
+                        observation.matcher_seed.source,
+                        observation.target_profile_class,
+                        int(observation.automatic_promotion_eligible),
+                        observation.canonical_json(),
+                    ),
+                )
+                result = dict(result_document)
+
+            result_json = canonical_json(result)
+            result_digest = "sha256:" + hashlib.sha256(result_json.encode("utf-8")).hexdigest()
+            connection.execute(
+                """
+                INSERT INTO memory_command_receipts(
+                    idempotency_key,command_kind,command_digest,result_digest,created_at
+                ) VALUES (?,?,?,?,?)
+                """,
+                (idempotency_key, "remember-workflow", command_digest, result_digest, _utc_now()),
+            )
+            connection.execute(
+                "INSERT INTO memory_command_results(idempotency_key,result_json) VALUES (?,?)",
+                (idempotency_key, result_json),
+            )
+            connection.execute("COMMIT")
+            return result, replayed_workflow
+        except MemoryCommandConflict:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except MemoryStoreError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except (json.JSONDecodeError, sqlite3.Error, ValueError, TypeError) as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise MemoryStoreError("route-observation-write-failed") from error
+
+    def load_route_observation(self, observation_id: str):
+        from .observations import decode_route_observation
+
+        connection = self._require_open()
+        try:
+            row = connection.execute(
+                "SELECT observation_json FROM route_observation_documents WHERE observation_id=?",
+                (observation_id,),
+            ).fetchone()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("route-observation-read-failed") from error
+        if row is None:
+            return None
+        try:
+            document = json.loads(str(row[0]))
+            observation = decode_route_observation(document)
+            if observation.canonical_json() != str(row[0]):
+                raise MemoryStoreError("route-observation-corrupt")
+            return observation
+        except (json.JSONDecodeError, ValueError, TypeError) as error:
+            raise MemoryStoreError("route-observation-corrupt") from error
+
+    def observation_count(self) -> int:
+        connection = self._require_open()
+        try:
+            row = connection.execute("SELECT COUNT(*) FROM route_observations").fetchone()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("route-observation-count-failed") from error
+        return 0 if row is None else int(row[0])
 
     def close(self) -> None:
         if self._closed:
@@ -731,6 +910,7 @@ __all__ = [
     "MEMORY_DATABASE_NAME",
     "MemoryPolicySnapshot",
     "MemoryPolicySnapshotError",
+    "MemoryCommandConflict",
     "MemoryStore",
     "MemoryStoreError",
     "decode_memory_policy_snapshot",

@@ -21,6 +21,29 @@ from .policy_resolver import (
     resolve_effective_policy,
 )
 from .safe_yaml import parse_safe_yaml
+from .workflow_reader import (
+    CompletedWorkflowPhase,
+    CompletedWorkflowReader,
+    CompletedWorkflowSnapshot,
+    MemoryRequestContext,
+    WorkflowReadError,
+)
+from .observations import (
+    MatcherSeed,
+    ObservationEligibility,
+    RouteObservation,
+    RouteObservationError,
+    RouteObservationPhase,
+    build_route_observation,
+    decode_route_observation,
+    evaluate_observation_eligibility,
+)
+from .service import (
+    MemoryCommandConflict,
+    RememberWorkflowCommand,
+    RememberWorkflowResult,
+    WorkflowMemoryService,
+)
 from .store import (
     MEMORY_DATABASE_NAME,
     MemoryPolicySnapshot,
@@ -38,11 +61,17 @@ def memory_database_path(data_dir: Path) -> Path:
 
 
 __all__ = [
+    "CompletedWorkflowPhase",
+    "CompletedWorkflowReader",
+    "CompletedWorkflowSnapshot",
     "EffectiveMemoryPolicy",
     "MEMORY_DATABASE_NAME",
     "MemoryMigration",
     "MemoryMigrationError",
+    "MatcherSeed",
+    "MemoryCommandConflict",
     "MemoryMode",
+    "MemoryRequestContext",
     "MemoryPolicy",
     "MemoryPolicyError",
     "MemoryPolicyRepository",
@@ -51,13 +80,24 @@ __all__ = [
     "MemoryScope",
     "MemoryStore",
     "MemoryStoreError",
+    "ObservationEligibility",
     "PolicyLoadResult",
     "PolicySource",
+    "RememberWorkflowCommand",
+    "RememberWorkflowResult",
+    "RouteObservation",
+    "RouteObservationError",
+    "RouteObservationPhase",
+    "WorkflowMemoryService",
+    "WorkflowReadError",
+    "build_route_observation",
     "decode_memory_policy",
     "decode_memory_policy_snapshot",
     "decode_policy_text",
+    "decode_route_observation",
     "default_router_data_dir",
     "memory_database_path",
+    "evaluate_observation_eligibility",
     "memory_policy_document",
     "migrate_memory_store",
     "parse_safe_yaml",

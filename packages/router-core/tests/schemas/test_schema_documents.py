@@ -12,6 +12,7 @@ EXPECTED_SCHEMA_FILES = {
     "memory-policy.schema.json",
     "memory-policy-snapshot.schema.json",
     "routing-profile.schema.json",
+    "route-observation.schema.json",
 }
 
 
@@ -121,6 +122,22 @@ class SchemaDocumentTests(unittest.TestCase):
             "tool_arguments",
             "secrets",
             "metadata_json",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_route_observation_schema_is_strict_and_redacted(self) -> None:
+        document = json.loads(
+            (SCHEMA_ROOT / "route-observation.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(False, document["additionalProperties"])
+        self.assertEqual(
+            "workflow-skill-router/route-observation",
+            document["properties"]["schema_id"]["const"],
+        )
+        serialized = json.dumps(document, sort_keys=True)
+        for forbidden in (
+            "raw_prompt", "raw_objective", "source_path", "file_content",
+            "tool_arguments", "secrets", "reported_outcome", "metadata_json",
         ):
             self.assertNotIn(forbidden, serialized)
 

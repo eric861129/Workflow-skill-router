@@ -22,6 +22,8 @@ EXPECTED_TABLES = {
     "route_feedback",
     "memory_policy_snapshots",
     "memory_command_receipts",
+    "route_observation_documents",
+    "memory_command_results",
 }
 
 
@@ -69,22 +71,23 @@ class MemoryMigratorTests(unittest.TestCase):
             for item in package.iterdir()
             if item.is_file() and item.name.endswith(".sql")
         )
-        self.assertEqual(["0001_observations.sql"], names)
+        self.assertEqual(["0001_observations.sql", "0002_route_observation_documents.sql"], names)
 
         result = migrate_memory_store(self.database)
 
         self.assertIsNone(result)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
         self.assertNotIn("workflow_events", self.table_names())
-        migration = _load_migrations()[0]
-        self.assertNotIn("metadata_json", migration.sql)
+        migrations = _load_migrations()
+        combined_sql = "\n".join(item.sql for item in migrations)
+        self.assertNotIn("metadata_json", combined_sql)
         for forbidden in (
             "raw_prompt",
             "file_content",
             "tool_arguments",
             "secret_value",
         ):
-            self.assertNotIn(forbidden, migration.sql.lower())
+            self.assertNotIn(forbidden, combined_sql.lower())
 
     def test_rerunning_migrations_is_idempotent(self) -> None:
         first = migrate_memory_store(self.database)
@@ -93,17 +96,14 @@ class MemoryMigratorTests(unittest.TestCase):
         self.assertIsNone(first)
         self.assertIsNone(second)
         with closing(self.connect()) as connection:
-            row = connection.execute(
-                "SELECT version, name, checksum FROM memory_schema_migrations"
-            ).fetchone()
-            count = connection.execute(
-                "SELECT COUNT(*) FROM memory_schema_migrations"
-            ).fetchone()[0]
-        assert row is not None
-        self.assertEqual(1, row[0])
-        self.assertEqual("observations", row[1])
-        self.assertRegex(str(row[2]), r"^[0-9a-f]{64}$")
-        self.assertEqual(1, count)
+            rows = connection.execute(
+                "SELECT version, name, checksum FROM memory_schema_migrations ORDER BY version"
+            ).fetchall()
+        self.assertEqual([(1, "observations"), (2, "route_observation_documents")], [
+            (int(row[0]), str(row[1])) for row in rows
+        ])
+        for row in rows:
+            self.assertRegex(str(row[2]), r"^[0-9a-f]{64}$")
 
     def test_applied_migration_checksum_drift_fails_closed(self) -> None:
         migrate_memory_store(self.database)
@@ -124,7 +124,7 @@ class MemoryMigratorTests(unittest.TestCase):
             count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
             ).fetchone()[0]
-        self.assertEqual(1, count)
+        self.assertEqual(2, count)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
 
 
