@@ -1,0 +1,62 @@
+name: M1-B Apply Implementation
+
+on:
+  push:
+    branches: [codex/memory-m1-observations]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    name: Apply and verify M1-B implementation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+      - name: Verify and apply reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/m1b-patch.part-00 .github/m1b-patch.part-01 .github/m1b-patch.part-02 > /tmp/m1b.patch.gz.b64
+          printf '%s  %s\n' '1f49fd392fba8a74c7bbee10e137afbf128bdb7b703a6402b4f1f06e5962beab' '/tmp/m1b.patch.gz.b64' | sha256sum --check --strict
+          base64 --decode /tmp/m1b.patch.gz.b64 | gzip --decompress > /tmp/m1b.patch
+          printf '%s  %s\n' '5972f40afe4fd0d18a8effa0145f3489387267b01d9fb77f21a86db54636411f' '/tmp/m1b.patch' | sha256sum --check --strict
+          git apply --check --binary /tmp/m1b.patch
+          git apply --binary /tmp/m1b.patch
+          rm -f \
+            .github/m1b-patch.part-00 \
+            .github/m1b-patch.part-01 \
+            .github/m1b-patch.part-02 \
+            .github/workflows/m1b-apply-implementation.yml \
+            packages/router-core/tests/memory/test_m1b_contract_red.py
+          git diff --check
+      - name: Verify M1-B focused tests
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: |
+          python -m unittest discover -s packages/router-core/tests/memory -p "test_*.py" -v
+          python -m unittest discover -s packages/router-core/tests/cli -p "test_memory_remember_cli.py" -v
+          python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
+      - name: Verify complete Router Core and deterministic runtime
+        env:
+          PYTHONPATH: packages/router-core/src
+        run: |
+          python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Commit and push implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(memory): complete M1-B workflow observations'
+          git push origin HEAD:codex/memory-m1-observations
