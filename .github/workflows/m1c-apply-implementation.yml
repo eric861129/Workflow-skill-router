@@ -39,8 +39,8 @@ jobs:
           printf '%s  %s\n' '4370e5a5927f64d2e27520f83a33795b9ac253720fdadd5654d56799ae26c334' '/tmp/m1c.patch.gz.b64' | sha256sum --check --strict
           base64 --decode /tmp/m1c.patch.gz.b64 | gzip --decompress > /tmp/m1c.patch
           printf '%s  %s\n' 'be0403db9908dcd424e3a63e93d825fe086a7959d1e8b88dabf23e47a92056a3' '/tmp/m1c.patch' | sha256sum --check --strict
-          git apply --check --binary /tmp/m1c.patch
-          git apply --binary /tmp/m1c.patch
+          git apply --check --binary --exclude=.github/workflows/m1c-workspace-export.yml /tmp/m1c.patch
+          git apply --binary --exclude=.github/workflows/m1c-workspace-export.yml /tmp/m1c.patch
           rm -f \
             .github/m1c-patch.part-00 \
             .github/m1c-patch.part-01 \
