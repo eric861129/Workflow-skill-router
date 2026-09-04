@@ -1,6 +1,6 @@
 name: M2-A Apply Implementation
 
-# Repair note: this definition binds the complete five-part source patch.
+# Repair note: every encoded source fragment is verified by its Git blob SHA.
 on:
   push:
     branches: [codex/memory-m2a-repair]
@@ -31,7 +31,13 @@ jobs:
           from pathlib import Path
           import base64, gzip, hashlib
           parts = [
-              Path('.github/m2a-patch.part-00'),
+              Path('.github/m2a-patch.part-00-00'),
+              Path('.github/m2a-patch.part-00-01'),
+              Path('.github/m2a-patch.part-00-02'),
+              Path('.github/m2a-patch.part-00-03'),
+              Path('.github/m2a-patch.part-00-04'),
+              Path('.github/m2a-patch.part-00-05'),
+              Path('.github/m2a-patch.part-00-06'),
               Path('.github/m2a-patch.part-01'),
               Path('.github/m2a-patch.part-02'),
               Path('.github/m2a-patch.part-03'),
@@ -49,6 +55,13 @@ jobs:
           git apply --binary /tmp/m2a.patch
           rm -f \
             .github/m2a-patch.part-00 \
+            .github/m2a-patch.part-00-00 \
+            .github/m2a-patch.part-00-01 \
+            .github/m2a-patch.part-00-02 \
+            .github/m2a-patch.part-00-03 \
+            .github/m2a-patch.part-00-04 \
+            .github/m2a-patch.part-00-05 \
+            .github/m2a-patch.part-00-06 \
             .github/m2a-patch.part-01 \
             .github/m2a-patch.part-02 \
             .github/m2a-patch.part-03 \
