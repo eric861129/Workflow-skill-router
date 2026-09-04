@@ -22,46 +22,25 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
-      - name: Install Plugin dependencies
-        working-directory: plugins/workflow-skill-router
-        run: npm ci
       - name: Verify and apply authenticated M2-A patch
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import base64
-          import gzip
-          import hashlib
-
-          parts = [
-              Path('.github/m2a-patch.part-00'),
-              Path('.github/m2a-patch.part-01'),
-              Path('.github/m2a-patch.part-02'),
-          ]
+          import base64, gzip, hashlib
+          parts = [Path('.github/m2a-patch.part-00'), Path('.github/m2a-patch.part-01')]
           encoded = ''.join(''.join(path.read_text(encoding='utf-8').split()) for path in parts)
-          payload = base64.b64decode(encoded, validate=True)
-          patch = gzip.decompress(payload)
+          patch = gzip.decompress(base64.b64decode(encoded, validate=True))
           digest = hashlib.sha256(patch).hexdigest()
-          expected = '8d191a09e1fa14e6ee6fc0016b9a2b078fb4fe5e715fb143e4b4b8657d81938c'
+          expected = '1be87a11860d42297c2e76436abdd1da5cdbd3e515528ecaf3056caeeba85700'
           if digest != expected:
               raise SystemExit(f'M2-A patch digest mismatch: {digest}')
           Path('/tmp/m2a.patch').write_bytes(patch)
           PY
           git apply --check --binary /tmp/m2a.patch
           git apply --binary /tmp/m2a.patch
-          rm -f \
-            .github/m2a-patch.part-00 \
-            .github/m2a-patch.part-01 \
-            .github/m2a-patch.part-02 \
-            .github/workflows/m2a-apply-implementation.yml
+          rm -f .github/m2a-patch.part-00 .github/m2a-patch.part-01 .github/m2a-patch.part-02 .github/workflows/m2a-apply-implementation.yml
           git diff --check
       - name: Rebuild Runtime and closure evidence
         shell: bash
@@ -70,16 +49,12 @@ jobs:
           python plugins/workflow-skill-router/scripts/build-runtime.py
           python - <<'PY'
           from pathlib import Path
-          import hashlib
-          import re
-
+          import hashlib, re
           runtime = Path('plugins/workflow-skill-router/runtime/workflow_skill_router.pyz')
           closure = Path('release/v2-inherited-change-closure.json')
           digest = hashlib.sha256(runtime.read_bytes()).hexdigest()
           text = closure.read_text(encoding='utf-8')
-          pattern = re.compile(
-              r'("path":"plugins/workflow-skill-router/runtime/workflow_skill_router\.pyz"[^\n]*?"sha256":")[0-9a-f]{64}("})'
-          )
+          pattern = re.compile(r'("path":"plugins/workflow-skill-router/runtime/workflow_skill_router\.pyz"[^\n]*?"sha256":")[0-9a-f]{64}("})')
           updated, count = pattern.subn(r'\g<1>' + digest + r'\2', text, count=1)
           if count != 1:
               raise SystemExit('runtime closure entry not found exactly once')
@@ -90,13 +65,16 @@ jobs:
         env:
           PYTHONPATH: packages/router-core/src:packages/router-core/tests
         run: |
-          python -m unittest \
-            memory.test_candidate_migration \
-            memory.test_candidate_engine \
-            memory.test_candidate_suppression \
-            cli.test_memory_candidates_cli \
-            schemas.test_schema_documents \
-            -v
+          python -m unittest memory.test_candidate_migration memory.test_candidate_engine memory.test_candidate_suppression cli.test_memory_candidates_cli schemas.test_schema_documents -v
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
+      - name: Install Plugin dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
       - name: Verify full Router Core and repository contracts
         env:
           PYTHONPATH: packages/router-core/src:packages/router-core/tests
