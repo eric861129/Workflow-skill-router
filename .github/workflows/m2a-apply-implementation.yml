@@ -2,7 +2,7 @@ name: M2-A Apply Implementation
 
 on:
   push:
-    branches: [codex/memory-m2-candidates]
+    branches: [codex/memory-m2a-repair]
 
 permissions:
   contents: write
@@ -35,13 +35,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat \
-            .github/m2a-patch.part-00 \
-            .github/m2a-patch.part-01 \
-            .github/m2a-patch.part-02 \
-            > /tmp/m2a.patch.gz.b64
-          base64 --decode /tmp/m2a.patch.gz.b64 | gzip --decompress > /tmp/m2a.patch
-          printf '%s  %s\n' '8d191a09e1fa14e6ee6fc0016b9a2b078fb4fe5e715fb143e4b4b8657d81938c' '/tmp/m2a.patch' | sha256sum --check --strict
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import gzip
+          import hashlib
+
+          parts = [
+              Path('.github/m2a-patch.part-00'),
+              Path('.github/m2a-patch.part-01'),
+              Path('.github/m2a-patch.part-02'),
+          ]
+          encoded = ''.join(''.join(path.read_text(encoding='utf-8').split()) for path in parts)
+          payload = base64.b64decode(encoded, validate=True)
+          patch = gzip.decompress(payload)
+          digest = hashlib.sha256(patch).hexdigest()
+          expected = '8d191a09e1fa14e6ee6fc0016b9a2b078fb4fe5e715fb143e4b4b8657d81938c'
+          if digest != expected:
+              raise SystemExit(f'M2-A patch digest mismatch: {digest}')
+          Path('/tmp/m2a.patch').write_bytes(patch)
+          PY
           git apply --check --binary /tmp/m2a.patch
           git apply --binary /tmp/m2a.patch
           rm -f \
@@ -102,5 +115,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'feat(memory): recommend deterministic workflow candidates'
-          git push origin HEAD:codex/memory-m2-candidates
+          git commit -m 'feat(memory): materialize deterministic workflow candidates'
+          git push origin HEAD:codex/memory-m2a-repair
