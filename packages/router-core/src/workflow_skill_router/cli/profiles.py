@@ -6,6 +6,14 @@ from pathlib import Path
 import sys
 
 from workflow_skill_router.profiles.contract import RoutingProfileContractError
+from workflow_skill_router.memory.materializer import ProfileMaterializationError
+from workflow_skill_router.memory.proposals import ProfileProposalError
+from workflow_skill_router.memory.revisions import (
+    ProfileRevisionError,
+    ProfileWriteAuthority,
+)
+from workflow_skill_router.memory.service import WorkflowMemoryService
+from workflow_skill_router.memory.store import MemoryStoreError
 from workflow_skill_router.profiles.resolver import (
     RoutingMatchContext,
     RoutingProfileResolutionError,
@@ -50,6 +58,52 @@ def configure_profile_parser(parser: argparse.ArgumentParser) -> None:
     preview.add_argument("--data-dir", type=Path)
     preview.add_argument("--explain", action="store_true")
 
+    apply = commands.add_parser("apply", help="Apply one approved digest-bound Profile proposal")
+    apply.add_argument("proposal_id")
+    apply.add_argument("--database", type=Path, required=True)
+    apply.add_argument("--data-dir", type=Path, required=True)
+    apply.add_argument("--expected-state-version", type=int, required=True)
+    apply.add_argument("--idempotency-key", required=True)
+    apply.add_argument("--correlation-id", required=True)
+    apply.add_argument("--actor", required=True)
+    apply.add_argument("--session-id", required=True)
+    apply.add_argument("--authority", choices=("router-local-managed", "reviewed-user-local"), required=True)
+    apply.add_argument("--now")
+
+    revisions = commands.add_parser("revisions", help="List or diff immutable Profile revisions")
+    revision_commands = revisions.add_subparsers(dest="profile_revision_command", required=True)
+    revision_list = revision_commands.add_parser("list")
+    revision_list.add_argument("profile_id")
+    revision_list.add_argument("--database", type=Path, required=True)
+    revision_list.add_argument("--data-dir", type=Path, required=True)
+    revision_diff = revision_commands.add_parser("diff")
+    revision_diff.add_argument("from_revision_id")
+    revision_diff.add_argument("to_revision_id")
+    revision_diff.add_argument("--database", type=Path, required=True)
+    revision_diff.add_argument("--data-dir", type=Path, required=True)
+
+    rollback = commands.add_parser("rollback", help="Create a reviewed rollback proposal from a prior revision")
+    rollback.add_argument("source_revision_id")
+    rollback.add_argument("--database", type=Path, required=True)
+    rollback.add_argument("--data-dir", type=Path, required=True)
+    rollback.add_argument("--expected-profile-digest", required=True)
+    rollback.add_argument("--actor", required=True)
+    rollback.add_argument("--session-id", required=True)
+    rollback.add_argument("--authority", choices=("router-local-managed", "reviewed-user-local"), required=True)
+    rollback.add_argument("--now")
+
+    proposal = commands.add_parser("proposal", help="Approve or reject a bound Profile proposal")
+    proposal_commands = proposal.add_subparsers(dest="profile_proposal_command", required=True)
+    decide = proposal_commands.add_parser("decide")
+    decide.add_argument("proposal_id")
+    decide.add_argument("--database", type=Path, required=True)
+    decide.add_argument("--data-dir", type=Path, required=True)
+    decide.add_argument("--action", choices=("approve", "reject"), required=True)
+    decide.add_argument("--expected-state-version", type=int, required=True)
+    decide.add_argument("--idempotency-key", required=True)
+    decide.add_argument("--correlation-id", required=True)
+    decide.add_argument("--now")
+
 
 def _print(value: object, *, output=sys.stdout) -> None:
     reconfigure = getattr(output, "reconfigure", None)
@@ -71,6 +125,12 @@ def _contract_lint_issue(error: RoutingProfileContractError) -> dict[str, str]:
         "code": code,
         "message": message,
     }
+
+
+def _profile_write_authority(args: argparse.Namespace) -> ProfileWriteAuthority:
+    if args.authority == "router-local-managed":
+        return ProfileWriteAuthority.router_local_managed(args.actor, args.session_id)
+    return ProfileWriteAuthority.reviewed_user_local(args.actor, args.session_id)
 
 
 def run_profile_cli(args: argparse.Namespace) -> int:
@@ -112,6 +172,53 @@ def run_profile_cli(args: argparse.Namespace) -> int:
                 "issues": [issue.to_dict() for issue in issues],
             })
             return 2 if error_count else 0
+
+        if args.profile_command == "apply":
+            revision = WorkflowMemoryService(args.database, data_dir=args.data_dir).apply_profile_update(
+                args.proposal_id,
+                authority=_profile_write_authority(args),
+                expected_state_version=args.expected_state_version,
+                idempotency_key=args.idempotency_key,
+                correlation_id=args.correlation_id,
+                now=args.now,
+            )
+            _print(revision.to_dict())
+            return 0
+
+        if args.profile_command == "revisions":
+            service = WorkflowMemoryService(args.database, data_dir=args.data_dir)
+            if args.profile_revision_command == "list":
+                items = service.list_profile_revisions(args.profile_id)
+                _print({"status": "ready", "revisions": [item.to_dict() for item in items]})
+                return 0
+            if args.profile_revision_command == "diff":
+                result = service.diff_profile_revisions(
+                    args.from_revision_id, args.to_revision_id
+                )
+                _print({"status": "ready", "diff": result.to_dict()})
+                return 0
+
+        if args.profile_command == "rollback":
+            proposal = WorkflowMemoryService(args.database, data_dir=args.data_dir).create_rollback_proposal(
+                args.source_revision_id,
+                authority=_profile_write_authority(args),
+                expected_profile_digest=args.expected_profile_digest,
+                now=args.now,
+            )
+            _print(proposal.to_dict())
+            return 0
+
+        if args.profile_command == "proposal" and args.profile_proposal_command == "decide":
+            proposal = WorkflowMemoryService(args.database, data_dir=args.data_dir).transition_profile_update(
+                args.proposal_id,
+                action=args.action,
+                expected_state_version=args.expected_state_version,
+                idempotency_key=args.idempotency_key,
+                correlation_id=args.correlation_id,
+                now=args.now,
+            )
+            _print(proposal.to_dict())
+            return 0
 
         repository = RoutingProfileRepository(args.data_dir)
         if args.profile_command == "install":
@@ -202,6 +309,14 @@ def run_profile_cli(args: argparse.Namespace) -> int:
             _print(payload)
             return 0
         raise RuntimeError("unsupported-profile-command")
-    except (RoutingProfileContractError, RoutingProfileResolutionError) as error:
+    except (
+        RoutingProfileContractError,
+        RoutingProfileResolutionError,
+        ProfileMaterializationError,
+        ProfileProposalError,
+        ProfileRevisionError,
+        MemoryStoreError,
+        ValueError,
+    ) as error:
         _print({"status": "invalid", "error": str(error)}, output=sys.stderr)
         return 2

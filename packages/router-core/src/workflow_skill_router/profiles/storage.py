@@ -6,11 +6,11 @@ import os
 from pathlib import Path
 import stat
 import sys
-import tempfile
 from typing import Any
 
 from workflow_skill_router.schemas.artifacts import canonical_json
 
+from .atomic_io import ProfileIOError, atomic_write_canonical_json, current_json_digest
 from .contract import (
     RoutingPreferenceProfile,
     RoutingProfileContractError,
@@ -121,26 +121,17 @@ class RoutingProfileRepository:
             raise RoutingProfileContractError(
                 "personal profile destination must be a regular non-link file"
             )
-        temporary: Path | None = None
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w",
-                encoding="utf-8",
-                newline="\n",
-                prefix=f".{destination.name}.",
-                suffix=".tmp",
-                dir=self.personal_dir,
-                delete=False,
-            ) as stream:
-                temporary = Path(stream.name)
-                stream.write(canonical_json(document) + "\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, destination)
-            temporary = None
-        finally:
-            if temporary is not None and temporary.exists():
-                temporary.unlink()
+            expected_digest = current_json_digest(destination, self.data_dir)
+            atomic_write_canonical_json(
+                destination,
+                self.data_dir,
+                document,
+                expected_digest=expected_digest,
+                max_bytes=MAX_PROFILE_BYTES,
+            )
+        except ProfileIOError as error:
+            raise RoutingProfileContractError(str(error)) from error
         return destination
 
     def list_personal(self) -> tuple[RoutingPreferenceProfile, ...]:

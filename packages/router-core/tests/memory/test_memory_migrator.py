@@ -31,6 +31,10 @@ EXPECTED_TABLES = {
     "candidate_suppressions",
     "profile_update_proposals",
     "profile_update_proposal_receipts",
+    "profile_revisions",
+    "profile_materialization_receipts",
+    "profile_recovery_markers",
+    "rollback_proposal_sources",
 }
 
 
@@ -84,6 +88,7 @@ class MemoryMigratorTests(unittest.TestCase):
             "0003_route_feedback_history.sql",
             "0004_candidates.sql",
             "0005_profile_update_proposals.sql",
+            "0006_profile_revisions.sql",
         ], names)
 
         result = migrate_memory_store(self.database)
@@ -118,6 +123,7 @@ class MemoryMigratorTests(unittest.TestCase):
             (3, "route_feedback_history"),
             (4, "candidates"),
             (5, "profile_update_proposals"),
+            (6, "profile_revisions"),
         ], [
             (int(row[0]), str(row[1])) for row in rows
         ])
@@ -143,7 +149,7 @@ class MemoryMigratorTests(unittest.TestCase):
             count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
             ).fetchone()[0]
-        self.assertEqual(5, count)
+        self.assertEqual(6, count)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
 
 

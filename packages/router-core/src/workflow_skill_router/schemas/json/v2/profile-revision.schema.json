@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.workflow-skill-router.dev/v2/profile-revision.schema.json",
+  "title": "Workflow Skill Router Profile Revision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "artifact_kind", "revision_id", "revision_digest",
+    "profile_id", "target_profile_class", "previous_profile_digest", "new_profile_digest",
+    "proposal_id", "proposal_digest", "candidate_id", "candidate_digest", "policy_digest",
+    "semantic_diff_digest", "backtest_digest", "actor_id", "session_id", "write_authority",
+    "workspace_identity_digest", "snapshot_digest", "status", "rollback_source_revision_id",
+    "created_at", "completed_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/profile-revision"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "profile-revision"},
+    "revision_id": {"type": "string", "pattern": "^revision:[0-9a-f]{32}$"},
+    "revision_digest": {"$ref": "#/$defs/digest"},
+    "profile_id": {"type": "string", "pattern": "^(personal|workspace):[a-z0-9][a-z0-9._-]{0,63}$"},
+    "target_profile_class": {"enum": ["managed-personal", "managed-workspace-local", "user-personal", "workspace-file"]},
+    "previous_profile_digest": {"oneOf": [{"const": "missing"}, {"$ref": "#/$defs/digest"}]},
+    "new_profile_digest": {"$ref": "#/$defs/digest"},
+    "proposal_id": {"type": "string", "pattern": "^proposal:[0-9a-f]{32}$"},
+    "proposal_digest": {"$ref": "#/$defs/digest"},
+    "candidate_id": {"type": "string", "pattern": "^candidate:[0-9a-f]{32}$"},
+    "candidate_digest": {"$ref": "#/$defs/digest"},
+    "policy_digest": {"$ref": "#/$defs/digest"},
+    "semantic_diff_digest": {"$ref": "#/$defs/digest"},
+    "backtest_digest": {"$ref": "#/$defs/digest"},
+    "actor_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "session_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "write_authority": {"enum": ["router-local-managed", "reviewed-user-local", "verified-host-workspace"]},
+    "workspace_identity_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "snapshot_digest": {"$ref": "#/$defs/digest"},
+    "status": {"enum": ["pending", "applied", "rollback", "failed"]},
+    "rollback_source_revision_id": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^revision:[0-9a-f]{32}$"}]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"oneOf": [{"type": "null"}, {"type": "string", "format": "date-time"}]}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

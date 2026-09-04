@@ -35,6 +35,9 @@ from .proposals import (
     create_profile_update_proposal,
     transition_profile_update as transition_profile_update_proposal,
 )
+from .materializer import ProfileMaterializer
+from .profile_diff import diff_profiles
+from .revisions import ProfileRevision, ProfileRevisionStore, ProfileWriteAuthority
 from .policy_resolver import resolve_effective_policy
 from .store import MemoryCommandConflict, MemoryStore, MemoryStoreError
 from .workflow_reader import (
@@ -444,6 +447,98 @@ class WorkflowMemoryService:
                 store, proposal_id, action=action,
                 expected_state_version=expected_state_version,
                 idempotency_key=idempotency_key, correlation_id=correlation_id, now=now,
+            )
+
+    def apply_profile_update(
+        self,
+        proposal_id: str,
+        *,
+        authority: ProfileWriteAuthority,
+        expected_state_version: int,
+        idempotency_key: str,
+        correlation_id: str,
+        workspace_root: Path | None = None,
+        now: str | None = None,
+    ) -> ProfileRevision:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            return ProfileMaterializer(store, self._data_dir, effective).apply_approved(
+                proposal_id,
+                authority=authority,
+                expected_state_version=expected_state_version,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                now=_utc_now() if now is None else now,
+            )
+
+    def list_profile_revisions(
+        self,
+        profile_id: str,
+        *,
+        workspace_root: Path | None = None,
+    ) -> tuple[ProfileRevision, ...]:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            return ()
+        store = (
+            MemoryStore.open_if_enabled(self._data_dir, effective)
+            if effective.capture_enabled
+            else MemoryStore.open_existing(self._data_dir)
+        )
+        if store is None:
+            return ()
+        with store:
+            return ProfileRevisionStore(self._data_dir, store).list(profile_id)
+
+    def diff_profile_revisions(
+        self,
+        from_revision_id: str,
+        to_revision_id: str,
+        *,
+        workspace_root: Path | None = None,
+    ):
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = (
+            MemoryStore.open_if_enabled(self._data_dir, effective)
+            if effective.capture_enabled
+            else MemoryStore.open_existing(self._data_dir)
+        )
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            revisions = ProfileRevisionStore(self._data_dir, store)
+            before = revisions.load_snapshot(from_revision_id)
+            after = revisions.load_snapshot(to_revision_id)
+            return diff_profiles(before, after)
+
+    def create_rollback_proposal(
+        self,
+        source_revision_id: str,
+        *,
+        authority: ProfileWriteAuthority,
+        expected_profile_digest: str,
+        workspace_root: Path | None = None,
+        now: str | None = None,
+    ) -> ProfileUpdateProposal:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            return ProfileMaterializer(store, self._data_dir, effective).create_rollback_proposal(
+                source_revision_id,
+                authority=authority,
+                expected_profile_digest=expected_profile_digest,
+                now=_utc_now() if now is None else now,
             )
 
     def history_summary(self, query: HistorySummaryQuery) -> HistorySummary:
