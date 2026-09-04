@@ -1351,6 +1351,165 @@ class MemoryStore:
                 connection.execute("ROLLBACK")
             raise MemoryStoreError("memory-purge-command-failed") from error
 
+    def save_workflow_pattern(self, pattern) -> None:
+        from .candidates import WorkflowPattern
+
+        if not isinstance(pattern, WorkflowPattern):
+            raise TypeError("pattern must be WorkflowPattern")
+        document = pattern.canonical_json()
+        connection = self._require_open()
+        try:
+            connection.execute(
+                "INSERT INTO workflow_patterns(pattern_id,scope,material_evidence_digest,pattern_json,updated_at) "
+                "VALUES (?,?,?,?,?) ON CONFLICT(pattern_id) DO UPDATE SET "
+                "scope=excluded.scope,material_evidence_digest=excluded.material_evidence_digest,"
+                "pattern_json=excluded.pattern_json,updated_at=excluded.updated_at",
+                (pattern.pattern_id, pattern.scope.value, pattern.material_evidence_digest, document, pattern.updated_at),
+            )
+        except sqlite3.Error as error:
+            raise MemoryStoreError("workflow-pattern-write-failed") from error
+
+    def save_workflow_candidate(self, candidate):
+        from .candidates import WorkflowCandidate, decode_workflow_candidate
+
+        if not isinstance(candidate, WorkflowCandidate):
+            raise TypeError("candidate must be WorkflowCandidate")
+        connection = self._require_open()
+        try:
+            row = connection.execute(
+                "SELECT candidate_digest,candidate_json FROM workflow_candidates WHERE candidate_id=?",
+                (candidate.candidate_id,),
+            ).fetchone()
+            if row is not None:
+                if str(row[0]) != candidate.candidate_digest:
+                    raise MemoryCommandConflict("workflow-candidate-id-conflict")
+                return decode_workflow_candidate(json.loads(str(row[1])))
+            document = candidate.canonical_json()
+            connection.execute(
+                "INSERT INTO workflow_candidates(candidate_id,pattern_id,status,material_evidence_digest,candidate_digest,candidate_json,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (
+                    candidate.candidate_id, candidate.pattern_id, candidate.status,
+                    candidate.material_evidence_digest, candidate.candidate_digest,
+                    document, candidate.created_at, candidate.created_at,
+                ),
+            )
+            return candidate
+        except MemoryCommandConflict:
+            raise
+        except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("workflow-candidate-write-failed") from error
+
+    def load_workflow_candidate(self, candidate_id: str):
+        from .candidates import decode_workflow_candidate
+
+        if not isinstance(candidate_id, str) or not candidate_id.startswith("candidate:"):
+            raise MemoryStoreError("invalid-candidate-id")
+        connection = self._require_open()
+        try:
+            row = connection.execute(
+                "SELECT candidate_json FROM workflow_candidates WHERE candidate_id=?",
+                (candidate_id,),
+            ).fetchone()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("workflow-candidate-read-failed") from error
+        if row is None:
+            return None
+        try:
+            candidate = decode_workflow_candidate(json.loads(str(row[0])))
+            if candidate.canonical_json() != str(row[0]):
+                raise MemoryStoreError("workflow-candidate-corrupt")
+            return candidate
+        except (json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("workflow-candidate-corrupt") from error
+
+    def list_workflow_candidates(self, status: str | None = None):
+        from .candidates import decode_workflow_candidate
+
+        connection = self._require_open()
+        try:
+            if status is None:
+                rows = connection.execute(
+                    "SELECT candidate_json FROM workflow_candidates ORDER BY created_at,candidate_id"
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT candidate_json FROM workflow_candidates WHERE status=? ORDER BY created_at,candidate_id",
+                    (status,),
+                ).fetchall()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("workflow-candidate-list-failed") from error
+        result = []
+        for row in rows:
+            try:
+                result.append(decode_workflow_candidate(json.loads(str(row[0]))))
+            except (json.JSONDecodeError, TypeError, ValueError) as error:
+                raise MemoryStoreError("workflow-candidate-corrupt") from error
+        return tuple(result)
+
+    def reject_workflow_candidate(
+        self,
+        candidate_id: str,
+        *,
+        reason_code: str,
+        rejected_at: str,
+        suppression_days: int = 30,
+    ):
+        from datetime import datetime, timedelta, timezone
+        from .candidates import candidate_with_status
+
+        if not isinstance(reason_code, str) or _SAFE_CODE.fullmatch(reason_code) is None:
+            raise MemoryStoreError("invalid-candidate-rejection-reason")
+        if isinstance(suppression_days, bool) or not isinstance(suppression_days, int) or suppression_days < 1:
+            raise MemoryStoreError("invalid-candidate-suppression-days")
+        try:
+            instant = datetime.fromisoformat(rejected_at.replace("Z", "+00:00"))
+            if instant.tzinfo is None:
+                raise ValueError
+        except (TypeError, ValueError) as error:
+            raise MemoryStoreError("invalid-candidate-rejected-at") from error
+        candidate = self.load_workflow_candidate(candidate_id)
+        if candidate is None:
+            raise MemoryStoreError("workflow-candidate-not-found")
+        rejected = candidate_with_status(candidate, "rejected")
+        rejected_json = rejected.canonical_json()
+        suppressed_until = (
+            instant.astimezone(timezone.utc) + timedelta(days=suppression_days)
+        ).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+        connection = self._require_open()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                "UPDATE workflow_candidates SET status='rejected',candidate_json=?,updated_at=? WHERE candidate_id=?",
+                (rejected_json, rejected_at, candidate_id),
+            )
+            connection.execute(
+                "INSERT INTO candidate_suppressions(pattern_id,material_evidence_digest,reason_code,rejected_at,suppressed_until) "
+                "VALUES (?,?,?,?,?) ON CONFLICT(pattern_id,material_evidence_digest) DO UPDATE SET "
+                "reason_code=excluded.reason_code,rejected_at=excluded.rejected_at,suppressed_until=excluded.suppressed_until",
+                (
+                    candidate.pattern_id, candidate.material_evidence_digest, reason_code,
+                    rejected_at, suppressed_until,
+                ),
+            )
+            connection.execute("COMMIT")
+            return rejected
+        except sqlite3.Error as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise MemoryStoreError("workflow-candidate-reject-failed") from error
+
+    def is_candidate_suppressed(self, pattern_id: str, material_evidence_digest: str, now: str) -> bool:
+        connection = self._require_open()
+        try:
+            row = connection.execute(
+                "SELECT suppressed_until FROM candidate_suppressions WHERE pattern_id=? AND material_evidence_digest=?",
+                (pattern_id, material_evidence_digest),
+            ).fetchone()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("candidate-suppression-read-failed") from error
+        return row is not None and str(row[0]) >= now
+
     def close(self) -> None:
         if self._closed:
             return

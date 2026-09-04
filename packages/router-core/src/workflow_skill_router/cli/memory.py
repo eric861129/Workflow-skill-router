@@ -155,6 +155,33 @@ def configure_memory_parser(parser: argparse.ArgumentParser) -> None:
     history_purge.add_argument("--idempotency-key", required=True)
     history_purge.add_argument("--correlation-id", required=True)
 
+    candidates = commands.add_parser(
+        "candidates",
+        help="Rebuild, list, inspect, or reject deterministic Workflow candidates",
+    )
+    candidate_commands = candidates.add_subparsers(dest="memory_candidate_command", required=True)
+    candidate_rebuild = candidate_commands.add_parser("rebuild")
+    candidate_rebuild.add_argument("--database", type=Path, required=True)
+    candidate_rebuild.add_argument("--data-dir", type=Path)
+    candidate_rebuild.add_argument("--workspace", type=Path)
+    candidate_rebuild.add_argument("--scope", choices=("personal", "workspace"), default="personal")
+    candidate_list = candidate_commands.add_parser("list")
+    candidate_list.add_argument("--database", type=Path, required=True)
+    candidate_list.add_argument("--data-dir", type=Path)
+    candidate_list.add_argument("--workspace", type=Path)
+    candidate_list.add_argument("--status")
+    candidate_show = candidate_commands.add_parser("show")
+    candidate_show.add_argument("candidate_id")
+    candidate_show.add_argument("--database", type=Path, required=True)
+    candidate_show.add_argument("--data-dir", type=Path)
+    candidate_show.add_argument("--workspace", type=Path)
+    candidate_reject = candidate_commands.add_parser("reject")
+    candidate_reject.add_argument("candidate_id")
+    candidate_reject.add_argument("--database", type=Path, required=True)
+    candidate_reject.add_argument("--data-dir", type=Path)
+    candidate_reject.add_argument("--workspace", type=Path)
+    candidate_reject.add_argument("--reason", required=True)
+
     policy = commands.add_parser(
         "policy",
         help="Validate or explain Workflow Memory policy resolution",
@@ -288,6 +315,41 @@ def run_memory_cli(args: argparse.Namespace) -> int:
                 ))
                 _print(result.to_dict())
                 return 0 if result.status in {"purged", "scope-not-available"} else 2
+
+        if args.memory_command == "candidates":
+            service = WorkflowMemoryService(args.database, data_dir=args.data_dir)
+            if args.memory_candidate_command == "rebuild":
+                items = service.rebuild_candidates(
+                    MemoryScope(args.scope), workspace_root=args.workspace
+                )
+                _print({"status": "rebuilt", "candidates": [item.to_dict() for item in items]})
+                return 0
+            if args.memory_candidate_command == "list":
+                items = service.list_workflow_candidates(
+                    workspace_root=args.workspace, status=args.status
+                )
+                _print({"status": "ready", "candidates": [item.to_dict() for item in items]})
+                return 0
+            repository, effective = service._effective_policy(args.workspace)
+            if not repository.memory_store_exists():
+                raise MemoryStoreError("memory-store-unavailable")
+            from workflow_skill_router.memory.store import MemoryStore
+            store = MemoryStore.open_if_enabled(args.data_dir or repository.data_dir, effective) if effective.capture_enabled else MemoryStore.open_existing(args.data_dir or repository.data_dir)
+            if store is None:
+                raise MemoryStoreError("memory-store-unavailable")
+            with store:
+                if args.memory_candidate_command == "show":
+                    item = store.load_workflow_candidate(args.candidate_id)
+                    if item is None:
+                        raise MemoryStoreError("workflow-candidate-not-found")
+                    _print(item.to_dict())
+                    return 0
+            if args.memory_candidate_command == "reject":
+                item = service.reject_workflow_candidate(
+                    args.candidate_id, workspace_root=args.workspace, reason_code=args.reason
+                )
+                _print(item.to_dict())
+                return 0
 
         if args.memory_command == "remember":
             matcher_present = bool(args.keyword or args.domain or args.tag or args.matcher_source)

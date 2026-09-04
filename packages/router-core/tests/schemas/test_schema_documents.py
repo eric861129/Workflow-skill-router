@@ -14,6 +14,8 @@ EXPECTED_SCHEMA_FILES = {
     "routing-profile.schema.json",
     "route-observation.schema.json",
     "route-feedback.schema.json",
+    "workflow-pattern.schema.json",
+    "workflow-candidate.schema.json",
 }
 
 
@@ -165,6 +167,15 @@ class SchemaDocumentTests(unittest.TestCase):
             "tool_arguments", "secrets", "metadata_json",
         ):
             self.assertNotIn(forbidden, serialized)
+
+    def test_workflow_candidate_schemas_are_strict_and_redacted(self) -> None:
+        for name, schema_id in (("workflow-pattern.schema.json", "workflow-skill-router/workflow-pattern"), ("workflow-candidate.schema.json", "workflow-skill-router/workflow-candidate")):
+            document = json.loads((SCHEMA_ROOT / name).read_text(encoding="utf-8"))
+            self.assertEqual(False, document["additionalProperties"])
+            self.assertEqual(schema_id, document["properties"]["schema_id"]["const"])
+            serialized = json.dumps(document, sort_keys=True)
+            for forbidden in ("raw_prompt", "raw_objective", "file_content", "tool_arguments", "secrets", "metadata_json"):
+                self.assertNotIn(forbidden, serialized)
 
 
 if __name__ == "__main__":
