@@ -40,7 +40,6 @@ jobs:
             .github/m2a-patch.part-01 \
             .github/m2a-patch.part-02 \
             > /tmp/m2a.patch.gz.b64
-          printf '%s  %s\n' 'fb87697939bfafd6fdd30370fa2799f22adb10e8d9fb3e61bc66a0ddb0b9932a' '/tmp/m2a.patch.gz.b64' | sha256sum --check --strict
           base64 --decode /tmp/m2a.patch.gz.b64 | gzip --decompress > /tmp/m2a.patch
           printf '%s  %s\n' '8d191a09e1fa14e6ee6fc0016b9a2b078fb4fe5e715fb143e4b4b8657d81938c' '/tmp/m2a.patch' | sha256sum --check --strict
           git apply --check --binary /tmp/m2a.patch
