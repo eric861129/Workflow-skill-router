@@ -52,7 +52,7 @@ jobs:
           git diff --check
       - name: Verify recovered M1-B
         env:
-          PYTHONPATH: packages/router-core/src
+          PYTHONPATH: packages/router-core/src:packages/router-core/tests
         run: |
           python -m unittest discover -s packages/router-core/tests/memory -p "test_*.py" -v
           python -m unittest discover -s packages/router-core/tests/cli -p "test_memory_remember_cli.py" -v
