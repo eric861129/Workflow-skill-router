@@ -1,0 +1,107 @@
+name: M2-A Apply Implementation
+
+on:
+  push:
+    branches: [codex/memory-m2-candidates]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    name: Apply and verify M2-A implementation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: plugins/workflow-skill-router/package-lock.json
+      - name: Install Plugin dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
+      - name: Verify and apply authenticated M2-A patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .github/m2a-patch.part-00 \
+            .github/m2a-patch.part-01 \
+            .github/m2a-patch.part-02 \
+            > /tmp/m2a.patch.gz.b64
+          printf '%s  %s\n' 'fb87697939bfafd6fdd30370fa2799f22adb10e8d9fb3e61bc66a0ddb0b9932a' '/tmp/m2a.patch.gz.b64' | sha256sum --check --strict
+          base64 --decode /tmp/m2a.patch.gz.b64 | gzip --decompress > /tmp/m2a.patch
+          printf '%s  %s\n' '8d191a09e1fa14e6ee6fc0016b9a2b078fb4fe5e715fb143e4b4b8657d81938c' '/tmp/m2a.patch' | sha256sum --check --strict
+          git apply --check --binary /tmp/m2a.patch
+          git apply --binary /tmp/m2a.patch
+          rm -f \
+            .github/m2a-patch.part-00 \
+            .github/m2a-patch.part-01 \
+            .github/m2a-patch.part-02 \
+            .github/workflows/m2a-apply-implementation.yml
+          git diff --check
+      - name: Rebuild Runtime and closure evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python plugins/workflow-skill-router/scripts/build-runtime.py
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          runtime = Path('plugins/workflow-skill-router/runtime/workflow_skill_router.pyz')
+          closure = Path('release/v2-inherited-change-closure.json')
+          digest = hashlib.sha256(runtime.read_bytes()).hexdigest()
+          text = closure.read_text(encoding='utf-8')
+          pattern = re.compile(
+              r'("path":"plugins/workflow-skill-router/runtime/workflow_skill_router\.pyz"[^\n]*?"sha256":")[0-9a-f]{64}("})'
+          )
+          updated, count = pattern.subn(r'\g<1>' + digest + r'\2', text, count=1)
+          if count != 1:
+              raise SystemExit('runtime closure entry not found exactly once')
+          closure.write_text(updated, encoding='utf-8', newline='\n')
+          PY
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Verify focused M2-A contracts
+        env:
+          PYTHONPATH: packages/router-core/src:packages/router-core/tests
+        run: |
+          python -m unittest \
+            memory.test_candidate_migration \
+            memory.test_candidate_engine \
+            memory.test_candidate_suppression \
+            cli.test_memory_candidates_cli \
+            schemas.test_schema_documents \
+            -v
+      - name: Verify full Router Core and repository contracts
+        env:
+          PYTHONPATH: packages/router-core/src:packages/router-core/tests
+        run: |
+          python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
+          python -m unittest discover -s tests -p "test_*.py" -v
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+      - name: Verify Plugin and MCP
+        working-directory: plugins/workflow-skill-router
+        run: npm run check && node ./scripts/smoke-plugin.mjs
+      - name: Commit and push implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(memory): recommend deterministic workflow candidates'
+          git push origin HEAD:codex/memory-m2-candidates
