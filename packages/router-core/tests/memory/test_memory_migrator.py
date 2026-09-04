@@ -26,6 +26,9 @@ EXPECTED_TABLES = {
     "memory_command_results",
     "route_feedback_events",
     "memory_admin_commands",
+    "workflow_patterns",
+    "workflow_candidates",
+    "candidate_suppressions",
 }
 
 
@@ -77,6 +80,7 @@ class MemoryMigratorTests(unittest.TestCase):
             "0001_observations.sql",
             "0002_route_observation_documents.sql",
             "0003_route_feedback_history.sql",
+            "0004_candidates.sql",
         ], names)
 
         result = migrate_memory_store(self.database)
@@ -109,6 +113,7 @@ class MemoryMigratorTests(unittest.TestCase):
             (1, "observations"),
             (2, "route_observation_documents"),
             (3, "route_feedback_history"),
+            (4, "candidates"),
         ], [
             (int(row[0]), str(row[1])) for row in rows
         ])
@@ -134,7 +139,7 @@ class MemoryMigratorTests(unittest.TestCase):
             count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
             ).fetchone()[0]
-        self.assertEqual(3, count)
+        self.assertEqual(4, count)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
 
 
