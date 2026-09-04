@@ -10,6 +10,7 @@ EXPECTED_SCHEMA_FILES = {
     "capability-snapshot.schema.json",
     "capability.schema.json",
     "memory-policy.schema.json",
+    "memory-policy-snapshot.schema.json",
     "routing-profile.schema.json",
 }
 
@@ -86,6 +87,42 @@ class SchemaDocumentTests(unittest.TestCase):
         )
         self.assertNotIn("instructions", document["properties"])
         self.assertNotIn("raw_prompt", document["properties"])
+
+    def test_memory_policy_snapshot_schema_is_strict_and_redacted(self) -> None:
+        document = json.loads(
+            (SCHEMA_ROOT / "memory-policy-snapshot.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(False, document["additionalProperties"])
+        self.assertEqual(
+            "workflow-skill-router/memory-policy-snapshot",
+            document["properties"]["schema_id"]["const"],
+        )
+        self.assertTrue(
+            {
+                "snapshot_id",
+                "policy_digest",
+                "mode",
+                "personal_mode",
+                "workspace_requested_mode",
+                "policy_source",
+                "features",
+                "reason_codes",
+            }.issubset(document["required"])
+        )
+        serialized = json.dumps(document, sort_keys=True)
+        for forbidden in (
+            "source_path",
+            "policy_document",
+            "raw_prompt",
+            "file_paths",
+            "file_content",
+            "tool_arguments",
+            "secrets",
+            "metadata_json",
+        ):
+            self.assertNotIn(forbidden, serialized)
 
 
 if __name__ == "__main__":

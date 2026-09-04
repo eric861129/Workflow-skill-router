@@ -16,4 +16,8 @@ workflow-skill-router = "workflow_skill_router.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-workflow_skill_router = ["schemas/json/**/*.json", "persistence/migrations/*.sql"]
+workflow_skill_router = [
+    "schemas/json/**/*.json",
+    "persistence/migrations/*.sql",
+    "memory/migrations/*.sql",
+]
