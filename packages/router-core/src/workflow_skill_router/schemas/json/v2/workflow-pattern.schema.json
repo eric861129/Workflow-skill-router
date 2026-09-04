@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/eric861129/Workflow-skill-router/blob/main/packages/router-core/src/workflow_skill_router/schemas/json/v2/workflow-pattern.schema.json",
+  "title": "Workflow Skill Router Workflow Pattern",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id","schema_version","artifact_kind","pattern_id","scope","matcher_seed","work_mode","phases","workspace_identity_digest","profile_source_class","target_profile_class","metrics","material_evidence_digest","observation_ids","updated_at"],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/workflow-pattern"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "workflow-pattern"},
+    "pattern_id": {"type": "string", "pattern": "^pattern:[0-9a-f]{32}$"},
+    "scope": {"enum": ["personal","workspace"]},
+    "matcher_seed": {"$ref": "#/$defs/matcher"},
+    "work_mode": {"enum": ["single","phased","managed-goal"]},
+    "phases": {"type":"array","minItems":1,"maxItems":32,"items":{"$ref":"#/$defs/phase"}},
+    "workspace_identity_digest": {"type":["string","null"],"pattern":"^sha256:[0-9a-f]{64}$"},
+    "profile_source_class": {"type":"string","minLength":1,"maxLength":80},
+    "target_profile_class": {"enum":["managed-personal","managed-workspace-local","user-personal","workspace-file"]},
+    "metrics": {"$ref":"#/$defs/metrics"},
+    "material_evidence_digest": {"$ref":"#/$defs/digest"},
+    "observation_ids": {"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","pattern":"^observation:[0-9a-f]{32}$"}},
+    "updated_at": {"type":"string","format":"date-time"}
+  },
+  "$defs": {
+    "digest": {"type":"string","pattern":"^sha256:[0-9a-f]{64}$"},
+    "matcher": {"type":"object","additionalProperties":false,"required":["objective_keywords","domains","tags","source"],"properties":{"objective_keywords":{"type":"array","maxItems":32,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":128}},"domains":{"type":"array","maxItems":32,"uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9._-]{0,63}$"}},"tags":{"type":"array","maxItems":32,"uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9._-]{0,63}$"}},"source":{"enum":["trusted-routing-context","existing-profile","user-explicit"]}}},
+    "phase": {"type":"object","additionalProperties":false,"required":["phase_id","primary_skill_id","support_skill_ids","exit_gate_ids"],"properties":{"phase_id":{"type":"string"},"primary_skill_id":{"type":["string","null"]},"support_skill_ids":{"type":"array","maxItems":3,"items":{"type":"string"}},"exit_gate_ids":{"type":"array","items":{"type":"string"}}}},
+    "metrics": {"type":"object","additionalProperties":false,"required":["distinct_runs","distinct_days","completion_rate","required_gate_pass_rate","manual_correction_rate","route_consistency","canonical_skill_ids","hard_contract_violations"],"properties":{"distinct_runs":{"type":"integer","minimum":0},"distinct_days":{"type":"integer","minimum":0},"completion_rate":{"type":"number","minimum":0,"maximum":1},"required_gate_pass_rate":{"type":"number","minimum":0,"maximum":1},"manual_correction_rate":{"type":"number","minimum":0,"maximum":1},"route_consistency":{"type":"number","minimum":0,"maximum":1},"canonical_skill_ids":{"type":"boolean"},"hard_contract_violations":{"type":"integer","minimum":0}}}
+  }
+}

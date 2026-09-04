@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/eric861129/Workflow-skill-router/blob/main/packages/router-core/src/workflow_skill_router/schemas/json/v2/workflow-candidate.schema.json",
+  "title": "Workflow Skill Router Workflow Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id","schema_version","artifact_kind","candidate_id","candidate_digest","pattern_id","status","recommendation_mode","confidence","scope","matcher_seed","work_mode","phases","workspace_identity_digest","profile_source_class","target_profile_class","metrics","material_evidence_digest","policy_digest","reason_codes","created_at"],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/workflow-candidate"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "workflow-candidate"},
+    "candidate_id": {"type":"string","pattern":"^candidate:[0-9a-f]{32}$"},
+    "candidate_digest": {"$ref":"#/$defs/digest"},
+    "pattern_id": {"type":"string","pattern":"^pattern:[0-9a-f]{32}$"},
+    "status": {"enum":["proposed","approved","rejected","expired","suppressed","superseded","auto-promoted"]},
+    "recommendation_mode": {"enum":["reviewed","automatic"]},
+    "confidence": {"enum":["medium","high"]},
+    "scope": {"enum":["personal","workspace"]},
+    "matcher_seed": {"$ref":"workflow-pattern.schema.json#/$defs/matcher"},
+    "work_mode": {"enum":["single","phased","managed-goal"]},
+    "phases": {"type":"array","minItems":1,"maxItems":32,"items":{"$ref":"workflow-pattern.schema.json#/$defs/phase"}},
+    "workspace_identity_digest": {"type":["string","null"],"pattern":"^sha256:[0-9a-f]{64}$"},
+    "profile_source_class": {"type":"string","minLength":1,"maxLength":80},
+    "target_profile_class": {"enum":["managed-personal","managed-workspace-local","user-personal","workspace-file"]},
+    "metrics": {"$ref":"workflow-pattern.schema.json#/$defs/metrics"},
+    "material_evidence_digest": {"$ref":"#/$defs/digest"},
+    "policy_digest": {"$ref":"#/$defs/digest"},
+    "reason_codes": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-z0-9][a-z0-9._-]{0,63}$"}},
+    "created_at": {"type":"string","format":"date-time"}
+  },
+  "$defs": {"digest":{"type":"string","pattern":"^sha256:[0-9a-f]{64}$"}}
+}

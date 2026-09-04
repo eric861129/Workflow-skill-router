@@ -8,6 +8,8 @@ import re
 
 from workflow_skill_router.schemas.artifacts import canonical_json
 
+from .candidates import CandidateEngine, WorkflowCandidate
+from .models import MemoryScope
 from .analytics import (
     HistorySummary,
     HistorySummaryQuery,
@@ -336,6 +338,60 @@ class WorkflowMemoryService:
                 command_digest=command_digest,
             )
             return RecordRouteFeedbackResult.from_dict(stored, replayed=replayed)
+
+    def rebuild_candidates(
+        self,
+        scope: MemoryScope,
+        *,
+        workspace_root: Path | None = None,
+        now: datetime | None = None,
+    ) -> tuple[WorkflowCandidate, ...]:
+        repository, effective = self._effective_policy(workspace_root)
+        if not effective.candidate_generation_enabled or not repository.memory_store_exists():
+            return ()
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            return ()
+        instant = datetime.now(timezone.utc) if now is None else now
+        with store:
+            return CandidateEngine(store, effective).rebuild(scope, instant)
+
+    def list_workflow_candidates(
+        self,
+        *,
+        workspace_root: Path | None = None,
+        status: str | None = None,
+    ) -> tuple[WorkflowCandidate, ...]:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            return ()
+        store = (MemoryStore.open_if_enabled(self._data_dir, effective) if effective.capture_enabled else MemoryStore.open_existing(self._data_dir))
+        if store is None:
+            return ()
+        with store:
+            return store.list_workflow_candidates(status)
+
+    def reject_workflow_candidate(
+        self,
+        candidate_id: str,
+        *,
+        workspace_root: Path | None = None,
+        reason_code: str,
+        rejected_at: str | None = None,
+    ) -> WorkflowCandidate:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = (MemoryStore.open_if_enabled(self._data_dir, effective) if effective.capture_enabled else MemoryStore.open_existing(self._data_dir))
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            return store.reject_workflow_candidate(
+                candidate_id,
+                reason_code=reason_code,
+                rejected_at=_utc_now() if rejected_at is None else rejected_at,
+                suppression_days=effective.policy.storage.rejected_suppression_days,
+            )
 
     def history_summary(self, query: HistorySummaryQuery) -> HistorySummary:
         if not isinstance(query, HistorySummaryQuery):

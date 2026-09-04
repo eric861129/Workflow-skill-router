@@ -2,6 +2,14 @@
 
 from pathlib import Path
 
+from .candidates import (
+    CandidateEngine,
+    CandidateError,
+    PatternMetrics,
+    WorkflowCandidate,
+    WorkflowPattern,
+    decode_workflow_candidate,
+)
 from .analytics import (
     HistorySummary,
     HistorySummaryQuery,
@@ -75,6 +83,12 @@ def memory_database_path(data_dir: Path) -> Path:
 
 
 __all__ = [
+    "CandidateEngine",
+    "CandidateError",
+    "PatternMetrics",
+    "WorkflowCandidate",
+    "WorkflowPattern",
+    "decode_workflow_candidate",
     "CompletedWorkflowPhase",
     "decode_route_feedback",
     "RouteFeedbackError",
