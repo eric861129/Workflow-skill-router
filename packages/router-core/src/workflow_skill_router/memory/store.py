@@ -1510,6 +1510,180 @@ class MemoryStore:
             raise MemoryStoreError("candidate-suppression-read-failed") from error
         return row is not None and str(row[0]) >= now
 
+    def save_profile_update_proposal(self, proposal):
+        from .proposals import ProfileUpdateProposal, decode_profile_update_proposal
+
+        if not isinstance(proposal, ProfileUpdateProposal):
+            raise TypeError("proposal must be ProfileUpdateProposal")
+        connection = self._require_open()
+        document = proposal.canonical_json()
+        try:
+            row = connection.execute(
+                "SELECT proposal_digest,proposal_json FROM profile_update_proposals WHERE proposal_id=?",
+                (proposal.proposal_id,),
+            ).fetchone()
+            if row is not None:
+                if str(row[0]) != proposal.proposal_digest:
+                    raise MemoryCommandConflict("profile-proposal-id-conflict")
+                return decode_profile_update_proposal(json.loads(str(row[1])))
+            connection.execute(
+                "INSERT INTO profile_update_proposals("
+                "proposal_id,candidate_id,status,state_version,expected_profile_digest,"
+                "proposed_profile_digest,proposal_digest,proposal_json,created_at,updated_at"
+                ") VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    proposal.proposal_id, proposal.candidate_id, proposal.status,
+                    proposal.state_version, proposal.expected_profile_digest,
+                    proposal.proposed_profile_digest, proposal.proposal_digest,
+                    document, proposal.created_at, proposal.created_at,
+                ),
+            )
+            return proposal
+        except MemoryCommandConflict:
+            raise
+        except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("profile-proposal-write-failed") from error
+
+    def load_profile_update_proposal(self, proposal_id: str):
+        from .proposals import decode_profile_update_proposal
+
+        connection = self._require_open()
+        try:
+            row = connection.execute(
+                "SELECT proposal_json FROM profile_update_proposals WHERE proposal_id=?",
+                (proposal_id,),
+            ).fetchone()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("profile-proposal-read-failed") from error
+        if row is None:
+            return None
+        try:
+            proposal = decode_profile_update_proposal(json.loads(str(row[0])))
+            if proposal.canonical_json() != str(row[0]):
+                raise MemoryStoreError("profile-proposal-corrupt")
+            return proposal
+        except (json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("profile-proposal-corrupt") from error
+
+    def list_profile_update_proposals(self, status: str | None = None):
+        from .proposals import decode_profile_update_proposal
+
+        connection = self._require_open()
+        try:
+            if status is None:
+                rows = connection.execute(
+                    "SELECT proposal_json FROM profile_update_proposals ORDER BY created_at,proposal_id"
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT proposal_json FROM profile_update_proposals WHERE status=? ORDER BY created_at,proposal_id",
+                    (status,),
+                ).fetchall()
+        except sqlite3.Error as error:
+            raise MemoryStoreError("profile-proposal-list-failed") from error
+        try:
+            return tuple(decode_profile_update_proposal(json.loads(str(row[0]))) for row in rows)
+        except (json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("profile-proposal-corrupt") from error
+
+    def set_profile_update_proposal_status(
+        self,
+        proposal_id: str,
+        status: str,
+        *,
+        expected_state_version: int,
+    ):
+        from dataclasses import replace
+        from .proposals import decode_profile_update_proposal
+
+        current = self.load_profile_update_proposal(proposal_id)
+        if current is None:
+            raise MemoryStoreError("profile-proposal-not-found")
+        if current.state_version != expected_state_version:
+            raise MemoryCommandConflict("profile-proposal-state-conflict")
+        updated = replace(current, status=status, state_version=current.state_version + 1)
+        connection = self._require_open()
+        try:
+            cursor = connection.execute(
+                "UPDATE profile_update_proposals SET status=?,state_version=?,proposal_json=?,updated_at=? "
+                "WHERE proposal_id=? AND state_version=?",
+                (status, updated.state_version, updated.canonical_json(), _utc_now(), proposal_id, expected_state_version),
+            )
+            if cursor.rowcount != 1:
+                raise MemoryCommandConflict("profile-proposal-state-conflict")
+            return decode_profile_update_proposal(json.loads(updated.canonical_json()))
+        except MemoryCommandConflict:
+            raise
+        except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
+            raise MemoryStoreError("profile-proposal-transition-failed") from error
+
+    def transition_profile_update_proposal(
+        self,
+        proposal_id: str,
+        *,
+        target_status: str,
+        expected_state_version: int,
+        idempotency_key: str,
+        correlation_id: str,
+    ):
+        from dataclasses import replace
+        from .proposals import decode_profile_update_proposal
+
+        command = {
+            "proposal_id": proposal_id,
+            "target_status": target_status,
+            "expected_state_version": expected_state_version,
+            "correlation_id": correlation_id,
+        }
+        command_digest = "sha256:" + hashlib.sha256(canonical_json(command).encode("utf-8")).hexdigest()
+        connection = self._require_open()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            receipt = connection.execute(
+                "SELECT command_digest,result_json FROM profile_update_proposal_receipts WHERE idempotency_key=?",
+                (idempotency_key,),
+            ).fetchone()
+            if receipt is not None:
+                if str(receipt[0]) != command_digest:
+                    raise MemoryCommandConflict("memory-idempotency-conflict")
+                result = decode_profile_update_proposal(json.loads(str(receipt[1])))
+                connection.execute("COMMIT")
+                return result
+            row = connection.execute(
+                "SELECT proposal_json FROM profile_update_proposals WHERE proposal_id=?",
+                (proposal_id,),
+            ).fetchone()
+            if row is None:
+                raise MemoryStoreError("profile-proposal-not-found")
+            current = decode_profile_update_proposal(json.loads(str(row[0])))
+            if current.state_version != expected_state_version or current.status != "pending":
+                raise MemoryCommandConflict("profile-proposal-state-conflict")
+            updated = replace(current, status=target_status, state_version=current.state_version + 1)
+            updated_json = updated.canonical_json()
+            cursor = connection.execute(
+                "UPDATE profile_update_proposals SET status=?,state_version=?,proposal_json=?,updated_at=? "
+                "WHERE proposal_id=? AND state_version=? AND status='pending'",
+                (target_status, updated.state_version, updated_json, _utc_now(), proposal_id, expected_state_version),
+            )
+            if cursor.rowcount != 1:
+                raise MemoryCommandConflict("profile-proposal-state-conflict")
+            connection.execute(
+                "INSERT INTO profile_update_proposal_receipts("
+                "idempotency_key,proposal_id,action,command_digest,result_json,created_at"
+                ") VALUES (?,?,?,?,?,?)",
+                (idempotency_key, proposal_id, target_status, command_digest, updated_json, _utc_now()),
+            )
+            connection.execute("COMMIT")
+            return updated
+        except (MemoryCommandConflict, MemoryStoreError):
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError) as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise MemoryStoreError("profile-proposal-transition-failed") from error
+
     def close(self) -> None:
         if self._closed:
             return

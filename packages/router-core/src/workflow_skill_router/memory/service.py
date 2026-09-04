@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from workflow_skill_router.schemas.artifacts import canonical_json
+from workflow_skill_router.profiles.contract import RoutingPreferenceProfile
 
 from .candidates import CandidateEngine, WorkflowCandidate
 from .models import MemoryScope
@@ -29,6 +30,11 @@ from .observations import (
     evaluate_observation_eligibility,
 )
 from .policy_io import MemoryPolicyRepository
+from .proposals import (
+    ProfileUpdateProposal,
+    create_profile_update_proposal,
+    transition_profile_update as transition_profile_update_proposal,
+)
 from .policy_resolver import resolve_effective_policy
 from .store import MemoryCommandConflict, MemoryStore, MemoryStoreError
 from .workflow_reader import (
@@ -391,6 +397,53 @@ class WorkflowMemoryService:
                 reason_code=reason_code,
                 rejected_at=_utc_now() if rejected_at is None else rejected_at,
                 suppression_days=effective.policy.storage.rejected_suppression_days,
+            )
+
+    def preview_profile_update(
+        self,
+        candidate_id: str,
+        *,
+        current_profile: RoutingPreferenceProfile | None = None,
+        workspace_root: Path | None = None,
+        now: str | None = None,
+    ) -> ProfileUpdateProposal:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            candidate = store.load_workflow_candidate(candidate_id)
+            if candidate is None:
+                raise MemoryStoreError("workflow-candidate-not-found")
+            return create_profile_update_proposal(
+                store, candidate, current_profile=current_profile, policy=effective,
+                now=_utc_now() if now is None else now,
+            )
+
+    def transition_profile_update(
+        self,
+        proposal_id: str,
+        *,
+        action: str,
+        expected_state_version: int,
+        idempotency_key: str,
+        correlation_id: str,
+        workspace_root: Path | None = None,
+        now: str | None = None,
+    ) -> ProfileUpdateProposal:
+        repository, effective = self._effective_policy(workspace_root)
+        if not repository.memory_store_exists():
+            raise MemoryStoreError("memory-store-unavailable")
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            return transition_profile_update_proposal(
+                store, proposal_id, action=action,
+                expected_state_version=expected_state_version,
+                idempotency_key=idempotency_key, correlation_id=correlation_id, now=now,
             )
 
     def history_summary(self, query: HistorySummaryQuery) -> HistorySummary:

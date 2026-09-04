@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/eric861129/Workflow-skill-router/blob/main/packages/router-core/src/workflow_skill_router/schemas/json/v2/profile-update-proposal.schema.json",
+  "title": "Workflow Skill Router Profile Update Proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "artifact_kind", "proposal_id", "proposal_digest",
+    "candidate_id", "candidate_digest", "status", "state_version", "target_profile_class",
+    "expected_profile_digest", "proposed_profile_digest", "proposed_profile", "semantic_diff",
+    "semantic_diff_digest", "backtest", "backtest_digest", "policy_digest",
+    "workspace_identity_digest", "created_at", "expires_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/profile-update-proposal"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "profile-update-proposal"},
+    "proposal_id": {"type": "string", "pattern": "^proposal:[0-9a-f]{32}$"},
+    "proposal_digest": {"$ref": "#/$defs/digest"},
+    "candidate_id": {"type": "string", "pattern": "^candidate:[0-9a-f]{32}$"},
+    "candidate_digest": {"$ref": "#/$defs/digest"},
+    "status": {"enum": ["pending", "approved", "rejected", "stale", "expired", "applied", "failed"]},
+    "state_version": {"type": "integer", "minimum": 1},
+    "target_profile_class": {"enum": ["managed-personal", "managed-workspace-local", "user-personal", "workspace-file"]},
+    "expected_profile_digest": {"oneOf": [{"const": "missing"}, {"$ref": "#/$defs/digest"}]},
+    "proposed_profile_digest": {"$ref": "#/$defs/digest"},
+    "proposed_profile": {"$ref": "routing-profile.schema.json"},
+    "semantic_diff": {"$ref": "#/$defs/semanticDiff"},
+    "semantic_diff_digest": {"$ref": "#/$defs/digest"},
+    "backtest": {"$ref": "#/$defs/backtest"},
+    "backtest_digest": {"$ref": "#/$defs/digest"},
+    "policy_digest": {"$ref": "#/$defs/digest"},
+    "workspace_identity_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "created_at": {"type": "string", "minLength": 1},
+    "expires_at": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "semanticDiffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["change_type", "rule_id", "phase_id", "field", "before", "after"],
+      "properties": {
+        "change_type": {"type": "string", "minLength": 1, "maxLength": 64},
+        "rule_id": {"type": ["string", "null"]},
+        "phase_id": {"type": ["string", "null"]},
+        "field": {"type": ["string", "null"]},
+        "before": {},
+        "after": {}
+      }
+    },
+    "patchOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "path", "value"],
+      "properties": {
+        "op": {"enum": ["add", "replace", "remove"]},
+        "path": {"type": "string", "minLength": 1},
+        "value": {}
+      }
+    },
+    "semanticDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entries", "json_patch", "semantic_diff_digest", "json_patch_digest"],
+      "properties": {
+        "entries": {"type": "array", "items": {"$ref": "#/$defs/semanticDiffEntry"}},
+        "json_patch": {"type": "array", "items": {"$ref": "#/$defs/patchOperation"}},
+        "semantic_diff_digest": {"$ref": "#/$defs/digest"},
+        "json_patch_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "backtest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_observation_count", "positive_match_count", "positive_match_coverage",
+        "unexpected_match_count", "shadowed_rule_ids", "equal_rank_conflicts",
+        "manual_precedence", "capability_gap_summary", "planned_route_regressions",
+        "workspace_isolation", "acceptable", "backtest_digest"
+      ],
+      "properties": {
+        "positive_observation_count": {"type": "integer", "minimum": 0},
+        "positive_match_count": {"type": "integer", "minimum": 0},
+        "positive_match_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "unexpected_match_count": {"type": "integer", "minimum": 0},
+        "shadowed_rule_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "equal_rank_conflicts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "manual_precedence": {"type": "boolean"},
+        "capability_gap_summary": {"enum": ["none", "unavailable", "present"]},
+        "planned_route_regressions": {"type": "integer", "minimum": 0},
+        "workspace_isolation": {"type": "boolean"},
+        "acceptable": {"type": "boolean"},
+        "backtest_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}
