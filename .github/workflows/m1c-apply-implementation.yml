@@ -27,6 +27,9 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: plugins/workflow-skill-router/package-lock.json
+      - name: Install Plugin dependencies
+        working-directory: plugins/workflow-skill-router
+        run: npm ci
       - name: Verify and apply authenticated M1-C patch
         shell: bash
         run: |
@@ -67,7 +70,7 @@ jobs:
           python plugins/workflow-skill-router/scripts/build-runtime.py --check
       - name: Verify Plugin and MCP
         working-directory: plugins/workflow-skill-router
-        run: npm ci && npm run check && node ./scripts/smoke-plugin.mjs
+        run: npm run check && node ./scripts/smoke-plugin.mjs
       - name: Commit and push implementation
         shell: bash
         run: |
