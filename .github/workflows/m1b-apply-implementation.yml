@@ -1,15 +1,15 @@
-name: M1-B Apply Implementation
+name: M1-B Baseline Recovery
 
 on:
   push:
-    branches: [codex/memory-m1-observations]
+    branches: [codex/memory-m1-analytics]
 
 permissions:
   contents: write
 
 jobs:
-  apply:
-    name: Apply and verify M1-B implementation
+  recover:
+    name: Recover and verify merged M1-B baseline
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
-      - name: Verify and apply reviewed patch
+      - name: Verify and apply the authenticated M1-B patch
         shell: bash
         run: |
           set -euo pipefail
@@ -47,27 +47,23 @@ jobs:
             .github/m1b-patch.part-01-3 \
             .github/m1b-patch.part-02 \
             .github/workflows/m1b-apply-implementation.yml \
+            .github/workflows/m1c-workspace-export.yml \
             packages/router-core/tests/memory/test_m1b_contract_red.py
           git diff --check
-      - name: Verify M1-B focused tests
+      - name: Verify recovered M1-B
         env:
           PYTHONPATH: packages/router-core/src
         run: |
           python -m unittest discover -s packages/router-core/tests/memory -p "test_*.py" -v
           python -m unittest discover -s packages/router-core/tests/cli -p "test_memory_remember_cli.py" -v
           python -m unittest discover -s packages/router-core/tests/schemas -p "test_schema_documents.py" -v
-      - name: Verify complete Router Core and deterministic runtime
-        env:
-          PYTHONPATH: packages/router-core/src
-        run: |
-          python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v
           python plugins/workflow-skill-router/scripts/build-runtime.py --check
-      - name: Commit and push implementation
+      - name: Commit and push recovered baseline
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'feat(memory): complete M1-B workflow observations'
-          git push origin HEAD:codex/memory-m1-observations
+          git commit -m 'fix(memory): materialize merged M1-B implementation'
+          git push origin HEAD:codex/memory-m1-analytics
