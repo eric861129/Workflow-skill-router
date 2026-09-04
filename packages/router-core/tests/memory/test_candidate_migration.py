@@ -27,7 +27,7 @@ class CandidateMigrationTests(unittest.TestCase):
                 self.assertIn("workflow_candidates", tables)
                 self.assertIn("candidate_suppressions", tables)
                 versions = [row[0] for row in connection.execute("SELECT version FROM memory_schema_migrations ORDER BY version")]
-                self.assertEqual([1, 2, 3, 4, 5], versions)
+                self.assertEqual([1, 2, 3, 4, 5, 6], versions)
 
 
 if __name__ == "__main__":

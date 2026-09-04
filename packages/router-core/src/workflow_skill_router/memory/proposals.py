@@ -176,11 +176,14 @@ def decode_profile_update_proposal(value: object) -> ProfileUpdateProposal:
     return proposal
 
 
-def create_profile_update_proposal(
+def create_profile_update_proposal_from_document(
     store,
     candidate: WorkflowCandidate,
     *,
     current_profile: RoutingPreferenceProfile | None,
+    proposed_profile_document: Mapping[str, object],
+    target_profile_class: str,
+    workspace_identity_digest: str | None,
     policy: EffectiveMemoryPolicy,
     now: str,
     ttl_days: int = 7,
@@ -189,15 +192,16 @@ def create_profile_update_proposal(
         raise TypeError("candidate must be WorkflowCandidate")
     if candidate.status != "proposed":
         raise ProfileProposalError("candidate-not-proposed")
-    if candidate.target_profile_class not in policy.allowed_targets:
+    if target_profile_class not in policy.allowed_targets:
         raise ProfileProposalError("proposal-target-not-allowed")
     if policy.profile_promotion == "disabled":
         raise ProfileProposalError("profile-promotion-disabled")
-    proposed_doc = build_profile_document(candidate, current_profile)
-    proposed = decode_routing_profile(proposed_doc, expected_scope=candidate.scope.value)
+    expected_scope = "personal" if target_profile_class in {"managed-personal", "user-personal"} else "workspace"
+    proposed = decode_routing_profile(proposed_profile_document, expected_scope=expected_scope)
     lint_errors = tuple(item for item in lint_profile(proposed) if item.severity == "error")
     if lint_errors:
         raise ProfileProposalError("profile-lint-failed")
+    proposed_doc = profile_document(proposed) or {}
     diff: SemanticProfileDiff = diff_profiles(current_profile, proposed_doc)
     observations = tuple(store.list_route_observations())
     current_profiles = () if current_profile is None else (current_profile,)
@@ -208,7 +212,7 @@ def create_profile_update_proposal(
     immutable: dict[str, object] = {
         "candidate_id": candidate.candidate_id,
         "candidate_digest": candidate.candidate_digest,
-        "target_profile_class": candidate.target_profile_class,
+        "target_profile_class": target_profile_class,
         "expected_profile_digest": "missing" if current_profile is None else current_profile.profile_digest,
         "proposed_profile_digest": _digest(proposed_doc),
         "proposed_profile": proposed_doc,
@@ -217,7 +221,7 @@ def create_profile_update_proposal(
         "backtest": backtest.to_dict(),
         "backtest_digest": backtest.backtest_digest,
         "policy_digest": policy.policy_digest,
-        "workspace_identity_digest": candidate.workspace_identity_digest,
+        "workspace_identity_digest": workspace_identity_digest,
         "created_at": _time(created),
         "expires_at": _time(created + timedelta(days=ttl_days)),
     }
@@ -227,6 +231,29 @@ def create_profile_update_proposal(
         status="pending", state_version=1, **immutable,  # type: ignore[arg-type]
     )
     return store.save_profile_update_proposal(proposal)
+
+
+def create_profile_update_proposal(
+    store,
+    candidate: WorkflowCandidate,
+    *,
+    current_profile: RoutingPreferenceProfile | None,
+    policy: EffectiveMemoryPolicy,
+    now: str,
+    ttl_days: int = 7,
+) -> ProfileUpdateProposal:
+    proposed_doc = build_profile_document(candidate, current_profile)
+    return create_profile_update_proposal_from_document(
+        store,
+        candidate,
+        current_profile=current_profile,
+        proposed_profile_document=proposed_doc,
+        target_profile_class=candidate.target_profile_class,
+        workspace_identity_digest=candidate.workspace_identity_digest,
+        policy=policy,
+        now=now,
+        ttl_days=ttl_days,
+    )
 
 
 def transition_profile_update(
@@ -268,5 +295,6 @@ def transition_profile_update(
 
 __all__ = [
     "ProfileProposalError", "ProfileUpdateProposal", "create_profile_update_proposal",
+    "create_profile_update_proposal_from_document",
     "decode_profile_update_proposal", "transition_profile_update",
 ]

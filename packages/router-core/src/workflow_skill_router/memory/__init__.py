@@ -54,8 +54,19 @@ from .proposals import (
     ProfileProposalError,
     ProfileUpdateProposal,
     create_profile_update_proposal,
+    create_profile_update_proposal_from_document,
     decode_profile_update_proposal,
     transition_profile_update,
+)
+from .materializer import ProfileMaterializationError, ProfileMaterializer
+from .revisions import (
+    ProfileRevision,
+    ProfileRevisionError,
+    ProfileRevisionStore,
+    ProfileTarget,
+    ProfileWriteAuthority,
+    create_profile_revision,
+    decode_profile_revision,
 )
 from .safe_yaml import parse_safe_yaml
 from .workflow_reader import (
@@ -109,6 +120,16 @@ __all__ = [
     "diff_profiles",
     "backtest_profile_update",
     "create_profile_update_proposal",
+    "create_profile_update_proposal_from_document",
+    "ProfileMaterializationError",
+    "ProfileMaterializer",
+    "ProfileRevision",
+    "ProfileRevisionError",
+    "ProfileRevisionStore",
+    "ProfileTarget",
+    "ProfileWriteAuthority",
+    "create_profile_revision",
+    "decode_profile_revision",
     "decode_profile_update_proposal",
     "transition_profile_update",
     "CandidateError",
