@@ -8,6 +8,19 @@ import re
 
 from workflow_skill_router.schemas.artifacts import canonical_json
 
+from .analytics import (
+    HistorySummary,
+    HistorySummaryQuery,
+    PurgeMemoryCommand,
+    PurgeMemoryResult,
+    RetentionResult,
+)
+from .feedback import (
+    RecordRouteFeedbackCommand,
+    RecordRouteFeedbackResult,
+    RouteFeedback,
+    RouteFeedbackError,
+)
 from .observations import (
     MatcherSeed,
     build_route_observation,
@@ -217,6 +230,268 @@ class WorkflowMemoryService:
             )
             return RememberWorkflowResult.from_dict(stored, replayed=replayed)
 
+
+
+    def _effective_policy(self, workspace_root: Path | None = None):
+        repository = MemoryPolicyRepository(self._data_dir)
+        personal = repository.inspect_personal()
+        workspace = None if workspace_root is None else repository.inspect_workspace(workspace_root)
+        return repository, resolve_effective_policy(personal=personal, workspace=workspace)
+
+    def open_store_for_current_policy(
+        self,
+        workspace_root: Path | None = None,
+    ) -> MemoryStore | None:
+        repository, effective = self._effective_policy(workspace_root)
+        if not effective.capture_enabled:
+            return None
+        return MemoryStore.open_if_enabled(self._data_dir, effective)
+
+    def record_route_feedback(
+        self,
+        command: RecordRouteFeedbackCommand,
+    ) -> RecordRouteFeedbackResult:
+        if not isinstance(command, RecordRouteFeedbackCommand):
+            raise TypeError("command must be RecordRouteFeedbackCommand")
+        repository, effective = self._effective_policy(command.workspace_root)
+        if not effective.capture_enabled or effective.policy.features.route_feedback.mode == "disabled":
+            return RecordRouteFeedbackResult(
+                status="memory-disabled",
+                feedback_id=None,
+                feedback_digest=None,
+                observation_id=command.observation_id,
+                policy_digest=effective.policy_digest,
+                reason_codes=effective.reason_codes or ("memory-disabled",),
+                replayed=False,
+            )
+        if (
+            command.reason_code is not None
+            and not effective.policy.features.route_feedback.allow_standard_reason_codes
+        ):
+            raise RouteFeedbackError("reason-code-not-authorized")
+        if command.free_text is not None and not (
+            effective.policy.privacy.free_text_feedback == "explicit-opt-in"
+            and effective.policy.features.route_feedback.allow_free_text
+        ):
+            raise RouteFeedbackError("free-text-not-authorized")
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            return RecordRouteFeedbackResult(
+                status="memory-disabled",
+                feedback_id=None,
+                feedback_digest=None,
+                observation_id=command.observation_id,
+                policy_digest=effective.policy_digest,
+                reason_codes=("memory-disabled",),
+                replayed=False,
+            )
+        with store:
+            observation = store.load_route_observation(command.observation_id)
+            if observation is None:
+                raise RouteFeedbackError("feedback-observation-not-found")
+            try:
+                workflow = CompletedWorkflowReader(self._operational_database).read(
+                    command.context, command.workflow_run_id
+                )
+            except WorkflowReadError as error:
+                raise RouteFeedbackError("feedback-workflow-context-mismatch") from error
+            if workflow.workflow_run_digest != observation.workflow_run_digest:
+                raise RouteFeedbackError("feedback-workflow-context-mismatch")
+            if (
+                command.feedback_type == "corrected"
+                and command.original_route_digest != observation.route_signature_digest
+            ):
+                raise RouteFeedbackError("feedback-original-route-mismatch")
+            feedback = RouteFeedback.create(
+                observation=observation,
+                policy_snapshot=store.current_policy_snapshot,
+                context=command.context,
+                feedback_type=command.feedback_type,
+                reason_code=command.reason_code,
+                correction_dimensions=command.correction_dimensions,
+                original_route_digest=command.original_route_digest,
+                corrected_route_digest=command.corrected_route_digest,
+                free_text=command.free_text,
+                recorded_at=_utc_now(),
+            )
+            result = RecordRouteFeedbackResult(
+                status="recorded",
+                feedback_id=feedback.feedback_id,
+                feedback_digest=feedback.feedback_digest,
+                observation_id=feedback.observation_id,
+                policy_digest=effective.policy_digest,
+                reason_codes=(),
+                replayed=False,
+            )
+            command_digest = _digest({
+                "command": command.digest_document(),
+                "effective_policy_digest": effective.policy_digest,
+                "policy_snapshot_id": store.current_policy_snapshot.snapshot_id,
+                "observation_digest": observation.observation_digest,
+            })
+            stored, replayed = store.record_route_feedback(
+                feedback_document=feedback.to_dict(),
+                result_document=result.to_dict(),
+                idempotency_key=command.idempotency_key,
+                command_digest=command_digest,
+            )
+            return RecordRouteFeedbackResult.from_dict(stored, replayed=replayed)
+
+    def history_summary(self, query: HistorySummaryQuery) -> HistorySummary:
+        if not isinstance(query, HistorySummaryQuery):
+            raise TypeError("query must be HistorySummaryQuery")
+        repository, effective = self._effective_policy(None)
+        if not effective.capture_enabled or not repository.memory_store_exists():
+            return HistorySummary.empty()
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            return HistorySummary.empty()
+        with store:
+            observations = tuple(
+                item for item in store.list_route_observations()
+                if (
+                    query.workspace_identity_digest is None
+                    or item.workspace_identity_digest == query.workspace_identity_digest
+                )
+                and (
+                    query.route_signature_digest is None
+                    or item.route_signature_digest == query.route_signature_digest
+                )
+            )
+            observation_ids = {item.observation_id for item in observations}
+            feedback = tuple(
+                item for item in store.list_route_feedback()
+                if item.observation_id in observation_ids
+            )
+            return HistorySummary.create(observations, feedback)
+
+    def export_history(
+        self,
+        query: HistorySummaryQuery,
+        *,
+        include_observations: bool = False,
+    ) -> str:
+        summary = self.history_summary(query)
+        repository, effective = self._effective_policy(None)
+        observations: list[dict[str, object]] = []
+        if include_observations and effective.capture_enabled and repository.memory_store_exists():
+            store = MemoryStore.open_if_enabled(self._data_dir, effective)
+            if store is not None:
+                with store:
+                    observations = [
+                        item.to_dict()
+                        for item in store.list_route_observations()
+                        if (
+                            query.workspace_identity_digest is None
+                            or item.workspace_identity_digest == query.workspace_identity_digest
+                        )
+                        and (
+                            query.route_signature_digest is None
+                            or item.route_signature_digest == query.route_signature_digest
+                        )
+                    ]
+        document = {
+            "schema_id": "workflow-skill-router/history-export",
+            "schema_version": "1.0.0",
+            "artifact_kind": "history-export",
+            "summary": summary.to_dict(),
+            "observations": observations,
+            "feedback_included": False,
+        }
+        exported = canonical_json(document)
+        forbidden = (
+            "raw_prompt",
+            "raw_objective",
+            "reported_outcome",
+            "file_content",
+            "tool_arguments",
+            "secrets",
+            '"free_text"',
+            str(self._data_dir.absolute()),
+        )
+        if any(item and item in exported for item in forbidden):
+            raise MemoryStoreError("memory-history-export-redaction-failed")
+        return exported
+
+    def enforce_retention(self, *, now: str | None = None) -> RetentionResult:
+        repository, effective = self._effective_policy(None)
+        applied_at = _utc_now() if now is None else now
+        if not effective.capture_enabled or not repository.memory_store_exists():
+            return RetentionResult(0, 0, 0, applied_at)
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            return RetentionResult(0, 0, 0, applied_at)
+        with store:
+            counts = store.enforce_retention(
+                retention_days=effective.policy.storage.retention_days,
+                max_observations=effective.policy.storage.max_observations,
+                now=applied_at,
+            )
+        return RetentionResult(
+            deleted_observations=counts["deleted_observations"],
+            deleted_feedback=counts["deleted_feedback"],
+            remaining_observations=counts["remaining_observations"],
+            applied_at=applied_at,
+        )
+
+    def purge_memory(self, command: PurgeMemoryCommand) -> PurgeMemoryResult:
+        if not isinstance(command, PurgeMemoryCommand):
+            raise TypeError("command must be PurgeMemoryCommand")
+        repository, effective = self._effective_policy(None)
+        if not repository.memory_store_exists():
+            empty = HistorySummary.empty()
+            if command.expected_summary_digest != empty.summary_digest:
+                raise MemoryCommandConflict("stale-summary-digest")
+            return PurgeMemoryResult(
+                status="scope-not-available" if command.scope not in {"history-only", "analytics-only"} else "purged",
+                scope=command.scope,
+                deleted_observations=0,
+                deleted_feedback=0,
+                deleted_command_receipts=0,
+                summary_digest_before=empty.summary_digest,
+                summary_digest_after=empty.summary_digest,
+                replayed=False,
+                reason_codes=("scope-not-available",) if command.scope not in {"history-only", "analytics-only"} else (),
+            )
+        # Purge is an explicit privacy operation and remains available after
+        # capture is disabled. Opening an existing Store never creates paths or
+        # records a new Policy Snapshot.
+        store = (
+            MemoryStore.open_if_enabled(self._data_dir, effective)
+            if effective.capture_enabled
+            else MemoryStore.open_existing(self._data_dir)
+        )
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            command_digest = _digest({
+                "command": command.digest_document(),
+                "policy_snapshot_id": store.current_policy_snapshot.snapshot_id,
+            })
+            existing = store.load_admin_result(
+                idempotency_key=command.idempotency_key,
+                command_kind="purge-workflow-memory",
+                command_digest=command_digest,
+            )
+            if existing is not None:
+                return PurgeMemoryResult.from_dict(existing, replayed=True)
+            observations = store.list_route_observations()
+            feedback = store.list_route_feedback()
+            current = HistorySummary.create(observations, feedback)
+            if command.expected_summary_digest != current.summary_digest:
+                raise MemoryCommandConflict("stale-summary-digest")
+            empty_digest = HistorySummary.empty().summary_digest
+            stored, replayed = store.execute_purge_command(
+                idempotency_key=command.idempotency_key,
+                command_digest=command_digest,
+                scope=command.scope,
+                summary_digest_before=current.summary_digest,
+                summary_digest_after=empty_digest,
+                managed_profiles_requested=command.include_managed_profiles,
+            )
+            return PurgeMemoryResult.from_dict(stored, replayed=replayed)
+
+
     @staticmethod
     def _persisted_matcher(workflow) -> MatcherSeed | None:
         if workflow.routing_domains or workflow.routing_tags:
@@ -250,7 +525,15 @@ class WorkflowMemoryService:
 
 
 __all__ = [
+    "HistorySummary",
+    "HistorySummaryQuery",
     "MemoryCommandConflict",
+    "PurgeMemoryCommand",
+    "PurgeMemoryResult",
+    "RecordRouteFeedbackCommand",
+    "RecordRouteFeedbackResult",
+    "RetentionResult",
+    "RouteFeedbackError",
     "RememberWorkflowCommand",
     "RememberWorkflowResult",
     "WorkflowMemoryService",

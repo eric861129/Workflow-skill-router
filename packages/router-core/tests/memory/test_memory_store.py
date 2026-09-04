@@ -197,7 +197,7 @@ class MemoryStoreTests(unittest.TestCase):
                     removed,
                 )
                 self.assertEqual(0, store.policy_snapshot_count())
-                self.assertEqual((1, 2), store.applied_migration_versions())
+                self.assertEqual((1, 2, 3), store.applied_migration_versions())
             finally:
                 store.close()
 

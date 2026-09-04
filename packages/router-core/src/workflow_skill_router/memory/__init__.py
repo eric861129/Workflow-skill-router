@@ -2,6 +2,20 @@
 
 from pathlib import Path
 
+from .analytics import (
+    HistorySummary,
+    HistorySummaryQuery,
+    PurgeMemoryCommand,
+    PurgeMemoryResult,
+    RetentionResult,
+)
+from .feedback import (
+    RecordRouteFeedbackCommand,
+    RecordRouteFeedbackResult,
+    RouteFeedback,
+    RouteFeedbackError,
+    decode_route_feedback,
+)
 from .migrator import (
     MemoryMigration,
     MemoryMigrationError,
@@ -62,6 +76,16 @@ def memory_database_path(data_dir: Path) -> Path:
 
 __all__ = [
     "CompletedWorkflowPhase",
+    "decode_route_feedback",
+    "RouteFeedbackError",
+    "RouteFeedback",
+    "RetentionResult",
+    "RecordRouteFeedbackResult",
+    "RecordRouteFeedbackCommand",
+    "PurgeMemoryResult",
+    "PurgeMemoryCommand",
+    "HistorySummaryQuery",
+    "HistorySummary",
     "CompletedWorkflowReader",
     "CompletedWorkflowSnapshot",
     "EffectiveMemoryPolicy",

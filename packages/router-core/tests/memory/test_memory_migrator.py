@@ -24,6 +24,8 @@ EXPECTED_TABLES = {
     "memory_command_receipts",
     "route_observation_documents",
     "memory_command_results",
+    "route_feedback_events",
+    "memory_admin_commands",
 }
 
 
@@ -71,7 +73,11 @@ class MemoryMigratorTests(unittest.TestCase):
             for item in package.iterdir()
             if item.is_file() and item.name.endswith(".sql")
         )
-        self.assertEqual(["0001_observations.sql", "0002_route_observation_documents.sql"], names)
+        self.assertEqual([
+            "0001_observations.sql",
+            "0002_route_observation_documents.sql",
+            "0003_route_feedback_history.sql",
+        ], names)
 
         result = migrate_memory_store(self.database)
 
@@ -99,7 +105,11 @@ class MemoryMigratorTests(unittest.TestCase):
             rows = connection.execute(
                 "SELECT version, name, checksum FROM memory_schema_migrations ORDER BY version"
             ).fetchall()
-        self.assertEqual([(1, "observations"), (2, "route_observation_documents")], [
+        self.assertEqual([
+            (1, "observations"),
+            (2, "route_observation_documents"),
+            (3, "route_feedback_history"),
+        ], [
             (int(row[0]), str(row[1])) for row in rows
         ])
         for row in rows:
@@ -124,7 +134,7 @@ class MemoryMigratorTests(unittest.TestCase):
             count = connection.execute(
                 "SELECT COUNT(*) FROM memory_schema_migrations"
             ).fetchone()[0]
-        self.assertEqual(2, count)
+        self.assertEqual(3, count)
         self.assertEqual(EXPECTED_TABLES, self.table_names())
 
 

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://huangchiyu.com/Workflow-skill-router/schemas/v2/route-feedback.schema.json",
+  "title": "Workflow Skill Router Route Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "artifact_kind", "feedback_id",
+    "feedback_digest", "observation_id", "observation_digest",
+    "workflow_run_digest", "policy_snapshot_id", "policy_digest",
+    "feedback_type", "reason_code", "correction_dimensions",
+    "original_route_digest", "corrected_route_digest", "free_text",
+    "session_digest", "actor_digest", "recorded_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "workflow-skill-router/route-feedback"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_kind": {"const": "route-feedback"},
+    "feedback_id": {"type": "string", "pattern": "^feedback:[0-9a-f]{32}$"},
+    "feedback_digest": {"$ref": "#/$defs/digest"},
+    "observation_id": {"type": "string", "pattern": "^observation:[0-9a-f]{32}$"},
+    "observation_digest": {"$ref": "#/$defs/digest"},
+    "workflow_run_digest": {"$ref": "#/$defs/digest"},
+    "policy_snapshot_id": {"$ref": "#/$defs/digest"},
+    "policy_digest": {"$ref": "#/$defs/digest"},
+    "feedback_type": {
+      "enum": [
+        "accepted", "corrected", "rejected", "support-rejected",
+        "capability-unavailable", "gate-failed", "completed",
+        "abandoned", "no-memory"
+      ]
+    },
+    "reason_code": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"}
+      ]
+    },
+    "correction_dimensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 7,
+      "items": {
+        "enum": [
+          "work-mode", "phase-order", "primary-skill", "support-skill",
+          "exit-gate", "matcher", "target"
+        ]
+      }
+    },
+    "original_route_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "corrected_route_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "free_text": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1, "maxLength": 2000}]},
+    "session_digest": {"$ref": "#/$defs/digest"},
+    "actor_digest": {"$ref": "#/$defs/digest"},
+    "recorded_at": {"type": "string", "format": "date-time", "maxLength": 40}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}
