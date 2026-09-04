@@ -42,6 +42,21 @@ from .policy_resolver import (
     resolution_steps,
     resolve_effective_policy,
 )
+from .profile_diff import (
+    ProfileDiffError,
+    SemanticDiffEntry,
+    SemanticProfileDiff,
+    build_profile_document,
+    diff_profiles,
+)
+from .backtest import BacktestSummary, backtest_profile_update
+from .proposals import (
+    ProfileProposalError,
+    ProfileUpdateProposal,
+    create_profile_update_proposal,
+    decode_profile_update_proposal,
+    transition_profile_update,
+)
 from .safe_yaml import parse_safe_yaml
 from .workflow_reader import (
     CompletedWorkflowPhase,
@@ -84,6 +99,18 @@ def memory_database_path(data_dir: Path) -> Path:
 
 __all__ = [
     "CandidateEngine",
+    "BacktestSummary",
+    "ProfileDiffError",
+    "SemanticDiffEntry",
+    "SemanticProfileDiff",
+    "ProfileProposalError",
+    "ProfileUpdateProposal",
+    "build_profile_document",
+    "diff_profiles",
+    "backtest_profile_update",
+    "create_profile_update_proposal",
+    "decode_profile_update_proposal",
+    "transition_profile_update",
     "CandidateError",
     "PatternMetrics",
     "WorkflowCandidate",

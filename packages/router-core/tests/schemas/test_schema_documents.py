@@ -16,6 +16,7 @@ EXPECTED_SCHEMA_FILES = {
     "route-feedback.schema.json",
     "workflow-pattern.schema.json",
     "workflow-candidate.schema.json",
+    "profile-update-proposal.schema.json",
 }
 
 
@@ -176,6 +177,20 @@ class SchemaDocumentTests(unittest.TestCase):
             serialized = json.dumps(document, sort_keys=True)
             for forbidden in ("raw_prompt", "raw_objective", "file_content", "tool_arguments", "secrets", "metadata_json"):
                 self.assertNotIn(forbidden, serialized)
+
+
+    def test_profile_update_proposal_schema_is_strict_and_redacted(self) -> None:
+        document = json.loads(
+            (SCHEMA_ROOT / "profile-update-proposal.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(False, document["additionalProperties"])
+        self.assertEqual(
+            "workflow-skill-router/profile-update-proposal",
+            document["properties"]["schema_id"]["const"],
+        )
+        serialized = json.dumps(document, sort_keys=True)
+        for forbidden in ("raw_prompt", "raw_objective", "source_path", "file_content", "tool_arguments", "secrets", "metadata_json"):
+            self.assertNotIn(forbidden, serialized)
 
 
 if __name__ == "__main__":
