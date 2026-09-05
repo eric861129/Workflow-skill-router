@@ -103,6 +103,7 @@ class M1CHistoryFixture:
         route_digests: tuple[str, ...] | None = None,
         workspaces: tuple[str | None, ...] | None = None,
         route_sources: tuple[str, ...] | None = None,
+        target_profile_class: str = "managed-personal",
     ) -> tuple[str, ...]:
         plan = self.workflow.plan_single(key="m1c-seed")
         self.workflow.complete(plan)
@@ -137,7 +138,7 @@ class M1CHistoryFixture:
                     workflow,
                     seed,
                     store.current_policy_snapshot,
-                    target_profile_class="managed-personal",
+                    target_profile_class=target_profile_class,
                     risk_class="r1",
                     side_effect_outcome="none",
                     observed_at=dates[index % len(dates)],
@@ -161,7 +162,7 @@ class M1CHistoryFixture:
                     "observation_digest": observation.observation_digest,
                     "route_signature_digest": observation.route_signature_digest,
                     "policy_digest": policy.policy_digest,
-                    "target_profile_class": "managed-personal",
+                    "target_profile_class": target_profile_class,
                     "reason_codes": [],
                     "replayed": False,
                     "candidate_id": None,

@@ -78,6 +78,35 @@ class RoutingProfileStorageTests(unittest.TestCase):
             self.assertEqual(("personal:api-delivery",), tuple(item.profile_id for item in loaded))
             self.assertNotIn("plugins", installed.parts)
 
+    @unittest.skipIf(os.name == "nt", "POSIX ancestor alias contract")
+    def test_personal_directory_accepts_a_canonicalized_ancestor_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            real_parent = root / "real"
+            real_parent.mkdir()
+            alias_parent = root / "alias"
+            try:
+                alias_parent.symlink_to(real_parent, target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"directory symlink creation is unavailable: {error}")
+
+            source = root / "source.json"
+            source.write_text(json.dumps(profile_document()), encoding="utf-8")
+            repository = RoutingProfileRepository(alias_parent / "state")
+
+            installed = repository.install_personal(source)
+            loaded = repository.list_personal()
+
+            self.assertEqual((real_parent / "state").resolve(), repository.data_dir)
+            self.assertEqual(
+                (real_parent / "state/profiles/personal/api-delivery.json").resolve(),
+                installed,
+            )
+            self.assertEqual(
+                ("personal:api-delivery",),
+                tuple(profile.profile_id for profile in loaded),
+            )
+
     def test_workspace_profile_uses_one_fixed_non_symlink_path(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

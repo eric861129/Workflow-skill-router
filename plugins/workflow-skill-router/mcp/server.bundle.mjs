@@ -23846,7 +23846,9 @@ var TOOL_OUTPUT_SCHEMAS = {
     route_source: external_exports3.enum([
       "user-explicit",
       "workspace-profile",
+      "managed-workspace-profile",
       "personal-profile",
+      "managed-personal-profile",
       "builtin-default"
     ]).describe("Source of planned Skill intent, distinct from work-envelope classification."),
     routing_profile_ids: external_exports3.array(external_exports3.string()),

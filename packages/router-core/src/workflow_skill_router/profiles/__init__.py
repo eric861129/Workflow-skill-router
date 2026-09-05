@@ -1,4 +1,4 @@
-"""User-owned deterministic routing profile contracts and resolution."""
+"""Deterministic routing Profile contracts, ownership layers, and resolution."""
 
 from .contract import (
     ProfileMatch,
@@ -8,10 +8,12 @@ from .contract import (
     SkillTreePhase,
     decode_routing_profile,
 )
+from .layers import LayeredRoutingProfile, LoadedProfileLayers, ProfileSourceClass
 from .resolver import (
     ResolvedProfileRoute,
     RoutingMatchContext,
     RoutingProfileResolutionError,
+    resolve_layered_profile_route,
     resolve_profile_route,
 )
 from .atomic_io import (
@@ -27,7 +29,10 @@ __all__ = [
     "atomic_write_canonical_json",
     "current_json_digest",
     "secure_read_json",
+    "LayeredRoutingProfile",
+    "LoadedProfileLayers",
     "ProfileMatch",
+    "ProfileSourceClass",
     "ProfileRoute",
     "ResolvedProfileRoute",
     "RoutingMatchContext",
@@ -39,5 +44,6 @@ __all__ = [
     "decode_routing_profile",
     "default_router_data_dir",
     "load_profile_file",
+    "resolve_layered_profile_route",
     "resolve_profile_route",
 ]

@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from workflow_skill_router.memory.candidates import CandidateEngine
+from workflow_skill_router.memory.managed_profiles import verify_workspace_root
 from workflow_skill_router.memory.materializer import (
     ProfileMaterializationError,
     ProfileMaterializer,
@@ -245,6 +246,75 @@ class ProfileMaterializerTests(unittest.TestCase):
                 self.assertEqual("applied", recovered.status)
                 self.assertEqual(before, target.read_bytes())
                 self.assertEqual(proposal.proposed_profile_digest, current_json_digest(target, fixed_root))
+
+
+    def test_reviewed_managed_workspace_proposal_uses_fixed_digest_scoped_target(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path = root / "config/workflow-memory.json"
+            policy_path.parent.mkdir(parents=True, exist_ok=True)
+            policy_path.write_text(
+                '{"schema_id":"workflow-skill-router/memory-policy","schema_version":"1.0.0","artifact_kind":"memory-policy","policy_id":"personal:workspace-managed","scope":"personal","mode":"reviewed","features":{"remember_this_workflow":{"default_target":"managed-workspace-local"},"profile_promotion":{"target":"managed-workspace-local"}}}',
+                encoding="utf-8",
+            )
+            fixture = M1CHistoryFixture(root)
+            # The fixture writes its default Policy; restore this test's target.
+            policy_path.write_text(
+                '{"schema_id":"workflow-skill-router/memory-policy","schema_version":"1.0.0","artifact_kind":"memory-policy","policy_id":"personal:workspace-managed","scope":"personal","mode":"reviewed","features":{"remember_this_workflow":{"default_target":"managed-workspace-local"},"profile_promotion":{"target":"managed-workspace-local"}}}',
+                encoding="utf-8",
+            )
+            workspace = root / "workspace"
+            workspace.mkdir()
+            workspace_digest = verify_workspace_root(workspace).digest
+            fixture.insert_observations(
+                count=3,
+                dates=("2026-09-01T00:00:00.000Z", "2026-09-02T00:00:00.000Z"),
+                workspaces=(workspace_digest,) * 3,
+                target_profile_class="managed-workspace-local",
+            )
+            policy = fixture.effective_policy()
+            store = MemoryStore.open_if_enabled(root, policy)
+            assert store is not None
+            with store:
+                candidate = CandidateEngine(store, policy).rebuild(
+                    MemoryScope.WORKSPACE, "2026-09-04T00:00:00.000Z"
+                )[0]
+                proposal = create_profile_update_proposal(
+                    store, candidate, current_profile=None, policy=policy,
+                    now="2026-09-04T00:00:00.000Z",
+                )
+                proposal = transition_profile_update(
+                    store, proposal.proposal_id, action="approve",
+                    expected_state_version=proposal.state_version,
+                    idempotency_key="approve-workspace-managed",
+                    correlation_id="corr-approve-workspace-managed",
+                )
+                materializer = ProfileMaterializer(store, root, policy)
+                revision = materializer.apply_approved(
+                    proposal.proposal_id,
+                    authority=ProfileWriteAuthority.router_local_managed(
+                        "developer", "session-m3a"
+                    ),
+                    expected_state_version=proposal.state_version,
+                    idempotency_key="apply-workspace-managed",
+                    correlation_id="corr-apply-workspace-managed",
+                    now="2026-09-04T00:10:00.000Z",
+                )
+                target, fixed_root = materializer.target_path(
+                    proposal,
+                    ProfileWriteAuthority.router_local_managed(
+                        "developer", "session-m3a"
+                    ),
+                )
+                self.assertEqual("applied", revision.status)
+                self.assertEqual(
+                    root / "profiles/managed/workspace"
+                    / workspace_digest.removeprefix("sha256:")
+                    / "adaptive-memory.json",
+                    target,
+                )
+                self.assertEqual(root, fixed_root)
+                self.assertEqual("workspace", secure_read_json(target, root)["scope"])
 
 
 if __name__ == "__main__":

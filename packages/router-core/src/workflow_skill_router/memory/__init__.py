@@ -58,6 +58,13 @@ from .proposals import (
     decode_profile_update_proposal,
     transition_profile_update,
 )
+from .managed_profiles import (
+    ManagedProfilePathError,
+    VerifiedWorkspaceIdentity,
+    managed_personal_profile_path,
+    managed_workspace_profile_path,
+    verify_workspace_root,
+)
 from .materializer import ProfileMaterializationError, ProfileMaterializer
 from .revisions import (
     ProfileRevision,
@@ -152,6 +159,11 @@ __all__ = [
     "CompletedWorkflowSnapshot",
     "EffectiveMemoryPolicy",
     "MEMORY_DATABASE_NAME",
+    "ManagedProfilePathError",
+    "VerifiedWorkspaceIdentity",
+    "managed_personal_profile_path",
+    "managed_workspace_profile_path",
+    "verify_workspace_root",
     "MemoryMigration",
     "MemoryMigrationError",
     "MatcherSeed",
