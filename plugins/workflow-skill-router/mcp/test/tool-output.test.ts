@@ -271,3 +271,43 @@ test("success schemas reject invented wrapper fields", () => {
     artifact_kind: "invented",
   }).success, false);
 });
+
+
+test("managed profile route sources are accepted as planning intent", () => {
+  const base = {
+    status: "planned-local-control",
+    workflow_run_id: "workflow:managed",
+    work_graph_id: "work-graph:managed",
+    created_work_items: 1,
+    routing_envelope: "phased",
+    selection_mode: "auto",
+    support_consent_required: false,
+    planned_skill_ids: ["skill:api-designer"],
+    runtime_mode: "mcp-local-control-plane",
+    routing_profile_ids: ["personal:adaptive-memory"],
+    routing_profile_digest: `sha256:${"a".repeat(64)}`,
+    matched_profile_rule_id: "memory-api",
+    planned_skill_tree: [{
+      phase_id: "contract",
+      primary_skill_id: "skill:api-designer",
+      support_skill_ids: [],
+      exit_gate: "contract-reviewed",
+    }],
+    activation_status: "intended-unverified",
+    profile_warnings: [],
+    classification: {
+      source: "profile-route",
+      confidence: "low",
+      classifier_revision: "deterministic-objective-v1",
+      reason_codes: ["single-default"],
+    },
+  };
+  for (const route_source of [
+    "managed-workspace-profile",
+    "managed-personal-profile",
+  ]) {
+    assert.equal(TOOL_OUTPUT_SCHEMAS.plan_work.safeParse({
+      ...base, route_source,
+    }).success, true);
+  }
+});

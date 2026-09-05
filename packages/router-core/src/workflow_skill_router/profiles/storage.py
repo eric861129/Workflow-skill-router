@@ -10,12 +10,18 @@ from typing import Any
 
 from workflow_skill_router.schemas.artifacts import canonical_json
 
-from .atomic_io import ProfileIOError, atomic_write_canonical_json, current_json_digest
+from .atomic_io import (
+    ProfileIOError,
+    atomic_write_canonical_json,
+    current_json_digest,
+    secure_read_json,
+)
 from .contract import (
     RoutingPreferenceProfile,
     RoutingProfileContractError,
     decode_routing_profile,
 )
+from .layers import LayeredRoutingProfile, LoadedProfileLayers, ProfileSourceClass
 
 
 MAX_PROFILE_BYTES = 256 * 1024
@@ -73,10 +79,16 @@ def load_profile_file(path: Path, *, expected_scope: str | None = None) -> Routi
 
 
 class RoutingProfileRepository:
-    """Load user-owned personal and workspace profiles without executing their content."""
+    """Load user-owned and Router-managed Profiles without executing content."""
 
     def __init__(self, data_dir: Path | None = None) -> None:
-        self.data_dir = (data_dir or default_router_data_dir()).expanduser().resolve()
+        candidate = Path(data_dir or default_router_data_dir()).expanduser()
+        lexical_data_dir = Path(os.path.abspath(candidate))
+        if _is_reparse_or_symlink(lexical_data_dir):
+            raise RoutingProfileContractError(
+                "Router data directory cannot be a link or reparse point"
+            )
+        self.data_dir = lexical_data_dir.resolve()
         self.personal_dir = self.data_dir / "profiles/personal"
 
     def _ensure_personal_directory(self) -> None:
@@ -153,21 +165,130 @@ class RoutingProfileRepository:
             raise RoutingProfileContractError("personal profile_id must be unique across files")
         return profiles
 
+    def _load_managed(
+        self,
+        path: Path,
+        *,
+        expected_scope: str,
+        expected_profile_id: str,
+    ) -> tuple[RoutingPreferenceProfile | None, bool]:
+        try:
+            document = secure_read_json(path, self.data_dir, MAX_PROFILE_BYTES)
+            if document is None:
+                return None, False
+            profile = decode_routing_profile(document, expected_scope=expected_scope)
+            if profile.profile_id != expected_profile_id:
+                return None, True
+            return profile, False
+        except (ProfileIOError, RoutingProfileContractError, OSError, ValueError):
+            return None, True
+
+    def load_ranked_layers(self, *, workspace_root: Path | None) -> LoadedProfileLayers:
+        from workflow_skill_router.memory.managed_profiles import (
+            ManagedProfilePathError,
+            managed_personal_profile_path,
+            managed_workspace_profile_path,
+            verify_workspace_root,
+        )
+
+        user_personal = self.list_personal()
+        managed_personal_path = managed_personal_profile_path(self.data_dir)
+        managed_personal, managed_personal_invalid = self._load_managed(
+            managed_personal_path,
+            expected_scope="personal",
+            expected_profile_id="personal:adaptive-memory",
+        )
+        warnings: list[str] = []
+        if managed_personal_invalid:
+            warnings.append("managed-profile-invalid")
+
+        workspace_identity = None
+        user_workspace = None
+        managed_workspace = None
+        if workspace_root is not None:
+            try:
+                workspace_identity = verify_workspace_root(workspace_root)
+            except ManagedProfilePathError as error:
+                raise RoutingProfileContractError(str(error)) from error
+            profile_path = workspace_identity.root / WORKSPACE_PROFILE_PATH
+            if _is_reparse_or_symlink(profile_path):
+                raise RoutingProfileContractError(
+                    "workspace profile cannot be a link or reparse point"
+                )
+            if profile_path.exists():
+                resolved = profile_path.resolve()
+                try:
+                    resolved.relative_to(workspace_identity.root)
+                except ValueError as error:
+                    raise RoutingProfileContractError(
+                        "workspace profile escaped workspace_root"
+                    ) from error
+                user_workspace = load_profile_file(
+                    resolved, expected_scope="workspace"
+                )
+            managed_workspace_path = managed_workspace_profile_path(
+                self.data_dir, workspace_identity.digest
+            )
+            managed_workspace, managed_workspace_invalid = self._load_managed(
+                managed_workspace_path,
+                expected_scope="workspace",
+                expected_profile_id="workspace:adaptive-memory",
+            )
+            if managed_workspace_invalid:
+                warnings.append("managed-profile-invalid")
+
+        layers: list[LayeredRoutingProfile] = []
+        if user_workspace is not None:
+            layers.append(LayeredRoutingProfile(
+                user_workspace, ProfileSourceClass.USER_WORKSPACE,
+                user_workspace.profile_digest, workspace_identity.digest,
+            ))
+        if managed_workspace is not None:
+            layers.append(LayeredRoutingProfile(
+                managed_workspace, ProfileSourceClass.MANAGED_WORKSPACE,
+                managed_workspace.profile_digest, workspace_identity.digest,
+            ))
+        layers.extend(
+            LayeredRoutingProfile(
+                profile, ProfileSourceClass.USER_PERSONAL,
+                profile.profile_digest, None,
+            )
+            for profile in user_personal
+        )
+        if managed_personal is not None:
+            layers.append(LayeredRoutingProfile(
+                managed_personal, ProfileSourceClass.MANAGED_PERSONAL,
+                managed_personal.profile_digest, None,
+            ))
+        return LoadedProfileLayers(
+            tuple(sorted(layers, key=lambda item: item.rank)),
+            tuple(dict.fromkeys(warnings)),
+            None if workspace_identity is None else workspace_identity.digest,
+        )
+
     def load_layers(self, *, workspace_root: Path | None) -> tuple[RoutingPreferenceProfile, ...]:
+        # Legacy public API intentionally remains user-owned-only. Managed layers
+        # are loaded only through load_ranked_layers so existing callers do not
+        # silently change ownership semantics.
         profiles = list(self.list_personal())
         if workspace_root is None:
             return tuple(profiles)
-        root = workspace_root.expanduser().resolve()
-        if not root.is_dir():
-            raise RoutingProfileContractError("workspace_root must be an existing directory")
-        profile_path = root / WORKSPACE_PROFILE_PATH
+        from workflow_skill_router.memory.managed_profiles import (
+            ManagedProfilePathError,
+            verify_workspace_root,
+        )
+        try:
+            identity = verify_workspace_root(workspace_root)
+        except ManagedProfilePathError as error:
+            raise RoutingProfileContractError(str(error)) from error
+        profile_path = identity.root / WORKSPACE_PROFILE_PATH
         if _is_reparse_or_symlink(profile_path):
             raise RoutingProfileContractError("workspace profile cannot be a link or reparse point")
         if not profile_path.exists():
             return tuple(profiles)
         resolved = profile_path.resolve()
         try:
-            resolved.relative_to(root)
+            resolved.relative_to(identity.root)
         except ValueError as error:
             raise RoutingProfileContractError("workspace profile escaped workspace_root") from error
         profiles.append(load_profile_file(resolved, expected_scope="workspace"))

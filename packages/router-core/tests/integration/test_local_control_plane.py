@@ -528,5 +528,77 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertFalse(status.host_goal_mutated)
 
 
+    def test_managed_personal_profile_routes_when_no_user_profile_matches(self) -> None:
+        profile = {
+            "schema_id": "workflow-skill-router/routing-profile",
+            "schema_version": "1.0.0",
+            "artifact_kind": "routing-profile",
+            "profile_id": "personal:adaptive-memory",
+            "scope": "personal",
+            "enabled": True,
+            "rules": [{
+                "rule_id": "memory-api",
+                "priority": 1000,
+                "match": {
+                    "objective_keywords": ["api"],
+                    "domains": ["api"],
+                    "tags": [],
+                    "work_modes": ["phased"],
+                },
+                "route": {
+                    "work_mode": "phased",
+                    "skill_tree": [{
+                        "phase_id": "contract",
+                        "primary_skill_id": "skill:managed-api",
+                        "support_skill_ids": [],
+                        "exit_gate": "contract-reviewed",
+                    }],
+                },
+            }],
+        }
+        target = self.database.parent / "profiles/managed/personal/adaptive-memory.json"
+        target.parent.mkdir(parents=True)
+        target.write_text(json.dumps(profile), encoding="utf-8")
+
+        result = self.service.plan_work(self.command(
+            objective="Build the API", requested_work_mode="phased",
+            idempotency_key="managed-personal-route",
+            routing_context=RoutingContextInput(domains=("api",)),
+        ))
+
+        self.assertEqual("managed-personal-profile", result.route_source)
+        self.assertEqual(("skill:managed-api",), result.planned_skill_ids)
+        self.assertEqual((), result.profile_warnings)
+
+    def test_explicit_skill_bypasses_corrupt_managed_profile(self) -> None:
+        target = self.database.parent / "profiles/managed/personal/adaptive-memory.json"
+        target.parent.mkdir(parents=True)
+        target.write_text("{not-json", encoding="utf-8")
+
+        result = self.service.plan_work(self.command(
+            explicit_skill_ids=("skill:user-choice",),
+            explicit_semantics="only",
+            idempotency_key="explicit-bypasses-managed",
+        ))
+
+        self.assertEqual("user-explicit", result.route_source)
+        self.assertEqual(("skill:user-choice",), result.planned_skill_ids)
+        self.assertEqual((), result.profile_warnings)
+
+
+    def test_corrupt_managed_profile_warns_and_falls_back_without_loading_it(self) -> None:
+        target = self.database.parent / "profiles/managed/personal/adaptive-memory.json"
+        target.parent.mkdir(parents=True)
+        target.write_text("{not-json", encoding="utf-8")
+
+        result = self.service.plan_work(self.command(
+            idempotency_key="corrupt-managed-fallback",
+        ))
+
+        self.assertEqual("builtin-default", result.route_source)
+        self.assertEqual(("managed-profile-invalid",), result.profile_warnings)
+        self.assertEqual((), result.planned_skill_ids)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,11 @@ from workflow_skill_router.profiles.resolver import lint_profile
 from workflow_skill_router.schemas.artifacts import canonical_json
 
 from .backtest import backtest_profile_update
+from .managed_profiles import (
+    ManagedProfilePathError,
+    managed_personal_profile_path,
+    managed_workspace_profile_path,
+)
 from .models import MemoryMode
 from .profile_diff import diff_profiles
 from .proposals import (
@@ -79,10 +84,7 @@ class ProfileMaterializer:
                 raise ProfileMaterializationError("profile-authority-mismatch")
             if profile.scope != "personal":
                 raise ProfileMaterializationError("profile-target-scope-mismatch")
-            return (
-                self.data_dir / "profiles" / "managed" / "personal" / "adaptive-memory.json",
-                self.data_dir,
-            )
+            return managed_personal_profile_path(self.data_dir), self.data_dir
         if target == "user-personal":
             if authority.write_authority != "reviewed-user-local":
                 raise ProfileMaterializationError("profile-authority-mismatch")
@@ -91,7 +93,19 @@ class ProfileMaterializer:
             name = profile.profile_id.split(":", 1)[1]
             return self.data_dir / "profiles" / "personal" / f"{name}.json", self.data_dir
         if target == "managed-workspace-local":
-            raise ProfileMaterializationError("target-not-available")
+            if authority.write_authority != "router-local-managed":
+                raise ProfileMaterializationError("profile-authority-mismatch")
+            if profile.scope != "workspace" or proposal.workspace_identity_digest is None:
+                raise ProfileMaterializationError("profile-target-scope-mismatch")
+            try:
+                return (
+                    managed_workspace_profile_path(
+                        self.data_dir, proposal.workspace_identity_digest
+                    ),
+                    self.data_dir,
+                )
+            except ManagedProfilePathError as error:
+                raise ProfileMaterializationError(str(error)) from error
         if target == "workspace-file":
             if authority.write_authority != "verified-host-workspace" or authority.workspace_root is None:
                 raise ProfileMaterializationError("profile-authority-mismatch")

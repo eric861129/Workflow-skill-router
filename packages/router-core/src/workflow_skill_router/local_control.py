@@ -28,7 +28,10 @@ from workflow_skill_router.persistence.sqlite_store import (
     IdempotencyConflict,
 )
 from workflow_skill_router.profiles.contract import is_canonical_skill_id
-from workflow_skill_router.profiles.resolver import RoutingMatchContext, resolve_profile_route
+from workflow_skill_router.profiles.resolver import (
+    RoutingMatchContext,
+    resolve_layered_profile_route,
+)
 from workflow_skill_router.profiles.storage import RoutingProfileRepository
 from workflow_skill_router.routing.directives import resolve_directive
 from workflow_skill_router.routing.consent import ConsentPolicyError
@@ -196,11 +199,12 @@ class LocalControlPlaneService:
                 if routing_context.workspace_root is None
                 else Path(routing_context.workspace_root)
             )
-            profiles = RoutingProfileRepository(self._database.parent).load_layers(
-                workspace_root=workspace_root
-            )
-            resolved = resolve_profile_route(
-                profiles,
+            loaded_layers = RoutingProfileRepository(
+                self._database.parent
+            ).load_ranked_layers(workspace_root=workspace_root)
+            profile_warnings = loaded_layers.warnings
+            resolved = resolve_layered_profile_route(
+                loaded_layers.layers,
                 objective=objective,
                 default_work_mode=routing_envelope,
                 context=RoutingMatchContext(

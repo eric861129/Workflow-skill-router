@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .contract import RoutingPreferenceProfile, RoutingProfileRule, SkillTreePhase
+from .layers import LayeredRoutingProfile, ProfileSourceClass
 
 
 class RoutingProfileResolutionError(ValueError):
@@ -341,15 +342,16 @@ def lint_profile(
     return tuple(issues)
 
 
-def resolve_profile_route(
-    profiles: tuple[RoutingPreferenceProfile, ...],
+def resolve_layered_profile_route(
+    layers: tuple[LayeredRoutingProfile, ...],
     *,
     objective: str,
     default_work_mode: str,
     context: RoutingMatchContext,
 ) -> ResolvedProfileRoute | None:
-    candidates: list[tuple[RoutingPreferenceProfile, RoutingProfileRule]] = []
-    for profile in profiles:
+    candidates: list[tuple[LayeredRoutingProfile, RoutingProfileRule]] = []
+    for layer in layers:
+        profile = layer.profile
         if not profile.enabled:
             continue
         for rule in profile.rules:
@@ -359,20 +361,21 @@ def resolve_profile_route(
                 work_mode=default_work_mode,
                 context=context,
             ):
-                candidates.append((profile, rule))
+                candidates.append((layer, rule))
     if not candidates:
         return None
 
-    profile, rule = min(
+    layer, rule = min(
         candidates,
         key=lambda candidate: (
-            -(2 if candidate[0].scope == "workspace" else 1),
+            candidate[0].rank,
             -candidate[1].priority,
             -candidate[1].match.specificity,
-            candidate[0].profile_id,
+            candidate[0].profile.profile_id,
             candidate[1].rule_id,
         ),
     )
+    profile = layer.profile
     tree = rule.route.skill_tree
     if context.current_phase_id is None:
         current = tree[0]
@@ -386,7 +389,7 @@ def resolve_profile_route(
                 f"current phase {context.current_phase_id!r} is absent from matched profile"
             )
     return ResolvedProfileRoute(
-        route_source=f"{profile.scope}-profile",
+        route_source=layer.route_source,
         profile_id=profile.profile_id,
         applied_profile_ids=(profile.profile_id,),
         profile_digest=profile.profile_digest,
@@ -399,4 +402,37 @@ def resolve_profile_route(
         matched_objective_keywords=rule.match.objective_keywords,
         matched_domains=rule.match.domains,
         matched_tags=rule.match.tags,
+    )
+
+
+def resolve_profile_route(
+    profiles: tuple[RoutingPreferenceProfile, ...],
+    *,
+    objective: str,
+    default_work_mode: str,
+    context: RoutingMatchContext,
+) -> ResolvedProfileRoute | None:
+    # Compatibility wrapper: old callers contain only user-owned layers. A
+    # valid opaque digest is sufficient because legacy resolution never uses
+    # Workspace identity for matching or authority.
+    layers = tuple(
+        LayeredRoutingProfile(
+            profile=profile,
+            source_class=(
+                ProfileSourceClass.USER_WORKSPACE
+                if profile.scope == "workspace"
+                else ProfileSourceClass.USER_PERSONAL
+            ),
+            source_digest=profile.profile_digest,
+            workspace_identity_digest=(
+                profile.profile_digest if profile.scope == "workspace" else None
+            ),
+        )
+        for profile in profiles
+    )
+    return resolve_layered_profile_route(
+        layers,
+        objective=objective,
+        default_work_mode=default_work_mode,
+        context=context,
     )

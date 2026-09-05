@@ -190,7 +190,8 @@ export const TOOL_OUTPUT_SCHEMAS = {
     ),
     runtime_mode: z.string(),
     route_source: z.enum([
-      "user-explicit", "workspace-profile", "personal-profile", "builtin-default",
+      "user-explicit", "workspace-profile", "managed-workspace-profile",
+      "personal-profile", "managed-personal-profile", "builtin-default",
     ]).describe("Source of planned Skill intent, distinct from work-envelope classification."),
     routing_profile_ids: z.array(z.string()),
     routing_profile_digest: sha256Digest.nullable(),
