@@ -33,6 +33,7 @@ def write_feedback_policy(
     retention_days: int = 90,
     max_observations: int = 1000,
     allow_free_text: bool = False,
+    promotion_target: str | None = None,
 ) -> None:
     policy_dir = data_dir / "config"
     policy_dir.mkdir(parents=True, exist_ok=True)
@@ -48,11 +49,14 @@ def write_feedback_policy(
             "max_observations": max_observations,
         },
     }
+    features: dict[str, object] = {}
     if allow_free_text:
         document["privacy"] = {"free_text_feedback": "explicit-opt-in"}
-        document["features"] = {
-            "route_feedback": {"allow_free_text": True},
-        }
+        features["route_feedback"] = {"allow_free_text": True}
+    if promotion_target is not None:
+        features["profile_promotion"] = {"target": promotion_target}
+    if features:
+        document["features"] = features
     (policy_dir / "workflow-memory.json").write_text(
         json.dumps(document), encoding="utf-8"
     )
@@ -104,6 +108,11 @@ class M1CHistoryFixture:
         workspaces: tuple[str | None, ...] | None = None,
         route_sources: tuple[str, ...] | None = None,
         target_profile_class: str = "managed-personal",
+        matcher_source: str = "user-explicit",
+        risk_class: str = "r1",
+        side_effect_outcome: str = "none",
+        required_gates_passed: bool = True,
+        primary_skill_id: str | None = None,
     ) -> tuple[str, ...]:
         plan = self.workflow.plan_single(key="m1c-seed")
         self.workflow.complete(plan)
@@ -111,7 +120,7 @@ class M1CHistoryFixture:
             self.memory_context, plan.workflow_run_id
         )
         policy = self.effective_policy()
-        seed = MatcherSeed(("student api",), ("api",), (), "user-explicit")
+        seed = MatcherSeed(("student api",), ("api",), (), matcher_source)
         ids: list[str] = []
         store = MemoryStore.open_if_enabled(self.root, policy)
         assert store is not None
@@ -122,6 +131,12 @@ class M1CHistoryFixture:
                     if route_sources is not None
                     else completed.route_source
                 )
+                phases = completed.phases
+                if primary_skill_id is not None:
+                    phases = tuple(
+                        replace(phase, primary_skill_id=primary_skill_id)
+                        for phase in phases
+                    )
                 workflow = replace(
                     completed,
                     workflow_run_id=f"workflow:m1c:{index}",
@@ -133,14 +148,16 @@ class M1CHistoryFixture:
                         else completed.workspace_identity_digest
                     ),
                     route_source=route_source,
+                    required_gates_passed=required_gates_passed,
+                    phases=phases,
                 )
                 observation = build_route_observation(
                     workflow,
                     seed,
                     store.current_policy_snapshot,
                     target_profile_class=target_profile_class,
-                    risk_class="r1",
-                    side_effect_outcome="none",
+                    risk_class=risk_class,
+                    side_effect_outcome=side_effect_outcome,
                     observed_at=dates[index % len(dates)],
                 )
                 if route_digests is not None:

@@ -187,6 +187,8 @@ def create_profile_update_proposal_from_document(
     policy: EffectiveMemoryPolicy,
     now: str,
     ttl_days: int = 7,
+    manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
+    automatic: bool = False,
 ) -> ProfileUpdateProposal:
     if not isinstance(candidate, WorkflowCandidate):
         raise TypeError("candidate must be WorkflowCandidate")
@@ -205,7 +207,19 @@ def create_profile_update_proposal_from_document(
     diff: SemanticProfileDiff = diff_profiles(current_profile, proposed_doc)
     observations = tuple(store.list_route_observations())
     current_profiles = () if current_profile is None else (current_profile,)
-    backtest: BacktestSummary = backtest_profile_update(current_profiles, proposed, observations, candidate)
+    backtest: BacktestSummary = backtest_profile_update(
+        current_profiles,
+        proposed,
+        observations,
+        candidate,
+        manual_profiles=manual_profiles,
+    )
+    if automatic and target_profile_class not in {
+        "managed-personal", "managed-workspace-local"
+    }:
+        raise ProfileProposalError("automatic-user-profile-write-forbidden")
+    if automatic and backtest.manual_precedence:
+        raise ProfileProposalError("candidate-conflict")
     if not backtest.acceptable:
         raise ProfileProposalError("profile-backtest-failed")
     created = _parse_time(now)
@@ -241,6 +255,8 @@ def create_profile_update_proposal(
     policy: EffectiveMemoryPolicy,
     now: str,
     ttl_days: int = 7,
+    manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
+    automatic: bool = False,
 ) -> ProfileUpdateProposal:
     proposed_doc = build_profile_document(candidate, current_profile)
     return create_profile_update_proposal_from_document(
@@ -253,6 +269,8 @@ def create_profile_update_proposal(
         policy=policy,
         now=now,
         ttl_days=ttl_days,
+        manual_profiles=manual_profiles,
+        automatic=automatic,
     )
 
 
