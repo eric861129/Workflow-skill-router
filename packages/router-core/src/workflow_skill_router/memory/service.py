@@ -7,10 +7,26 @@ from pathlib import Path
 import re
 
 from workflow_skill_router.schemas.artifacts import canonical_json
-from workflow_skill_router.profiles.contract import RoutingPreferenceProfile
+from workflow_skill_router.profiles.atomic_io import ProfileIOError, secure_read_json
+from workflow_skill_router.profiles.contract import (
+    RoutingPreferenceProfile,
+    RoutingProfileContractError,
+    decode_routing_profile,
+)
+from workflow_skill_router.profiles.layers import ProfileSourceClass
+from workflow_skill_router.profiles.storage import RoutingProfileRepository
 
-from .candidates import CandidateEngine, WorkflowCandidate
-from .models import MemoryScope
+from .candidates import (
+    CandidateEngine,
+    WorkflowCandidate,
+    automatic_promotion_reason_codes,
+)
+from .models import (
+    AutomaticPromotionNotification,
+    AutomaticPromotionResult,
+    MemoryMode,
+    MemoryScope,
+)
 from .analytics import (
     HistorySummary,
     HistorySummaryQuery,
@@ -31,12 +47,20 @@ from .observations import (
 )
 from .policy_io import MemoryPolicyRepository
 from .proposals import (
+    ProfileProposalError,
     ProfileUpdateProposal,
     create_profile_update_proposal,
     transition_profile_update as transition_profile_update_proposal,
 )
-from .materializer import ProfileMaterializer
-from .profile_diff import diff_profiles
+from .materializer import ProfileMaterializationError, ProfileMaterializer
+from .managed_profiles import (
+    ManagedProfilePathError,
+    managed_personal_profile_path,
+    managed_workspace_profile_path,
+    verify_workspace_root,
+)
+from .backtest import backtest_profile_update
+from .profile_diff import build_profile_document, diff_profiles
 from .revisions import ProfileRevision, ProfileRevisionStore, ProfileWriteAuthority
 from .policy_resolver import resolve_effective_policy
 from .store import MemoryCommandConflict, MemoryStore, MemoryStoreError
@@ -57,6 +81,9 @@ _TARGETS = (
 _RISKS = ("r0", "r1", "r2", "r3")
 _SIDE_EFFECTS = ("none", "known-success", "known-failure", "unknown")
 _ONE_SHOT = ("none", "remember-once", "no-memory")
+_PROMOTION_REASON = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
+_AUTOMATIC_PROMOTION_BATCH_LIMIT = 16
+_TARGET_LAYER_RANK = {"managed-workspace-local": 1, "managed-personal": 3}
 
 
 def _digest(value: object) -> str:
@@ -65,6 +92,34 @@ def _digest(value: object) -> str:
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def _validated_time(value: str | None) -> str:
+    instant = _utc_now() if value is None else value
+    if not isinstance(instant, str) or not instant.endswith("Z"):
+        raise ValueError("invalid-automatic-promotion-time")
+    try:
+        parsed = datetime.fromisoformat(instant[:-1] + "+00:00")
+    except ValueError as error:
+        raise ValueError("invalid-automatic-promotion-time") from error
+    if parsed.tzinfo is None:
+        raise ValueError("invalid-automatic-promotion-time")
+    return instant
+
+
+def _promotion_reason(error: BaseException, fallback: str) -> str:
+    value = str(error)
+    return value if _PROMOTION_REASON.fullmatch(value) is not None else fallback
+
+
+def _promotion_token(idempotency_key: str, candidate_id: str, purpose: str) -> str:
+    return hashlib.sha256(
+        canonical_json({
+            "idempotency_key": idempotency_key,
+            "candidate_id": candidate_id,
+            "purpose": purpose,
+        }).encode("utf-8")
+    ).hexdigest()[:32]
 
 
 @dataclass(frozen=True, slots=True)
@@ -402,6 +457,378 @@ class WorkflowMemoryService:
                 suppression_days=effective.policy.storage.rejected_suppression_days,
             )
 
+    def _load_current_managed_profile(
+        self, candidate: WorkflowCandidate
+    ) -> RoutingPreferenceProfile | None:
+        if candidate.target_profile_class == "managed-personal":
+            path = managed_personal_profile_path(self._data_dir)
+            expected_scope = "personal"
+            expected_profile_id = "personal:adaptive-memory"
+        elif candidate.target_profile_class == "managed-workspace-local":
+            if candidate.workspace_identity_digest is None:
+                raise MemoryStoreError("workspace-root-unverified")
+            path = managed_workspace_profile_path(
+                self._data_dir, candidate.workspace_identity_digest
+            )
+            expected_scope = "workspace"
+            expected_profile_id = "workspace:adaptive-memory"
+        else:
+            raise MemoryStoreError("automatic-user-profile-write-forbidden")
+        try:
+            document = secure_read_json(path, self._data_dir)
+            if document is None:
+                return None
+            profile = decode_routing_profile(document, expected_scope=expected_scope)
+        except ProfileIOError as error:
+            if str(error) == "profile-directory-missing":
+                return None
+            raise MemoryStoreError("managed-profile-invalid") from error
+        except (RoutingProfileContractError, ValueError) as error:
+            raise MemoryStoreError("managed-profile-invalid") from error
+        if profile.profile_id != expected_profile_id:
+            raise MemoryStoreError("managed-profile-invalid")
+        return profile
+
+    def _manual_profiles_for_candidate(
+        self,
+        candidate: WorkflowCandidate,
+        workspace_root: Path | None,
+    ) -> tuple[RoutingPreferenceProfile, ...]:
+        if candidate.target_profile_class not in _TARGET_LAYER_RANK:
+            raise MemoryStoreError("automatic-user-profile-write-forbidden")
+        try:
+            loaded = RoutingProfileRepository(self._data_dir).load_ranked_layers(
+                workspace_root=workspace_root
+            )
+        except (RoutingProfileContractError, OSError, ValueError) as error:
+            raise MemoryStoreError("manual-profile-invalid") from error
+        if candidate.scope is MemoryScope.WORKSPACE:
+            if (
+                workspace_root is None
+                or loaded.workspace_identity_digest is None
+                or loaded.workspace_identity_digest
+                != candidate.workspace_identity_digest
+            ):
+                raise MemoryStoreError("workspace-root-unverified")
+        target_rank = _TARGET_LAYER_RANK[candidate.target_profile_class]
+        manual_classes = {
+            ProfileSourceClass.USER_WORKSPACE,
+            ProfileSourceClass.USER_PERSONAL,
+        }
+        return tuple(
+            layer.profile
+            for layer in loaded.layers
+            if layer.source_class in manual_classes and layer.rank < target_rank
+        )
+
+    @staticmethod
+    def _automatic_notification(
+        candidate: WorkflowCandidate,
+        policy_digest: str,
+        *,
+        status: str,
+        reason_codes: tuple[str, ...],
+        proposal: ProfileUpdateProposal | None = None,
+        revision: ProfileRevision | None = None,
+    ) -> AutomaticPromotionNotification:
+        return AutomaticPromotionNotification(
+            status=status,
+            candidate_id=candidate.candidate_id,
+            candidate_digest=candidate.candidate_digest,
+            policy_digest=policy_digest,
+            target_profile_class=candidate.target_profile_class,
+            proposal_id=None if proposal is None else proposal.proposal_id,
+            proposal_digest=None if proposal is None else proposal.proposal_digest,
+            revision_id=None if revision is None else revision.revision_id,
+            revision_digest=None if revision is None else revision.revision_digest,
+            new_profile_digest=(
+                None if revision is None else revision.new_profile_digest
+            ),
+            reason_codes=reason_codes,
+        )
+
+    def promote_eligible_candidates(
+        self,
+        scope: MemoryScope,
+        *,
+        workspace_root: Path | None = None,
+        actor_id: str,
+        session_id: str,
+        idempotency_key: str,
+        correlation_id: str,
+        now: str | None = None,
+    ) -> AutomaticPromotionResult:
+        """Promote currently proposed high-confidence Candidates locally.
+
+        This method is an explicit local operation. It does not claim or start a
+        background scheduler.
+        """
+
+        if not isinstance(scope, MemoryScope):
+            raise TypeError("scope must be MemoryScope")
+        for name, value in (
+            ("idempotency_key", idempotency_key),
+            ("correlation_id", correlation_id),
+        ):
+            if not isinstance(value, str) or _SAFE_KEY.fullmatch(value) is None:
+                raise ValueError(f"invalid-{name}")
+        authority = ProfileWriteAuthority.router_local_managed(actor_id, session_id)
+        instant = _validated_time(now)
+        workspace = None if workspace_root is None else Path(workspace_root)
+        repository, effective = self._effective_policy(workspace)
+        if not effective.capture_enabled or not repository.memory_store_exists():
+            return AutomaticPromotionResult(
+                status="memory-disabled",
+                scope=scope,
+                promoted_count=0,
+                suppressed_count=0,
+                skipped_count=0,
+                notifications=(),
+                reason_codes=effective.reason_codes or ("memory-disabled",),
+            )
+        if (
+            effective.mode is not MemoryMode.AUTOMATIC
+            or effective.profile_promotion != "automatic-managed"
+        ):
+            return AutomaticPromotionResult(
+                status="not-automatic",
+                scope=scope,
+                promoted_count=0,
+                suppressed_count=0,
+                skipped_count=0,
+                notifications=(),
+                reason_codes=("memory-mode-not-automatic",),
+            )
+        if not effective.policy.notifications.show_auto_promotion:
+            raise MemoryStoreError("automatic-notification-required")
+
+        workspace_digest = (
+            None
+            if workspace is None
+            else verify_workspace_root(workspace).digest
+        )
+        command_digest = _digest({
+            "operation": "promote-eligible",
+            "scope": scope.value,
+            "workspace_identity_digest": workspace_digest,
+            "policy_digest": effective.policy_digest,
+            "actor_id": authority.actor_id,
+            "session_id": authority.session_id,
+            "correlation_id": correlation_id,
+        })
+        store = MemoryStore.open_if_enabled(self._data_dir, effective)
+        if store is None:
+            raise MemoryStoreError("memory-store-unavailable")
+        with store:
+            existing = store.load_admin_result(
+                idempotency_key=idempotency_key,
+                command_kind="promote-eligible",
+                command_digest=command_digest,
+            )
+            if existing is not None:
+                return AutomaticPromotionResult.from_dict(existing, replayed=True)
+
+            proposed = tuple(
+                item
+                for item in store.list_workflow_candidates("proposed")
+                if item.scope is scope
+            )
+            truncated = len(proposed) > _AUTOMATIC_PROMOTION_BATCH_LIMIT
+            candidates = proposed[:_AUTOMATIC_PROMOTION_BATCH_LIMIT]
+            observations = tuple(store.list_route_observations())
+            notifications: list[AutomaticPromotionNotification] = []
+
+            for candidate in candidates:
+                gate_reasons = automatic_promotion_reason_codes(
+                    candidate, effective
+                )
+                if gate_reasons:
+                    notifications.append(self._automatic_notification(
+                        candidate,
+                        effective.policy_digest,
+                        status="blocked",
+                        reason_codes=gate_reasons,
+                    ))
+                    continue
+
+                proposal: ProfileUpdateProposal | None = None
+                try:
+                    current_profile = self._load_current_managed_profile(candidate)
+                    manual_profiles = self._manual_profiles_for_candidate(
+                        candidate, workspace
+                    )
+                    proposed_document = build_profile_document(
+                        candidate, current_profile
+                    )
+                    proposed_profile = decode_routing_profile(proposed_document)
+                    current_profiles = (
+                        () if current_profile is None else (current_profile,)
+                    )
+                    preflight = backtest_profile_update(
+                        current_profiles,
+                        proposed_profile,
+                        observations,
+                        candidate,
+                        manual_profiles=manual_profiles,
+                    )
+                    if preflight.manual_precedence or preflight.equal_rank_conflicts:
+                        store.suppress_workflow_candidate(
+                            candidate.candidate_id,
+                            reason_code="candidate-conflict",
+                            suppressed_at=instant,
+                            suppression_days=(
+                                effective.policy.storage.rejected_suppression_days
+                            ),
+                        )
+                        notifications.append(self._automatic_notification(
+                            candidate,
+                            effective.policy_digest,
+                            status="suppressed",
+                            reason_codes=(
+                                "candidate-conflict",
+                                "candidate-suppressed",
+                            ),
+                        ))
+                        continue
+                    if not preflight.acceptable:
+                        notifications.append(self._automatic_notification(
+                            candidate,
+                            effective.policy_digest,
+                            status="blocked",
+                            reason_codes=("profile-backtest-failed",),
+                        ))
+                        continue
+
+                    proposal = create_profile_update_proposal(
+                        store,
+                        candidate,
+                        current_profile=current_profile,
+                        policy=effective,
+                        now=instant,
+                        manual_profiles=manual_profiles,
+                        automatic=True,
+                    )
+                    token = _promotion_token(
+                        idempotency_key, candidate.candidate_id, "approve"
+                    )
+                    approved = transition_profile_update_proposal(
+                        store,
+                        proposal.proposal_id,
+                        action="approve",
+                        expected_state_version=proposal.state_version,
+                        idempotency_key=f"auto-approve:{token}",
+                        correlation_id=correlation_id,
+                        now=instant,
+                    )
+                    fresh_manual_profiles = self._manual_profiles_for_candidate(
+                        candidate, workspace
+                    )
+                    apply_token = _promotion_token(
+                        idempotency_key, candidate.candidate_id, "apply"
+                    )
+                    revision = ProfileMaterializer(
+                        store, self._data_dir, effective
+                    ).apply_approved(
+                        approved.proposal_id,
+                        authority=authority,
+                        expected_state_version=approved.state_version,
+                        idempotency_key=f"auto-apply:{apply_token}",
+                        correlation_id=correlation_id,
+                        now=instant,
+                        manual_profiles=fresh_manual_profiles,
+                        candidate_final_status="auto-promoted",
+                    )
+                    notifications.append(self._automatic_notification(
+                        candidate,
+                        effective.policy_digest,
+                        status="promoted",
+                        reason_codes=("automatic-promotion-applied",),
+                        proposal=approved,
+                        revision=revision,
+                    ))
+                except ProfileMaterializationError as error:
+                    reason = _promotion_reason(
+                        error, "profile-materialization-failed"
+                    )
+                    if reason == "candidate-conflict":
+                        current_candidate = store.load_workflow_candidate(
+                            candidate.candidate_id
+                        )
+                        if (
+                            current_candidate is not None
+                            and current_candidate.status == "proposed"
+                        ):
+                            store.suppress_workflow_candidate(
+                                candidate.candidate_id,
+                                reason_code="candidate-conflict",
+                                suppressed_at=instant,
+                                suppression_days=(
+                                    effective.policy.storage.rejected_suppression_days
+                                ),
+                            )
+                        notifications.append(self._automatic_notification(
+                            candidate,
+                            effective.policy_digest,
+                            status="suppressed",
+                            reason_codes=(
+                                "candidate-conflict",
+                                "candidate-suppressed",
+                            ),
+                            proposal=proposal,
+                        ))
+                    else:
+                        notifications.append(self._automatic_notification(
+                            candidate,
+                            effective.policy_digest,
+                            status="blocked",
+                            reason_codes=(reason,),
+                            proposal=proposal,
+                        ))
+                except (
+                    ManagedProfilePathError,
+                    MemoryStoreError,
+                    ProfileIOError,
+                    ProfileProposalError,
+                    RoutingProfileContractError,
+                    ValueError,
+                ) as error:
+                    notifications.append(self._automatic_notification(
+                        candidate,
+                        effective.policy_digest,
+                        status="blocked",
+                        reason_codes=(
+                            _promotion_reason(error, "automatic-promotion-failed"),
+                        ),
+                        proposal=proposal,
+                    ))
+
+            result_reasons = ("promotion-batch-truncated",) if truncated else ()
+            result = AutomaticPromotionResult(
+                status="completed",
+                scope=scope,
+                promoted_count=sum(
+                    item.status == "promoted" for item in notifications
+                ),
+                suppressed_count=sum(
+                    item.status == "suppressed" for item in notifications
+                ),
+                skipped_count=sum(
+                    item.status == "blocked" for item in notifications
+                ),
+                notifications=tuple(notifications),
+                reason_codes=result_reasons,
+            )
+            stored, replayed = store.save_admin_result(
+                idempotency_key=idempotency_key,
+                command_kind="promote-eligible",
+                command_digest=command_digest,
+                result_document=result.to_dict(),
+                created_at=instant,
+            )
+            return AutomaticPromotionResult.from_dict(
+                stored, replayed=replayed
+            )
+
     def preview_profile_update(
         self,
         candidate_id: str,
@@ -736,6 +1163,8 @@ __all__ = [
     "PurgeMemoryResult",
     "RecordRouteFeedbackCommand",
     "RecordRouteFeedbackResult",
+    "AutomaticPromotionNotification",
+    "AutomaticPromotionResult",
     "RetentionResult",
     "RouteFeedbackError",
     "RememberWorkflowCommand",

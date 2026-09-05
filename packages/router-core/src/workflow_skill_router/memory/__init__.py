@@ -8,6 +8,7 @@ from .candidates import (
     PatternMetrics,
     WorkflowCandidate,
     WorkflowPattern,
+    automatic_promotion_reason_codes,
     decode_workflow_candidate,
 )
 from .analytics import (
@@ -29,7 +30,14 @@ from .migrator import (
     MemoryMigrationError,
     migrate_memory_store,
 )
-from .models import MemoryMode, MemoryPolicy, MemoryPolicyError, MemoryScope
+from .models import (
+    AutomaticPromotionNotification,
+    AutomaticPromotionResult,
+    MemoryMode,
+    MemoryPolicy,
+    MemoryPolicyError,
+    MemoryScope,
+)
 from .policy import decode_memory_policy, decode_policy_text, memory_policy_document
 from .policy_io import (
     MemoryPolicyRepository,
@@ -116,6 +124,8 @@ def memory_database_path(data_dir: Path) -> Path:
 
 
 __all__ = [
+    "AutomaticPromotionNotification",
+    "AutomaticPromotionResult",
     "CandidateEngine",
     "BacktestSummary",
     "ProfileDiffError",
@@ -143,6 +153,7 @@ __all__ = [
     "PatternMetrics",
     "WorkflowCandidate",
     "WorkflowPattern",
+    "automatic_promotion_reason_codes",
     "decode_workflow_candidate",
     "CompletedWorkflowPhase",
     "decode_route_feedback",

@@ -375,6 +375,77 @@ class CandidateEngine:
         return tuple(emitted)
 
 
+def automatic_promotion_reason_codes(
+    candidate: WorkflowCandidate,
+    policy: EffectiveMemoryPolicy,
+) -> tuple[str, ...]:
+    """Return stable fail-closed reasons for one M3-B automatic promotion."""
+
+    if not isinstance(candidate, WorkflowCandidate):
+        raise TypeError("candidate must be WorkflowCandidate")
+    if not isinstance(policy, EffectiveMemoryPolicy):
+        raise TypeError("policy must be EffectiveMemoryPolicy")
+    reasons: list[str] = []
+    if policy.mode is not MemoryMode.AUTOMATIC:
+        reasons.append("memory-mode-not-automatic")
+    if policy.profile_promotion != "automatic-managed":
+        reasons.append("automatic-promotion-disabled")
+    if candidate.status != "proposed":
+        reasons.append("candidate-not-proposed")
+    if candidate.policy_digest != policy.policy_digest:
+        reasons.append("candidate-policy-drift")
+    if candidate.target_profile_class not in {
+        "managed-personal", "managed-workspace-local"
+    }:
+        reasons.append("automatic-user-profile-write-forbidden")
+    elif candidate.target_profile_class not in policy.allowed_targets:
+        reasons.append("profile-target-not-allowed")
+    if candidate.recommendation_mode != "automatic":
+        reasons.append("candidate-not-automatic")
+    if candidate.confidence != "high":
+        reasons.append("candidate-confidence-not-high")
+    if (
+        candidate.matcher_seed.source == "user-explicit"
+        or candidate.profile_source_class == "user-explicit"
+    ):
+        reasons.append("candidate-explicit-route")
+    actual_canonical = all(
+        is_canonical_skill_id(skill_id)
+        for skill_id in _all_skill_ids(candidate.phases)
+    )
+    if not candidate.metrics.canonical_skill_ids or not actual_canonical:
+        reasons.append("candidate-skill-id-invalid")
+    if candidate.metrics.hard_contract_violations != 0:
+        reasons.append("candidate-hard-violation")
+    if not _passes(candidate.metrics, policy, "automatic"):
+        reasons.append("insufficient-evidence")
+
+    eligibility = policy.policy.eligibility
+    if (
+        not eligibility.require_terminal_success
+        or not eligibility.require_required_gate_pass
+        or not eligibility.reject_unknown_side_effects
+        or "r3" not in eligibility.exclude_risk_levels
+        or eligibility.minimum_distinct_runs_automatic < 5
+        or eligibility.minimum_distinct_days_automatic < 3
+        or eligibility.minimum_success_rate_automatic < 0.90
+        or eligibility.maximum_correction_rate_automatic > 0.10
+        or eligibility.minimum_route_consistency_automatic < 0.85
+    ):
+        reasons.append("automatic-threshold-weaker")
+    features = policy.policy.features
+    if (
+        not features.candidate_generation.backtest_required
+        or not features.profile_promotion.require_backtest
+    ):
+        reasons.append("backtest-required")
+    if not features.profile_promotion.require_profile_lint:
+        reasons.append("profile-lint-required")
+    if features.profile_versioning.mode != "required":
+        reasons.append("profile-versioning-required")
+    return tuple(dict.fromkeys(reasons))
+
+
 def _decode_matcher(value: object) -> MatcherSeed:
     if not isinstance(value, Mapping):
         raise CandidateError("invalid-candidate-matcher")
@@ -466,5 +537,5 @@ def candidate_with_status(candidate: WorkflowCandidate, status: str) -> Workflow
 
 __all__ = [
     "CandidateEngine", "CandidateError", "PatternMetrics", "WorkflowCandidate", "WorkflowPattern",
-    "candidate_with_status", "decode_workflow_candidate",
+    "automatic_promotion_reason_codes", "candidate_with_status", "decode_workflow_candidate",
 ]
