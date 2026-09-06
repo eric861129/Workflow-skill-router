@@ -4,10 +4,13 @@ from dataclasses import fields, is_dataclass
 from datetime import datetime
 from enum import Enum
 import types
-from typing import Any, Mapping, Union, get_args, get_origin, get_type_hints
+from typing import Any, Literal, Mapping, Union, get_args, get_origin, get_type_hints
 
 from workflow_skill_router.capabilities.agent_runtime import decode_agent_runtime_snapshot
 from workflow_skill_router.service_models import (
+    MemoryStatusQuery, RememberMemoryWorkflow, RecordMemoryFeedback,
+    MemoryCandidatesQuery, PreviewProfileUpdate, TransitionProfileUpdate,
+    RollbackProfileRevision, PurgeWorkflowMemory,
     CompareEvaluations, EvaluateGate, ExportRouterArtifact, NextWorkQuery, PlanWork,
     ProposeSupportConsent, RecordWorkEvent, RequestContext, RouterStatusQuery,
     RoutingContextInput,
@@ -26,6 +29,10 @@ class ServiceCodecError(ValueError):
 
 def _decode(value: Any, expected: Any) -> Any:
     origin = get_origin(expected)
+    if origin is Literal:
+        if not any(type(value) is type(choice) and value == choice for choice in get_args(expected)):
+            raise ServiceCodecError("invalid-enum")
+        return value
     args = get_args(expected)
     if origin in (Union, types.UnionType):
         if value is None and type(None) in args: return None
@@ -122,6 +129,14 @@ def _plan(value):
 
 def build_service_codec_registry() -> Mapping[str, ServiceCodec]:
     return {
+        "get_memory_status": ServiceCodec(MemoryStatusQuery),
+        "remember_workflow": ServiceCodec(RememberMemoryWorkflow),
+        "record_route_feedback": ServiceCodec(RecordMemoryFeedback),
+        "list_workflow_candidates": ServiceCodec(MemoryCandidatesQuery),
+        "preview_profile_update": ServiceCodec(PreviewProfileUpdate),
+        "transition_profile_update": ServiceCodec(TransitionProfileUpdate),
+        "rollback_profile_revision": ServiceCodec(RollbackProfileRevision),
+        "purge_workflow_memory": ServiceCodec(PurgeWorkflowMemory),
         "sync_runtime_context": ServiceCodec(SyncRuntimeContext, custom_decoder=_sync),
         "plan_work": ServiceCodec(PlanWork, custom_decoder=_plan),
         "propose_support_consent": ServiceCodec(ProposeSupportConsent),

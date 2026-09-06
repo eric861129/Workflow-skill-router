@@ -50,6 +50,8 @@ class McpReferenceDataTests(unittest.TestCase):
                 "get_next_work",
                 "record_work_event",
                 "evaluate_gate",
+                "transition_profile_update",
+                "rollback_profile_revision",
             },
             {
                 name
@@ -76,6 +78,34 @@ class McpReferenceDataTests(unittest.TestCase):
         serialized = OUTPUT.read_text(encoding="utf-8")
         self.assertNotIn(str(ROOT), serialized)
         self.assertNotIn("WORKFLOW_SKILL_ROUTER_DATA_DIR", serialized)
+
+    def test_plugin_embedded_profile_contract_matches_core(self) -> None:
+        core = ROOT / "packages/router-core/src/workflow_skill_router/schemas/json/v2/routing-profile.schema.json"
+        plugin = ROOT / "plugins/workflow-skill-router/mcp/src/routing-profile-contract.json"
+        self.assertEqual(json.loads(core.read_text(encoding="utf-8")), json.loads(plugin.read_text(encoding="utf-8")))
+
+    def test_memory_tools_are_exactly_eight_with_strict_intents_and_readiness(self) -> None:
+        document = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        tools = {tool["name"]: tool for tool in document["tools"]}
+        names = {"get_memory_status", "remember_workflow", "record_route_feedback",
+                 "list_workflow_candidates", "preview_profile_update", "transition_profile_update",
+                 "rollback_profile_revision", "purge_workflow_memory"}
+        self.assertEqual(20, len(tools))
+        self.assertTrue(names <= set(tools))
+        for name in names:
+            self.assertFalse(tools[name]["inputSchema"]["additionalProperties"])
+            self.assertFalse(tools[name]["outputSchema"]["additionalProperties"])
+        for name in {"get_memory_status", "list_workflow_candidates", "preview_profile_update"}:
+            self.assertTrue(tools[name]["annotations"]["readOnlyHint"])
+        self.assertTrue(tools["purge_workflow_memory"]["annotations"]["destructiveHint"])
+        self.assertEqual("R1", tools["purge_workflow_memory"]["risk_class"])
+        for field in ("candidate_id", "target_profile_class", "profile", "matcher_seed", "authority", "target_path"):
+            self.assertNotIn(field, tools["transition_profile_update"]["inputSchema"]["properties"])
+        for relative in ("site/src/content/docs/reference/mcp-tools.mdx", "site/src/content/docs/zh-tw/reference/mcp-tools.mdx"):
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            self.assertIn("20", text)
+            self.assertIn("10 local-ready", text)
+            self.assertIn("5 conditional-local", text)
 
     def test_reference_generator_reports_no_drift(self) -> None:
         result = subprocess.run(

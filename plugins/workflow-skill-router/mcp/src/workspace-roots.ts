@@ -91,3 +91,24 @@ export function bindPlanWorkWorkspaceRoot(
     routing_context: { ...context, workspace_root: requested },
   };
 }
+
+const MEMORY_WORKSPACE_TOOLS = new Set([
+  "get_memory_status", "remember_workflow", "record_route_feedback",
+  "list_workflow_candidates", "preview_profile_update", "transition_profile_update",
+  "rollback_profile_revision",
+]);
+
+export function bindMemoryWorkspaceRoot(
+  name: string,
+  arguments_: Record<string, unknown>,
+  trustedRoots: string[],
+): Record<string, unknown> {
+  if (!MEMORY_WORKSPACE_TOOLS.has(name) || arguments_.workspace_root === null) return arguments_;
+  if (typeof arguments_.workspace_root !== "string") throw new WorkspaceRootTrustError();
+  const requested = canonicalExistingDirectory(arguments_.workspace_root);
+  const roots = trustedRoots.map(canonicalExistingDirectory).filter((root): root is string => root !== null);
+  if (requested === null || !roots.some((root) => isWithin(requested, root))) {
+    throw new WorkspaceRootTrustError();
+  }
+  return { ...arguments_, workspace_root: requested };
+}

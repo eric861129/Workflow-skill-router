@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Any
+from dataclasses import asdict, dataclass, field, fields
+from typing import Any, Literal, get_args, get_origin, get_type_hints
+import re
 
 from workflow_skill_router.capabilities.agent_runtime import AgentRuntimeSnapshot
 from workflow_skill_router.routing.models import RouteValidationRequest
@@ -293,3 +294,175 @@ class ExportRouterArtifact:
     attestation_ref: str | None
     idempotency_key: str
     correlation_id: str
+
+
+# Public Memory commands contain intent and bound identifiers only. In particular,
+# no command can manufacture a ProfileWriteAuthority or replace Profile content.
+MemoryTarget = Literal["managed-personal", "managed-workspace-local", "user-personal", "workspace-file"]
+MemoryCandidateStatus = Literal["proposed", "approved", "rejected", "expired", "suppressed", "superseded", "auto-promoted"]
+MemoryFeedbackType = Literal["accepted", "corrected", "rejected", "support-rejected", "capability-unavailable", "gate-failed", "completed", "abandoned", "no-memory"]
+MemoryFeedbackReason = Literal["user-accepted", "user-rejected", "user-correction", "support-rejected", "capability-unavailable", "gate-failed", "completed", "abandoned", "no-memory"]
+MemoryCorrectionDimension = Literal["work-mode", "phase-order", "primary-skill", "support-skill", "exit-gate", "matcher", "target"]
+MemoryPurgeScope = Literal["history-only", "analytics-only", "candidates-only", "revisions-only", "managed-profiles-only", "all-memory-data"]
+
+
+class _MemoryToolCommand:
+    def __post_init__(self) -> None:
+        key = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
+        digest = re.compile(r"^sha256:[0-9a-f]{64}$")
+        if not isinstance(self.context, RequestContext):
+            raise ValueError("invalid-memory-context")
+        for value in (self.context.session_id, self.context.actor, self.context.runtime_policy_snapshot_id):
+            if not isinstance(value, str) or len(value) > 128 or key.fullmatch(value) is None:
+                raise ValueError("invalid-memory-context")
+        hints = get_type_hints(type(self))
+        for item in fields(self):
+            name, value = item.name, getattr(self, item.name)
+            if get_origin(hints[name]) is Literal and not any(type(value) is type(choice) and value == choice for choice in get_args(hints[name])):
+                raise ValueError("invalid-memory-enum")
+            if name == "workspace_root" and value is not None:
+                if not isinstance(value, str) or not value or len(value) > 4096 or "\x00" in value:
+                    raise ValueError("invalid-workspace-root")
+            if name in {"idempotency_key", "correlation_id", "workflow_run_id"}:
+                if not isinstance(value, str) or key.fullmatch(value) is None:
+                    raise ValueError("invalid-memory-identifier")
+            prefix = {"candidate_id": "candidate", "proposal_id": "proposal", "source_revision_id": "revision", "observation_id": "observation"}.get(name)
+            if prefix and (not isinstance(value, str) or re.fullmatch(prefix + r":[0-9a-f]{32}", value) is None):
+                raise ValueError("invalid-memory-artifact-id")
+            if name.endswith("_digest") and value is not None:
+                if name == "expected_profile_digest" and value == "missing" and isinstance(self, TransitionProfileUpdate):
+                    continue
+                if not isinstance(value, str) or digest.fullmatch(value) is None:
+                    raise ValueError("invalid-memory-digest")
+            if name in {"limit", "expected_state_version"}:
+                maximum = 1000 if name == "limit" else 2**31 - 1
+                if type(value) is not int or not 1 <= value <= maximum:
+                    raise ValueError("invalid-memory-integer")
+        if isinstance(self, RecordMemoryFeedback):
+            dims = self.correction_dimensions
+            if len(dims) > 7 or len(set(dims)) != len(dims):
+                raise ValueError("invalid-correction-dimensions")
+            if self.feedback_type == "corrected":
+                if not dims or not self.original_route_digest or not self.corrected_route_digest or self.original_route_digest == self.corrected_route_digest:
+                    raise ValueError("correction-binding-required")
+            elif dims or self.original_route_digest is not None or self.corrected_route_digest is not None:
+                raise ValueError("correction-fields-forbidden")
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryStatusQuery(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RememberMemoryWorkflow(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    workflow_run_id: str
+    target_profile_class: MemoryTarget
+    risk_class: Literal["r0", "r1", "r2", "r3"]
+    side_effect_outcome: Literal["none", "known-success", "known-failure", "unknown"]
+    one_shot: Literal["none", "remember-once", "no-memory"]
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class RecordMemoryFeedback(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    workflow_run_id: str
+    observation_id: str
+    feedback_type: MemoryFeedbackType
+    reason_code: MemoryFeedbackReason | None
+    correction_dimensions: tuple[MemoryCorrectionDimension, ...]
+    original_route_digest: str | None
+    corrected_route_digest: str | None
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryCandidatesQuery(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    status: MemoryCandidateStatus | None
+    limit: int
+
+
+@dataclass(frozen=True, slots=True)
+class PreviewProfileUpdate(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    candidate_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class TransitionProfileUpdate(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    proposal_id: str
+    expected_proposal_digest: str
+    expected_profile_digest: str
+    action: Literal["approve", "reject"]
+    expected_state_version: int
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class RollbackProfileRevision(_MemoryToolCommand):
+    context: RequestContext
+    workspace_root: str | None
+    source_revision_id: str
+    expected_profile_digest: str
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class PurgeWorkflowMemory(_MemoryToolCommand):
+    context: RequestContext
+    scope: MemoryPurgeScope
+    expected_summary_digest: str
+    include_managed_profiles: bool
+    confirmed: Literal[True]
+    idempotency_key: str
+    correlation_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryStatusResult(ResultCodec):
+    effective_mode: str
+    personal_ceiling: str
+    workspace_requested_mode: str | None
+    policy_digest: str
+    capture_enabled: bool
+    candidate_generation_enabled: bool
+    profile_promotion: str
+    allowed_targets: tuple[str, ...]
+    memory_store_exists: bool
+    reason_codes: tuple[str, ...]
+    history_summary_digest: str
+    eligible_workflow_count: int
+    actual_skill_consistency: str = "unavailable"
+    authority_mode: str = "router-local"
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryCandidatesResult(ResultCodec):
+    candidates: tuple[dict[str, object], ...]
+    truncated: bool
+    authority_mode: str = "router-local"
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryProfileResult(ResultCodec):
+    status: str
+    proposal: dict[str, object] | None
+    revision_id: str | None = None
+    revision_digest: str | None = None
+    replayed: bool = False
+    reason_codes: tuple[str, ...] = ()
+    authority_mode: str = "router-local"

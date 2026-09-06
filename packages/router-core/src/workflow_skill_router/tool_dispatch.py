@@ -14,6 +14,9 @@ PUBLIC_TOOLS = (
     "transition_support_consent", "get_next_work", "validate_route",
     "record_work_event", "evaluate_gate", "get_router_status",
     "run_model_evaluation", "compare_evaluations", "export_router_artifact",
+    "get_memory_status", "remember_workflow", "record_route_feedback",
+    "list_workflow_candidates", "preview_profile_update", "transition_profile_update",
+    "rollback_profile_revision", "purge_workflow_memory",
 )
 
 

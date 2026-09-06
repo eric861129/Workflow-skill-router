@@ -530,7 +530,7 @@ class MemoryStore:
             raise MemoryStoreError("memory-store-open-failed") from error
 
     @classmethod
-    def open_existing(cls, data_dir: Path) -> "MemoryStore | None":
+    def open_existing(cls, data_dir: Path, *, read_only: bool = False) -> "MemoryStore | None":
         """Open an existing Memory Store without creating any path or snapshot.
 
         This boundary exists for explicit privacy operations, such as purge,
@@ -569,16 +569,19 @@ class MemoryStore:
         connection: sqlite3.Connection | None = None
         try:
             connection = sqlite3.connect(
-                database_path.as_uri() + "?mode=rw",
+                database_path.as_uri() + ("?mode=ro" if read_only else "?mode=rw"),
                 uri=True,
                 isolation_level=None,
                 timeout=5.0,
             )
             _validate_database_file(database_path)
             connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute("PRAGMA journal_mode = WAL")
             connection.execute("PRAGMA busy_timeout = 5000")
-            migrate_memory_store(connection)
+            if read_only:
+                connection.execute("PRAGMA query_only = ON")
+            else:
+                connection.execute("PRAGMA journal_mode = WAL")
+                migrate_memory_store(connection)
             row = connection.execute(
                 "SELECT snapshot_id FROM memory_policy_snapshots "
                 "ORDER BY recorded_at DESC, snapshot_id DESC LIMIT 1"

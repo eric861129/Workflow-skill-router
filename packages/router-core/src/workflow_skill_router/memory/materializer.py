@@ -444,9 +444,14 @@ class ProfileMaterializer:
         if current_profile.profile_digest != expected_profile_digest:
             raise ProfileMaterializationError("profile-drift")
         snapshot = self.revisions.load_snapshot(source_revision_id)
+        # A validated applied Revision, not the Candidate's recommendation
+        # state, authorizes creating a reviewed rollback proposal. Preserve the
+        # persisted Candidate (including auto-promoted); status is not part of
+        # its immutable Digest and is only projected for proposal compilation.
+        rollback_candidate = replace(candidate, status="proposed")
         proposal = create_profile_update_proposal_from_document(
             self.store,
-            candidate,
+            rollback_candidate,
             current_profile=current_profile,
             proposed_profile_document=snapshot,
             target_profile_class=source_revision.target_profile_class,

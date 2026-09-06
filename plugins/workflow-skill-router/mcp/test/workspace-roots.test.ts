@@ -118,3 +118,25 @@ test("a junction or directory symlink cannot escape a trusted workspace root", (
     fs.rmdirSync(temporary);
   }
 });
+
+import * as workspaceBindings from "../src/workspace-roots.js";
+
+test("Memory Workspace binding rejects roots that the Client did not advertise", () => {
+  const bind = (workspaceBindings as unknown as { bindMemoryWorkspaceRoot: (name: string, args: Record<string, unknown>, roots: string[]) => Record<string, unknown> }).bindMemoryWorkspaceRoot;
+  assert.equal(typeof bind, "function", "Memory Workspace binder missing");
+  const trusted = fs.mkdtempSync(path.join(os.tmpdir(), "memory-trusted-"));
+  const untrusted = fs.mkdtempSync(path.join(os.tmpdir(), "memory-untrusted-"));
+  try {
+    for (const name of ["get_memory_status", "remember_workflow", "record_route_feedback", "list_workflow_candidates", "preview_profile_update", "transition_profile_update", "rollback_profile_revision"]) {
+      assert.throws(() => bind(name, {workspace_root: untrusted}, [trusted]), WorkspaceRootTrustError);
+      assert.throws(() => bind(name, {workspace_root: trusted}, []), WorkspaceRootTrustError);
+      assert.equal(bind(name, {workspace_root: null}, [trusted]).workspace_root, null);
+      assert.equal(bind(name, {workspace_root: trusted}, [trusted]).workspace_root, fs.realpathSync.native(trusted));
+    }
+    const outside = {workspace_root: untrusted};
+    assert.equal(bind("not-a-memory-tool", outside, [trusted]), outside);
+  } finally {
+    fs.rmSync(trusted, {recursive: true});
+    fs.rmSync(untrusted, {recursive: true});
+  }
+});
