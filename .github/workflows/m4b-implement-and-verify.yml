@@ -1,0 +1,194 @@
+name: M4-B Implement and Verify
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-implement-and-verify.yml]
+permissions:
+  contents: write
+jobs:
+  implement:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+      PYTHONPATH: packages/router-core/src:packages/router-core/tests
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            plugins/workflow-skill-router/package-lock.json
+            site/package-lock.json
+      - name: Preserve runner scripts and enter the isolated target branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/m4b/write_tests.py /tmp/m4b-write-tests.py
+          cp .github/m4b/implement_m4b.py /tmp/m4b-implement.py
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          START_SHA="$(git rev-parse "origin/$TARGET_BRANCH")"
+          git merge-base --is-ancestor "$BASE_SHA" "$START_SHA"
+          echo "START_SHA=$START_SHA" >> "$GITHUB_ENV"
+          git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          test -z "$(git status --porcelain)"
+      - name: Normalize runner source and compile it before repository mutation
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('/tmp/m4b-implement.py')
+          lines = p.read_text('utf-8').splitlines()
+          fixed = []
+          for line in lines:
+              if 'match = re.search' in line and 'workspace-routing-profile' in line:
+                  fixed.append('            match = re.search(r"([\\\"\u0027])([^\\\"\u0027]*assets/)workspace-routing-profile\\.example\\.json\\1", line)')
+                  continue
+              if '"record_id": {"type": "string", "pattern": "^pilot-[0-9]{{2}}$"}' in line:
+                  line = line.replace('{{2}}', '{2}')
+              fixed.append(line)
+          text = '\n'.join(fixed) + '\n'
+          # JSON files outside release/allowlists can contain baseline evidence objects;
+          # never treat them as flat file inventories.
+          needle = '        if any(part in {"node_modules", ".git", "dist", ".astro"} for part in path.parts):\n            continue\n        try:\n            text = path.read_text("utf-8")'
+          replacement = '        if any(part in {"node_modules", ".git", "dist", ".astro"} for part in path.parts):\n            continue\n        relative = path.relative_to(ROOT).as_posix()\n        if path.suffix.lower() == ".json" and not relative.startswith("release/allowlists/"):\n            continue\n        try:\n            text = path.read_text("utf-8")'
+          if needle not in text:
+              raise SystemExit('runner JSON inventory guard marker missing')
+          text = text.replace(needle, replacement, 1)
+          p.write_text(text, encoding='utf-8', newline='\n')
+      - name: Compile runner scripts
+        run: python -m py_compile /tmp/m4b-write-tests.py /tmp/m4b-implement.py
+      - name: RED - publish failing M4-B contracts first
+        shell: bash
+        run: |
+          set -euo pipefail
+          python /tmp/m4b-write-tests.py
+          git diff --check
+          if ! git diff --quiet; then
+            git add tests/test_adaptive_workflow_memory_docs.py tests/test_doc_parity.py tests/test_v2_documentation.py tests/test_skill_source_sync.py
+            git commit -m 'test(docs): define adaptive workflow memory publication contract'
+          fi
+          set +e
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v >/tmp/m4b-red.log 2>&1
+          RED_STATUS=$?
+          set -e
+          if [ "$RED_STATUS" -eq 0 ]; then
+            test -f site/src/content/docs/concepts/adaptive-workflow-memory.md
+            echo 'The target branch already contained a green implementation; retaining its earlier RED provenance.'
+          else
+            grep -Eq 'FAILED|ERROR|AssertionError|FileNotFoundError' /tmp/m4b-red.log
+            echo 'Observed expected RED contract failure before implementation.'
+          fi
+      - name: GREEN - publish docs, examples, Flight Recorder, and Pilot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python /tmp/m4b-implement.py
+          python scripts/build-v2-demo-data.py
+          git diff --check
+      - name: Rebind inherited-content evidence for changed tracked paths
+        shell: python
+        run: |
+          import hashlib, json, re
+          from pathlib import Path
+          p = Path('release/v2-inherited-change-closure.json')
+          doc = json.loads(p.read_text('utf-8'))
+          lines = p.read_text('utf-8').splitlines()
+          suffixes = {'.css','.json','.jsonl','.md','.mdx','.mjs','.py','.sql','.ts','.yaml','.yml'}
+          for entry in doc['entries']:
+              if entry['evidence']['kind'] != 'current-content-digest':
+                  continue
+              target = Path(entry['path'])
+              if not target.is_file():
+                  continue
+              data = target.read_bytes()
+              if target.suffix.lower() in suffixes:
+                  data = data.replace(b'\r\n', b'\n')
+              digest = hashlib.sha256(data).hexdigest()
+              if digest == entry['evidence']['sha256']:
+                  continue
+              found = [i for i,line in enumerate(lines) if f'"path":"{entry["path"]}"' in line]
+              if not found:
+                  found = [i for i,line in enumerate(lines) if f'"path": "{entry["path"]}"' in line]
+              assert len(found) == 1, entry['path']
+              i = found[0]
+              lines[i], count = re.subn(r'("sha256"\s*:\s*")[0-9a-f]{64}(")', rf'\g<1>{digest}\g<2>', lines[i], count=1)
+              assert count == 1, entry['path']
+          p.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+      - name: Commit the M4-B implementation as one reviewable slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add README.md README.zh-TW.md site demo scripts starter plugins/workflow-skill-router/skills release/allowlists release/v2-inherited-change-closure.json
+          git commit -m 'docs(memory): publish adaptive workflow memory guidance and pilot'
+      - name: Run focused M4-B contracts
+        run: |
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v
+          python -m unittest discover -s tests -p 'test_doc_parity.py' -v
+          python -m unittest discover -s tests -p 'test_v2_documentation.py' -v
+          python -m unittest discover -s tests -p 'test_skill_source_sync.py' -v
+          python -m unittest discover -s tests -p 'test_v2_demo_data.py' -v
+          python scripts/build-v2-demo-data.py --check
+      - name: Run complete Router Core tests
+        run: python -m unittest discover -s packages/router-core/tests -p 'test_*.py' -v
+      - name: Run complete repository tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Verify public contracts and deterministic artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate-router.py starter/v2/workflow-skill-router
+          python scripts/validate-router.py --public-readiness .
+          python scripts/audit-public-readiness.py .
+          python scripts/check-markdown-links.py .
+          python scripts/check-doc-parity.py
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+          python -I -S -B scripts/build-release-artifacts.py --check
+          node scripts/build-mcp-reference-data.mjs --check
+      - name: Install and test Plugin/MCP distribution
+        working-directory: plugins/workflow-skill-router
+        run: |
+          npm ci
+          npm run check
+          node scripts/smoke-plugin.mjs
+      - name: Build and exercise the documentation site
+        working-directory: site
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run assets:demo:check
+          npm run assets:social:check
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:site:smoke
+          npm run test:site:visual
+          npm run audit:lighthouse
+      - name: Verify final tree and push by fast-forward only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check "$BASE_SHA" HEAD
+          test -z "$(git status --porcelain)"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$START_SHA"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          {
+            echo '## M4-B verified publication branch'
+            echo "Start: $START_SHA"
+            echo "Head: $(git rev-parse HEAD)"
+            echo "Tree: $(git rev-parse HEAD^{tree})"
+            echo "Commits added: $(git rev-list --count "$START_SHA"..HEAD)"
+            echo 'RED contract observed or retained from existing target provenance.'
+            echo 'Focused/full tests, Plugin, deterministic artifacts, site smoke, visual, and Lighthouse gates passed.'
+          } >> "$GITHUB_STEP_SUMMARY"
