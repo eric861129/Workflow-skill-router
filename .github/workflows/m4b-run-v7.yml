@@ -1,0 +1,51 @@
+name: M4-B Run v7
+
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-run-v7.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            plugins/workflow-skill-router/package-lock.json
+            site/package-lock.json
+      - name: Verify and reconstruct the M4-B executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'd8053092cf82b3ffc309f5e35f09130c52fa2902c51d997ea0a949ee2fe6f0ef  .github/m4b/v7-script.part-00' | sha256sum --check --strict
+          echo '22ee0a6ee40249f60f43553109f59daf917c1f3146b2729be5ac6f3d037ffe5e  .github/m4b/v7-script.part-01' | sha256sum --check --strict
+          echo '4e7f652464b7d21150dde3e764a0cbc8bfbb8405f4457524a670a8298cbd6919  .github/m4b/v7-script.part-02a' | sha256sum --check --strict
+          echo '36f7e1fde80862157a162973890d0008d82c2dcb8797452bcf27b677b18cb032  .github/m4b/v7-script.part-02b' | sha256sum --check --strict
+          echo '229cbb5b62e070648ed572cae8fd2dc883365e4787e157b2d252b45a45d46df4  .github/m4b/v7-script.part-02c' | sha256sum --check --strict
+          cat .github/m4b/v7-script.part-00 \
+              .github/m4b/v7-script.part-01 \
+              .github/m4b/v7-script.part-02a \
+              .github/m4b/v7-script.part-02b \
+              .github/m4b/v7-script.part-02c > /tmp/m4b-v7.b64
+          test "$(wc -c < /tmp/m4b-v7.b64)" -eq 27276
+          echo '0391b18121ee24ac092d53e4572343ccc9fe3531b0d00b699b766af5706db634  /tmp/m4b-v7.b64' | sha256sum --check --strict
+          base64 --decode /tmp/m4b-v7.b64 > /tmp/run-m4b-v7.py
+          test "$(wc -c < /tmp/run-m4b-v7.py)" -eq 20456
+          echo '9c4fcbaf55cf2bcaf1295199a681c517982fc1fec0cf1f7d5be90d90d9937a7e  /tmp/run-m4b-v7.py' | sha256sum --check --strict
+          python -m py_compile /tmp/run-m4b-v7.py
+      - name: Execute RED, GREEN, full verification, and guarded publication
+        run: python /tmp/run-m4b-v7.py
