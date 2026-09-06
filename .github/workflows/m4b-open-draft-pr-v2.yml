@@ -1,0 +1,82 @@
+name: M4-B Open Verified Draft PR v2
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-open-draft-pr-v2.yml]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  open:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Wait for the fully verified fast-forward publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            HEAD_SHA="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+            if [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$BASE_SHA" ]; then
+              git fetch --no-tags origin "$TARGET_BRANCH" main
+              test "$(git rev-parse origin/main)" = "$BASE_SHA"
+              git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA"
+              git cat-file -e "$HEAD_SHA:site/src/content/docs/concepts/adaptive-workflow-memory.md"
+              git cat-file -e "$HEAD_SHA:site/src/data/memory-flight-recorder.generated.json"
+              echo "TARGET_HEAD=$HEAD_SHA" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'Verified M4-B branch was not published before timeout.' >&2
+          exit 1
+      - name: Create or retain the Draft pull request
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXISTING="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$TARGET_BRANCH" --json number --jq '.[0].number // empty')"
+          if [ -n "$EXISTING" ]; then
+            echo "Draft PR #$EXISTING already exists." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          BODY_FILE="$(mktemp)"
+          cat > "$BODY_FILE" <<EOF
+          ## M4-B — Public Docs, Examples, Flight Recorder, and Pilot
+
+          Continues the approved Adaptive Workflow Memory plan after M4-A PR #90 was squash-merged at \`$BASE_SHA\`.
+
+          ### Scope
+
+          - Publish three bilingual pages: concept, configuration, and migration.
+          - Package synchronized \`disabled\`, \`reviewed\`, and \`automatic\` Memory Policy examples.
+          - Update README, CLI, local-state, security, MCP, and showcase references.
+          - Add five read-only sanitized Memory Flight Recorder scenarios.
+          - Publish a deterministic local Pilot with 20 sanitized records: 6 Single, 8 Phased, 6 Goal-like, with at least 8 Profile-assisted records.
+
+          ### Retained boundaries
+
+          Memory remains \`default-off\`. Personal Policy is the autonomy ceiling; Workspace cannot elevate it. Automatic writes remain \`automatic-managed\` and managed-only. There is no telemetry, no background learning, no silent User-owned Profile mutation, and no Model Evidence claim. Skill consistency remains unavailable without receipt evidence.
+
+          ### Verification
+
+          The publication workflow runs focused documentation contracts, complete Router Core and repository suites, deterministic artifact checks, Plugin/MCP tests and smoke, site build, Playwright smoke/visual checks, and Lighthouse before fast-forwarding this branch.
+
+          Verified branch head: \`$TARGET_HEAD\`.
+
+          This PR remains Draft for human review and is not approved for merge.
+          EOF
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$TARGET_BRANCH" \
+            --title 'docs(memory): publish adaptive workflow memory guidance and pilot' \
+            --body-file "$BODY_FILE" \
+            --draft
