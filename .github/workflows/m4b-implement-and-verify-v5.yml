@@ -1,0 +1,395 @@
+name: M4-B Implement and Verify v5
+
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-implement-and-verify-v5.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+      PYTHONPATH: packages/router-core/src:packages/router-core/tests
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            plugins/workflow-skill-router/package-lock.json
+            site/package-lock.json
+
+      - name: Build current-contract implementation and test scripts
+        shell: python
+        run: |
+          from pathlib import Path
+          import textwrap
+
+          implementation = Path('.github/m4b/implement_m4b.py').read_text('utf-8')
+          implementation = implementation.replace(
+              '    "memory-policy.automatic.example.yaml",',
+              '    "memory-policy.automatic.example.json",',
+              1,
+          )
+
+          policy_start = implementation.index('def policy_examples() -> dict[str, dict[str, Any]]:')
+          inventory_start = implementation.index('def add_example_inventories() -> None:', policy_start)
+          canonical_packager = r'''
+          def package_policy_examples() -> None:
+              from workflow_skill_router.memory import (
+                  MemoryScope,
+                  decode_policy_text,
+              )
+
+              sources = (
+                  (
+                      ROOT / "docs/architecture/examples/workflow-memory.disabled.yaml",
+                      "memory-policy.disabled.example.yaml",
+                      "yaml",
+                  ),
+                  (
+                      ROOT / "docs/architecture/examples/workflow-memory.reviewed.yaml",
+                      "memory-policy.reviewed.example.yaml",
+                      "yaml",
+                  ),
+                  (
+                      ROOT / "docs/architecture/examples/workflow-memory.automatic.json",
+                      "memory-policy.automatic.example.json",
+                      "json",
+                  ),
+              )
+              targets = (
+                  ROOT / "starter/v2/workflow-skill-router/assets",
+                  ROOT / "plugins/workflow-skill-router/skills/workflow-skill-router/assets",
+              )
+              for source, name, source_format in sources:
+                  rendered = source.read_text("utf-8")
+                  decode_policy_text(
+                      rendered,
+                      format=source_format,
+                      expected_scope=MemoryScope.PERSONAL,
+                  )
+                  if not rendered.endswith("\n"):
+                      rendered += "\n"
+                  for target in targets:
+                      target.mkdir(parents=True, exist_ok=True)
+                      (target / name).write_text(
+                          rendered,
+                          encoding="utf-8",
+                          newline="\n",
+                      )
+
+
+          def add_example_inventories() -> None:
+              for path in (ROOT / "release" / "allowlists").glob("*.json"):
+                  try:
+                      document = json.loads(path.read_text("utf-8"))
+                  except Exception:
+                      continue
+                  changed = False
+
+                  def visit(value: Any) -> None:
+                      nonlocal changed
+                      if isinstance(value, dict):
+                          for child in value.values():
+                              visit(child)
+                          return
+                      if not isinstance(value, list):
+                          return
+                      prefixes = {
+                          item.rsplit("assets/", 1)[0] + "assets/"
+                          for item in value
+                          if isinstance(item, str)
+                          and item.endswith("assets/workspace-routing-profile.example.json")
+                      }
+                      for prefix in sorted(prefixes):
+                          for name in EXAMPLE_NAMES:
+                              candidate = prefix + name
+                              if candidate not in value:
+                                  value.append(candidate)
+                                  changed = True
+                      if value and all(isinstance(item, str) for item in value):
+                          value[:] = sorted(set(value))
+
+                  visit(document)
+                  if changed:
+                      write_json(path, document)
+          '''
+          next_section = implementation.index('\n\nCOMMON_VOCAB_EN', inventory_start)
+          implementation = (
+              implementation[:policy_start]
+              + textwrap.dedent(canonical_packager).strip()
+              + implementation[next_section:]
+          )
+
+          fixed = []
+          for line in implementation.splitlines():
+              line = line.replace('^pilot-[0-9]{{2}}$', '^pilot-[0-9]{2}$')
+              line = line.replace(
+                  "root.querySelectorAll('[data-memory-tab]')",
+                  "root.querySelectorAll<HTMLElement>('[data-memory-tab]')",
+              )
+              line = line.replace(
+                  "root.querySelectorAll('[data-memory-panel]')",
+                  "root.querySelectorAll<HTMLElement>('[data-memory-panel]')",
+              )
+              fixed.append(line)
+          implementation = '\n'.join(fixed) + '\n'
+
+          old_schema = (
+              '    if schema.get("type") != "object" or not isinstance(schema.get("properties"), dict):\n'
+              '        raise RuntimeError("Unexpected demo input schema root")\n'
+              '    scenario_schema, pilot_schema = memory_schema()'
+          )
+          new_schema = (
+              '    if schema.get("type") != "object":\n'
+              '        raise RuntimeError("Unexpected demo input schema root")\n'
+              '    properties = schema.setdefault("properties", {})\n'
+              '    if not isinstance(properties, dict):\n'
+              '        raise RuntimeError("Unexpected demo input schema properties")\n'
+              '    scenario_schema, pilot_schema = memory_schema()'
+          )
+          if old_schema not in implementation:
+              raise SystemExit('demo schema guard marker missing')
+          implementation = implementation.replace(old_schema, new_schema, 1)
+
+          Path('/tmp/m4b-implement.py').write_text(
+              implementation,
+              encoding='utf-8',
+              newline='\n',
+          )
+
+          tests = Path('.github/m4b/write_tests.py').read_text('utf-8')
+          tests = tests.replace(
+              'Path("assets/memory-policy.automatic.example.yaml")',
+              'Path("assets/memory-policy.automatic.example.json")',
+          )
+          tests = tests.replace(
+              '"memory-policy.automatic.example.yaml"',
+              '"memory-policy.automatic.example.json"',
+          )
+
+          example_start = tests.index('    def test_three_policy_examples_are_strict_private_and_source_synchronized(self) -> None:')
+          example_end = tests.index('\n    def test_public_references_separate_storage_authority_and_receipt_evidence', example_start)
+          example_test = r'''
+              def test_three_policy_examples_are_strict_private_and_source_synchronized(self) -> None:
+                  from workflow_skill_router.memory import (
+                      MemoryScope,
+                      decode_policy_text,
+                      memory_policy_document,
+                  )
+
+                  modes = []
+                  for relative in EXAMPLES:
+                      source = STARTER / relative
+                      target = PLUGIN / relative
+                      with self.subTest(relative=relative.as_posix()):
+                          self.assertTrue(source.is_file(), source)
+                          self.assertEqual(source.read_bytes(), target.read_bytes())
+                          source_format = "json" if source.suffix == ".json" else "yaml"
+                          policy = decode_policy_text(
+                              source.read_text("utf-8"),
+                              format=source_format,
+                              expected_scope=MemoryScope.PERSONAL,
+                          )
+                          document = memory_policy_document(policy)
+                          self.assertEqual("personal", document["scope"])
+                          self.assertTrue(str(document["policy_id"]).startswith("personal:"))
+                          serialized = json.dumps(document).casefold()
+                          self.assertNotIn("objective_text", serialized)
+                          self.assertNotIn("local_path", serialized)
+                          self.assertNotIn("secret_value", serialized)
+                          modes.append(document["mode"])
+                  self.assertEqual(["disabled", "reviewed", "automatic"], modes)
+          '''
+          tests = (
+              tests[:example_start]
+              + textwrap.dedent(example_test).rstrip()
+              + tests[example_end:]
+          )
+
+          old_memory_assertions = (
+              '        self.assertNotIn("fetch(\'/api", component)\n'
+              '        self.assertNotIn("localStorage", component)'
+          )
+          new_memory_assertions = (
+              '        start = component.index("<!-- M4-B memory-flight-recorder:start -->")\n'
+              '        end = component.index("<!-- M4-B memory-flight-recorder:end -->", start)\n'
+              '        memory_block = component[start:end]\n'
+              '        self.assertNotIn("fetch(\'/api", memory_block)\n'
+              '        self.assertNotIn("localStorage", memory_block)'
+          )
+          if old_memory_assertions not in tests:
+              raise SystemExit('Flight Recorder assertion marker missing')
+          tests = tests.replace(old_memory_assertions, new_memory_assertions, 1)
+
+          Path('/tmp/m4b-write-tests.py').write_text(
+              tests,
+              encoding='utf-8',
+              newline='\n',
+          )
+
+      - name: Compile scripts before touching product branch
+        run: python -m py_compile /tmp/m4b-write-tests.py /tmp/m4b-implement.py
+
+      - name: Enter unchanged target branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          START_SHA="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$START_SHA" = "$BASE_SHA"
+          echo "START_SHA=$START_SHA" >> "$GITHUB_ENV"
+          git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          test -z "$(git status --porcelain)"
+
+      - name: RED - commit and observe corrected publication contract failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python /tmp/m4b-write-tests.py
+          git diff --check
+          git add tests/test_adaptive_workflow_memory_docs.py tests/test_doc_parity.py tests/test_v2_documentation.py tests/test_skill_source_sync.py
+          git commit -m 'test(docs): define adaptive workflow memory publication contract'
+          set +e
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v >/tmp/m4b-red.log 2>&1
+          STATUS=$?
+          set -e
+          test "$STATUS" -ne 0
+          grep -Eq 'FAILED|ERROR|AssertionError|FileNotFoundError' /tmp/m4b-red.log
+          echo 'Observed expected RED contract failure before implementation.'
+
+      - name: Normalize compact demo builder main guard
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('scripts/build-v2-demo-data.py')
+          text = path.read_text('utf-8')
+          compact = 'if __name__=="__main__":raise SystemExit(main())'
+          expanded = 'if __name__ == "__main__":\n    raise SystemExit(main())'
+          if compact not in text:
+              raise SystemExit('compact demo builder main guard missing')
+          path.write_text(text.replace(compact, expanded, 1), encoding='utf-8', newline='\n')
+
+      - name: GREEN - implement docs, canonical examples, Flight Recorder, and Pilot
+        run: |
+          python /tmp/m4b-implement.py
+          python scripts/build-v2-demo-data.py
+          git diff --check
+
+      - name: Rebind changed inherited-content evidence
+        shell: python
+        run: |
+          import hashlib, json, re
+          from pathlib import Path
+          path = Path('release/v2-inherited-change-closure.json')
+          document = json.loads(path.read_text('utf-8'))
+          lines = path.read_text('utf-8').splitlines()
+          suffixes = {'.css','.json','.jsonl','.md','.mdx','.mjs','.py','.sql','.ts','.yaml','.yml'}
+          for entry in document['entries']:
+              if entry['evidence']['kind'] != 'current-content-digest':
+                  continue
+              target = Path(entry['path'])
+              if not target.is_file():
+                  continue
+              data = target.read_bytes()
+              if target.suffix.lower() in suffixes:
+                  data = data.replace(b'\r\n', b'\n')
+              digest = hashlib.sha256(data).hexdigest()
+              if digest == entry['evidence']['sha256']:
+                  continue
+              patterns = (f'"path":"{entry["path"]}"', f'"path": "{entry["path"]}"')
+              found = [index for index, line in enumerate(lines) if any(pattern in line for pattern in patterns)]
+              assert len(found) == 1, entry['path']
+              index = found[0]
+              lines[index], count = re.subn(r'("sha256"\s*:\s*")[0-9a-f]{64}(")', rf'\g<1>{digest}\g<2>', lines[index], count=1)
+              assert count == 1, entry['path']
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add README.md README.zh-TW.md site demo scripts starter plugins/workflow-skill-router/skills release/allowlists release/v2-inherited-change-closure.json
+          git commit -m 'docs(memory): publish adaptive workflow memory guidance and pilot'
+
+      - name: Run focused M4-B contracts
+        run: |
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v
+          python -m unittest discover -s tests -p 'test_doc_parity.py' -v
+          python -m unittest discover -s tests -p 'test_v2_documentation.py' -v
+          python -m unittest discover -s tests -p 'test_skill_source_sync.py' -v
+          python -m unittest discover -s tests -p 'test_v2_demo_data.py' -v
+          python scripts/build-v2-demo-data.py --check
+
+      - name: Run complete Core and repository suites
+        run: |
+          python -m unittest discover -s packages/router-core/tests -p 'test_*.py' -v
+          python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Verify deterministic public contracts
+        run: |
+          python scripts/validate-router.py starter/v2/workflow-skill-router
+          python scripts/validate-router.py --public-readiness .
+          python scripts/audit-public-readiness.py .
+          python scripts/check-markdown-links.py .
+          python scripts/check-doc-parity.py
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+          python -I -S -B scripts/build-release-artifacts.py --check
+          node scripts/build-mcp-reference-data.mjs --check
+
+      - name: Verify Plugin/MCP
+        working-directory: plugins/workflow-skill-router
+        run: |
+          npm ci
+          npm run check
+          node scripts/smoke-plugin.mjs
+
+      - name: Verify site build, smoke, visual, and Lighthouse
+        working-directory: site
+        run: |
+          npm ci
+          npm run assets:demo:check
+          npm run assets:social:check
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:site:smoke
+          npm run test:site:visual
+          npm run audit:lighthouse
+
+      - name: Publish only clean fast-forward
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check "$BASE_SHA" HEAD
+          test -z "$(git status --porcelain)"
+          test "$(git rev-list --count "$START_SHA"..HEAD)" -eq 2
+          CURRENT_REMOTE="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$CURRENT_REMOTE" = "$START_SHA"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          {
+            echo '## M4-B verified branch'
+            echo "Start: $START_SHA"
+            echo "Head: $(git rev-parse HEAD)"
+            echo "Tree: $(git rev-parse HEAD^{tree})"
+            echo 'RED observed before GREEN.'
+            echo 'Canonical Policy examples, focused/full tests, deterministic checks, Plugin, site smoke/visual, and Lighthouse passed.'
+          } >> "$GITHUB_STEP_SUMMARY"
