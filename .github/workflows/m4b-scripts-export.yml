@@ -1,0 +1,29 @@
+name: M4-B Scripts Export
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-scripts-export.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Package exact runner scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m4b-scripts
+          cp .github/m4b/write_tests.py /tmp/m4b-scripts/
+          cp .github/m4b/implement_m4b.py /tmp/m4b-scripts/
+          sha256sum /tmp/m4b-scripts/*.py > /tmp/m4b-scripts/checksums.sha256
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: m4b-runner-scripts
+          path: /tmp/m4b-scripts/
+          retention-days: 1
+          if-no-files-found: error
