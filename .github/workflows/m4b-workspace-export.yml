@@ -1,0 +1,31 @@
+name: M4-B Workspace Export
+on:
+  push:
+    branches: [codex/m4b-workspace-export]
+    paths: [.github/workflows/m4b-workspace-export.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+          persist-credentials: false
+      - name: Export exact merged source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+          mkdir -p /tmp/m4b-export
+          git archive --format=tar.gz -o /tmp/m4b-export/source.tar.gz HEAD
+          git rev-parse HEAD HEAD^{tree} > /tmp/m4b-export/source-identity.txt
+          sha256sum /tmp/m4b-export/source.tar.gz > /tmp/m4b-export/checksums.sha256
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: workflow-skill-router-m4b-workspace
+          path: /tmp/m4b-export/
+          retention-days: 1
+          if-no-files-found: error
