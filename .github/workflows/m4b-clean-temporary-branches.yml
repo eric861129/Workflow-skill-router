@@ -1,0 +1,83 @@
+name: M4-B Temporary Branch Cleanup
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-clean-temporary-branches.yml]
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Wait for exact-head verification label
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 240); do
+            PR_NUMBER="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$TARGET_BRANCH" --json number --jq '.[0].number // empty')"
+            if [ -n "$PR_NUMBER" ]; then
+              VERIFIED="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json labels --jq '[.labels[].name] | index("m4b-verified") != null')"
+              if [ "$VERIFIED" = true ]; then
+                TARGET_HEAD="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
+                test -n "$TARGET_HEAD"
+                git fetch --no-tags origin "$TARGET_BRANCH"
+                test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_HEAD"
+                echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+                echo "TARGET_HEAD=$TARGET_HEAD" >> "$GITHUB_ENV"
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+          echo 'M4-B exact-head verification was not observed; temporary refs remain intact.' >&2
+          exit 1
+      - name: Delete only the exact temporary refs created for M4-B
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            codex/m4b-workspace-export
+            codex/m4b-implementation-runner
+            codex/m4b-implementation-runner-2
+            codex/m4b-implementation-runner-3
+            codex/m4b-implementation-runner-final
+            codex/m4b-runner
+            codex/m4b-runner-actual
+            codex/m4b-runner-stable
+            codex/m4b-runner-one
+            codex/m4b-runner-workflow
+            codex/m4b-runner-finally
+            codex/m4b-runner-please
+            codex/m4b-runner-last
+            codex/m4b-runner-now
+          )
+          args=(origin)
+          deleted=()
+          for branch in "${branches[@]}"; do
+            ref="refs/heads/$branch"
+            sha="$(git ls-remote --heads origin "$ref" | awk '{print $1}')"
+            if [ -z "$sha" ]; then
+              continue
+            fi
+            args+=("--force-with-lease=$ref:$sha" ":$ref")
+            deleted+=("$branch@$sha")
+          done
+          if [ "${#deleted[@]}" -gt 0 ]; then
+            git push --atomic "${args[@]}"
+          fi
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$TARGET_HEAD"
+          {
+            echo "PR: #$PR_NUMBER"
+            echo "Target retained: $TARGET_BRANCH@$TARGET_HEAD"
+            echo 'Deleted temporary refs:'
+            printf '%s\n' "${deleted[@]}"
+          } >> "$GITHUB_STEP_SUMMARY"
