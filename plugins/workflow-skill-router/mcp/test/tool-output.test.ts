@@ -311,3 +311,42 @@ test("managed profile route sources are accepted as planning intent", () => {
     }).success, true);
   }
 });
+
+import memorySamples from "./fixtures/memory-output.json" with { type: "json" };
+
+test("Memory output schemas accept Core fixtures and reject authority/path injection", () => {
+  const schemas = TOOL_OUTPUT_SCHEMAS as Record<string, { safeParse: (value: unknown) => {success: boolean} }>;
+  for (const [name, sample] of Object.entries(memorySamples)) {
+    assert.ok(schemas[name], `${name} output contract missing`);
+    assert.equal(schemas[name].safeParse(sample).success, true, name);
+    for (const field of ["raw_prompt", "workspace_root", "target_path", "runtime_authority"]) {
+      assert.equal(schemas[name].safeParse({ ...sample, [field]: "secret-path" }).success, false, `${name}.${field}`);
+    }
+    assert.equal(schemas[name].safeParse({ ...sample, authority_mode: "verified-host" }).success, false);
+  }
+});
+
+test("Memory outputs reject invented reasons, fake promotion states and invalid Digests", () => {
+  const schemas = TOOL_OUTPUT_SCHEMAS as Record<string, { safeParse: (value: unknown) => {success: boolean} }>;
+  assert.ok(schemas.get_memory_status);
+  assert.equal(schemas.get_memory_status.safeParse({...memorySamples.get_memory_status, reason_codes: ["C:/secret"]}).success, false);
+  assert.equal(schemas.get_memory_status.safeParse({...memorySamples.get_memory_status, actual_skill_consistency: "verified"}).success, false);
+  assert.equal(schemas.transition_profile_update.safeParse({...memorySamples.transition_profile_update, revision_id: null}).success, false);
+  const preview = structuredClone(memorySamples.preview_profile_update);
+  preview.proposal.policy_digest = "sha256:bad";
+  assert.equal(schemas.preview_profile_update.safeParse(preview).success, false);
+});
+
+test("Memory preview validates embedded Profile and Diff contracts, not merely JSON syntax", () => {
+  const schema = TOOL_OUTPUT_SCHEMAS.preview_profile_update;
+  const unknownProfile = structuredClone(memorySamples.preview_profile_update);
+  const profile = JSON.parse(unknownProfile.proposal.proposed_profile_json);
+  profile.raw_prompt = "private input";
+  unknownProfile.proposal.proposed_profile_json = JSON.stringify(profile);
+  assert.equal(schema.safeParse(unknownProfile).success, false);
+  const unknownDiff = structuredClone(memorySamples.preview_profile_update);
+  const diff = JSON.parse(unknownDiff.proposal.semantic_diff_json);
+  diff.entries[0].after = {raw_prompt: "private input"};
+  unknownDiff.proposal.semantic_diff_json = JSON.stringify(diff);
+  assert.equal(schema.safeParse(unknownDiff).success, false);
+});

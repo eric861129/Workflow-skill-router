@@ -4,7 +4,7 @@ import { TOOL_DEFINITIONS } from "../src/tool-definitions.js";
 
 
 test("all public tools expose actionable MCP metadata", () => {
-  assert.equal(TOOL_DEFINITIONS.length, 12);
+  assert.equal(TOOL_DEFINITIONS.length, 20);
   for (const definition of TOOL_DEFINITIONS) {
     assert.ok(definition.title.length >= 8, definition.name);
     assert.ok(definition.description.length >= 80, definition.name);
@@ -33,4 +33,18 @@ test("plan_work metadata explains user-owned profile precedence and activation b
   const plan = TOOL_DEFINITIONS.find((item) => item.name === "plan_work")!;
   assert.match(plan.description, /user-owned/i);
   assert.match(plan.description, /runtime discovery/i);
+});
+
+test("Memory metadata separates read-only previews from conditional writes and purge", () => {
+  const byName = Object.fromEntries(TOOL_DEFINITIONS.map((item) => [item.name, item]));
+  for (const name of ["get_memory_status", "list_workflow_candidates", "preview_profile_update"]) {
+    assert.ok(byName[name]);
+    assert.equal(byName[name].annotations.readOnlyHint, true);
+  }
+  for (const name of ["transition_profile_update", "rollback_profile_revision"]) {
+    assert.ok(byName[name]);
+    assert.equal(byName[name].runtimeRequirement, "conditional-local");
+  }
+  assert.equal(byName.purge_workflow_memory.annotations.destructiveHint, true);
+  assert.equal(byName.remember_workflow.annotations.readOnlyHint, false);
 });

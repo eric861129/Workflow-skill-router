@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MEMORY_OUTPUT_SCHEMAS } from "./memory-tool-schemas.js";
 
 
 const nullableIdentifier = z.string().nullable();
@@ -170,6 +171,7 @@ const gateEvaluation = z.object({
 });
 
 export const TOOL_OUTPUT_SCHEMAS = {
+  ...MEMORY_OUTPUT_SCHEMAS,
   sync_runtime_context: z.object({
     snapshot: unknownObject,
     drift: z.array(unknownObject),

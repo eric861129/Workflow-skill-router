@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { MEMORY_INPUT_SHAPES } from "./memory-tool-schemas.js";
+export { MEMORY_INPUT_SCHEMAS } from "./memory-tool-schemas.js";
 
 
 const context = z.object({
@@ -65,6 +67,7 @@ export const PLAN_WORK_INPUT_SCHEMA = z.object({
 });
 
 export const TOOL_INPUT_SHAPES = {
+  ...MEMORY_INPUT_SHAPES,
   sync_runtime_context: z.object({
     ...mutation,
     intent: z.object({

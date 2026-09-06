@@ -38,6 +38,54 @@ def _entry(
 
 
 RUNTIME_READINESS: Mapping[str, ToolRuntimeReadiness] = {
+    "get_memory_status": _entry(
+        "get_memory_status", "local-ready", "R0",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
+    "remember_workflow": _entry(
+        "remember_workflow", "local-ready", "R0",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
+    "record_route_feedback": _entry(
+        "record_route_feedback", "local-ready", "R0",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
+    "list_workflow_candidates": _entry(
+        "list_workflow_candidates", "local-ready", "R0",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
+    "preview_profile_update": _entry(
+        "preview_profile_update", "local-ready", "R0",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
+    "transition_profile_update": _entry(
+        "transition_profile_update", "conditional-local", "R1",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        ("effective-memory-policy", "bound-reviewed-profile", "local-profile-target"),
+    ),
+    "rollback_profile_revision": _entry(
+        "rollback_profile_revision", "conditional-local", "R1",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        ("effective-memory-policy", "bound-reviewed-profile", "local-profile-target"),
+    ),
+    "purge_workflow_memory": _entry(
+        "purge_workflow_memory", "local-ready", "R1",
+        ("bundled-local-control-plane",),
+        "Memory is default-off; use explicit policy-bound local operations. Workspace-file writes require verified Host authority.",
+        (),
+    ),
     "sync_runtime_context": _entry(
         "sync_runtime_context",
         "verified-host-required",

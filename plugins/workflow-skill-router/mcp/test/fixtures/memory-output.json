@@ -1,0 +1,219 @@
+{
+  "get_memory_status": {
+    "effective_mode": "reviewed",
+    "personal_ceiling": "reviewed",
+    "workspace_requested_mode": null,
+    "policy_digest": "sha256:f553b2e8df2e58cb077c007431d41dad61d280ee56b1132c2bf2f1dbe1dc8a15",
+    "capture_enabled": true,
+    "candidate_generation_enabled": true,
+    "profile_promotion": "review-required",
+    "allowed_targets": [
+      "managed-personal"
+    ],
+    "memory_store_exists": false,
+    "reason_codes": [],
+    "history_summary_digest": "sha256:1482f5165b94cbb8fb8642e25917dbb6b1ea85cf65404a3691c58481d47e8314",
+    "eligible_workflow_count": 0,
+    "actual_skill_consistency": "unavailable",
+    "authority_mode": "router-local"
+  },
+  "list_workflow_candidates": {
+    "candidates": [
+      {
+        "candidate_id": "candidate:96399967b46e4c2e35fbfced2aa1823d",
+        "candidate_digest": "sha256:96399967b46e4c2e35fbfced2aa1823dee91450484305e9341a1e27b39fe8f97",
+        "pattern_id": "pattern:1cfa8376bb4bed75491c00d5ef6573f9",
+        "status": "proposed",
+        "recommendation_mode": "reviewed",
+        "confidence": "medium",
+        "target_profile_class": "managed-personal",
+        "workspace_identity_digest": null,
+        "material_evidence_digest": "sha256:a0c015554e4e182d2c9ab320dfb46a08a8c2bcfc6591c41cad04d42d793fd51a",
+        "policy_digest": "sha256:f553b2e8df2e58cb077c007431d41dad61d280ee56b1132c2bf2f1dbe1dc8a15",
+        "created_at": "2026-09-06T05:33:22.500Z",
+        "scope": "personal",
+        "metrics": {
+          "distinct_runs": 3,
+          "distinct_days": 2,
+          "completion_rate": 1.0,
+          "required_gate_pass_rate": 1.0,
+          "manual_correction_rate": 0.0,
+          "route_consistency": 1.0,
+          "canonical_skill_ids": true,
+          "hard_contract_violations": 0
+        },
+        "reason_codes": [
+          "explicit-route-requires-review"
+        ]
+      }
+    ],
+    "truncated": false,
+    "authority_mode": "router-local"
+  },
+  "preview_profile_update": {
+    "status": "previewed",
+    "proposal": {
+      "proposal_id": "proposal:10de0fd05f5cb5191eef7a1104a096c6",
+      "proposal_digest": "sha256:10de0fd05f5cb5191eef7a1104a096c6ea4e0642773ccb3a04b44840d655ebda",
+      "candidate_id": "candidate:96399967b46e4c2e35fbfced2aa1823d",
+      "candidate_digest": "sha256:96399967b46e4c2e35fbfced2aa1823dee91450484305e9341a1e27b39fe8f97",
+      "status": "pending",
+      "state_version": 1,
+      "target_profile_class": "managed-personal",
+      "expected_profile_digest": "missing",
+      "proposed_profile_digest": "sha256:146b1b75e0942b80d2982b6876b27e4558a3cd98f2ee263d658eb81a62589086",
+      "semantic_diff_digest": "sha256:2993ad4ca0a849d7c33f8ef5fed026426570f1ef0e4caf1fb97de36b67739d4c",
+      "backtest_digest": "sha256:8dc999a19f651cbb5c8f1ecf0ba8fa8b9f796f86f04f0c837793538cb9ce6005",
+      "policy_digest": "sha256:f553b2e8df2e58cb077c007431d41dad61d280ee56b1132c2bf2f1dbe1dc8a15",
+      "workspace_identity_digest": null,
+      "created_at": "2026-09-06T05:33:22.500Z",
+      "expires_at": "2026-09-13T05:33:22.500Z",
+      "proposed_profile_json": "{\"artifact_kind\":\"routing-profile\",\"enabled\":true,\"profile_id\":\"personal:adaptive-memory\",\"rules\":[{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"schema_id\":\"workflow-skill-router/routing-profile\",\"schema_version\":\"1.0.0\",\"scope\":\"personal\"}",
+      "semantic_diff_json": "{\"entries\":[{\"after\":{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"},\"before\":null,\"change_type\":\"rule-added\",\"field\":null,\"phase_id\":null,\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"json_patch\":[{\"op\":\"add\",\"path\":\"/\",\"value\":{\"artifact_kind\":\"routing-profile\",\"enabled\":true,\"profile_id\":\"personal:adaptive-memory\",\"rules\":[{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"schema_id\":\"workflow-skill-router/routing-profile\",\"schema_version\":\"1.0.0\",\"scope\":\"personal\"}}],\"json_patch_digest\":\"sha256:b778e9f85f738193467fe461bd2846c05e5b48f0b048cb9fb0e06315845c8c5c\",\"semantic_diff_digest\":\"sha256:2993ad4ca0a849d7c33f8ef5fed026426570f1ef0e4caf1fb97de36b67739d4c\"}",
+      "backtest": {
+        "positive_observation_count": 3,
+        "positive_match_count": 3,
+        "positive_match_coverage": 1.0,
+        "unexpected_match_count": 0,
+        "shadowed_rule_ids": [],
+        "equal_rank_conflicts": [],
+        "manual_precedence": false,
+        "manual_profile_digests": [],
+        "capability_gap_summary": "unavailable",
+        "planned_route_regressions": 0,
+        "workspace_isolation": true,
+        "acceptable": true,
+        "backtest_digest": "sha256:8dc999a19f651cbb5c8f1ecf0ba8fa8b9f796f86f04f0c837793538cb9ce6005"
+      }
+    },
+    "revision_id": null,
+    "revision_digest": null,
+    "replayed": false,
+    "reason_codes": [],
+    "authority_mode": "router-local"
+  },
+  "transition_profile_update": {
+    "status": "applied",
+    "proposal": {
+      "proposal_id": "proposal:10de0fd05f5cb5191eef7a1104a096c6",
+      "proposal_digest": "sha256:10de0fd05f5cb5191eef7a1104a096c6ea4e0642773ccb3a04b44840d655ebda",
+      "candidate_id": "candidate:96399967b46e4c2e35fbfced2aa1823d",
+      "candidate_digest": "sha256:96399967b46e4c2e35fbfced2aa1823dee91450484305e9341a1e27b39fe8f97",
+      "status": "applied",
+      "state_version": 3,
+      "target_profile_class": "managed-personal",
+      "expected_profile_digest": "missing",
+      "proposed_profile_digest": "sha256:146b1b75e0942b80d2982b6876b27e4558a3cd98f2ee263d658eb81a62589086",
+      "semantic_diff_digest": "sha256:2993ad4ca0a849d7c33f8ef5fed026426570f1ef0e4caf1fb97de36b67739d4c",
+      "backtest_digest": "sha256:8dc999a19f651cbb5c8f1ecf0ba8fa8b9f796f86f04f0c837793538cb9ce6005",
+      "policy_digest": "sha256:f553b2e8df2e58cb077c007431d41dad61d280ee56b1132c2bf2f1dbe1dc8a15",
+      "workspace_identity_digest": null,
+      "created_at": "2026-09-06T05:33:22.500Z",
+      "expires_at": "2026-09-13T05:33:22.500Z",
+      "proposed_profile_json": "{\"artifact_kind\":\"routing-profile\",\"enabled\":true,\"profile_id\":\"personal:adaptive-memory\",\"rules\":[{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"schema_id\":\"workflow-skill-router/routing-profile\",\"schema_version\":\"1.0.0\",\"scope\":\"personal\"}",
+      "semantic_diff_json": "{\"entries\":[{\"after\":{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"},\"before\":null,\"change_type\":\"rule-added\",\"field\":null,\"phase_id\":null,\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"json_patch\":[{\"op\":\"add\",\"path\":\"/\",\"value\":{\"artifact_kind\":\"routing-profile\",\"enabled\":true,\"profile_id\":\"personal:adaptive-memory\",\"rules\":[{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"schema_id\":\"workflow-skill-router/routing-profile\",\"schema_version\":\"1.0.0\",\"scope\":\"personal\"}}],\"json_patch_digest\":\"sha256:b778e9f85f738193467fe461bd2846c05e5b48f0b048cb9fb0e06315845c8c5c\",\"semantic_diff_digest\":\"sha256:2993ad4ca0a849d7c33f8ef5fed026426570f1ef0e4caf1fb97de36b67739d4c\"}",
+      "backtest": {
+        "acceptable": true,
+        "backtest_digest": "sha256:8dc999a19f651cbb5c8f1ecf0ba8fa8b9f796f86f04f0c837793538cb9ce6005",
+        "capability_gap_summary": "unavailable",
+        "equal_rank_conflicts": [],
+        "manual_precedence": false,
+        "manual_profile_digests": [],
+        "planned_route_regressions": 0,
+        "positive_match_count": 3,
+        "positive_match_coverage": 1.0,
+        "positive_observation_count": 3,
+        "shadowed_rule_ids": [],
+        "unexpected_match_count": 0,
+        "workspace_isolation": true
+      }
+    },
+    "revision_id": "revision:c2ad927b959a166c76ec17dffd591a9c",
+    "revision_digest": "sha256:c2ad927b959a166c76ec17dffd591a9cfea30f4d0521b5683cd5dc613016b1f2",
+    "replayed": false,
+    "reason_codes": [],
+    "authority_mode": "router-local"
+  },
+  "rollback_profile_revision": {
+    "status": "pending",
+    "proposal": {
+      "proposal_id": "proposal:9b13ee76c92d4d9e92e10670c6dca7e0",
+      "proposal_digest": "sha256:9b13ee76c92d4d9e92e10670c6dca7e0b5498014fd2a96e2eae1a8ce55c2fd23",
+      "candidate_id": "candidate:96399967b46e4c2e35fbfced2aa1823d",
+      "candidate_digest": "sha256:96399967b46e4c2e35fbfced2aa1823dee91450484305e9341a1e27b39fe8f97",
+      "status": "pending",
+      "state_version": 1,
+      "target_profile_class": "managed-personal",
+      "expected_profile_digest": "sha256:146b1b75e0942b80d2982b6876b27e4558a3cd98f2ee263d658eb81a62589086",
+      "proposed_profile_digest": "sha256:146b1b75e0942b80d2982b6876b27e4558a3cd98f2ee263d658eb81a62589086",
+      "semantic_diff_digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "backtest_digest": "sha256:77ec7f81d46a7c50b8fba87a6507bb3d8e46cd4a1212cb7ccf166c8db2a72d66",
+      "policy_digest": "sha256:f553b2e8df2e58cb077c007431d41dad61d280ee56b1132c2bf2f1dbe1dc8a15",
+      "workspace_identity_digest": null,
+      "created_at": "2026-09-06T05:33:22.523Z",
+      "expires_at": "2026-09-13T05:33:22.523Z",
+      "proposed_profile_json": "{\"artifact_kind\":\"routing-profile\",\"enabled\":true,\"profile_id\":\"personal:adaptive-memory\",\"rules\":[{\"match\":{\"domains\":[\"api\"],\"objective_keywords\":[\"student api\"],\"tags\":[],\"work_modes\":[\"single\"]},\"priority\":100,\"route\":{\"skill_tree\":[{\"exit_gate\":\"router-local-single-completed\",\"phase_id\":\"single-work\",\"primary_skill_id\":\"skill:api-designer\",\"support_skill_ids\":[]}],\"work_mode\":\"single\"},\"rule_id\":\"memory-1cfa8376bb4bed75491c00d5\"}],\"schema_id\":\"workflow-skill-router/routing-profile\",\"schema_version\":\"1.0.0\",\"scope\":\"personal\"}",
+      "semantic_diff_json": "{\"entries\":[],\"json_patch\":[],\"json_patch_digest\":\"sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\"semantic_diff_digest\":\"sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\"}",
+      "backtest": {
+        "positive_observation_count": 3,
+        "positive_match_count": 3,
+        "positive_match_coverage": 1.0,
+        "unexpected_match_count": 0,
+        "shadowed_rule_ids": [],
+        "equal_rank_conflicts": [],
+        "manual_precedence": true,
+        "manual_profile_digests": [
+          "sha256:146b1b75e0942b80d2982b6876b27e4558a3cd98f2ee263d658eb81a62589086"
+        ],
+        "capability_gap_summary": "unavailable",
+        "planned_route_regressions": 0,
+        "workspace_isolation": true,
+        "acceptable": true,
+        "backtest_digest": "sha256:77ec7f81d46a7c50b8fba87a6507bb3d8e46cd4a1212cb7ccf166c8db2a72d66"
+      }
+    },
+    "revision_id": null,
+    "revision_digest": null,
+    "replayed": false,
+    "reason_codes": [],
+    "authority_mode": "router-local"
+  },
+  "purge_workflow_memory": {
+    "status": "purged",
+    "scope": "history-only",
+    "deleted_observations": 3,
+    "deleted_feedback": 0,
+    "deleted_command_receipts": 3,
+    "summary_digest_before": "sha256:aec7f4da3b302460ee4b5be12f651a9272e4e8b27cb75a94118da081cee3115b",
+    "summary_digest_after": "sha256:1482f5165b94cbb8fb8642e25917dbb6b1ea85cf65404a3691c58481d47e8314",
+    "replayed": false,
+    "reason_codes": [],
+    "authority_mode": "router-local"
+  },
+  "remember_workflow": {
+    "status": "memory-disabled",
+    "observation_id": null,
+    "observation_digest": null,
+    "route_signature_digest": null,
+    "policy_digest": "sha256:0d63f013a3caecd23b07606ca0215a5ea5e72b248f1e12f31cca588c37b5604a",
+    "target_profile_class": "managed-personal",
+    "reason_codes": [
+      "memory-disabled"
+    ],
+    "replayed": false,
+    "candidate_id": null,
+    "authority_mode": "router-local"
+  },
+  "record_route_feedback": {
+    "status": "memory-disabled",
+    "feedback_id": null,
+    "feedback_digest": null,
+    "observation_id": "observation:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "policy_digest": "sha256:0d63f013a3caecd23b07606ca0215a5ea5e72b248f1e12f31cca588c37b5604a",
+    "reason_codes": [
+      "memory-disabled"
+    ],
+    "replayed": false,
+    "authority_mode": "router-local"
+  }
+}

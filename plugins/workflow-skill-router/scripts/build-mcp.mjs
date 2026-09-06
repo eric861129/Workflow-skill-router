@@ -21,6 +21,7 @@ if (outputIndex !== -1 && !explicitOutput) throw new Error("--output requires a 
 if (tests && explicitOutput) throw new Error("--output cannot be combined with --tests");
 const testSources = [
   ["bundled-runtime", "ts"],
+  ["memory-runtime", "ts"],
   ["core-client", "ts"],
   ["python-discovery", "ts"],
   ["runtime-readiness", "ts"],
@@ -45,6 +46,9 @@ for (const entry of entries) {
     format: "esm",
     target: "node24",
     bundle: true,
+    // SDK Client transport uses cross-spawn; keep that test-only dependency
+    // in its native Node module format instead of bundling CommonJS into ESM.
+    external: entry.in.endsWith("memory-runtime.test.ts") ? ["@modelcontextprotocol/sdk/*"] : [],
     sourcemap: false,
     logLevel: "warning",
     plugins: [{

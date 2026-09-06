@@ -6,10 +6,12 @@ import { CoreBridgeError, CoreClient } from "./core-client.js";
 import { startupFailureMessage } from "./startup-diagnostics.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
 import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
+import { MEMORY_INPUT_SCHEMAS, isMemoryTool } from "./memory-tool-schemas.js";
 import { PLAN_WORK_INPUT_SCHEMA } from "./tool-schemas.js";
 import {
   WorkspaceRootTrustError,
   bindPlanWorkWorkspaceRoot,
+  bindMemoryWorkspaceRoot,
   collectTrustedWorkspaceRoots,
 } from "./workspace-roots.js";
 
@@ -42,7 +44,7 @@ for (const definition of TOOL_DEFINITIONS) {
   server.registerTool(definition.name, {
     title: definition.title,
     description: definition.description,
-    inputSchema: definition.inputSchema,
+    inputSchema: isMemoryTool(definition.name) ? MEMORY_INPUT_SCHEMAS[definition.name] : definition.inputSchema,
     outputSchema: definition.outputSchema,
     annotations: definition.annotations,
   },
@@ -53,12 +55,16 @@ for (const definition of TOOL_DEFINITIONS) {
             arguments_ as Record<string, unknown>,
             await trustedWorkspaceRoots(),
           )
-          : arguments_;
+          : isMemoryTool(definition.name)
+            ? bindMemoryWorkspaceRoot(definition.name, MEMORY_INPUT_SCHEMAS[definition.name].parse(arguments_), await trustedWorkspaceRoots())
+            : arguments_;
         // MCP SDK registration accepts object shapes; parse after root binding to
         // enforce plan_work cross-field constraints declared with superRefine.
         const validatedArguments = definition.name === "plan_work"
           ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments)
-          : boundArguments;
+          : isMemoryTool(definition.name)
+            ? MEMORY_INPUT_SCHEMAS[definition.name].parse(boundArguments)
+            : boundArguments;
         const rawResult = await core.call(definition.name, validatedArguments);
         const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {

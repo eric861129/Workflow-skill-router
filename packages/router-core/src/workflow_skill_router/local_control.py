@@ -9,6 +9,9 @@ from pathlib import Path
 import re
 import sqlite3
 
+from workflow_skill_router.memory.service import WorkflowMemoryService
+from workflow_skill_router.memory.tool_api import MemoryToolAdapter
+
 from workflow_skill_router.local_work import (
     append_local_transition,
     LocalWorkItem,
@@ -116,6 +119,32 @@ class LocalControlPlaneService:
     def __init__(self, database: Path) -> None:
         self._database = database
         migrate(database)
+        self._memory = WorkflowMemoryService(database)
+        self._memory_tools = MemoryToolAdapter(self._memory)
+
+    def get_memory_status(self, command):
+        return self._memory_tools.get_memory_status(command)
+
+    def remember_workflow(self, command):
+        return self._memory_tools.remember_workflow(command)
+
+    def record_route_feedback(self, command):
+        return self._memory_tools.record_route_feedback(command)
+
+    def list_workflow_candidates(self, command):
+        return self._memory_tools.list_workflow_candidates(command)
+
+    def preview_profile_update(self, command):
+        return self._memory_tools.preview_profile_update(command)
+
+    def transition_profile_update(self, command):
+        return self._memory_tools.transition_profile_update(command)
+
+    def rollback_profile_revision(self, command):
+        return self._memory_tools.rollback_profile_revision(command)
+
+    def purge_workflow_memory(self, command):
+        return self._memory_tools.purge_workflow_memory(command)
 
     def plan_work(self, command) -> PlanWorkResult:
         objective = command.objective.strip()
@@ -494,6 +523,9 @@ class LocalControlPlaneService:
         )
 
     def require_local_capability(self, tool_name: str, command) -> None:
+        if tool_name in {"transition_profile_update", "rollback_profile_revision"}:
+            self._memory_tools.require_local_capability(tool_name, command)
+            return
         if tool_name == "get_next_work":
             self._validated_next_work(command)
             return

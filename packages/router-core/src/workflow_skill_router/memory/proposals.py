@@ -189,6 +189,7 @@ def create_profile_update_proposal_from_document(
     ttl_days: int = 7,
     manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
     automatic: bool = False,
+    persist: bool = True,
 ) -> ProfileUpdateProposal:
     if not isinstance(candidate, WorkflowCandidate):
         raise TypeError("candidate must be WorkflowCandidate")
@@ -244,7 +245,7 @@ def create_profile_update_proposal_from_document(
         proposal_id=proposal_id, proposal_digest=proposal_digest,
         status="pending", state_version=1, **immutable,  # type: ignore[arg-type]
     )
-    return store.save_profile_update_proposal(proposal)
+    return store.save_profile_update_proposal(proposal) if persist else proposal
 
 
 def create_profile_update_proposal(
@@ -257,6 +258,7 @@ def create_profile_update_proposal(
     ttl_days: int = 7,
     manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
     automatic: bool = False,
+    persist: bool = True,
 ) -> ProfileUpdateProposal:
     proposed_doc = build_profile_document(candidate, current_profile)
     return create_profile_update_proposal_from_document(
@@ -271,6 +273,7 @@ def create_profile_update_proposal(
         ttl_days=ttl_days,
         manual_profiles=manual_profiles,
         automatic=automatic,
+        persist=persist,
     )
 
 

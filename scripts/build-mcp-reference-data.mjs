@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -95,12 +95,10 @@ async function listTools() {
       child.once("exit", resolve);
       setTimeout(resolve, 2_000);
     });
-    for (const name of ["router-v2.sqlite3", "router-v2.sqlite3-wal", "router-v2.sqlite3-shm"]) {
-      await unlink(path.join(stateDirectory, name)).catch((error) => {
-        if (error.code !== "ENOENT") throw error;
-      });
-    }
-    await rmdir(stateDirectory);
+    // This directory belongs exclusively to this invocation. Remove Router
+    // and optional Memory databases (including WAL/SHM), managed test Profiles,
+    // and revision artifacts; an absent optional store is valid.
+    await rm(stateDirectory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 

@@ -4,13 +4,13 @@ import { z } from "zod";
 import { PUBLIC_TOOL_NAMES } from "../src/tool-definitions.js";
 import { PLAN_WORK_INPUT_SCHEMA, TOOL_INPUT_SHAPES } from "../src/tool-schemas.js";
 
-test("只公開核准的十二個工具", () => {
-  assert.equal(PUBLIC_TOOL_NAMES.length, 12); assert.equal(new Set(PUBLIC_TOOL_NAMES).size, 12);
+test("只公開核准的二十個工具", () => {
+  assert.equal(PUBLIC_TOOL_NAMES.length, 20); assert.equal(new Set(PUBLIC_TOOL_NAMES).size, 20);
   assert.ok(PUBLIC_TOOL_NAMES.includes("propose_support_consent"));
   assert.ok(PUBLIC_TOOL_NAMES.includes("transition_support_consent"));
 });
 
-test("十二個工具都拒絕空值與未知欄位", () => {
+test("二十個工具都拒絕空值與未知欄位", () => {
   for (const name of PUBLIC_TOOL_NAMES) {
     assert.equal(z.object(TOOL_INPUT_SHAPES[name]).strict().safeParse({ unknown: true }).success, false, name);
   }
@@ -135,4 +135,141 @@ test("plan_work rejects unbound explicit semantics", () => {
       explicitSemantics,
     );
   }
+});
+
+import * as inputContracts from "../src/tool-schemas.js";
+const MEMORY_COMMANDS: Record<string, Record<string, unknown>> = {
+  "get_memory_status": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null
+  },
+  "remember_workflow": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "workflow_run_id": "workflow:test",
+    "target_profile_class": "managed-personal",
+    "risk_class": "r1",
+    "side_effect_outcome": "none",
+    "one_shot": "remember-once",
+    "idempotency_key": "memory-test",
+    "correlation_id": "memory-correlation"
+  },
+  "record_route_feedback": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "workflow_run_id": "workflow:test",
+    "observation_id": "observation:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "feedback_type": "accepted",
+    "reason_code": "user-accepted",
+    "correction_dimensions": [],
+    "original_route_digest": null,
+    "corrected_route_digest": null,
+    "idempotency_key": "memory-test",
+    "correlation_id": "memory-correlation"
+  },
+  "list_workflow_candidates": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "status": null,
+    "limit": 100
+  },
+  "preview_profile_update": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "candidate_id": "candidate:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "transition_profile_update": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "proposal_id": "proposal:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expected_proposal_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expected_profile_digest": "missing",
+    "action": "approve",
+    "expected_state_version": 1,
+    "idempotency_key": "memory-test",
+    "correlation_id": "memory-correlation"
+  },
+  "rollback_profile_revision": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "workspace_root": null,
+    "source_revision_id": "revision:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expected_profile_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "idempotency_key": "memory-test",
+    "correlation_id": "memory-correlation"
+  },
+  "purge_workflow_memory": {
+    "context": {
+      "session_id": "session-memory",
+      "actor": "developer",
+      "runtime_policy_snapshot_id": "policy-memory"
+    },
+    "scope": "history-only",
+    "expected_summary_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "include_managed_profiles": false,
+    "confirmed": true,
+    "idempotency_key": "memory-test",
+    "correlation_id": "memory-correlation"
+  }
+};
+
+test("eight Memory schemas accept only bounded typed intents", () => {
+  const shapes = TOOL_INPUT_SHAPES as Record<string, z.ZodRawShape>;
+  for (const [name, args] of Object.entries(MEMORY_COMMANDS)) {
+    assert.ok(shapes[name], `${name} schema missing`);
+    const schema = z.object(shapes[name]).strict();
+    assert.equal(schema.safeParse(args).success, true, name);
+    for (const field of ["profile", "target_path", "authority", "free_text", "matcher_seed"]) {
+      assert.equal(schema.safeParse({ ...args, [field]: "untrusted" }).success, false, `${name}.${field}`);
+    }
+    assert.equal(schema.safeParse({ ...args, context: { ...(args.context as object), trusted: true } }).success, false);
+  }
+});
+
+test("Memory transition forbids replacing bound Candidate Target or Diff", () => {
+  const shapes = TOOL_INPUT_SHAPES as Record<string, z.ZodRawShape>;
+  assert.ok(shapes.transition_profile_update);
+  const schema = z.object(shapes.transition_profile_update).strict();
+  for (const field of ["candidate_id", "target_profile_class", "semantic_diff", "proposed_profile"]) {
+    assert.equal(schema.safeParse({ ...MEMORY_COMMANDS.transition_profile_update, [field]: "replacement" }).success, false);
+  }
+  for (const value of [true, 0, 1.5]) {
+    assert.equal(schema.safeParse({ ...MEMORY_COMMANDS.transition_profile_update, expected_state_version: value }).success, false);
+  }
+  assert.equal(schema.safeParse({ ...MEMORY_COMMANDS.transition_profile_update, expected_proposal_digest: "sha256:bad" }).success, false);
+});
+
+test("Memory full input validation retains correction and destructive-confirmation guards", () => {
+  const schemas = (inputContracts as unknown as { MEMORY_INPUT_SCHEMAS: Record<string, z.ZodType> }).MEMORY_INPUT_SCHEMAS;
+  assert.ok(schemas, "full Memory input schemas are missing");
+  assert.equal(schemas.record_route_feedback.safeParse({ ...MEMORY_COMMANDS.record_route_feedback, feedback_type: "corrected" }).success, false);
+  assert.equal(schemas.purge_workflow_memory.safeParse({ ...MEMORY_COMMANDS.purge_workflow_memory, confirmed: false }).success, false);
+  assert.equal(schemas.list_workflow_candidates.safeParse({ ...MEMORY_COMMANDS.list_workflow_candidates, limit: 1001 }).success, false);
 });
