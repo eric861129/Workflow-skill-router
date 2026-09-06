@@ -1,0 +1,45 @@
+name: M4-B v7 Transport Diagnose
+
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-v7-diagnose.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Inspect exact stored transport bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            .github/m4b/v7-script.part-00 \
+            .github/m4b/v7-script.part-01 \
+            .github/m4b/v7-script.part-02a \
+            .github/m4b/v7-script.part-02b \
+            .github/m4b/v7-script.part-02c
+          do
+            wc -c "$file"
+            sha256sum "$file"
+            tail -c 4 "$file" | od -An -tx1
+          done
+          cat \
+            .github/m4b/v7-script.part-00 \
+            .github/m4b/v7-script.part-01 \
+            .github/m4b/v7-script.part-02a \
+            .github/m4b/v7-script.part-02b \
+            .github/m4b/v7-script.part-02c > /tmp/m4b-v7.b64
+          wc -c /tmp/m4b-v7.b64
+          sha256sum /tmp/m4b-v7.b64
+          base64 --decode /tmp/m4b-v7.b64 > /tmp/run-m4b-v7.py
+          wc -c /tmp/run-m4b-v7.py
+          sha256sum /tmp/run-m4b-v7.py
+          python -m py_compile /tmp/run-m4b-v7.py
