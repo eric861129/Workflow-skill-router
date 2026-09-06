@@ -1251,6 +1251,78 @@ class MemoryStore:
             raise MemoryStoreError("memory-admin-result-corrupt")
         return result
 
+    def save_admin_result(
+        self,
+        *,
+        idempotency_key: str,
+        command_kind: str,
+        command_digest: str,
+        result_document: Mapping[str, object],
+        created_at: str,
+    ) -> tuple[dict[str, object], bool]:
+        if (
+            not isinstance(idempotency_key, str)
+            or not 1 <= len(idempotency_key) <= 160
+        ):
+            raise MemoryStoreError("invalid-memory-admin-idempotency-key")
+        if not isinstance(command_kind, str) or _SAFE_CODE.fullmatch(command_kind) is None:
+            raise MemoryStoreError("invalid-memory-admin-command-kind")
+        if not isinstance(command_digest, str) or _DIGEST.fullmatch(command_digest) is None:
+            raise MemoryStoreError("invalid-memory-admin-command-digest")
+        if not isinstance(result_document, Mapping) or any(
+            not isinstance(key, str) for key in result_document
+        ):
+            raise MemoryStoreError("invalid-memory-admin-result")
+        try:
+            instant = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            if instant.tzinfo is None:
+                raise ValueError
+        except (TypeError, ValueError) as error:
+            raise MemoryStoreError("invalid-memory-admin-created-at") from error
+        existing = self.load_admin_result(
+            idempotency_key=idempotency_key,
+            command_kind=command_kind,
+            command_digest=command_digest,
+        )
+        if existing is not None:
+            return existing, True
+        result_json = canonical_json(dict(result_document))
+        if not 2 <= len(result_json) <= 16384:
+            raise MemoryStoreError("memory-admin-result-too-large")
+        connection = self._require_open()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                "INSERT INTO memory_admin_commands("
+                "idempotency_key,command_kind,command_digest,result_digest,result_json,created_at"
+                ") VALUES (?,?,?,?,?,?)",
+                (
+                    idempotency_key,
+                    command_kind,
+                    command_digest,
+                    _digest_text(result_json),
+                    result_json,
+                    created_at,
+                ),
+            )
+            connection.execute("COMMIT")
+            return dict(result_document), False
+        except sqlite3.IntegrityError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            existing = self.load_admin_result(
+                idempotency_key=idempotency_key,
+                command_kind=command_kind,
+                command_digest=command_digest,
+            )
+            if existing is None:
+                raise MemoryStoreError("memory-admin-result-write-failed")
+            return existing, True
+        except sqlite3.Error as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise MemoryStoreError("memory-admin-result-write-failed") from error
+
     def execute_purge_command(
         self,
         *,
@@ -1498,6 +1570,81 @@ class MemoryStore:
             if connection.in_transaction:
                 connection.execute("ROLLBACK")
             raise MemoryStoreError("workflow-candidate-reject-failed") from error
+
+    def suppress_workflow_candidate(
+        self,
+        candidate_id: str,
+        *,
+        reason_code: str,
+        suppressed_at: str,
+        suppression_days: int = 30,
+    ):
+        from .candidates import candidate_with_status
+
+        if not isinstance(reason_code, str) or _SAFE_CODE.fullmatch(reason_code) is None:
+            raise MemoryStoreError("invalid-candidate-suppression-reason")
+        if (
+            isinstance(suppression_days, bool)
+            or not isinstance(suppression_days, int)
+            or suppression_days < 1
+        ):
+            raise MemoryStoreError("invalid-candidate-suppression-days")
+        try:
+            instant = datetime.fromisoformat(suppressed_at.replace("Z", "+00:00"))
+            if instant.tzinfo is None:
+                raise ValueError
+        except (TypeError, ValueError) as error:
+            raise MemoryStoreError("invalid-candidate-suppressed-at") from error
+        candidate = self.load_workflow_candidate(candidate_id)
+        if candidate is None:
+            raise MemoryStoreError("workflow-candidate-not-found")
+        if candidate.status == "suppressed":
+            return candidate
+        if candidate.status != "proposed":
+            raise MemoryStoreError("workflow-candidate-not-suppressible")
+        suppressed = candidate_with_status(candidate, "suppressed")
+        suppressed_until = (
+            instant.astimezone(timezone.utc) + timedelta(days=suppression_days)
+        ).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+        connection = self._require_open()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            cursor = connection.execute(
+                "UPDATE workflow_candidates SET status='suppressed',candidate_json=?,updated_at=? "
+                "WHERE candidate_id=? AND status='proposed' AND candidate_digest=?",
+                (
+                    suppressed.canonical_json(),
+                    suppressed_at,
+                    candidate_id,
+                    candidate.candidate_digest,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise MemoryStoreError("workflow-candidate-state-conflict")
+            connection.execute(
+                "INSERT INTO candidate_suppressions("
+                "pattern_id,material_evidence_digest,reason_code,rejected_at,suppressed_until"
+                ") VALUES (?,?,?,?,?) ON CONFLICT(pattern_id,material_evidence_digest) "
+                "DO UPDATE SET reason_code=excluded.reason_code,"
+                "rejected_at=excluded.rejected_at,suppressed_until=excluded.suppressed_until",
+                (
+                    candidate.pattern_id,
+                    candidate.material_evidence_digest,
+                    reason_code,
+                    suppressed_at,
+                    suppressed_until,
+                ),
+            )
+            connection.execute("COMMIT")
+            return suppressed
+        except MemoryStoreError:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except sqlite3.Error as error:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise MemoryStoreError("workflow-candidate-suppress-failed") from error
 
     def is_candidate_suppressed(self, pattern_id: str, material_evidence_digest: str, now: str) -> bool:
         connection = self._require_open()

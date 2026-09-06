@@ -189,6 +189,17 @@ class SchemaDocumentTests(unittest.TestCase):
             "workflow-skill-router/profile-update-proposal",
             document["properties"]["schema_id"]["const"],
         )
+        backtest = document["$defs"]["backtest"]
+        self.assertIn("manual_profile_digests", backtest["required"])
+        self.assertEqual(
+            {
+                "type": "array",
+                "maxItems": 64,
+                "uniqueItems": True,
+                "items": {"$ref": "#/$defs/digest"},
+            },
+            backtest["properties"]["manual_profile_digests"],
+        )
         serialized = json.dumps(document, sort_keys=True)
         for forbidden in ("raw_prompt", "raw_objective", "source_path", "file_content", "tool_arguments", "secrets", "metadata_json"):
             self.assertNotIn(forbidden, serialized)

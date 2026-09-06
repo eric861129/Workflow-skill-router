@@ -181,6 +181,24 @@ def configure_memory_parser(parser: argparse.ArgumentParser) -> None:
     candidate_reject.add_argument("--data-dir", type=Path)
     candidate_reject.add_argument("--workspace", type=Path)
     candidate_reject.add_argument("--reason", required=True)
+    candidate_promote = candidate_commands.add_parser(
+        "promote-eligible",
+        help=(
+            "Run one explicit local Automatic-mode promotion pass; "
+            "this command does not start a background scheduler"
+        ),
+    )
+    candidate_promote.add_argument("--database", type=Path, required=True)
+    candidate_promote.add_argument("--data-dir", type=Path)
+    candidate_promote.add_argument("--workspace", type=Path)
+    candidate_promote.add_argument(
+        "--scope", choices=("personal", "workspace"), default="personal"
+    )
+    candidate_promote.add_argument("--actor", required=True)
+    candidate_promote.add_argument("--session-id", required=True)
+    candidate_promote.add_argument("--idempotency-key", required=True)
+    candidate_promote.add_argument("--correlation-id", required=True)
+    candidate_promote.add_argument("--now")
 
     policy = commands.add_parser(
         "policy",
@@ -330,6 +348,20 @@ def run_memory_cli(args: argparse.Namespace) -> int:
                 )
                 _print({"status": "ready", "candidates": [item.to_dict() for item in items]})
                 return 0
+            if args.memory_candidate_command == "promote-eligible":
+                result = service.promote_eligible_candidates(
+                    MemoryScope(args.scope),
+                    workspace_root=args.workspace,
+                    actor_id=args.actor,
+                    session_id=args.session_id,
+                    idempotency_key=args.idempotency_key,
+                    correlation_id=args.correlation_id,
+                    now=args.now,
+                )
+                _print(result.to_dict())
+                return 0 if result.status in {
+                    "completed", "memory-disabled", "not-automatic"
+                } else 2
             repository, effective = service._effective_policy(args.workspace)
             if not repository.memory_store_exists():
                 raise MemoryStoreError("memory-store-unavailable")

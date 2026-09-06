@@ -14,7 +14,7 @@ from workflow_skill_router.profiles.atomic_io import (
     current_json_digest,
     secure_read_json,
 )
-from workflow_skill_router.profiles.contract import decode_routing_profile
+from workflow_skill_router.profiles.contract import RoutingPreferenceProfile, decode_routing_profile
 from workflow_skill_router.profiles.resolver import lint_profile
 from workflow_skill_router.schemas.artifacts import canonical_json
 
@@ -178,6 +178,7 @@ class ProfileMaterializer:
         idempotency_key: str,
         command_digest: str,
         completed_at: str,
+        candidate_final_status: str | None = None,
     ) -> ProfileRevision:
         final_status = "rollback" if revision.rollback_source_revision_id is not None else "applied"
         completed = replace(revision, status=final_status, completed_at=completed_at)
@@ -222,6 +223,42 @@ class ProfileMaterializer:
                 ).fetchone()
                 if row is None or decode_profile_update_proposal(json.loads(str(row[0]))) != updated_proposal:
                     raise ProfileMaterializationError("profile-proposal-state-conflict")
+            if candidate_final_status is not None:
+                from .candidates import candidate_with_status, decode_workflow_candidate
+
+                candidate = self.store.load_workflow_candidate(proposal.candidate_id)
+                if (
+                    candidate is None
+                    or candidate.candidate_digest != proposal.candidate_digest
+                ):
+                    raise ProfileMaterializationError("profile-candidate-drift")
+                updated_candidate = candidate_with_status(
+                    candidate, candidate_final_status
+                )
+                candidate_cursor = connection.execute(
+                    "UPDATE workflow_candidates SET status=?,candidate_json=?,updated_at=? "
+                    "WHERE candidate_id=? AND status='proposed' AND candidate_digest=?",
+                    (
+                        candidate_final_status,
+                        updated_candidate.canonical_json(),
+                        completed_at,
+                        candidate.candidate_id,
+                        candidate.candidate_digest,
+                    ),
+                )
+                if candidate_cursor.rowcount != 1:
+                    row = connection.execute(
+                        "SELECT candidate_json FROM workflow_candidates WHERE candidate_id=?",
+                        (candidate.candidate_id,),
+                    ).fetchone()
+                    if (
+                        row is None
+                        or decode_workflow_candidate(json.loads(str(row[0])))
+                        != updated_candidate
+                    ):
+                        raise ProfileMaterializationError(
+                            "workflow-candidate-state-conflict"
+                        )
             connection.execute(
                 "INSERT INTO profile_materialization_receipts("
                 "idempotency_key,proposal_id,command_digest,revision_id,result_json,created_at"
@@ -321,6 +358,9 @@ class ProfileMaterializer:
         self,
         proposal: ProfileUpdateProposal,
         authority: ProfileWriteAuthority,
+        *,
+        manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
+        automatic: bool = False,
     ) -> tuple[Path, Path, object, object]:
         # User-owned targets are forbidden under automatic mode before any
         # digest or filesystem processing.
@@ -353,7 +393,16 @@ class ProfileMaterializer:
             raise ProfileMaterializationError("profile-diff-drift")
         observations = tuple(self.store.list_route_observations())
         current_profiles = () if current is None else (current,)
-        rerun_backtest = backtest_profile_update(current_profiles, proposed, observations, candidate)
+        rerun_backtest = backtest_profile_update(
+            current_profiles,
+            proposed,
+            observations,
+            candidate,
+            manual_profiles=manual_profiles,
+        )
+        if automatic and rerun_backtest.manual_precedence:
+            self._mark_stale(proposal)
+            raise ProfileMaterializationError("candidate-conflict")
         if not rerun_backtest.acceptable or rerun_backtest.backtest_digest != proposal.backtest_digest:
             self._mark_stale(proposal)
             raise ProfileMaterializationError("profile-backtest-drift")
@@ -431,7 +480,12 @@ class ProfileMaterializer:
         correlation_id: str,
         now: str,
         rollback_source_revision_id: str | None = None,
+        manual_profiles: tuple[RoutingPreferenceProfile, ...] | None = None,
+        candidate_final_status: str | None = None,
     ) -> ProfileRevision:
+        if candidate_final_status not in {None, "auto-promoted"}:
+            raise ProfileMaterializationError("invalid-candidate-final-status")
+        automatic = candidate_final_status == "auto-promoted"
         bound_rollback_source = self._rollback_source(proposal_id)
         if rollback_source_revision_id is not None and rollback_source_revision_id != bound_rollback_source:
             raise ProfileMaterializationError("rollback-proposal-source-conflict")
@@ -444,6 +498,10 @@ class ProfileMaterializer:
             "session_id": authority.session_id,
             "correlation_id": correlation_id,
             "rollback_source_revision_id": rollback_source_revision_id,
+            "manual_profile_digests": sorted(
+                profile.profile_digest for profile in (manual_profiles or ())
+            ),
+            "candidate_final_status": candidate_final_status,
             "now": now,
         }
         command_digest = _digest(command)
@@ -475,9 +533,15 @@ class ProfileMaterializer:
                 idempotency_key=idempotency_key,
                 command_digest=command_digest,
                 completed_at=now,
+                candidate_final_status=candidate_final_status,
             )
 
-        target_path, fixed_root, proposed, candidate = self._preflight(proposal, authority)
+        target_path, fixed_root, proposed, candidate = self._preflight(
+            proposal,
+            authority,
+            manual_profiles=manual_profiles,
+            automatic=automatic,
+        )
         profile_id = proposed.profile_id
         target = ProfileTarget(
             proposal.target_profile_class,
@@ -510,6 +574,7 @@ class ProfileMaterializer:
             "command_digest": command_digest,
             "new_profile_digest": revision.new_profile_digest,
             "snapshot_digest": revision.snapshot_digest,
+            "candidate_final_status": candidate_final_status,
         }
         self._begin(revision, marker_document)
         try:
@@ -528,6 +593,7 @@ class ProfileMaterializer:
             idempotency_key=idempotency_key,
             command_digest=command_digest,
             completed_at=now,
+            candidate_final_status=candidate_final_status,
         )
 
 

@@ -76,7 +76,7 @@
       "required": [
         "positive_observation_count", "positive_match_count", "positive_match_coverage",
         "unexpected_match_count", "shadowed_rule_ids", "equal_rank_conflicts",
-        "manual_precedence", "capability_gap_summary", "planned_route_regressions",
+        "manual_precedence", "manual_profile_digests", "capability_gap_summary", "planned_route_regressions",
         "workspace_isolation", "acceptable", "backtest_digest"
       ],
       "properties": {
@@ -87,6 +87,12 @@
         "shadowed_rule_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "equal_rank_conflicts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "manual_precedence": {"type": "boolean"},
+        "manual_profile_digests": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/digest"}
+        },
         "capability_gap_summary": {"enum": ["none", "unavailable", "present"]},
         "planned_route_regressions": {"type": "integer", "minimum": 0},
         "workspace_isolation": {"type": "boolean"},
