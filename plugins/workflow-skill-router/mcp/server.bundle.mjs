@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
-var __export = (target, all) => {
+var __export = (target2, all) => {
   for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+    __defProp(target2, name, { get: all[name], enumerable: true });
 };
 
 // node_modules/zod/v3/helpers/util.js
@@ -38,9 +38,9 @@ var util;
   };
   util2.objectKeys = typeof Object.keys === "function" ? (obj) => Object.keys(obj) : (object3) => {
     const keys = [];
-    for (const key in object3) {
-      if (Object.prototype.hasOwnProperty.call(object3, key)) {
-        keys.push(key);
+    for (const key2 in object3) {
+      if (Object.prototype.hasOwnProperty.call(object3, key2)) {
+        keys.push(key2);
       }
     }
     return keys;
@@ -432,10 +432,10 @@ var ParseStatus = class _ParseStatus {
   static async mergeObjectAsync(status, pairs) {
     const syncPairs = [];
     for (const pair of pairs) {
-      const key = await pair.key;
+      const key2 = await pair.key;
       const value = await pair.value;
       syncPairs.push({
-        key,
+        key: key2,
         value
       });
     }
@@ -444,17 +444,17 @@ var ParseStatus = class _ParseStatus {
   static mergeObjectSync(status, pairs) {
     const finalObject = {};
     for (const pair of pairs) {
-      const { key, value } = pair;
-      if (key.status === "aborted")
+      const { key: key2, value } = pair;
+      if (key2.status === "aborted")
         return INVALID;
       if (value.status === "aborted")
         return INVALID;
-      if (key.status === "dirty")
+      if (key2.status === "dirty")
         status.dirty();
       if (value.status === "dirty")
         status.dirty();
-      if (key.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
-        finalObject[key.value] = value.value;
+      if (key2.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
+        finalObject[key2.value] = value.value;
       }
     }
     return { status: status.value, value: finalObject };
@@ -479,12 +479,12 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path5, key) {
+  constructor(parent, value, path5, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
     this._path = path5;
-    this._key = key;
+    this._key = key2;
   }
   get path() {
     if (!this._cachedPath.length) {
@@ -809,8 +809,8 @@ var ZodType = class {
       description
     });
   }
-  pipe(target) {
-    return ZodPipeline.create(this, target);
+  pipe(target2) {
+    return ZodPipeline.create(this, target2);
   }
   readonly() {
     return ZodReadonly.create(this);
@@ -862,11 +862,11 @@ function datetimeRegex(args) {
   regex2 = `${regex2}(${opts.join("|")})`;
   return new RegExp(`^${regex2}$`);
 }
-function isValidIP(ip, version2) {
-  if ((version2 === "v4" || !version2) && ipv4Regex.test(ip)) {
+function isValidIP(ip, version3) {
+  if ((version3 === "v4" || !version3) && ipv4Regex.test(ip)) {
     return true;
   }
-  if ((version2 === "v6" || !version2) && ipv6Regex.test(ip)) {
+  if ((version3 === "v6" || !version3) && ipv6Regex.test(ip)) {
     return true;
   }
   return false;
@@ -893,11 +893,11 @@ function isValidJWT(jwt2, alg) {
     return false;
   }
 }
-function isValidCidr(ip, version2) {
-  if ((version2 === "v4" || !version2) && ipv4CidrRegex.test(ip)) {
+function isValidCidr(ip, version3) {
+  if ((version3 === "v4" || !version3) && ipv4CidrRegex.test(ip)) {
     return true;
   }
-  if ((version2 === "v6" || !version2) && ipv6CidrRegex.test(ip)) {
+  if ((version3 === "v6" || !version3) && ipv6CidrRegex.test(ip)) {
     return true;
   }
   return false;
@@ -2229,9 +2229,9 @@ ZodArray.create = (schema, params) => {
 function deepPartialify(schema) {
   if (schema instanceof ZodObject) {
     const newShape = {};
-    for (const key in schema.shape) {
-      const fieldSchema = schema.shape[key];
-      newShape[key] = ZodOptional.create(deepPartialify(fieldSchema));
+    for (const key2 in schema.shape) {
+      const fieldSchema = schema.shape[key2];
+      newShape[key2] = ZodOptional.create(deepPartialify(fieldSchema));
     }
     return new ZodObject({
       ...schema._def,
@@ -2282,29 +2282,29 @@ var ZodObject = class _ZodObject extends ZodType {
     const { shape, keys: shapeKeys } = this._getCached();
     const extraKeys = [];
     if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
-      for (const key in ctx.data) {
-        if (!shapeKeys.includes(key)) {
-          extraKeys.push(key);
+      for (const key2 in ctx.data) {
+        if (!shapeKeys.includes(key2)) {
+          extraKeys.push(key2);
         }
       }
     }
     const pairs = [];
-    for (const key of shapeKeys) {
-      const keyValidator = shape[key];
-      const value = ctx.data[key];
+    for (const key2 of shapeKeys) {
+      const keyValidator = shape[key2];
+      const value = ctx.data[key2];
       pairs.push({
-        key: { status: "valid", value: key },
-        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key)),
-        alwaysSet: key in ctx.data
+        key: { status: "valid", value: key2 },
+        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key2)),
+        alwaysSet: key2 in ctx.data
       });
     }
     if (this._def.catchall instanceof ZodNever) {
       const unknownKeys = this._def.unknownKeys;
       if (unknownKeys === "passthrough") {
-        for (const key of extraKeys) {
+        for (const key2 of extraKeys) {
           pairs.push({
-            key: { status: "valid", value: key },
-            value: { status: "valid", value: ctx.data[key] }
+            key: { status: "valid", value: key2 },
+            value: { status: "valid", value: ctx.data[key2] }
           });
         }
       } else if (unknownKeys === "strict") {
@@ -2321,15 +2321,15 @@ var ZodObject = class _ZodObject extends ZodType {
       }
     } else {
       const catchall = this._def.catchall;
-      for (const key of extraKeys) {
-        const value = ctx.data[key];
+      for (const key2 of extraKeys) {
+        const value = ctx.data[key2];
         pairs.push({
-          key: { status: "valid", value: key },
+          key: { status: "valid", value: key2 },
           value: catchall._parse(
-            new ParseInputLazyPath(ctx, value, ctx.path, key)
+            new ParseInputLazyPath(ctx, value, ctx.path, key2)
             //, ctx.child(key), value, getParsedType(value)
           ),
-          alwaysSet: key in ctx.data
+          alwaysSet: key2 in ctx.data
         });
       }
     }
@@ -2337,10 +2337,10 @@ var ZodObject = class _ZodObject extends ZodType {
       return Promise.resolve().then(async () => {
         const syncPairs = [];
         for (const pair of pairs) {
-          const key = await pair.key;
+          const key2 = await pair.key;
           const value = await pair.value;
           syncPairs.push({
-            key,
+            key: key2,
             value,
             alwaysSet: pair.alwaysSet
           });
@@ -2465,8 +2465,8 @@ var ZodObject = class _ZodObject extends ZodType {
   //   }) as any;
   //   return merged;
   // }
-  setKey(key, schema) {
-    return this.augment({ [key]: schema });
+  setKey(key2, schema) {
+    return this.augment({ [key2]: schema });
   }
   // merge<Incoming extends AnyZodObject>(
   //   merging: Incoming
@@ -2497,9 +2497,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   pick(mask) {
     const shape = {};
-    for (const key of util.objectKeys(mask)) {
-      if (mask[key] && this.shape[key]) {
-        shape[key] = this.shape[key];
+    for (const key2 of util.objectKeys(mask)) {
+      if (mask[key2] && this.shape[key2]) {
+        shape[key2] = this.shape[key2];
       }
     }
     return new _ZodObject({
@@ -2509,9 +2509,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   omit(mask) {
     const shape = {};
-    for (const key of util.objectKeys(this.shape)) {
-      if (!mask[key]) {
-        shape[key] = this.shape[key];
+    for (const key2 of util.objectKeys(this.shape)) {
+      if (!mask[key2]) {
+        shape[key2] = this.shape[key2];
       }
     }
     return new _ZodObject({
@@ -2527,12 +2527,12 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   partial(mask) {
     const newShape = {};
-    for (const key of util.objectKeys(this.shape)) {
-      const fieldSchema = this.shape[key];
-      if (mask && !mask[key]) {
-        newShape[key] = fieldSchema;
+    for (const key2 of util.objectKeys(this.shape)) {
+      const fieldSchema = this.shape[key2];
+      if (mask && !mask[key2]) {
+        newShape[key2] = fieldSchema;
       } else {
-        newShape[key] = fieldSchema.optional();
+        newShape[key2] = fieldSchema.optional();
       }
     }
     return new _ZodObject({
@@ -2542,16 +2542,16 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   required(mask) {
     const newShape = {};
-    for (const key of util.objectKeys(this.shape)) {
-      if (mask && !mask[key]) {
-        newShape[key] = this.shape[key];
+    for (const key2 of util.objectKeys(this.shape)) {
+      if (mask && !mask[key2]) {
+        newShape[key2] = this.shape[key2];
       } else {
-        const fieldSchema = this.shape[key];
+        const fieldSchema = this.shape[key2];
         let newField = fieldSchema;
         while (newField instanceof ZodOptional) {
           newField = newField._def.innerType;
         }
-        newShape[key] = newField;
+        newShape[key2] = newField;
       }
     }
     return new _ZodObject({
@@ -2795,14 +2795,14 @@ function mergeValues(a, b) {
     return { valid: true, data: a };
   } else if (aType === ZodParsedType.object && bType === ZodParsedType.object) {
     const bKeys = util.objectKeys(b);
-    const sharedKeys = util.objectKeys(a).filter((key) => bKeys.indexOf(key) !== -1);
+    const sharedKeys = util.objectKeys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
     const newObj = { ...a, ...b };
-    for (const key of sharedKeys) {
-      const sharedValue = mergeValues(a[key], b[key]);
+    for (const key2 of sharedKeys) {
+      const sharedValue = mergeValues(a[key2], b[key2]);
       if (!sharedValue.valid) {
         return { valid: false };
       }
-      newObj[key] = sharedValue.data;
+      newObj[key2] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   } else if (aType === ZodParsedType.array && bType === ZodParsedType.array) {
@@ -2966,11 +2966,11 @@ var ZodRecord = class _ZodRecord extends ZodType {
     const pairs = [];
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    for (const key in ctx.data) {
+    for (const key2 in ctx.data) {
       pairs.push({
-        key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, key)),
-        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key], ctx.path, key)),
-        alwaysSet: key in ctx.data
+        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, key2)),
+        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key2], ctx.path, key2)),
+        alwaysSet: key2 in ctx.data
       });
     }
     if (ctx.common.async) {
@@ -3018,9 +3018,9 @@ var ZodMap = class extends ZodType {
     }
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    const pairs = [...ctx.data.entries()].map(([key, value], index) => {
+    const pairs = [...ctx.data.entries()].map(([key2, value], index) => {
       return {
-        key: keyType._parse(new ParseInputLazyPath(ctx, key, ctx.path, [index, "key"])),
+        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, [index, "key"])),
         value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index, "value"]))
       };
     });
@@ -3028,30 +3028,30 @@ var ZodMap = class extends ZodType {
       const finalMap = /* @__PURE__ */ new Map();
       return Promise.resolve().then(async () => {
         for (const pair of pairs) {
-          const key = await pair.key;
+          const key2 = await pair.key;
           const value = await pair.value;
-          if (key.status === "aborted" || value.status === "aborted") {
+          if (key2.status === "aborted" || value.status === "aborted") {
             return INVALID;
           }
-          if (key.status === "dirty" || value.status === "dirty") {
+          if (key2.status === "dirty" || value.status === "dirty") {
             status.dirty();
           }
-          finalMap.set(key.value, value.value);
+          finalMap.set(key2.value, value.value);
         }
         return { status: status.value, value: finalMap };
       });
     } else {
       const finalMap = /* @__PURE__ */ new Map();
       for (const pair of pairs) {
-        const key = pair.key;
+        const key2 = pair.key;
         const value = pair.value;
-        if (key.status === "aborted" || value.status === "aborted") {
+        if (key2.status === "aborted" || value.status === "aborted") {
           return INVALID;
         }
-        if (key.status === "dirty" || value.status === "dirty") {
+        if (key2.status === "dirty" || value.status === "dirty") {
           status.dirty();
         }
-        finalMap.set(key.value, value.value);
+        finalMap.set(key2.value, value.value);
       }
       return { status: status.value, value: finalMap };
     }
@@ -4337,9 +4337,9 @@ function floatSafeRemainder2(val, step) {
   return valInt % stepInt / 10 ** decCount;
 }
 var EVALUATING = /* @__PURE__ */ Symbol("evaluating");
-function defineLazy(object3, key, getter) {
+function defineLazy(object3, key2, getter) {
   let value = void 0;
-  Object.defineProperty(object3, key, {
+  Object.defineProperty(object3, key2, {
     get() {
       if (value === EVALUATING) {
         return void 0;
@@ -4351,7 +4351,7 @@ function defineLazy(object3, key, getter) {
       return value;
     },
     set(v) {
-      Object.defineProperty(object3, key, {
+      Object.defineProperty(object3, key2, {
         value: v
         // configurable: true,
       });
@@ -4362,8 +4362,8 @@ function defineLazy(object3, key, getter) {
 function objectClone(obj) {
   return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
 }
-function assignProp(target, prop, value) {
-  Object.defineProperty(target, prop, {
+function assignProp(target2, prop, value) {
+  Object.defineProperty(target2, prop, {
     value,
     writable: true,
     enumerable: true,
@@ -4384,11 +4384,11 @@ function cloneDef(schema) {
 function getElementAtPath(obj, path5) {
   if (!path5)
     return obj;
-  return path5.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
-  const promises = keys.map((key) => promisesObj[key]);
+  const promises = keys.map((key2) => promisesObj[key2]);
   return Promise.all(promises).then((results) => {
     const resolvedObj = {};
     for (let i = 0; i < keys.length; i++) {
@@ -4448,8 +4448,8 @@ function shallowClone(o) {
 }
 function numKeys(data) {
   let keyCount = 0;
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
+  for (const key2 in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key2)) {
       keyCount++;
     }
   }
@@ -4527,35 +4527,35 @@ function normalizeParams(_params) {
   return params;
 }
 function createTransparentProxy(getter) {
-  let target;
+  let target2;
   return new Proxy({}, {
     get(_, prop, receiver) {
-      target ?? (target = getter());
-      return Reflect.get(target, prop, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.get(target2, prop, receiver);
     },
     set(_, prop, value, receiver) {
-      target ?? (target = getter());
-      return Reflect.set(target, prop, value, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.set(target2, prop, value, receiver);
     },
     has(_, prop) {
-      target ?? (target = getter());
-      return Reflect.has(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.has(target2, prop);
     },
     deleteProperty(_, prop) {
-      target ?? (target = getter());
-      return Reflect.deleteProperty(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.deleteProperty(target2, prop);
     },
     ownKeys(_) {
-      target ?? (target = getter());
-      return Reflect.ownKeys(target);
+      target2 ?? (target2 = getter());
+      return Reflect.ownKeys(target2);
     },
     getOwnPropertyDescriptor(_, prop) {
-      target ?? (target = getter());
-      return Reflect.getOwnPropertyDescriptor(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.getOwnPropertyDescriptor(target2, prop);
     },
     defineProperty(_, prop, descriptor) {
-      target ?? (target = getter());
-      return Reflect.defineProperty(target, prop, descriptor);
+      target2 ?? (target2 = getter());
+      return Reflect.defineProperty(target2, prop, descriptor);
     }
   });
 }
@@ -4587,13 +4587,13 @@ function pick(schema, mask) {
   const def = mergeDefs(schema._zod.def, {
     get shape() {
       const newShape = {};
-      for (const key in mask) {
-        if (!(key in currDef.shape)) {
-          throw new Error(`Unrecognized key: "${key}"`);
+      for (const key2 in mask) {
+        if (!(key2 in currDef.shape)) {
+          throw new Error(`Unrecognized key: "${key2}"`);
         }
-        if (!mask[key])
+        if (!mask[key2])
           continue;
-        newShape[key] = currDef.shape[key];
+        newShape[key2] = currDef.shape[key2];
       }
       assignProp(this, "shape", newShape);
       return newShape;
@@ -4607,13 +4607,13 @@ function omit(schema, mask) {
   const def = mergeDefs(schema._zod.def, {
     get shape() {
       const newShape = { ...schema._zod.def.shape };
-      for (const key in mask) {
-        if (!(key in currDef.shape)) {
-          throw new Error(`Unrecognized key: "${key}"`);
+      for (const key2 in mask) {
+        if (!(key2 in currDef.shape)) {
+          throw new Error(`Unrecognized key: "${key2}"`);
         }
-        if (!mask[key])
+        if (!mask[key2])
           continue;
-        delete newShape[key];
+        delete newShape[key2];
       }
       assignProp(this, "shape", newShape);
       return newShape;
@@ -4677,23 +4677,23 @@ function partial(Class2, schema, mask) {
       const oldShape = schema._zod.def.shape;
       const shape = { ...oldShape };
       if (mask) {
-        for (const key in mask) {
-          if (!(key in oldShape)) {
-            throw new Error(`Unrecognized key: "${key}"`);
+        for (const key2 in mask) {
+          if (!(key2 in oldShape)) {
+            throw new Error(`Unrecognized key: "${key2}"`);
           }
-          if (!mask[key])
+          if (!mask[key2])
             continue;
-          shape[key] = Class2 ? new Class2({
+          shape[key2] = Class2 ? new Class2({
             type: "optional",
-            innerType: oldShape[key]
-          }) : oldShape[key];
+            innerType: oldShape[key2]
+          }) : oldShape[key2];
         }
       } else {
-        for (const key in oldShape) {
-          shape[key] = Class2 ? new Class2({
+        for (const key2 in oldShape) {
+          shape[key2] = Class2 ? new Class2({
             type: "optional",
-            innerType: oldShape[key]
-          }) : oldShape[key];
+            innerType: oldShape[key2]
+          }) : oldShape[key2];
         }
       }
       assignProp(this, "shape", shape);
@@ -4709,22 +4709,22 @@ function required(Class2, schema, mask) {
       const oldShape = schema._zod.def.shape;
       const shape = { ...oldShape };
       if (mask) {
-        for (const key in mask) {
-          if (!(key in shape)) {
-            throw new Error(`Unrecognized key: "${key}"`);
+        for (const key2 in mask) {
+          if (!(key2 in shape)) {
+            throw new Error(`Unrecognized key: "${key2}"`);
           }
-          if (!mask[key])
+          if (!mask[key2])
             continue;
-          shape[key] = new Class2({
+          shape[key2] = new Class2({
             type: "nonoptional",
-            innerType: oldShape[key]
+            innerType: oldShape[key2]
           });
         }
       } else {
-        for (const key in oldShape) {
-          shape[key] = new Class2({
+        for (const key2 in oldShape) {
+          shape[key2] = new Class2({
             type: "nonoptional",
-            innerType: oldShape[key]
+            innerType: oldShape[key2]
           });
         }
       }
@@ -5138,10 +5138,10 @@ var nanoid = /^[a-zA-Z0-9_-]{21}$/;
 var duration = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
 var extendedDuration = /^[-+]?P(?!$)(?:(?:[-+]?\d+Y)|(?:[-+]?\d+[.,]\d+Y$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:(?:[-+]?\d+W)|(?:[-+]?\d+[.,]\d+W$))?(?:(?:[-+]?\d+D)|(?:[-+]?\d+[.,]\d+D$))?(?:T(?=[\d+-])(?:(?:[-+]?\d+H)|(?:[-+]?\d+[.,]\d+H$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:[-+]?\d+(?:[.,]\d+)?S)?)??$/;
 var guid = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-var uuid = (version2) => {
-  if (!version2)
+var uuid = (version3) => {
+  if (!version3)
     return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
-  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version2}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version3}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
 };
 var uuid4 = /* @__PURE__ */ uuid(4);
 var uuid6 = /* @__PURE__ */ uuid(6);
@@ -6452,16 +6452,16 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
     return payload;
   };
 });
-function handlePropertyResult(result, final, key, input) {
+function handlePropertyResult(result, final, key2, input) {
   if (result.issues.length) {
-    final.issues.push(...prefixIssues(key, result.issues));
+    final.issues.push(...prefixIssues(key2, result.issues));
   }
   if (result.value === void 0) {
-    if (key in input) {
-      final.value[key] = void 0;
+    if (key2 in input) {
+      final.value[key2] = void 0;
     }
   } else {
-    final.value[key] = result.value;
+    final.value[key2] = result.value;
   }
 }
 function normalizeDef(def) {
@@ -6485,18 +6485,18 @@ function handleCatchall(proms, input, payload, ctx, def, inst) {
   const keySet = def.keySet;
   const _catchall = def.catchall._zod;
   const t = _catchall.def.type;
-  for (const key of Object.keys(input)) {
-    if (keySet.has(key))
+  for (const key2 of Object.keys(input)) {
+    if (keySet.has(key2))
       continue;
     if (t === "never") {
-      unrecognized.push(key);
+      unrecognized.push(key2);
       continue;
     }
-    const r = _catchall.run({ value: input[key], issues: [] }, ctx);
+    const r = _catchall.run({ value: input[key2], issues: [] }, ctx);
     if (r instanceof Promise) {
-      proms.push(r.then((r2) => handlePropertyResult(r2, payload, key, input)));
+      proms.push(r.then((r2) => handlePropertyResult(r2, payload, key2, input)));
     } else {
-      handlePropertyResult(r, payload, key, input);
+      handlePropertyResult(r, payload, key2, input);
     }
   }
   if (unrecognized.length) {
@@ -6532,12 +6532,12 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   defineLazy(inst._zod, "propValues", () => {
     const shape = def.shape;
     const propValues = {};
-    for (const key in shape) {
-      const field = shape[key]._zod;
+    for (const key2 in shape) {
+      const field = shape[key2]._zod;
       if (field.values) {
-        propValues[key] ?? (propValues[key] = /* @__PURE__ */ new Set());
+        propValues[key2] ?? (propValues[key2] = /* @__PURE__ */ new Set());
         for (const v of field.values)
-          propValues[key].add(v);
+          propValues[key2].add(v);
       }
     }
     return propValues;
@@ -6560,13 +6560,13 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     payload.value = {};
     const proms = [];
     const shape = value.shape;
-    for (const key of value.keys) {
-      const el = shape[key];
-      const r = el._zod.run({ value: input[key], issues: [] }, ctx);
+    for (const key2 of value.keys) {
+      const el = shape[key2];
+      const r = el._zod.run({ value: input[key2], issues: [] }, ctx);
       if (r instanceof Promise) {
-        proms.push(r.then((r2) => handlePropertyResult(r2, payload, key, input)));
+        proms.push(r.then((r2) => handlePropertyResult(r2, payload, key2, input)));
       } else {
-        handlePropertyResult(r, payload, key, input);
+        handlePropertyResult(r, payload, key2, input);
       }
     }
     if (!catchall) {
@@ -6582,21 +6582,21 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
   const generateFastpass = (shape) => {
     const doc = new Doc(["shape", "payload", "ctx"]);
     const normalized = _normalized.value;
-    const parseStr = (key) => {
-      const k = esc(key);
+    const parseStr = (key2) => {
+      const k = esc(key2);
       return `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
     };
     doc.write(`const input = payload.value;`);
     const ids = /* @__PURE__ */ Object.create(null);
     let counter = 0;
-    for (const key of normalized.keys) {
-      ids[key] = `key_${counter++}`;
+    for (const key2 of normalized.keys) {
+      ids[key2] = `key_${counter++}`;
     }
     doc.write(`const newResult = {};`);
-    for (const key of normalized.keys) {
-      const id = ids[key];
-      const k = esc(key);
-      doc.write(`const ${id} = ${parseStr(key)};`);
+    for (const key2 of normalized.keys) {
+      const id = ids[key2];
+      const k = esc(key2);
+      doc.write(`const ${id} = ${parseStr(key2)};`);
       doc.write(`
         if (${id}.issues.length) {
           payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
@@ -6806,17 +6806,17 @@ function mergeValues2(a, b) {
   }
   if (isPlainObject(a) && isPlainObject(b)) {
     const bKeys = Object.keys(b);
-    const sharedKeys = Object.keys(a).filter((key) => bKeys.indexOf(key) !== -1);
+    const sharedKeys = Object.keys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
     const newObj = { ...a, ...b };
-    for (const key of sharedKeys) {
-      const sharedValue = mergeValues2(a[key], b[key]);
+    for (const key2 of sharedKeys) {
+      const sharedValue = mergeValues2(a[key2], b[key2]);
       if (!sharedValue.valid) {
         return {
           valid: false,
-          mergeErrorPath: [key, ...sharedValue.mergeErrorPath]
+          mergeErrorPath: [key2, ...sharedValue.mergeErrorPath]
         };
       }
-      newObj[key] = sharedValue.data;
+      newObj[key2] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   }
@@ -6947,29 +6947,29 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
     if (def.keyType._zod.values) {
       const values = def.keyType._zod.values;
       payload.value = {};
-      for (const key of values) {
-        if (typeof key === "string" || typeof key === "number" || typeof key === "symbol") {
-          const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+      for (const key2 of values) {
+        if (typeof key2 === "string" || typeof key2 === "number" || typeof key2 === "symbol") {
+          const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
           if (result instanceof Promise) {
             proms.push(result.then((result2) => {
               if (result2.issues.length) {
-                payload.issues.push(...prefixIssues(key, result2.issues));
+                payload.issues.push(...prefixIssues(key2, result2.issues));
               }
-              payload.value[key] = result2.value;
+              payload.value[key2] = result2.value;
             }));
           } else {
             if (result.issues.length) {
-              payload.issues.push(...prefixIssues(key, result.issues));
+              payload.issues.push(...prefixIssues(key2, result.issues));
             }
-            payload.value[key] = result.value;
+            payload.value[key2] = result.value;
           }
         }
       }
       let unrecognized;
-      for (const key in input) {
-        if (!values.has(key)) {
+      for (const key2 in input) {
+        if (!values.has(key2)) {
           unrecognized = unrecognized ?? [];
-          unrecognized.push(key);
+          unrecognized.push(key2);
         }
       }
       if (unrecognized && unrecognized.length > 0) {
@@ -6982,10 +6982,10 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
       }
     } else {
       payload.value = {};
-      for (const key of Reflect.ownKeys(input)) {
-        if (key === "__proto__")
+      for (const key2 of Reflect.ownKeys(input)) {
+        if (key2 === "__proto__")
           continue;
-        const keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+        const keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
         if (keyResult instanceof Promise) {
           throw new Error("Async schemas not supported in object keys currently");
         }
@@ -6994,24 +6994,24 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
             code: "invalid_key",
             origin: "record",
             issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
-            input: key,
-            path: [key],
+            input: key2,
+            path: [key2],
             inst
           });
           payload.value[keyResult.value] = keyResult.value;
           continue;
         }
-        const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+        const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
         if (result instanceof Promise) {
           proms.push(result.then((result2) => {
             if (result2.issues.length) {
-              payload.issues.push(...prefixIssues(key, result2.issues));
+              payload.issues.push(...prefixIssues(key2, result2.issues));
             }
             payload.value[keyResult.value] = result2.value;
           }));
         } else {
           if (result.issues.length) {
-            payload.issues.push(...prefixIssues(key, result.issues));
+            payload.issues.push(...prefixIssues(key2, result.issues));
           }
           payload.value[keyResult.value] = result.value;
         }
@@ -7038,15 +7038,15 @@ var $ZodMap = /* @__PURE__ */ $constructor("$ZodMap", (inst, def) => {
     }
     const proms = [];
     payload.value = /* @__PURE__ */ new Map();
-    for (const [key, value] of input) {
-      const keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+    for (const [key2, value] of input) {
+      const keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
       const valueResult = def.valueType._zod.run({ value, issues: [] }, ctx);
       if (keyResult instanceof Promise || valueResult instanceof Promise) {
         proms.push(Promise.all([keyResult, valueResult]).then(([keyResult2, valueResult2]) => {
-          handleMapResult(keyResult2, valueResult2, payload, key, input, inst, ctx);
+          handleMapResult(keyResult2, valueResult2, payload, key2, input, inst, ctx);
         }));
       } else {
-        handleMapResult(keyResult, valueResult, payload, key, input, inst, ctx);
+        handleMapResult(keyResult, valueResult, payload, key2, input, inst, ctx);
       }
     }
     if (proms.length)
@@ -7054,10 +7054,10 @@ var $ZodMap = /* @__PURE__ */ $constructor("$ZodMap", (inst, def) => {
     return payload;
   };
 });
-function handleMapResult(keyResult, valueResult, final, key, input, inst, ctx) {
+function handleMapResult(keyResult, valueResult, final, key2, input, inst, ctx) {
   if (keyResult.issues.length) {
-    if (propertyKeyTypes.has(typeof key)) {
-      final.issues.push(...prefixIssues(key, keyResult.issues));
+    if (propertyKeyTypes.has(typeof key2)) {
+      final.issues.push(...prefixIssues(key2, keyResult.issues));
     } else {
       final.issues.push({
         code: "invalid_key",
@@ -7069,15 +7069,15 @@ function handleMapResult(keyResult, valueResult, final, key, input, inst, ctx) {
     }
   }
   if (valueResult.issues.length) {
-    if (propertyKeyTypes.has(typeof key)) {
-      final.issues.push(...prefixIssues(key, valueResult.issues));
+    if (propertyKeyTypes.has(typeof key2)) {
+      final.issues.push(...prefixIssues(key2, valueResult.issues));
     } else {
       final.issues.push({
         origin: "map",
         code: "invalid_element",
         input,
         inst,
-        key,
+        key: key2,
         issues: valueResult.issues.map((iss) => finalizeIssue(iss, ctx, config()))
       });
     }
@@ -7936,8 +7936,8 @@ function az_default() {
 }
 
 // node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getBelarusianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -11855,8 +11855,8 @@ function pt_default() {
 }
 
 // node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getRussianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -14446,15 +14446,15 @@ var JSONSchemaGenerator = class {
             json2.type = "object";
             json2.properties = {};
             const shape = def.shape;
-            for (const key in shape) {
-              json2.properties[key] = this.process(shape[key], {
+            for (const key2 in shape) {
+              json2.properties[key2] = this.process(shape[key2], {
                 ...params,
-                path: [...params.path, "properties", key]
+                path: [...params.path, "properties", key2]
               });
             }
             const allKeys = new Set(Object.keys(shape));
-            const requiredKeys = new Set([...allKeys].filter((key) => {
-              const v = def.shape[key]._zod;
+            const requiredKeys = new Set([...allKeys].filter((key2) => {
+              const v = def.shape[key2]._zod;
               if (this.io === "input") {
                 return v.optin === void 0;
               } else {
@@ -14818,8 +14818,8 @@ var JSONSchemaGenerator = class {
       if (defId)
         seen.defId = defId;
       const schema2 = seen.schema;
-      for (const key in schema2) {
-        delete schema2[key];
+      for (const key2 in schema2) {
+        delete schema2[key2];
       }
       schema2.$ref = ref;
     };
@@ -14949,8 +14949,8 @@ function toJSONSchema(input, _params) {
       defs
     };
     for (const entry of input._idmap.entries()) {
-      const [key, schema] = entry;
-      schemas[key] = gen2.emit(schema, {
+      const [key2, schema] = entry;
+      schemas[key2] = gen2.emit(schema, {
         ..._params,
         external
       });
@@ -14997,8 +14997,8 @@ function isTransforming(_schema, _ctx) {
       return isTransforming(def.element, ctx);
     }
     case "object": {
-      for (const key in def.shape) {
-        if (isTransforming(def.shape[key], ctx))
+      for (const key2 in def.shape) {
+        if (isTransforming(def.shape[key2], ctx))
           return true;
       }
       return false;
@@ -15633,7 +15633,7 @@ var ZodType2 = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
   inst.default = (def2) => _default2(inst, def2);
   inst.prefault = (def2) => prefault(inst, def2);
   inst.catch = (params) => _catch2(inst, params);
-  inst.pipe = (target) => pipe(inst, target);
+  inst.pipe = (target2) => pipe(inst, target2);
   inst.readonly = () => readonly(inst);
   inst.describe = (description) => {
     const cl = inst.clone();
@@ -18202,19 +18202,19 @@ var getRefs = (options) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key, errorMessage, refs) {
+function addErrorMessage(res, key2, errorMessage, refs) {
   if (!refs?.errorMessages)
     return;
   if (errorMessage) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key]: errorMessage
+      [key2]: errorMessage
     };
   }
 }
-function setResponseValueAndErrors(res, key, value, errorMessage, refs) {
-  res[key] = value;
-  addErrorMessage(res, key, errorMessage, refs);
+function setResponseValueAndErrors(res, key2, value, errorMessage, refs) {
+  res[key2] = value;
+  addErrorMessage(res, key2, errorMessage, refs);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -18806,11 +18806,11 @@ function parseRecordDef(def, refs) {
     return {
       type: "object",
       required: def.keyType._def.values,
-      properties: def.keyType._def.values.reduce((acc, key) => ({
+      properties: def.keyType._def.values.reduce((acc, key2) => ({
         ...acc,
-        [key]: parseDef(def.valueType._def, {
+        [key2]: parseDef(def.valueType._def, {
           ...refs,
-          currentPath: [...refs.currentPath, "properties", key]
+          currentPath: [...refs.currentPath, "properties", key2]
         }) ?? parseAnyDef(refs)
       }), {}),
       additionalProperties: refs.rejectedAdditionalProperties
@@ -18877,10 +18877,10 @@ function parseMapDef(def, refs) {
 // node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object3 = def.values;
-  const actualKeys = Object.keys(def.values).filter((key) => {
-    return typeof object3[object3[key]] !== "number";
+  const actualKeys = Object.keys(def.values).filter((key2) => {
+    return typeof object3[object3[key2]] !== "number";
   });
-  const actualValues = actualKeys.map((key) => object3[key]);
+  const actualValues = actualKeys.map((key2) => object3[key2]);
   const parsedTypes = Array.from(new Set(actualValues.map((values) => typeof values)));
   return {
     type: parsedTypes.length === 1 ? parsedTypes[0] === "string" ? "string" : "number" : ["string", "number"],
@@ -20411,8 +20411,8 @@ function isPlainObject2(value) {
 }
 function mergeCapabilities(base, additional) {
   const result = { ...base };
-  for (const key in additional) {
-    const k = key;
+  for (const key2 in additional) {
+    const k = key2;
     const addValue = additional[k];
     if (addValue === void 0)
       continue;
@@ -20572,20 +20572,20 @@ function dereference(schema, lookup = /* @__PURE__ */ Object.create(null), baseU
     const url2 = new URL("#" + schema.$anchor, baseURI.href);
     lookup[url2.href] = schema;
   }
-  for (let key in schema) {
-    if (ignoredKeyword[key]) {
+  for (let key2 in schema) {
+    if (ignoredKeyword[key2]) {
       continue;
     }
-    const keyBase = `${basePointer}/${encodePointer(key)}`;
-    const subSchema = schema[key];
+    const keyBase = `${basePointer}/${encodePointer(key2)}`;
+    const subSchema = schema[key2];
     if (Array.isArray(subSchema)) {
-      if (schemaArrayKeyword[key]) {
+      if (schemaArrayKeyword[key2]) {
         const length = subSchema.length;
         for (let i = 0; i < length; i++) {
           dereference(subSchema[i], lookup, baseURI, `${keyBase}/${i}`);
         }
       }
-    } else if (schemaMapKeyword[key]) {
+    } else if (schemaMapKeyword[key2]) {
       for (let subKey in subSchema) {
         dereference(subSchema[subKey], lookup, baseURI, `${keyBase}/${encodePointer(subKey)}`);
       }
@@ -20989,13 +20989,13 @@ Known schemas:
   }
   if (instanceType === "object") {
     if ($required !== void 0) {
-      for (const key of $required) {
-        if (!(key in instance)) {
+      for (const key2 of $required) {
+        if (!(key2 in instance)) {
           errors.push({
             instanceLocation,
             keyword: "required",
             keywordLocation: `${schemaLocation}/required`,
-            error: `Instance does not have required property "${key}".`
+            error: `Instance does not have required property "${key2}".`
           });
         }
       }
@@ -21019,31 +21019,31 @@ Known schemas:
     }
     if ($propertyNames !== void 0) {
       const keywordLocation = `${schemaLocation}/propertyNames`;
-      for (const key in instance) {
-        const subInstancePointer = `${instanceLocation}/${encodePointer(key)}`;
-        const result = validate(key, $propertyNames, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
+      for (const key2 in instance) {
+        const subInstancePointer = `${instanceLocation}/${encodePointer(key2)}`;
+        const result = validate(key2, $propertyNames, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
         if (!result.valid) {
           errors.push({
             instanceLocation,
             keyword: "propertyNames",
             keywordLocation,
-            error: `Property name "${key}" does not match schema.`
+            error: `Property name "${key2}" does not match schema.`
           }, ...result.errors);
         }
       }
     }
     if ($dependentRequired !== void 0) {
       const keywordLocation = `${schemaLocation}/dependantRequired`;
-      for (const key in $dependentRequired) {
-        if (key in instance) {
-          const required2 = $dependentRequired[key];
+      for (const key2 in $dependentRequired) {
+        if (key2 in instance) {
+          const required2 = $dependentRequired[key2];
           for (const dependantKey of required2) {
             if (!(dependantKey in instance)) {
               errors.push({
                 instanceLocation,
                 keyword: "dependentRequired",
                 keywordLocation,
-                error: `Instance has "${key}" but does not have "${dependantKey}".`
+                error: `Instance has "${key2}" but does not have "${dependantKey}".`
               });
             }
           }
@@ -21051,16 +21051,16 @@ Known schemas:
       }
     }
     if ($dependentSchemas !== void 0) {
-      for (const key in $dependentSchemas) {
+      for (const key2 in $dependentSchemas) {
         const keywordLocation = `${schemaLocation}/dependentSchemas`;
-        if (key in instance) {
-          const result = validate(instance, $dependentSchemas[key], draft, lookup, shortCircuit, recursiveAnchor, instanceLocation, `${keywordLocation}/${encodePointer(key)}`, evaluated);
+        if (key2 in instance) {
+          const result = validate(instance, $dependentSchemas[key2], draft, lookup, shortCircuit, recursiveAnchor, instanceLocation, `${keywordLocation}/${encodePointer(key2)}`, evaluated);
           if (!result.valid) {
             errors.push({
               instanceLocation,
               keyword: "dependentSchemas",
               keywordLocation,
-              error: `Instance has "${key}" but does not match dependant schema.`
+              error: `Instance has "${key2}" but does not match dependant schema.`
             }, ...result.errors);
           }
         }
@@ -21068,9 +21068,9 @@ Known schemas:
     }
     if ($dependencies !== void 0) {
       const keywordLocation = `${schemaLocation}/dependencies`;
-      for (const key in $dependencies) {
-        if (key in instance) {
-          const propsOrSchema = $dependencies[key];
+      for (const key2 in $dependencies) {
+        if (key2 in instance) {
+          const propsOrSchema = $dependencies[key2];
           if (Array.isArray(propsOrSchema)) {
             for (const dependantKey of propsOrSchema) {
               if (!(dependantKey in instance)) {
@@ -21078,18 +21078,18 @@ Known schemas:
                   instanceLocation,
                   keyword: "dependencies",
                   keywordLocation,
-                  error: `Instance has "${key}" but does not have "${dependantKey}".`
+                  error: `Instance has "${key2}" but does not have "${dependantKey}".`
                 });
               }
             }
           } else {
-            const result = validate(instance, propsOrSchema, draft, lookup, shortCircuit, recursiveAnchor, instanceLocation, `${keywordLocation}/${encodePointer(key)}`);
+            const result = validate(instance, propsOrSchema, draft, lookup, shortCircuit, recursiveAnchor, instanceLocation, `${keywordLocation}/${encodePointer(key2)}`);
             if (!result.valid) {
               errors.push({
                 instanceLocation,
                 keyword: "dependencies",
                 keywordLocation,
-                error: `Instance has "${key}" but does not match dependant schema.`
+                error: `Instance has "${key2}" but does not match dependant schema.`
               }, ...result.errors);
             }
           }
@@ -21100,21 +21100,21 @@ Known schemas:
     let stop = false;
     if ($properties !== void 0) {
       const keywordLocation = `${schemaLocation}/properties`;
-      for (const key in $properties) {
-        if (!(key in instance)) {
+      for (const key2 in $properties) {
+        if (!(key2 in instance)) {
           continue;
         }
-        const subInstancePointer = `${instanceLocation}/${encodePointer(key)}`;
-        const result = validate(instance[key], $properties[key], draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, `${keywordLocation}/${encodePointer(key)}`);
+        const subInstancePointer = `${instanceLocation}/${encodePointer(key2)}`;
+        const result = validate(instance[key2], $properties[key2], draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, `${keywordLocation}/${encodePointer(key2)}`);
         if (result.valid) {
-          evaluated[key] = thisEvaluated[key] = true;
+          evaluated[key2] = thisEvaluated[key2] = true;
         } else {
           stop = shortCircuit;
           errors.push({
             instanceLocation,
             keyword: "properties",
             keywordLocation,
-            error: `Property "${key}" does not match schema.`
+            error: `Property "${key2}" does not match schema.`
           }, ...result.errors);
           if (stop)
             break;
@@ -21126,21 +21126,21 @@ Known schemas:
       for (const pattern in $patternProperties) {
         const regex2 = new RegExp(pattern, "u");
         const subSchema = $patternProperties[pattern];
-        for (const key in instance) {
-          if (!regex2.test(key)) {
+        for (const key2 in instance) {
+          if (!regex2.test(key2)) {
             continue;
           }
-          const subInstancePointer = `${instanceLocation}/${encodePointer(key)}`;
-          const result = validate(instance[key], subSchema, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, `${keywordLocation}/${encodePointer(pattern)}`);
+          const subInstancePointer = `${instanceLocation}/${encodePointer(key2)}`;
+          const result = validate(instance[key2], subSchema, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, `${keywordLocation}/${encodePointer(pattern)}`);
           if (result.valid) {
-            evaluated[key] = thisEvaluated[key] = true;
+            evaluated[key2] = thisEvaluated[key2] = true;
           } else {
             stop = shortCircuit;
             errors.push({
               instanceLocation,
               keyword: "patternProperties",
               keywordLocation,
-              error: `Property "${key}" matches pattern "${pattern}" but does not match associated schema.`
+              error: `Property "${key2}" matches pattern "${pattern}" but does not match associated schema.`
             }, ...result.errors);
           }
         }
@@ -21148,38 +21148,38 @@ Known schemas:
     }
     if (!stop && $additionalProperties !== void 0) {
       const keywordLocation = `${schemaLocation}/additionalProperties`;
-      for (const key in instance) {
-        if (thisEvaluated[key]) {
+      for (const key2 in instance) {
+        if (thisEvaluated[key2]) {
           continue;
         }
-        const subInstancePointer = `${instanceLocation}/${encodePointer(key)}`;
-        const result = validate(instance[key], $additionalProperties, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
+        const subInstancePointer = `${instanceLocation}/${encodePointer(key2)}`;
+        const result = validate(instance[key2], $additionalProperties, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
         if (result.valid) {
-          evaluated[key] = true;
+          evaluated[key2] = true;
         } else {
           stop = shortCircuit;
           errors.push({
             instanceLocation,
             keyword: "additionalProperties",
             keywordLocation,
-            error: `Property "${key}" does not match additional properties schema.`
+            error: `Property "${key2}" does not match additional properties schema.`
           }, ...result.errors);
         }
       }
     } else if (!stop && $unevaluatedProperties !== void 0) {
       const keywordLocation = `${schemaLocation}/unevaluatedProperties`;
-      for (const key in instance) {
-        if (!evaluated[key]) {
-          const subInstancePointer = `${instanceLocation}/${encodePointer(key)}`;
-          const result = validate(instance[key], $unevaluatedProperties, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
+      for (const key2 in instance) {
+        if (!evaluated[key2]) {
+          const subInstancePointer = `${instanceLocation}/${encodePointer(key2)}`;
+          const result = validate(instance[key2], $unevaluatedProperties, draft, lookup, shortCircuit, recursiveAnchor, subInstancePointer, keywordLocation);
           if (result.valid) {
-            evaluated[key] = true;
+            evaluated[key2] = true;
           } else {
             errors.push({
               instanceLocation,
               keyword: "unevaluatedProperties",
               keywordLocation,
-              error: `Property "${key}" does not match unevaluated properties schema.`
+              error: `Property "${key2}" does not match unevaluated properties schema.`
             }, ...result.errors);
           }
         }
@@ -21681,8 +21681,8 @@ var ExperimentalServerTasks = class {
    */
   elicitInputStream(params, options) {
     const clientCapabilities = this._server.getClientCapabilities();
-    const mode = params.mode ?? "form";
-    switch (mode) {
+    const mode2 = params.mode ?? "form";
+    switch (mode2) {
       case "url": {
         if (!clientCapabilities?.elicitation?.url) {
           throw new Error("Client does not support url elicitation.");
@@ -21696,7 +21696,7 @@ var ExperimentalServerTasks = class {
         break;
       }
     }
-    const normalizedParams = mode === "form" && params.mode === void 0 ? { ...params, mode: "form" } : params;
+    const normalizedParams = mode2 === "form" && params.mode === void 0 ? { ...params, mode: "form" } : params;
     return this.requestStream({
       method: "elicitation/create",
       params: normalizedParams
@@ -22079,8 +22079,8 @@ var Server = class extends Protocol {
    * @returns The result of the elicitation request.
    */
   async elicitInput(params, options) {
-    const mode = params.mode ?? "form";
-    switch (mode) {
+    const mode2 = params.mode ?? "form";
+    switch (mode2) {
       case "url": {
         if (!this._clientCapabilities?.elicitation?.url) {
           throw new Error("Client does not support url elicitation.");
@@ -23156,11 +23156,11 @@ var PythonDiscoveryError = class extends Error {
 function candidates(platform) {
   return platform === "win32" ? [{ command: "py", prefixArgs: ["-3.11"] }, { command: "python", prefixArgs: [] }] : [{ command: "python3", prefixArgs: [] }, { command: "python", prefixArgs: [] }];
 }
-async function defaultProbe(candidate) {
+async function defaultProbe(candidate2) {
   return await new Promise((resolve, reject) => {
     const child = spawn(
-      candidate.command,
-      [...candidate.prefixArgs, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"],
+      candidate2.command,
+      [...candidate2.prefixArgs, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"],
       { shell: false, stdio: ["ignore", "pipe", "ignore"] }
     );
     let output = "";
@@ -23518,14 +23518,488 @@ function startupFailureMessage(error46) {
   return error46 instanceof PythonDiscoveryError ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE;
 }
 
-// mcp/src/tool-schemas.ts
+// mcp/src/routing-profile-contract.json
+var routing_profile_contract_default = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://workflow-skill-router.dev/schemas/v2/routing-profile.schema.json",
+  title: "Workflow Skill Router V2 Personal Routing Profile",
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schema_id",
+    "schema_version",
+    "artifact_kind",
+    "profile_id",
+    "scope",
+    "enabled",
+    "rules"
+  ],
+  properties: {
+    schema_id: { const: "workflow-skill-router/routing-profile" },
+    schema_version: { const: "1.0.0" },
+    artifact_kind: { const: "routing-profile" },
+    profile_id: {
+      type: "string",
+      pattern: "^(personal|workspace):[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    scope: { enum: ["personal", "workspace"] },
+    enabled: { type: "boolean" },
+    rules: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      items: { $ref: "#/$defs/rule" }
+    }
+  },
+  $defs: {
+    identifier: {
+      type: "string",
+      pattern: "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    skillId: {
+      type: "string",
+      pattern: "^skill:[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    uniqueIdentifiers: {
+      type: "array",
+      maxItems: 32,
+      uniqueItems: true,
+      items: { $ref: "#/$defs/identifier" }
+    },
+    match: {
+      type: "object",
+      additionalProperties: false,
+      required: ["objective_keywords", "domains", "tags", "work_modes"],
+      properties: {
+        objective_keywords: {
+          type: "array",
+          maxItems: 32,
+          uniqueItems: true,
+          items: { type: "string", minLength: 1, maxLength: 128 }
+        },
+        domains: { $ref: "#/$defs/uniqueIdentifiers" },
+        tags: { $ref: "#/$defs/uniqueIdentifiers" },
+        work_modes: {
+          type: "array",
+          maxItems: 3,
+          uniqueItems: true,
+          items: { enum: ["single", "phased", "managed-goal"] }
+        }
+      }
+    },
+    skillTreePhase: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "phase_id",
+        "primary_skill_id",
+        "support_skill_ids",
+        "exit_gate"
+      ],
+      properties: {
+        phase_id: { $ref: "#/$defs/identifier" },
+        primary_skill_id: { $ref: "#/$defs/skillId" },
+        support_skill_ids: {
+          type: "array",
+          maxItems: 3,
+          uniqueItems: true,
+          items: { $ref: "#/$defs/skillId" }
+        },
+        exit_gate: { $ref: "#/$defs/identifier" }
+      }
+    },
+    route: {
+      type: "object",
+      additionalProperties: false,
+      required: ["work_mode", "skill_tree"],
+      properties: {
+        work_mode: { enum: ["single", "phased", "managed-goal"] },
+        skill_tree: {
+          type: "array",
+          minItems: 1,
+          maxItems: 32,
+          items: { $ref: "#/$defs/skillTreePhase" }
+        }
+      }
+    },
+    rule: {
+      type: "object",
+      additionalProperties: false,
+      required: ["rule_id", "priority", "match", "route"],
+      properties: {
+        rule_id: { $ref: "#/$defs/identifier" },
+        priority: { type: "integer", minimum: -1e3, maximum: 1e3 },
+        match: { $ref: "#/$defs/match" },
+        route: { $ref: "#/$defs/route" }
+      }
+    }
+  }
+};
+
+// mcp/src/memory-tool-schemas.ts
+var MEMORY_TOOL_NAMES = [
+  "get_memory_status",
+  "remember_workflow",
+  "record_route_feedback",
+  "list_workflow_candidates",
+  "preview_profile_update",
+  "transition_profile_update",
+  "rollback_profile_revision",
+  "purge_workflow_memory"
+];
+var isMemoryTool = (name) => MEMORY_TOOL_NAMES.includes(name);
+var key = external_exports3.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/);
+var digest = external_exports3.string().regex(/^sha256:[0-9a-f]{64}$/);
+var artifactId = (kind) => external_exports3.string().regex(new RegExp(`^${kind}:[0-9a-f]{32}$`));
+var target = external_exports3.enum(["managed-personal", "managed-workspace-local", "user-personal", "workspace-file"]);
+var mode = external_exports3.enum(["disabled", "observe", "reviewed", "automatic"]);
+var candidateStatus = external_exports3.enum(["proposed", "approved", "rejected", "expired", "suppressed", "superseded", "auto-promoted"]);
+var feedbackType = external_exports3.enum(["accepted", "corrected", "rejected", "support-rejected", "capability-unavailable", "gate-failed", "completed", "abandoned", "no-memory"]);
+var feedbackReason = external_exports3.enum(["user-accepted", "user-rejected", "user-correction", "support-rejected", "capability-unavailable", "gate-failed", "completed", "abandoned", "no-memory"]);
+var dimension = external_exports3.enum(["work-mode", "phase-order", "primary-skill", "support-skill", "exit-gate", "matcher", "target"]);
+var purgeScope = external_exports3.enum(["history-only", "analytics-only", "candidates-only", "revisions-only", "managed-profiles-only", "all-memory-data"]);
 var context = external_exports3.object({
+  session_id: key.max(128),
+  actor: key.max(128),
+  runtime_policy_snapshot_id: key.max(128)
+}).strict().describe("Session/actor correlation context; these identifiers do not grant Host write authority.");
+var control = {
+  context,
+  workspace_root: external_exports3.string().min(1).max(4096).refine((value) => !value.includes("\0")).nullable().describe("Optional Workspace root bound to MCP Client or operator-advertised roots before Core access; never a target filename.")
+};
+var mutation = {
+  idempotency_key: key.describe("Stable key for replaying the identical bounded intent."),
+  correlation_id: key.describe("Public-safe correlation identity. A changed identity is not the same replay.")
+};
+var version2 = external_exports3.number().int().min(1).max(2147483647);
+var correctionDimensions = external_exports3.array(dimension).max(7).refine((values) => new Set(values).size === values.length, "Correction dimensions must be unique.");
+var MEMORY_INPUT_SCHEMAS = {
+  get_memory_status: external_exports3.object({ ...control }).strict(),
+  remember_workflow: external_exports3.object({
+    ...control,
+    ...mutation,
+    workflow_run_id: key,
+    target_profile_class: target,
+    risk_class: external_exports3.enum(["r0", "r1", "r2", "r3"]),
+    side_effect_outcome: external_exports3.enum(["none", "known-success", "known-failure", "unknown"]),
+    one_shot: external_exports3.enum(["none", "remember-once", "no-memory"])
+  }).strict(),
+  record_route_feedback: external_exports3.object({
+    ...control,
+    ...mutation,
+    workflow_run_id: key,
+    observation_id: artifactId("observation"),
+    feedback_type: feedbackType,
+    reason_code: feedbackReason.nullable(),
+    correction_dimensions: correctionDimensions,
+    original_route_digest: digest.nullable(),
+    corrected_route_digest: digest.nullable()
+  }).strict().superRefine((value, ctx) => {
+    const corrected = value.feedback_type === "corrected";
+    if (corrected ? value.correction_dimensions.length === 0 || value.original_route_digest === null || value.corrected_route_digest === null || value.original_route_digest === value.corrected_route_digest : value.correction_dimensions.length !== 0 || value.original_route_digest !== null || value.corrected_route_digest !== null) {
+      ctx.addIssue({ code: "custom", message: "Correction metadata is required only for corrected feedback." });
+    }
+  }),
+  list_workflow_candidates: external_exports3.object({
+    ...control,
+    status: candidateStatus.nullable(),
+    limit: external_exports3.number().int().min(1).max(1e3)
+  }).strict(),
+  preview_profile_update: external_exports3.object({ ...control, candidate_id: artifactId("candidate") }).strict(),
+  transition_profile_update: external_exports3.object({
+    ...control,
+    ...mutation,
+    proposal_id: artifactId("proposal"),
+    expected_proposal_digest: digest,
+    expected_profile_digest: external_exports3.union([digest, external_exports3.literal("missing")]),
+    expected_state_version: version2,
+    action: external_exports3.enum(["approve", "reject"])
+  }).strict(),
+  rollback_profile_revision: external_exports3.object({
+    ...control,
+    ...mutation,
+    source_revision_id: artifactId("revision"),
+    expected_profile_digest: digest
+  }).strict(),
+  purge_workflow_memory: external_exports3.object({
+    context,
+    ...mutation,
+    scope: purgeScope,
+    expected_summary_digest: digest,
+    include_managed_profiles: external_exports3.boolean(),
+    confirmed: external_exports3.literal(true).describe("Explicit confirmation of the destructive scope. Never inferred from Memory mode.")
+  }).strict()
+};
+var MEMORY_INPUT_SHAPES = {
+  get_memory_status: MEMORY_INPUT_SCHEMAS.get_memory_status.shape,
+  remember_workflow: MEMORY_INPUT_SCHEMAS.remember_workflow.shape,
+  record_route_feedback: MEMORY_INPUT_SCHEMAS.record_route_feedback.shape,
+  list_workflow_candidates: MEMORY_INPUT_SCHEMAS.list_workflow_candidates.shape,
+  preview_profile_update: MEMORY_INPUT_SCHEMAS.preview_profile_update.shape,
+  transition_profile_update: MEMORY_INPUT_SCHEMAS.transition_profile_update.shape,
+  rollback_profile_revision: MEMORY_INPUT_SCHEMAS.rollback_profile_revision.shape,
+  purge_workflow_memory: MEMORY_INPUT_SCHEMAS.purge_workflow_memory.shape
+};
+var MEMORY_REASON_CODES = [
+  "memory-disabled",
+  "personal-policy-missing",
+  "workspace-policy-missing",
+  "invalid-memory-policy",
+  "ambiguous-memory-policy",
+  "workspace-policy-exceeds-ceiling",
+  "workspace-root-unverified",
+  "explicit-no-memory",
+  "workflow-not-terminal",
+  "required-gate-not-passed",
+  "unknown-side-effect-outcome",
+  "sensitive-route-excluded",
+  "insufficient-evidence",
+  "candidate-conflict",
+  "candidate-suppressed",
+  "candidate-not-proposed",
+  "workflow-candidate-not-found",
+  "profile-preview-stale",
+  "profile-policy-drift",
+  "profile-drift",
+  "profile-candidate-drift",
+  "profile-proposal-state-conflict",
+  "profile-proposal-expired",
+  "profile-promotion-disabled",
+  "profile-target-not-allowed",
+  "profile-backtest-failed",
+  "profile-backtest-drift",
+  "profile-lint-failed",
+  "profile-authority-mismatch",
+  "profile-proposal-not-found",
+  "memory-store-unavailable",
+  "memory-operation-failed",
+  "idempotency-conflict",
+  "memory-idempotency-conflict",
+  "stale-summary-digest",
+  "scope-not-available",
+  "managed-profile-purge-not-available",
+  "rollback-source-revision-unavailable",
+  "automatic-user-profile-write-forbidden",
+  "explicit-route-requires-review",
+  "workflow-context-mismatch",
+  "workflow-run-not-found",
+  "workflow-not-completed",
+  "no-matchable-routing-context",
+  "matcher-seed-required",
+  "unresolved-skill-identity",
+  "risk-class-excluded",
+  "profile-versioning-required",
+  "candidate-evidence-drift"
+];
+var reasons = external_exports3.array(external_exports3.enum(MEMORY_REASON_CODES)).max(64);
+var localAuthority = external_exports3.literal("router-local");
+var count = external_exports3.number().int().nonnegative();
+var rate = external_exports3.number().min(0).max(1);
+var instant = external_exports3.string().datetime();
+var jsonObject = external_exports3.string().max(1048576).refine((text) => {
+  try {
+    const value = JSON.parse(text);
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  } catch {
+    return false;
+  }
+}, "Expected a canonical JSON object compiled by the Router.");
+var profileValidator = new Validator(structuredClone(routing_profile_contract_default), "2020-12");
+var fragments = ["rule", "match", "skillTreePhase"].map((name) => new Validator(structuredClone({
+  $schema: routing_profile_contract_default.$schema,
+  $defs: routing_profile_contract_default.$defs,
+  $ref: `#/$defs/${name}`
+}), "2020-12"));
+var fragment = external_exports3.unknown().refine((value) => fragments.some((validator) => validator.validate(value).valid));
+var identifier = external_exports3.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
+var skillId = external_exports3.string().regex(/^skill:[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/);
+var diffValue = external_exports3.union([
+  external_exports3.null(),
+  external_exports3.number().int().min(-1e3).max(1e3),
+  identifier,
+  skillId,
+  external_exports3.array(external_exports3.union([identifier, skillId])).max(32),
+  fragment
+]);
+var diffContract = external_exports3.object({
+  entries: external_exports3.array(external_exports3.object({
+    change_type: external_exports3.enum(["rule-added", "rule-removed", "rule-changed", "phase-added", "phase-removed", "phase-changed", "phase-order-changed"]),
+    rule_id: identifier.nullable(),
+    phase_id: identifier.nullable(),
+    field: external_exports3.enum(["priority", "match", "work_mode", "phase_order", "primary_skill_id", "support_skill_ids", "exit_gate"]).nullable(),
+    before: diffValue,
+    after: diffValue
+  }).strict()),
+  json_patch: external_exports3.array(external_exports3.union([
+    external_exports3.object({ op: external_exports3.literal("add"), path: external_exports3.literal("/"), value: external_exports3.unknown().refine((value) => profileValidator.validate(value).valid) }).strict(),
+    external_exports3.object({ op: external_exports3.literal("replace"), path: external_exports3.literal("/rules"), value: external_exports3.array(external_exports3.unknown().refine((value) => fragments[0].validate(value).valid)).max(64) }).strict()
+  ])),
+  semantic_diff_digest: digest,
+  json_patch_digest: digest
+}).strict();
+var profileJson = jsonObject.refine((text) => {
+  try {
+    return profileValidator.validate(JSON.parse(text)).valid;
+  } catch {
+    return false;
+  }
+}, "Embedded Profile violates the strict routing contract.");
+var diffJson = jsonObject.refine((text) => {
+  try {
+    return diffContract.safeParse(JSON.parse(text)).success;
+  } catch {
+    return false;
+  }
+}, "Embedded Diff violates the strict semantic contract.");
+var backtest = external_exports3.object({
+  positive_observation_count: count,
+  positive_match_count: count,
+  positive_match_coverage: rate,
+  unexpected_match_count: count,
+  shadowed_rule_ids: external_exports3.array(key),
+  equal_rank_conflicts: external_exports3.array(key),
+  manual_precedence: external_exports3.boolean(),
+  manual_profile_digests: external_exports3.array(digest),
+  capability_gap_summary: external_exports3.literal("unavailable"),
+  planned_route_regressions: count,
+  workspace_isolation: external_exports3.boolean(),
+  acceptable: external_exports3.boolean(),
+  backtest_digest: digest
+}).strict();
+var proposal = external_exports3.object({
+  proposal_id: artifactId("proposal"),
+  proposal_digest: digest,
+  candidate_id: artifactId("candidate"),
+  candidate_digest: digest,
+  status: external_exports3.enum(["pending", "approved", "rejected", "stale", "expired", "applied", "failed"]),
+  state_version: version2,
+  target_profile_class: target,
+  expected_profile_digest: external_exports3.union([digest, external_exports3.literal("missing")]),
+  proposed_profile_digest: digest,
+  semantic_diff_digest: digest,
+  backtest_digest: digest,
+  policy_digest: digest,
+  workspace_identity_digest: digest.nullable(),
+  created_at: instant,
+  expires_at: instant,
+  proposed_profile_json: profileJson,
+  semantic_diff_json: diffJson,
+  backtest
+}).strict();
+var profileResult = external_exports3.object({
+  status: external_exports3.enum(["previewed", "pending", "applied", "rejected", "blocked", "not-found"]),
+  proposal: proposal.nullable(),
+  revision_id: artifactId("revision").nullable(),
+  revision_digest: digest.nullable(),
+  replayed: external_exports3.boolean(),
+  reason_codes: reasons,
+  authority_mode: localAuthority
+}).strict().superRefine((value, ctx) => {
+  if (value.status === "applied" !== (value.revision_id !== null && value.revision_digest !== null)) {
+    ctx.addIssue({ code: "custom", message: "Only an applied result has a complete Revision identity." });
+  }
+  if (["previewed", "pending", "applied", "rejected"].includes(value.status) && value.proposal === null) {
+    ctx.addIssue({ code: "custom", message: "Successful Profile operations require a bound Proposal." });
+  }
+  if (value.proposal !== null && value.proposal.backtest_digest !== value.proposal.backtest.backtest_digest) {
+    ctx.addIssue({ code: "custom", message: "Backtest Digest must match the bound Proposal." });
+  }
+});
+var metricSummary = external_exports3.object({
+  distinct_runs: count,
+  distinct_days: count,
+  completion_rate: rate,
+  required_gate_pass_rate: rate,
+  manual_correction_rate: rate,
+  route_consistency: rate,
+  canonical_skill_ids: external_exports3.boolean(),
+  hard_contract_violations: count
+}).strict();
+var candidate = external_exports3.object({
+  candidate_id: artifactId("candidate"),
+  candidate_digest: digest,
+  pattern_id: artifactId("pattern"),
+  status: candidateStatus,
+  recommendation_mode: external_exports3.enum(["reviewed", "automatic"]),
+  confidence: external_exports3.enum(["insufficient-evidence", "low", "medium", "high"]),
+  target_profile_class: target,
+  workspace_identity_digest: digest.nullable(),
+  material_evidence_digest: digest,
+  policy_digest: digest,
+  created_at: instant,
+  scope: external_exports3.enum(["personal", "workspace"]),
+  metrics: metricSummary,
+  reason_codes: reasons
+}).strict();
+var MEMORY_OUTPUT_SCHEMAS = {
+  get_memory_status: external_exports3.object({
+    effective_mode: mode,
+    personal_ceiling: mode,
+    workspace_requested_mode: mode.nullable(),
+    policy_digest: digest,
+    capture_enabled: external_exports3.boolean(),
+    candidate_generation_enabled: external_exports3.boolean(),
+    profile_promotion: external_exports3.enum(["disabled", "review-required", "automatic-managed"]),
+    allowed_targets: external_exports3.array(target).max(4),
+    memory_store_exists: external_exports3.boolean(),
+    reason_codes: reasons,
+    history_summary_digest: digest,
+    eligible_workflow_count: count,
+    actual_skill_consistency: external_exports3.literal("unavailable"),
+    authority_mode: localAuthority
+  }).strict(),
+  remember_workflow: external_exports3.object({
+    status: external_exports3.enum(["recorded", "not-recorded", "memory-disabled"]),
+    observation_id: artifactId("observation").nullable(),
+    observation_digest: digest.nullable(),
+    route_signature_digest: digest.nullable(),
+    policy_digest: digest.nullable(),
+    target_profile_class: target,
+    reason_codes: reasons,
+    replayed: external_exports3.boolean(),
+    candidate_id: artifactId("candidate").nullable(),
+    authority_mode: localAuthority
+  }).strict(),
+  record_route_feedback: external_exports3.object({
+    status: external_exports3.enum(["recorded", "memory-disabled"]),
+    feedback_id: artifactId("feedback").nullable(),
+    feedback_digest: digest.nullable(),
+    observation_id: artifactId("observation"),
+    policy_digest: digest.nullable(),
+    reason_codes: reasons,
+    replayed: external_exports3.boolean(),
+    authority_mode: localAuthority
+  }).strict(),
+  list_workflow_candidates: external_exports3.object({
+    candidates: external_exports3.array(candidate).max(1e3),
+    truncated: external_exports3.boolean(),
+    authority_mode: localAuthority
+  }).strict(),
+  preview_profile_update: profileResult,
+  transition_profile_update: profileResult,
+  rollback_profile_revision: profileResult,
+  purge_workflow_memory: external_exports3.object({
+    status: external_exports3.enum(["purged", "blocked", "scope-not-available"]),
+    scope: purgeScope,
+    deleted_observations: count,
+    deleted_feedback: count,
+    deleted_command_receipts: count,
+    summary_digest_before: digest,
+    summary_digest_after: digest,
+    replayed: external_exports3.boolean(),
+    reason_codes: reasons,
+    authority_mode: localAuthority
+  }).strict()
+};
+
+// mcp/src/tool-schemas.ts
+var context2 = external_exports3.object({
   session_id: external_exports3.string().min(1).describe("Stable session identifier used to isolate Router state and idempotency."),
   actor: external_exports3.string().min(1).describe("Verified user or host actor responsible for this request."),
   runtime_policy_snapshot_id: external_exports3.string().min(1).describe("Host policy snapshot governing authority and runtime behavior.")
 }).strict().describe("Authority context supplied by the Codex host.");
-var mutation = {
-  context,
+var mutation2 = {
+  context: context2,
   expected_state_version: external_exports3.number().int().nonnegative().describe("Expected aggregate state version for compare-and-swap protection."),
   idempotency_key: external_exports3.string().min(1).describe("Caller-stable key that safely replays the same semantic command."),
   correlation_id: external_exports3.string().min(1).describe("Public-safe correlation identifier for tracing one command flow.")
@@ -23534,7 +24008,7 @@ var sha256Fingerprint = external_exports3.string().regex(
   /^sha256:[0-9a-f]{64}$/,
   "Must be a lowercase SHA-256 fingerprint."
 );
-var control = { context };
+var control2 = { context: context2 };
 var agentSnapshot = external_exports3.object({
   schema_id: external_exports3.string().describe("Registered schema identifier for the agent runtime snapshot."),
   schema_version: external_exports3.string().describe("Version of the registered runtime snapshot schema."),
@@ -23561,7 +24035,7 @@ var routingContext = external_exports3.object({
   )
 }).strict();
 var PLAN_WORK_INPUT_SCHEMA = external_exports3.object({
-  ...mutation,
+  ...mutation2,
   objective: external_exports3.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
   goal_binding_id: external_exports3.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
   requested_work_mode: external_exports3.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
@@ -23570,9 +24044,9 @@ var PLAN_WORK_INPUT_SCHEMA = external_exports3.object({
   routing_context: routingContext.optional().describe(
     "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
   )
-}).strict().superRefine((value, context2) => {
+}).strict().superRefine((value, context3) => {
   if (value.explicit_skill_ids.length === 0 && value.explicit_semantics !== null) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       path: ["explicit_semantics"],
       message: "explicit_semantics requires at least one explicit_skill_id."
@@ -23580,8 +24054,9 @@ var PLAN_WORK_INPUT_SCHEMA = external_exports3.object({
   }
 });
 var TOOL_INPUT_SHAPES = {
+  ...MEMORY_INPUT_SHAPES,
   sync_runtime_context: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     intent: external_exports3.object({
       host_snapshot_ref: external_exports3.string().nullable().describe("Verified host snapshot reference, or null when unavailable."),
       plugin_handshake_ref: external_exports3.string().nullable().describe("Verified Plugin handshake reference, or null when unavailable."),
@@ -23590,7 +24065,7 @@ var TOOL_INPUT_SHAPES = {
   }).strict().shape,
   plan_work: PLAN_WORK_INPUT_SCHEMA.shape,
   propose_support_consent: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     workflow_run_id: external_exports3.string().min(1).describe("Existing explicit-locked workflow plan receiving the concrete support proposal."),
     phase_id: external_exports3.string().min(1).describe("Current Phase to which the proposal is strictly scoped."),
     scope_anchor_id: external_exports3.string().min(1).describe("Stable scope anchor for the current Phase."),
@@ -23601,7 +24076,7 @@ var TOOL_INPUT_SHAPES = {
     context_fingerprint: sha256Fingerprint.describe("Material context fingerprint that invalidates stale consent.")
   }).strict().shape,
   transition_support_consent: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     proposal_id: external_exports3.string().min(1).describe("Persisted support proposal receiving the user decision."),
     action: external_exports3.enum(["approve", "reject"]).describe("User consent intent; route fields cannot be supplied here."),
     current_phase_id: external_exports3.string().min(1).describe("Host-observed current Phase used for fail-closed scope validation."),
@@ -23611,24 +24086,24 @@ var TOOL_INPUT_SHAPES = {
     current_context_fingerprint: sha256Fingerprint.describe("Current material context fingerprint.")
   }).strict().shape,
   get_next_work: external_exports3.object({
-    ...control,
+    ...control2,
     workflow_run_id: external_exports3.string().min(1).describe("Workflow run whose next host-scheduled work item is requested.")
   }).strict().shape,
   validate_route: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     route_proposal: external_exports3.record(external_exports3.string(), external_exports3.unknown()).describe("Complete route proposal evaluated against current policy and capability state."),
     capability_snapshot_id: external_exports3.string().min(1).describe("Verified capability snapshot used for route validation."),
     policy_revision: external_exports3.number().int().nonnegative().describe("Immutable routing policy revision expected by the caller.")
   }).strict().shape,
   record_work_event: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     workflow_run_id: external_exports3.string().min(1).describe("Workflow run receiving the semantic observation."),
     phase_id: external_exports3.string().min(1).describe("Phase receiving the semantic observation."),
     observation: external_exports3.record(external_exports3.string(), external_exports3.unknown()).describe("Versioned work observation validated by the core codec."),
     activation_receipt_ref: external_exports3.string().nullable().describe("Single-use activation receipt when the observation reports execution.")
   }).strict().shape,
   evaluate_gate: external_exports3.object({
-    ...mutation,
+    ...mutation2,
     workflow_run_id: external_exports3.string().min(1).describe("Workflow run whose phase gate is evaluated."),
     phase_id: external_exports3.string().min(1).describe("Phase whose exit gate is evaluated."),
     expected_plan_revision: external_exports3.number().int().nonnegative().describe("Plan revision bound to this gate decision."),
@@ -23636,12 +24111,12 @@ var TOOL_INPUT_SHAPES = {
     evidence_refs: external_exports3.array(external_exports3.string()).describe("Content-addressed evidence references considered by the gate.")
   }).strict().shape,
   get_router_status: external_exports3.object({
-    ...control,
+    ...control2,
     goal_binding_id: external_exports3.string().nullable().describe("Native Goal binding to filter, or null for session scope."),
     workflow_run_id: external_exports3.string().nullable().describe("Workflow run to filter, or null for session scope.")
   }).strict().shape,
   run_model_evaluation: external_exports3.object({
-    ...control,
+    ...control2,
     authorization_ref: external_exports3.string().min(1).describe("Trusted server-side authorization selecting a configured evaluation adapter."),
     sealed_case_ref: external_exports3.string().min(1).describe("Reference to a sealed evaluation package with isolated scoring data."),
     repeats: external_exports3.number().int().min(1).describe("Fresh attempt count requested for each selected evaluation case."),
@@ -23649,7 +24124,7 @@ var TOOL_INPUT_SHAPES = {
     correlation_id: external_exports3.string().min(1).describe("Public-safe evaluation correlation identifier.")
   }).strict().shape,
   compare_evaluations: external_exports3.object({
-    ...control,
+    ...control2,
     authorization_ref: external_exports3.string().min(1).describe("Trusted authorization permitting comparison of the selected runs."),
     baseline_run_id: external_exports3.string().min(1).describe("Completed baseline evaluation run identifier."),
     candidate_run_id: external_exports3.string().min(1).describe("Completed candidate evaluation run identifier."),
@@ -23657,7 +24132,7 @@ var TOOL_INPUT_SHAPES = {
     correlation_id: external_exports3.string().min(1).describe("Public-safe comparison correlation identifier.")
   }).strict().shape,
   export_router_artifact: external_exports3.object({
-    ...control,
+    ...control2,
     authorization_ref: external_exports3.string().min(1).describe("Trusted authorization permitting sanitized artifact export."),
     comparison_ref: external_exports3.string().min(1).describe("Validated evaluation comparison used to build the artifact."),
     export_kind: external_exports3.string().min(1).describe("Supported sanitized export format requested by the caller."),
@@ -23767,16 +24242,16 @@ var recordWorkEvent = external_exports3.object({
   authority_mode: external_exports3.literal("router-local").optional(),
   evidence_class: external_exports3.literal("user-or-agent-reported-local").optional(),
   host_transition_authorized: external_exports3.literal(false).optional()
-}).strict().superRefine((value, context2) => {
+}).strict().superRefine((value, context3) => {
   const isLocal = value.authority_mode === "router-local";
   if (isLocal && (value.evidence_class !== "user-or-agent-reported-local" || value.host_transition_authorized !== false)) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Router-local records require local evidence and deny Host transition authority."
     });
   }
   if (!isLocal && (value.evidence_class !== void 0 || value.host_transition_authorized !== void 0)) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Verified-Host records cannot carry Router-local-only fields."
     });
@@ -23794,36 +24269,37 @@ var gateEvaluation = external_exports3.object({
   authority_mode: external_exports3.literal("router-local").optional(),
   evidence_class: external_exports3.literal("user-or-agent-reported-local").optional(),
   host_transition_authorized: external_exports3.literal(false).optional()
-}).strict().superRefine((value, context2) => {
+}).strict().superRefine((value, context3) => {
   const isLocal = value.authority_mode === "router-local";
   const localFieldsComplete = value.status === "evaluated-local" && value.failures !== void 0 && value.resulting_state_version !== void 0 && value.replayed !== void 0 && value.gate_scope === "router-local" && value.evidence_class === "user-or-agent-reported-local" && value.host_transition_authorized === false && value.mandatory_failures === void 0;
   if (isLocal && !localFieldsComplete) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Router-local gates require the complete local evidence boundary and no Host-only fields."
     });
   }
   if (isLocal && value.failures !== void 0 && value.passed !== (value.failures.length === 0)) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Router-local gate pass state must agree with the failures list."
     });
   }
   const carriesLocalOnlyField = value.failures !== void 0 || value.resulting_state_version !== void 0 || value.replayed !== void 0 || value.gate_scope !== void 0 || value.evidence_class !== void 0 || value.host_transition_authorized !== void 0;
   if (!isLocal && (value.mandatory_failures === void 0 || carriesLocalOnlyField)) {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Verified-Host gates require mandatory_failures and cannot carry Router-local-only fields."
     });
   }
   if (!isLocal && value.status === "evaluated-local") {
-    context2.addIssue({
+    context3.addIssue({
       code: "custom",
       message: "Verified-Host gates cannot claim Router-local evaluation status."
     });
   }
 });
 var TOOL_OUTPUT_SCHEMAS = {
+  ...MEMORY_OUTPUT_SCHEMAS,
   sync_runtime_context: external_exports3.object({
     snapshot: unknownObject,
     drift: external_exports3.array(unknownObject),
@@ -23867,9 +24343,9 @@ var TOOL_OUTPUT_SCHEMAS = {
     ...nextWorkFields,
     authority_mode: external_exports3.enum(["router-local", "verified-host"]),
     host_goal_mutated: external_exports3.boolean()
-  }).strict().superRefine((value, context2) => {
+  }).strict().superRefine((value, context3) => {
     if (value.authority_mode === "router-local" && value.host_goal_mutated) {
-      context2.addIssue({
+      context3.addIssue({
         code: "custom",
         message: "Router-local scheduling cannot claim a Host Goal mutation."
       });
@@ -23877,7 +24353,7 @@ var TOOL_OUTPUT_SCHEMAS = {
     if (value.work_item !== null) {
       const expectedLane = value.authority_mode === "router-local" ? routerLocalWorkItem : verifiedHostWorkItem;
       if (!expectedLane.safeParse(value.work_item).success) {
-        context2.addIssue({
+        context3.addIssue({
           code: "custom",
           path: ["work_item"],
           message: "Nested work item does not match the declared authority lane."
@@ -23949,9 +24425,18 @@ var PUBLIC_TOOL_NAMES = [
   "get_router_status",
   "run_model_evaluation",
   "compare_evaluations",
-  "export_router_artifact"
+  "export_router_artifact",
+  ...MEMORY_TOOL_NAMES
 ];
 var TITLES = {
+  get_memory_status: "Get Workflow Memory Status",
+  remember_workflow: "Remember Completed Workflow",
+  record_route_feedback: "Record Typed Route Feedback",
+  list_workflow_candidates: "List Workflow Memory Candidates",
+  preview_profile_update: "Preview Bound Profile Update",
+  transition_profile_update: "Apply Reviewed Profile Decision",
+  rollback_profile_revision: "Propose Profile Revision Rollback",
+  purge_workflow_memory: "Purge Explicit Workflow Memory Scope",
   sync_runtime_context: "Sync Runtime Capabilities",
   plan_work: "Plan Routed Work",
   propose_support_consent: "Propose Scoped Support",
@@ -23966,6 +24451,14 @@ var TITLES = {
   export_router_artifact: "Export Reviewed Router Artifact"
 };
 var DESCRIPTIONS = {
+  get_memory_status: "Read the effective default-off Memory policy and a path-free global history summary without creating or migrating optional Memory state. A policy is not Skill activation, Host write permission, or background learning.",
+  remember_workflow: "Record one eligible completed local Workflow under the current opt-in Memory policy using only retained routing context. This explicit local operation may rebuild Candidates but does not promote Profiles, infer raw matchers, activate Skills, or grant Side-effect authority.",
+  record_route_feedback: "Record bounded typed feedback against an existing Observation and matching Workflow session. The operation rejects unbound corrections and accepts no free-text feedback, raw objective, or caller-provided Profile content.",
+  list_workflow_candidates: "Read sanitized Candidate evidence summaries with a bounded result limit, Workspace isolation, and an explicit truncation marker. This read-only operation never rebuilds Candidates, creates a Memory store, or grants runtime authority.",
+  preview_profile_update: "Build a read-only, deterministic Profile preview with semantic Diff, canonical Profile JSON, Backtest, and full Proposal Digest. No Proposal or Profile is persisted; approval must reproduce and bind the same preview before a local write.",
+  transition_profile_update: "Apply an explicit approve or reject decision to the exact bound Profile preview under the current Memory policy. This conditional-local operation uses CAS, Backtest, Revision and atomic writes; workspace-file targets require verified Host write authority and fail closed in the bundled runtime.",
+  rollback_profile_revision: "Create a new reviewable rollback Proposal from a validated Revision and current Profile Digest. This conditional-local mutation does not silently write a Profile; the new Proposal requires transition approval. Workspace file writes still require verified Host authority.",
+  purge_workflow_memory: "Purge an explicitly confirmed local Memory scope bound to the current global summary Digest, including after capture is disabled. This destructive R1 operation never deletes User-owned Profiles; unsupported scopes return scope-not-available without claiming deletion.",
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
   plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
@@ -23980,6 +24473,14 @@ var DESCRIPTIONS = {
   export_router_artifact: "Export a sanitized evaluation artifact from a validated comparison and optional trusted attestation. This operation requires configured-adapter evidence and cannot self-approve publication."
 };
 var RUNTIME_REQUIREMENTS = {
+  get_memory_status: "local-r0",
+  remember_workflow: "local-r0",
+  record_route_feedback: "local-r0",
+  list_workflow_candidates: "local-r0",
+  preview_profile_update: "local-r0",
+  transition_profile_update: "conditional-local",
+  rollback_profile_revision: "conditional-local",
+  purge_workflow_memory: "local-r0",
   sync_runtime_context: "verified-host",
   plan_work: "local-r0",
   propose_support_consent: "local-r0",
@@ -23994,6 +24495,9 @@ var RUNTIME_REQUIREMENTS = {
   export_router_artifact: "configured-adapter"
 };
 var READ_ONLY = /* @__PURE__ */ new Set([
+  "get_memory_status",
+  "list_workflow_candidates",
+  "preview_profile_update",
   "get_next_work",
   "get_router_status",
   "compare_evaluations"
@@ -24006,7 +24510,7 @@ var TOOL_DEFINITIONS = PUBLIC_TOOL_NAMES.map((name) => ({
   outputSchema: TOOL_OUTPUT_SCHEMAS[name].shape,
   annotations: {
     readOnlyHint: READ_ONLY.has(name),
-    destructiveHint: false,
+    destructiveHint: name === "purge_workflow_memory",
     idempotentHint: true,
     openWorldHint: name === "run_model_evaluation"
   },
@@ -24032,8 +24536,8 @@ var canonicalExistingDirectory = (value) => {
     return null;
   }
 };
-var isWithin = (candidate, root) => {
-  const relative = path3.relative(root, candidate);
+var isWithin = (candidate2, root) => {
+  const relative = path3.relative(root, candidate2);
   return relative === "" || relative !== ".." && !relative.startsWith(`..${path3.sep}`) && !path3.isAbsolute(relative);
 };
 function collectTrustedWorkspaceRoots(clientRoots, configuredRoots) {
@@ -24074,17 +24578,36 @@ function bindPlanWorkWorkspaceRoot(arguments_, trustedRoots) {
   if (rawContext === null || typeof rawContext !== "object" || Array.isArray(rawContext)) {
     return arguments_;
   }
-  const context2 = rawContext;
-  if (context2.workspace_root === null || context2.workspace_root === void 0) return arguments_;
-  if (typeof context2.workspace_root !== "string") throw new WorkspaceRootTrustError();
-  const requested = canonicalExistingDirectory(context2.workspace_root);
+  const context3 = rawContext;
+  if (context3.workspace_root === null || context3.workspace_root === void 0) return arguments_;
+  if (typeof context3.workspace_root !== "string") throw new WorkspaceRootTrustError();
+  const requested = canonicalExistingDirectory(context3.workspace_root);
   if (requested === null || !canonicalRoots.some((root) => isWithin(requested, root))) {
     throw new WorkspaceRootTrustError();
   }
   return {
     ...arguments_,
-    routing_context: { ...context2, workspace_root: requested }
+    routing_context: { ...context3, workspace_root: requested }
   };
+}
+var MEMORY_WORKSPACE_TOOLS = /* @__PURE__ */ new Set([
+  "get_memory_status",
+  "remember_workflow",
+  "record_route_feedback",
+  "list_workflow_candidates",
+  "preview_profile_update",
+  "transition_profile_update",
+  "rollback_profile_revision"
+]);
+function bindMemoryWorkspaceRoot(name, arguments_, trustedRoots) {
+  if (!MEMORY_WORKSPACE_TOOLS.has(name) || arguments_.workspace_root === null) return arguments_;
+  if (typeof arguments_.workspace_root !== "string") throw new WorkspaceRootTrustError();
+  const requested = canonicalExistingDirectory(arguments_.workspace_root);
+  const roots = trustedRoots.map(canonicalExistingDirectory).filter((root) => root !== null);
+  if (requested === null || !roots.some((root) => isWithin(requested, root))) {
+    throw new WorkspaceRootTrustError();
+  }
+  return { ...arguments_, workspace_root: requested };
 }
 
 // mcp/src/server.ts
@@ -24118,7 +24641,7 @@ for (const definition of TOOL_DEFINITIONS) {
     {
       title: definition.title,
       description: definition.description,
-      inputSchema: definition.inputSchema,
+      inputSchema: isMemoryTool(definition.name) ? MEMORY_INPUT_SCHEMAS[definition.name] : definition.inputSchema,
       outputSchema: definition.outputSchema,
       annotations: definition.annotations
     },
@@ -24127,8 +24650,8 @@ for (const definition of TOOL_DEFINITIONS) {
         const boundArguments = definition.name === "plan_work" ? bindPlanWorkWorkspaceRoot(
           arguments_,
           await trustedWorkspaceRoots()
-        ) : arguments_;
-        const validatedArguments = definition.name === "plan_work" ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments) : boundArguments;
+        ) : isMemoryTool(definition.name) ? bindMemoryWorkspaceRoot(definition.name, MEMORY_INPUT_SCHEMAS[definition.name].parse(arguments_), await trustedWorkspaceRoots()) : arguments_;
+        const validatedArguments = definition.name === "plan_work" ? PLAN_WORK_INPUT_SCHEMA.parse(boundArguments) : isMemoryTool(definition.name) ? MEMORY_INPUT_SCHEMAS[definition.name].parse(boundArguments) : boundArguments;
         const rawResult = await core.call(definition.name, validatedArguments);
         const result = TOOL_OUTPUT_SCHEMAS[definition.name].parse(rawResult);
         return {
