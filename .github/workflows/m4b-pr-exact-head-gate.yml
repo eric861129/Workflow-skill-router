@@ -1,0 +1,93 @@
+name: M4-B Exact Head PR Gate
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-pr-exact-head-gate.yml]
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  pull-requests: write
+  issues: write
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+    steps:
+      - name: Wait for the Draft PR and exact-head workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR_NUMBER=''
+          HEAD_SHA=''
+          for attempt in $(seq 1 120); do
+            PR_NUMBER="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$TARGET_BRANCH" --json number --jq '.[0].number // empty')"
+            if [ -n "$PR_NUMBER" ]; then
+              HEAD_SHA="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
+              break
+            fi
+            sleep 15
+          done
+          test -n "$PR_NUMBER"
+          test -n "$HEAD_SHA"
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+          echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+
+          for attempt in $(seq 1 160); do
+            RUNS="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=100" --jq '[.workflow_runs[] | {name,status,conclusion,id}] | unique_by(.name)')"
+            python - "$RUNS" <<'PY'
+          import json, sys
+          runs = {item['name']: item for item in json.loads(sys.argv[1])}
+          required = ('CodeQL', 'Validate V2 contracts', 'V2 Plugin Smoke')
+          if not all(name in runs for name in required):
+              raise SystemExit(2)
+          if any(runs[name]['status'] != 'completed' for name in required):
+              raise SystemExit(2)
+          if any(runs[name]['conclusion'] != 'success' for name in required):
+              print(json.dumps({name: runs[name] for name in required}, sort_keys=True), file=sys.stderr)
+              raise SystemExit(1)
+          print(json.dumps({name: runs[name]['id'] for name in required}, sort_keys=True))
+          PY
+            STATUS=$?
+            if [ "$STATUS" -eq 0 ]; then
+              echo "$RUNS" > /tmp/m4b-pr-runs.json
+              exit 0
+            fi
+            if [ "$STATUS" -eq 1 ]; then
+              exit 1
+            fi
+            sleep 15
+          done
+          echo 'Required exact-head PR workflows did not finish before timeout.' >&2
+          exit 1
+      - name: Record the exact-head review checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMENT_FILE="$(mktemp)"
+          cat > "$COMMENT_FILE" <<EOF
+          ## M4-B exact-head verification passed
+
+          Exact Head: \`$HEAD_SHA\`
+
+          The required pull-request workflows completed successfully on this exact revision:
+
+          - CodeQL
+          - Validate V2 contracts
+          - V2 Plugin Smoke
+
+          The implementation publication gate had already passed the focused and full Python suites, Plugin/MCP checks, deterministic artifacts, documentation build, Playwright smoke/visual checks, and Lighthouse before publishing the branch.
+
+          This remains a Draft review checkpoint. It is not an approval to merge.
+          EOF
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$COMMENT_FILE"
+          gh label create m4b-verified --repo "$GITHUB_REPOSITORY" --color 1f883d --description 'M4-B exact-head verification completed' 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label m4b-verified
+          {
+            echo "PR: #$PR_NUMBER"
+            echo "Head: $HEAD_SHA"
+            cat /tmp/m4b-pr-runs.json
+          } >> "$GITHUB_STEP_SUMMARY"
