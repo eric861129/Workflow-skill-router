@@ -1,0 +1,34 @@
+name: M4-B Runner Source Export
+
+on:
+  push:
+    branches: [codex/m4b-runner-now]
+    paths: [.github/workflows/m4b-runner-source-export.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Package only the M4-B generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m4b-runner-source
+          cp .github/m4b/implement_m4b.py /tmp/m4b-runner-source/
+          cp .github/m4b/write_tests.py /tmp/m4b-runner-source/
+          cd /tmp
+          tar -czf m4b-runner-source.tar.gz m4b-runner-source
+          sha256sum m4b-runner-source.tar.gz
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: m4b-runner-source
+          path: /tmp/m4b-runner-source.tar.gz
+          retention-days: 1
+          if-no-files-found: error
