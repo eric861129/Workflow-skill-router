@@ -60,7 +60,7 @@ description: 比較 Plugin + MCP 與純 SKILL，選擇適合目前 Codex 環境�
     </div>
     <dl class="wsr-download-specs">
       <div><dt>Runtime label</dt><dd><code>skill-only-fallback</code></dd></div>
-      <div><dt>目前 source 包含</dt><dd><code>SKILL.md</code>、<code>assets/personal-routing-profile.example.json</code>、<code>assets/workspace-routing-profile.example.json</code>、<code>references/evaluation-boundary.md</code>、<code>references/goal-protocol.md</code>、<code>references/personal-routing-profiles.md</code> 與 <code>references/routing-protocol.md</code></dd></div>
+      <div><dt>目前 source 包含</dt><dd><code>SKILL.md</code>、<code>assets/memory-policy.automatic.example.yaml</code>、<code>assets/memory-policy.disabled.example.yaml</code>、<code>assets/memory-policy.reviewed.example.yaml</code>、<code>assets/personal-routing-profile.example.json</code>、<code>assets/workspace-routing-profile.example.json</code>、<code>references/evaluation-boundary.md</code>、<code>references/goal-protocol.md</code>、<code>references/personal-routing-profiles.md</code> 與 <code>references/routing-protocol.md</code></dd></div>
       <div><dt>不包含</dt><dd>Durable resume、跨程序 CAS、sealed instrumentation</dd></div>
     </dl>
     <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/zh-tw/guides/install-skill/">只使用 SKILL</a>
@@ -81,7 +81,7 @@ description: 比較 Plugin + MCP 與純 SKILL，選擇適合目前 Codex 環境�
   </article>
 </div>
 
-`v2.0.2` 的 Plugin 與純 SKILL 套件都包含 strict Personal 與 Workspace Routing Profile 範例。Skill-only 只有在 Host 授權 filesystem access 時，才能讀取固定的本機 Profile 路徑。
+`v2.0.2` 的 Plugin 與純 SKILL 套件都包含 strict Personal 與 Workspace Routing Profile 範例。目前的 source package 也包含 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml` 與 `assets/memory-policy.automatic.example.yaml`；單純安裝範例不會啟用 Memory。Skill-only 只有在 Host 授權 filesystem access 時，才能讀取固定的本機 Profile 或 Policy 路徑。
 
 ## Marketplace 安裝
 

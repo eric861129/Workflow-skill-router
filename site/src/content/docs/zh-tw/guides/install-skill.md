@@ -17,6 +17,9 @@ description: 只安裝 routing instructions，不啟用 Plugin 或 MCP。
 
 ```text
 workflow-skill-router/SKILL.md
+workflow-skill-router/assets/memory-policy.automatic.example.yaml
+workflow-skill-router/assets/memory-policy.disabled.example.yaml
+workflow-skill-router/assets/memory-policy.reviewed.example.yaml
 workflow-skill-router/assets/personal-routing-profile.example.json
 workflow-skill-router/assets/workspace-routing-profile.example.json
 workflow-skill-router/references/evaluation-boundary.md
@@ -47,7 +50,7 @@ sed -n '1,8p' "$HOME/.codex/skills/workflow-skill-router/SKILL.md"
 
 ## 驗證行為
 
-套件內含 `assets/personal-routing-profile.example.json`、`assets/workspace-routing-profile.example.json` 與 `references/personal-routing-profiles.md`。`.codex/workflow-skill-router.json` 請使用 workspace 範例，不要原樣複製 personal 範例。Skill-only 只有在 Host 授權 filesystem access 時才能讀取固定本機檔案；否則必須在對話中提供 Profile 內容，並把結果視為 advisory。
+套件內含 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml`、`assets/memory-policy.automatic.example.yaml`、`assets/personal-routing-profile.example.json`、`assets/workspace-routing-profile.example.json` 與 `references/personal-routing-profiles.md`。Policy 檔案只提供範例；除非使用者主動選擇並安裝非 disabled 的 Policy，Memory 仍維持停用。`.codex/workflow-skill-router.json` 請使用 workspace Profile 範例，不要原樣複製 personal 範例。Skill-only 只有在 Host 授權 filesystem access 時才能讀取固定本機檔案；否則必須在對話中提供 Profile 或 Policy 內容，並把結果視為 advisory。
 
 Skill-only 會以 `skill-only-fallback` 解讀 Skill Tree。它必須保留 workspace 高於 personal、使用者明確指定 SKILL 優先，以及 `intended-unverified` 的 Runtime Capability Discovery 邊界，但不能宣稱 deterministic loading 或 durable enforcement。`profile preview` CLI 屬於 Plugin/Core 模式。
 

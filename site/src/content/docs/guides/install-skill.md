@@ -15,6 +15,9 @@ Exact archive paths:
 
 ```text
 workflow-skill-router/SKILL.md
+workflow-skill-router/assets/memory-policy.automatic.example.yaml
+workflow-skill-router/assets/memory-policy.disabled.example.yaml
+workflow-skill-router/assets/memory-policy.reviewed.example.yaml
 workflow-skill-router/assets/personal-routing-profile.example.json
 workflow-skill-router/assets/workspace-routing-profile.example.json
 workflow-skill-router/references/evaluation-boundary.md
@@ -45,7 +48,7 @@ sed -n '1,8p' "$HOME/.codex/skills/workflow-skill-router/SKILL.md"
 
 ## Verify behavior
 
-The package includes `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. Put the workspace example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile content in the conversation and treat the result as advisory.
+The package includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, `assets/memory-policy.automatic.example.yaml`, `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. The Policy files are examples only: Memory remains disabled unless the user deliberately chooses and installs a non-disabled policy. Put the workspace Profile example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile or Policy content in the conversation and treat the result as advisory.
 
 Skill-only interprets the tree as `skill-only-fallback`. It must preserve workspace-over-personal precedence, explicit user SKILL priority, and the `intended-unverified` Runtime Capability Discovery boundary, but it cannot claim deterministic loading or durable enforcement. The `profile preview` CLI belongs to Plugin/Core mode.
 
