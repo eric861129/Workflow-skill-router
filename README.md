@@ -185,6 +185,16 @@ A missing graph is a local graph-initialization condition, not a reason to inven
 
 Unavailable calls return a typed `capability-unavailable` response with required capabilities and a fallback action. The Router never fabricates a successful scheduler or evaluation result. The `latest` compatibility channel remains on V1.3.1 until the V2 GA gate is passed.
 
+<!-- M4-B adaptive-memory:start -->
+## Adaptive Workflow Memory
+
+Adaptive Workflow Memory is an opt-in, local-first layer for turning repeated successful routes into reviewable managed Profiles. It is `default-off`: an upgrade does not start capture, create the Optional Memory DB, or modify a User-owned Profile.
+
+Adopt it as `observe -> reviewed -> automatic`. Personal policy is the autonomy ceiling; Workspace policy can only reduce it. Automatic promotion writes only `automatic-managed` targets, has visible disclosure, and remains an explicit local pass with `no background learning` and no telemetry.
+
+See `site/src/content/docs/concepts/adaptive-workflow-memory.md` and `site/src/content/docs/guides/configure-workflow-memory.md`.
+<!-- M4-B adaptive-memory:end -->
+
 ## Real Model Evaluation
 
 **Tier 0 Contract** fixtures prove deterministic compatibility; they are not model behavior. Behavior evidence requires fresh isolated attempts, a sealed case package, paired baseline/candidate manifests, bounded output, zero hard violations, and trusted review before publication. The baseline arm is explicitly `model-only`; the candidate is `hybrid-router`. For consent follow-ups, the fresh model classifies intent and the persisted MCP state machine materializes the final route.

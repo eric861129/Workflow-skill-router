@@ -36,3 +36,17 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
 預設不啟用 telemetry。已設定的 model adapter 可能使用 provider quota；其 evidence 與 retention policy 必須另外揭露。
+
+<!-- M4-B adaptive-memory-reference:start -->
+## Adaptive Workflow Memory 公開契約
+
+公開介面共有 **20** 個 MCP tools。Memory 將 **Operational DB** 與 **Optional Memory DB** 分開；Managed write 只允許 `managed-personal`、`managed-workspace-local`，User-owned Profile 仍保留原本的寫入權限邊界。
+
+四項決策彼此獨立：Policy autonomy、可信 Workspace binding、Profile ownership／target authority，以及 Runtime／Side-effect execution authority。可信 root 不等於 Host write grant。
+
+沒有 **receipt evidence** 時，**Skill consistency** 必須標示為 **unavailable**；`intended-unverified` 只是規劃意圖，不是 activation proof。Memory Flight Recorder 只使用 `fixture-trace` 或 sanitized runtime record；`deterministic-local-pilot` **not Model Evidence**，也不包含真實 Personal Memory。
+
+### State 分離
+
+Operational DB 保留 workflow／control state。Optional Memory DB 只在啟用 Memory 且進入寫入時才 lazy-create。Managed Personal、Workspace Digest scoped managed state 與 immutable Revision snapshot 位於外部 data root；關閉 capture 不會暗中 purge。
+<!-- M4-B adaptive-memory-reference:end -->

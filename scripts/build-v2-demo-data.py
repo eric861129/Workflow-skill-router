@@ -149,4 +149,40 @@ def main() -> int:
     target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data);return 0
 
 
-if __name__=="__main__":raise SystemExit(main())
+
+
+# M4-B: keep the sanitized Memory Flight Recorder and local Pilot generated
+# from the canonical demo input rather than hand-authored in the site bundle.
+def _sync_m4b_memory_flight_recorder() -> None:
+    import json as _m4b_json
+    from pathlib import Path as _M4BPath
+    import sys as _m4b_sys
+
+    _root = _M4BPath(__file__).resolve().parents[1]
+    _inputs = _m4b_json.loads(
+        (_root / "demo" / "v2-scenarios" / "inputs.json").read_text("utf-8")
+    )
+    _payload = {
+        "schema_version": "1.0.0",
+        "evidence_boundary": {
+            "label": "deterministic-local-pilot",
+            "claim": "not-model-evidence",
+            "contains_personal_memory": False,
+            "background_learning": False,
+            "telemetry": False,
+        },
+        "scenarios": _inputs["memory_flight_recorder"],
+        "pilot": _inputs["memory_pilot"],
+    }
+    _rendered = _m4b_json.dumps(_payload, ensure_ascii=False, indent=2) + "\n"
+    _target = _root / "site" / "src" / "data" / "memory-flight-recorder.generated.json"
+    if "--check" in _m4b_sys.argv:
+        if not _target.is_file() or _target.read_text("utf-8") != _rendered:
+            raise SystemExit("Memory Flight Recorder generated data is stale")
+        return
+    _target.parent.mkdir(parents=True, exist_ok=True)
+    _target.write_text(_rendered, encoding="utf-8", newline="\n")
+
+if __name__ == "__main__":
+    _sync_m4b_memory_flight_recorder()
+    raise SystemExit(main())

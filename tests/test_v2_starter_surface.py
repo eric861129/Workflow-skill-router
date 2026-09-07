@@ -26,6 +26,12 @@ class V2StarterSurfaceTests(unittest.TestCase):
         self.assertTrue(
             (STARTER / "assets/workspace-routing-profile.example.json").is_file()
         )
+        for relative_path in (
+            "assets/memory-policy.disabled.example.yaml",
+            "assets/memory-policy.reviewed.example.yaml",
+            "assets/memory-policy.automatic.example.yaml",
+        ):
+            self.assertTrue((STARTER / relative_path).is_file(), relative_path)
 
 
 if __name__ == "__main__":

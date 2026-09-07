@@ -2,6 +2,9 @@
   "archive_root": "workflow-skill-router",
   "files": [
     "SKILL.md",
+    "assets/memory-policy.automatic.example.yaml",
+    "assets/memory-policy.disabled.example.yaml",
+    "assets/memory-policy.reviewed.example.yaml",
     "assets/personal-routing-profile.example.json",
     "assets/workspace-routing-profile.example.json",
     "references/evaluation-boundary.md",

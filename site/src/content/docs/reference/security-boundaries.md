@@ -38,3 +38,20 @@ The Plugin itself starts an MCP stdio transport, not an HTTP listener.
 ## Report a vulnerability
 
 Follow [SECURITY.md](https://github.com/eric861129/Workflow-skill-router/blob/main/SECURITY.md). Do not include secrets, private repository data, or exploit details in a public issue.
+
+<!-- M4-B adaptive-memory-reference:start -->
+## Adaptive Workflow Memory public contract
+
+The public surface contains **20** MCP tools. Memory uses a separate **Operational DB** and **Optional Memory DB**. Managed writes are limited to `managed-personal` and `managed-workspace-local`; User-owned Profile writes still require their original authority.
+
+The four decisions remain separate: policy autonomy, trusted Workspace binding, Profile ownership/target authority, and Runtime/Side-effect execution authority. A trusted root is not a Host write grant.
+
+**Skill consistency** is **unavailable** without **receipt evidence**. A planned route may be `intended-unverified`; it is not activation proof. The Memory Flight Recorder uses `fixture-trace` or sanitized runtime records. Its `deterministic-local-pilot` is **not Model Evidence** and never contains actual Personal Memory.
+
+### Authority decisions
+
+1. Personal Policy establishes the autonomy ceiling.
+2. Workspace Policy may reduce but cannot elevate it.
+3. Automatic materialization is managed-only and conflict-suppressed.
+4. Host Runtime, Skill activation, Side-effect and User-owned Workspace-file authority are never inferred from Memory.
+<!-- M4-B adaptive-memory-reference:end -->

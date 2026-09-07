@@ -101,3 +101,17 @@ After:
 Route: Release / Closeout > GitHub-backed readiness check
 Use SKILL: finishing-a-development-branch, github, code-documenter
 ```
+
+<!-- M4-B adaptive-memory-reference:start -->
+## Adaptive Workflow Memory public contract
+
+The public surface contains **20** MCP tools. Memory uses a separate **Operational DB** and **Optional Memory DB**. Managed writes are limited to `managed-personal` and `managed-workspace-local`; User-owned Profile writes still require their original authority.
+
+The four decisions remain separate: policy autonomy, trusted Workspace binding, Profile ownership/target authority, and Runtime/Side-effect execution authority. A trusted root is not a Host write grant.
+
+**Skill consistency** is **unavailable** without **receipt evidence**. A planned route may be `intended-unverified`; it is not activation proof. The Memory Flight Recorder uses `fixture-trace` or sanitized runtime records. Its `deterministic-local-pilot` is **not Model Evidence** and never contains actual Personal Memory.
+
+### Flight Recorder and Pilot
+
+The homepage presents five read-only sanitized scenarios—Policy Resolution, Observe, Reviewed Proposal, Automatic Managed Promotion and Purge—plus twenty deterministic local Pilot records: 6 Single, 8 Phased and 6 Goal-like, with at least eight Profile-assisted cases. The display is evidence literacy, not a product-performance claim.
+<!-- M4-B adaptive-memory-reference:end -->
