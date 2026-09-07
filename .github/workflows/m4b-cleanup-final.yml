@@ -1,0 +1,63 @@
+name: M4-B Final Branch Cleanup
+
+on:
+  push:
+    branches:
+      - codex/m4b-cleanup-final
+    paths:
+      - .github/workflows/m4b-cleanup-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout cleanup branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify M4-B landed and delete only M4-B branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          git cat-file -e 'origin/main:site/src/content/docs/concepts/adaptive-workflow-memory.md'
+          git cat-file -e 'origin/main:site/src/data/memory-flight-recorder.generated.json'
+          test -n "$(git ls-remote --heads origin refs/heads/codex/memory-m5-semantic-qualification)"
+
+          mapfile -t branches < <(
+            {
+              git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/codex/m4b-*' \
+                | sed 's#^origin/##'
+              if git show-ref --verify --quiet refs/remotes/origin/codex/memory-m4b-public-docs-pilot; then
+                echo codex/memory-m4b-public-docs-pilot
+              fi
+            } | LC_ALL=C sort -u
+          )
+
+          test "${#branches[@]}" -gt 0
+          for branch in "${branches[@]}"; do
+            case "$branch" in
+              codex/m4b-*|codex/memory-m4b-public-docs-pilot) ;;
+              *) echo "Refusing unexpected branch: $branch" >&2; exit 1 ;;
+            esac
+            test "$branch" != main
+            test "$branch" != codex/memory-m5-semantic-qualification
+          done
+
+          printf 'Deleting %s M4-B branches:\n' "${#branches[@]}"
+          printf '  %s\n' "${branches[@]}"
+          for branch in "${branches[@]}"; do
+            git push origin --delete "$branch"
+          done
+
+          test -z "$(git ls-remote --heads origin 'refs/heads/codex/m4b-*')"
+          test -z "$(git ls-remote --heads origin refs/heads/codex/memory-m4b-public-docs-pilot)"
+          test -n "$(git ls-remote --heads origin refs/heads/codex/memory-m5-semantic-qualification)"
+          echo 'Temporary and merged M4-B branches removed; M5-Q0 branch retained.' >> "$GITHUB_STEP_SUMMARY"
