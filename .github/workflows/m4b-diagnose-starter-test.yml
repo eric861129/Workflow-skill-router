@@ -1,0 +1,43 @@
+name: M4-B Diagnose Starter Test
+
+on:
+  push:
+    branches:
+      - codex/m4b-materialize-approved
+    paths:
+      - .github/workflows/m4b-diagnose-starter-test.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Reconstruct exact patch and print failing source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .github/m4b-final.patch.part-00 \
+            .github/m4b-final.patch.part-01 \
+            .github/m4b-final.patch.part-02 \
+            .github/m4b-final.patch.part-03 \
+            .github/m4b-final.patch.part-04 \
+            .github/m4b-final.patch.part-05 \
+            .github/m4b-final.patch.part-06-fixed \
+            .github/m4b-final.patch.part-07 \
+            | base64 --decode \
+            | gzip --decompress --stdout \
+            > /tmp/m4b.patch
+          git checkout --detach fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+          git apply --check --binary /tmp/m4b.patch
+          git apply --binary /tmp/m4b.patch
+          echo '=== tests/test_v2_starter_surface.py ==='
+          nl -ba tests/test_v2_starter_surface.py | sed -n '1,100p'
+          echo '=== compile result ==='
+          python -m py_compile tests/test_v2_starter_surface.py
