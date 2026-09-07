@@ -1,0 +1,228 @@
+name: M4-B Materialize Approved Slice
+
+on:
+  push:
+    branches:
+      - codex/m4b-materialize-approved
+    paths:
+      - .github/workflows/m4b-materialize-approved.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    name: Materialize verified M4-B tree
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+      TRANSPORT_SHA: ${{ github.sha }}
+      EXPECTED_TREE: f9d226c86d3b6b0b882b9f2f99157fe15f7c196c
+      B64_SHA256: b0e451805219cb56e599ca03f531d8e7e0d06df0b361b0eb12ddebc19c0b3a14
+      GZIP_SHA256: ec9e1029b798f60acc7df41b6db2c620a2f7722e56fe31e8c24e20ecb9361b59
+      PATCH_SHA256: 169205d6631ce807cb68634994c24ba3be070183dd808f3b58cfdd5a9832265b
+      PYTHONPATH: packages/router-core/src:packages/router-core/tests
+
+    steps:
+      - name: Checkout exact transport head
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            plugins/workflow-skill-router/package-lock.json
+            site/package-lock.json
+
+      - name: Verify transport-only branch and three-layer patch digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TRANSPORT_SHA"
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$BASE_SHA"
+
+          git diff --name-only "$BASE_SHA"...HEAD | LC_ALL=C sort > /tmp/transport.actual
+          cat > /tmp/transport.expected <<'EOF'
+          .github/m4b-final.patch.part-00
+          .github/m4b-final.patch.part-01
+          .github/m4b-final.patch.part-02
+          .github/m4b-final.patch.part-03
+          .github/m4b-final.patch.part-04
+          .github/m4b-final.patch.part-05
+          .github/m4b-final.patch.part-06
+          .github/m4b-final.patch.part-07
+          .github/workflows/m4b-materialize-approved.yml
+          EOF
+          LC_ALL=C sort -o /tmp/transport.expected /tmp/transport.expected
+          diff -u /tmp/transport.expected /tmp/transport.actual
+
+          cat > /tmp/parts.sha256 <<'EOF'
+          8bcf68c183b85582363ff2a92125f2206e45d63904faaebbfa745feefdc6e5be  .github/m4b-final.patch.part-00
+          2f3e8b7ea42d045ed5cf4995f80f905948bd1aaca08740064816c8de99430c95  .github/m4b-final.patch.part-01
+          539db1896f687e96074fa907df86143b56d3d6c58962b297c6f3b323955ae476  .github/m4b-final.patch.part-02
+          03ea4a3ab5753e163ed4d5bea683bf2d858c6794364237ad6d852289fe448851  .github/m4b-final.patch.part-03
+          a00641fc8278145442fa81287eeac9cf71efef887d8fd4862bc16ddec337ff1d  .github/m4b-final.patch.part-04
+          159c0179aeb5550a039ab8b1988cdbcf1a225feea7049e09fcdcb065357d3b2d  .github/m4b-final.patch.part-05
+          c05a03d98a18adc5249e468cae6ceca3ecc88c49780767b0a026aea8b4507d89  .github/m4b-final.patch.part-06
+          01d6865a8287f028b1b8400ac081d7f9fe5c1971599a79887ca9d35c4411e0bb  .github/m4b-final.patch.part-07
+          EOF
+          sha256sum --check --strict /tmp/parts.sha256
+          for index in 00 01 02 03 04 05 06; do
+            test "$(wc -c < ".github/m4b-final.patch.part-$index")" -eq 8000
+          done
+          test "$(wc -c < .github/m4b-final.patch.part-07)" -eq 240
+
+          cat .github/m4b-final.patch.part-{00,01,02,03,04,05,06,07} > /tmp/m4b.patch.gz.b64
+          test "$(wc -c < /tmp/m4b.patch.gz.b64)" -eq 56240
+          printf '%s  %s\n' "$B64_SHA256" /tmp/m4b.patch.gz.b64 | sha256sum --check --strict
+          base64 --decode /tmp/m4b.patch.gz.b64 > /tmp/m4b.patch.gz
+          test "$(wc -c < /tmp/m4b.patch.gz)" -eq 42178
+          printf '%s  %s\n' "$GZIP_SHA256" /tmp/m4b.patch.gz | sha256sum --check --strict
+          gzip --test /tmp/m4b.patch.gz
+          gzip --decompress --stdout /tmp/m4b.patch.gz > /tmp/m4b.patch
+          test "$(wc -c < /tmp/m4b.patch)" -eq 253912
+          printf '%s  %s\n' "$PATCH_SHA256" /tmp/m4b.patch | sha256sum --check --strict
+
+      - name: Apply exact M4-B patch and prove the resulting Git tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+          git reset --hard "$BASE_SHA"
+          git clean -fdx
+          git apply --check --binary /tmp/m4b.patch
+          git apply --binary /tmp/m4b.patch
+          git diff --check
+
+          cat > /tmp/feature.expected <<'EOF'
+          README.md
+          README.zh-TW.md
+          demo/v2-scenarios/inputs.json
+          demo/v2-scenarios/schema.json
+          plugins/workflow-skill-router/scripts/sync-skill.py
+          plugins/workflow-skill-router/skills/workflow-skill-router/assets/memory-policy.automatic.example.yaml
+          plugins/workflow-skill-router/skills/workflow-skill-router/assets/memory-policy.disabled.example.yaml
+          plugins/workflow-skill-router/skills/workflow-skill-router/assets/memory-policy.reviewed.example.yaml
+          release/allowlists/plugin-distribution-repository-files.json
+          release/allowlists/plugin-runtime-files.json
+          release/allowlists/skill-package.json
+          release/v2-inherited-change-closure.json
+          scripts/build-v2-demo-data.py
+          site/astro.config.mjs
+          site/src/components/HomeLanding.astro
+          site/src/content/docs/concepts/adaptive-workflow-memory.md
+          site/src/content/docs/guides/configure-workflow-memory.md
+          site/src/content/docs/guides/migrate-to-workflow-memory.md
+          site/src/content/docs/reference/cli.md
+          site/src/content/docs/reference/local-state.md
+          site/src/content/docs/reference/mcp-tools.mdx
+          site/src/content/docs/reference/security-boundaries.md
+          site/src/content/docs/showcase.md
+          site/src/content/docs/zh-tw/concepts/adaptive-workflow-memory.md
+          site/src/content/docs/zh-tw/guides/configure-workflow-memory.md
+          site/src/content/docs/zh-tw/guides/migrate-to-workflow-memory.md
+          site/src/content/docs/zh-tw/reference/cli.md
+          site/src/content/docs/zh-tw/reference/local-state.md
+          site/src/content/docs/zh-tw/reference/mcp-tools.mdx
+          site/src/content/docs/zh-tw/reference/security-boundaries.md
+          site/src/content/docs/zh-tw/showcase.md
+          site/src/data/memory-flight-recorder.generated.json
+          site/src/data/router-demo-v2.generated.json
+          starter/v2/workflow-skill-router/assets/memory-policy.automatic.example.yaml
+          starter/v2/workflow-skill-router/assets/memory-policy.disabled.example.yaml
+          starter/v2/workflow-skill-router/assets/memory-policy.reviewed.example.yaml
+          tests/test_adaptive_workflow_memory_docs.py
+          tests/test_doc_parity.py
+          tests/test_skill_source_sync.py
+          tests/test_v2_documentation.py
+          tests/test_v2_starter_surface.py
+          EOF
+          { git diff --name-only; git ls-files --others --exclude-standard; } | LC_ALL=C sort -u > /tmp/feature.actual
+          LC_ALL=C sort -o /tmp/feature.expected /tmp/feature.expected
+          diff -u /tmp/feature.expected /tmp/feature.actual
+          test "$(wc -l < /tmp/feature.actual)" -eq 41
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          test "$(git write-tree)" = "$EXPECTED_TREE"
+          git commit -m 'docs(memory): publish adaptive workflow memory guidance and pilot'
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+
+      - name: Run focused M4-B publication contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v
+          python -m unittest discover -s tests -p 'test_doc_parity.py' -v
+          python -m unittest discover -s tests -p 'test_v2_documentation.py' -v
+          python -m unittest discover -s tests -p 'test_skill_source_sync.py' -v
+          python -m unittest discover -s tests -p 'test_v2_demo_data.py' -v
+          python -m unittest discover -s tests -p 'test_v2_starter_surface.py' -v
+          python -m unittest discover -s tests -p 'test_inherited_change_closure.py' -v
+          python scripts/build-v2-demo-data.py --check
+
+      - name: Verify public and deterministic contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate-router.py starter/v2/workflow-skill-router
+          python scripts/validate-router.py --public-readiness .
+          python scripts/audit-public-readiness.py .
+          python scripts/check-markdown-links.py .
+          python scripts/check-doc-parity.py
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+          python -I -S -B scripts/build-release-artifacts.py --check
+          node scripts/build-mcp-reference-data.mjs --check
+          git diff --check "$BASE_SHA" HEAD
+
+      - name: Install and verify Plugin and MCP distribution
+        working-directory: plugins/workflow-skill-router
+        run: |
+          npm ci
+          npm run check
+          node scripts/smoke-plugin.mjs
+
+      - name: Build documentation site
+        working-directory: site
+        run: |
+          npm ci
+          npm run assets:demo:check
+          npm run assets:social:check
+          npm run build
+
+      - name: Publish one clean feature commit by fast-forward only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$BASE_SHA"..HEAD)" -eq 1
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          remote_target="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$remote_target" = "$BASE_SHA"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          {
+            echo '## M4-B materialization complete'
+            echo "- Base: \`$BASE_SHA\`"
+            echo "- Head: \`$(git rev-parse HEAD)\`"
+            echo "- Tree: \`$(git rev-parse HEAD^{tree})\`"
+            echo '- Base64, Gzip, and Git Patch digests verified.'
+            echo '- Exact 41-file tree matched the locally verified tree.'
+            echo '- Focused contracts, deterministic checks, Plugin/MCP, and site build passed.'
+            echo '- Published as exactly one clean feature commit.'
+          } >> "$GITHUB_STEP_SUMMARY"
