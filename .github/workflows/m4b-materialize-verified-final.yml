@@ -1,0 +1,176 @@
+name: M4-B Materialize Verified Final
+
+on:
+  push:
+    branches:
+      - codex/m4b-materialize-approved
+    paths:
+      - .github/workflows/m4b-materialize-verified-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
+      TARGET_OLD_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
+      PYTHONPATH: packages/router-core/src:packages/router-core/tests
+    steps:
+      - name: Checkout transport branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            plugins/workflow-skill-router/package-lock.json
+            site/package-lock.json
+
+      - name: Reconstruct and verify the exact M4-B patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m4b-parts
+          cp .github/m4b-final.patch.part-00 /tmp/m4b-parts/part-00
+          cp .github/m4b-final.patch.part-01 /tmp/m4b-parts/part-01
+          cp .github/m4b-final.patch.part-02 /tmp/m4b-parts/part-02
+          cp .github/m4b-final.patch.part-03 /tmp/m4b-parts/part-03
+          cp .github/m4b-final.patch.part-04 /tmp/m4b-parts/part-04
+          cp .github/m4b-final.patch.part-05 /tmp/m4b-parts/part-05
+          cat .github/m4b-final.patch.part-06a .github/m4b-final.patch.part-06b > /tmp/m4b-parts/part-06
+          cp .github/m4b-final.patch.part-07 /tmp/m4b-parts/part-07
+
+          cat > /tmp/m4b-parts/checksums.sha256 <<'EOF'
+          8bcf68c183b85582363ff2a92125f2206e45d63904faaebbfa745feefdc6e5be  /tmp/m4b-parts/part-00
+          2f3e8b7ea42d045ed5cf4995f80f905948bd1aaca08740064816c8de99430c95  /tmp/m4b-parts/part-01
+          539db1896f687e96074fa907df86143b56d3d6c58962b297c6f3b323955ae476  /tmp/m4b-parts/part-02
+          03ea4a3ab5753e163ed4d5bea683bf2d858c6794364237ad6d852289fe448851  /tmp/m4b-parts/part-03
+          a00641fc8278145442fa81287eeac9cf71efef887d8fd4862bc16ddec337ff1d  /tmp/m4b-parts/part-04
+          159c0179aeb5550a039ab8b1988cdbcf1a225feea7049e09fcdcb065357d3b2d  /tmp/m4b-parts/part-05
+          c05a03d98a18adc5249e468cae6ceca3ecc88c49780767b0a026aea8b4507d89  /tmp/m4b-parts/part-06
+          01d6865a8287f028b1b8400ac081d7f9fe5c1971599a79887ca9d35c4411e0bb  /tmp/m4b-parts/part-07
+          EOF
+          sha256sum --check --strict /tmp/m4b-parts/checksums.sha256
+
+          for index in 00 01 02 03 04 05 06; do
+            test "$(wc -c < "/tmp/m4b-parts/part-$index")" -eq 8000
+          done
+          test "$(wc -c < /tmp/m4b-parts/part-07)" -eq 240
+
+          cat /tmp/m4b-parts/part-* > /tmp/m4b-final.patch.gz.b64
+          test "$(wc -c < /tmp/m4b-final.patch.gz.b64)" -eq 56240
+          echo 'b0e451805219cb56e599ca03f531d8e7e0d06df0b361b0eb12ddebc19c0b3a14  /tmp/m4b-final.patch.gz.b64' | sha256sum --check --strict
+
+          base64 --decode /tmp/m4b-final.patch.gz.b64 > /tmp/m4b-final.patch.gz
+          test "$(wc -c < /tmp/m4b-final.patch.gz)" -eq 42178
+          echo 'ec9e1029b798f60acc7df41b6db2c620a2f7722e56fe31e8c24e20ecb9361b59  /tmp/m4b-final.patch.gz' | sha256sum --check --strict
+          gzip --test /tmp/m4b-final.patch.gz
+
+          gzip --decompress --stdout /tmp/m4b-final.patch.gz > /tmp/m4b-final.patch
+          test "$(wc -c < /tmp/m4b-final.patch)" -eq 253912
+          echo '169205d6631ce807cb68634994c24ba3be070183dd808f3b58cfdd5a9832265b  /tmp/m4b-final.patch' | sha256sum --check --strict
+
+      - name: Apply only the verified implementation to the M4-A merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_OLD_SHA"
+          git reset --hard "$BASE_SHA"
+          git clean -fdx
+          git apply --check --binary /tmp/m4b-final.patch
+          git apply --binary /tmp/m4b-final.patch
+          git diff --check
+          test "$(git diff --name-only | wc -l)" -eq 41
+          test -z "$(git diff --name-only | grep '^\.github/' || true)"
+
+      - name: Run focused M4-B publication contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_adaptive_workflow_memory_docs.py' -v
+          python -m unittest discover -s tests -p 'test_doc_parity.py' -v
+          python -m unittest discover -s tests -p 'test_v2_documentation.py' -v
+          python -m unittest discover -s tests -p 'test_skill_source_sync.py' -v
+          python -m unittest discover -s tests -p 'test_v2_demo_data.py' -v
+          python scripts/build-v2-demo-data.py --check
+
+      - name: Run complete Router Core and repository tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s packages/router-core/tests -p 'test_*.py' -v
+          python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Verify public contracts and deterministic artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate-router.py starter/v2/workflow-skill-router
+          python scripts/validate-router.py --public-readiness .
+          python scripts/audit-public-readiness.py .
+          python scripts/check-markdown-links.py .
+          python scripts/check-doc-parity.py
+          python plugins/workflow-skill-router/scripts/build-runtime.py --check
+          python -I -S -B scripts/build-release-artifacts.py --check
+          node scripts/build-mcp-reference-data.mjs --check
+
+      - name: Install and test Plugin/MCP
+        working-directory: plugins/workflow-skill-router
+        run: |
+          npm ci
+          npm run check
+          node scripts/smoke-plugin.mjs
+
+      - name: Build and exercise documentation site
+        working-directory: site
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run assets:demo:check
+          npm run assets:social:check
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:site:smoke
+          npm run test:site:visual
+          npm run audit:lighthouse
+
+      - name: Commit and publish one clean M4-B change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'docs(memory): publish adaptive workflow memory guidance and pilot'
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$BASE_SHA"..HEAD)" -eq 1
+          test -z "$(git status --porcelain)"
+          remote_head="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$remote_head" = "$TARGET_OLD_SHA"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_OLD_SHA"
+          {
+            echo '## M4-B verified publication'
+            echo "- Base: \`$BASE_SHA\`"
+            echo "- Head: \`$(git rev-parse HEAD)\`"
+            echo "- Tree: \`$(git rev-parse HEAD^{tree})\`"
+            echo '- Eight patch parts and aggregate Base64/Gzip/Git Patch Digests verified.'
+            echo '- Focused/full Python, Plugin/MCP, deterministic artifact, site smoke, visual, and Lighthouse gates passed.'
+            echo '- Final branch contains exactly one clean documentation/pilot commit and no transport files.'
+          } >> "$GITHUB_STEP_SUMMARY"
