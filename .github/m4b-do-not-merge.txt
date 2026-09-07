@@ -1,0 +1,1 @@
+Temporary checkpoint; the atomic tree replacement deletes this file.
