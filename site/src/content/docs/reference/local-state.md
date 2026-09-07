@@ -36,3 +36,17 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 ```
 
 No telemetry is enabled by default. A configured model adapter can use provider quota; its evidence and retention policy must be disclosed separately.
+
+<!-- M4-B adaptive-memory-reference:start -->
+## Adaptive Workflow Memory public contract
+
+The public surface contains **20** MCP tools. Memory uses a separate **Operational DB** and **Optional Memory DB**. Managed writes are limited to `managed-personal` and `managed-workspace-local`; User-owned Profile writes still require their original authority.
+
+The four decisions remain separate: policy autonomy, trusted Workspace binding, Profile ownership/target authority, and Runtime/Side-effect execution authority. A trusted root is not a Host write grant.
+
+**Skill consistency** is **unavailable** without **receipt evidence**. A planned route may be `intended-unverified`; it is not activation proof. The Memory Flight Recorder uses `fixture-trace` or sanitized runtime records. Its `deterministic-local-pilot` is **not Model Evidence** and never contains actual Personal Memory.
+
+### State separation
+
+The Operational DB continues workflow/control state. The Optional Memory DB is lazily created only by enabled Memory writes. Managed Personal state, Workspace-Digest-scoped managed state and immutable Revision snapshots stay under the external data root; disabling capture does not silently purge them.
+<!-- M4-B adaptive-memory-reference:end -->

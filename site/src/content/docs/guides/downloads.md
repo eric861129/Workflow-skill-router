@@ -58,7 +58,7 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
     </div>
     <dl class="wsr-download-specs">
       <div><dt>Runtime label</dt><dd><code>skill-only-fallback</code></dd></div>
-      <div><dt>Current source includes</dt><dd><code>SKILL.md</code>, <code>assets/personal-routing-profile.example.json</code>, <code>assets/workspace-routing-profile.example.json</code>, <code>references/evaluation-boundary.md</code>, <code>references/goal-protocol.md</code>, <code>references/personal-routing-profiles.md</code>, and <code>references/routing-protocol.md</code></dd></div>
+      <div><dt>Current source includes</dt><dd><code>SKILL.md</code>, <code>assets/memory-policy.automatic.example.yaml</code>, <code>assets/memory-policy.disabled.example.yaml</code>, <code>assets/memory-policy.reviewed.example.yaml</code>, <code>assets/personal-routing-profile.example.json</code>, <code>assets/workspace-routing-profile.example.json</code>, <code>references/evaluation-boundary.md</code>, <code>references/goal-protocol.md</code>, <code>references/personal-routing-profiles.md</code>, and <code>references/routing-protocol.md</code></dd></div>
       <div><dt>Excludes</dt><dd>Durable resume, cross-process CAS, sealed instrumentation</dd></div>
     </dl>
     <a class="wsr-download-button wsr-download-button-secondary" href="/Workflow-skill-router/guides/install-skill/">Use Skill only</a>
@@ -79,7 +79,7 @@ Workflow Skill Router has one policy core and several runtime boundaries. Choose
   </article>
 </div>
 
-The `v2.0.2` Plugin and Skill-only packages both include the strict Personal and Workspace Routing Profile examples. Skill-only can read fixed local Profile paths only when the Host grants filesystem access.
+The `v2.0.2` Plugin and Skill-only packages include strict Personal and Workspace Routing Profile examples. The current source package also includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, and `assets/memory-policy.automatic.example.yaml`; installing those examples does not enable Memory. Skill-only can read fixed local Profile or Policy paths only when the Host grants filesystem access.
 
 ## Marketplace install
 

@@ -9,6 +9,9 @@ SKILL_FILES = (
     Path("SKILL.md"),
     Path("assets/personal-routing-profile.example.json"),
     Path("assets/workspace-routing-profile.example.json"),
+    Path("assets/memory-policy.disabled.example.yaml"),
+    Path("assets/memory-policy.reviewed.example.yaml"),
+    Path("assets/memory-policy.automatic.example.yaml"),
     Path("references/evaluation-boundary.md"),
     Path("references/goal-protocol.md"),
     Path("references/personal-routing-profiles.md"),
@@ -163,6 +166,25 @@ class SkillSourceSyncTests(unittest.TestCase):
         self.assertEqual("workspace:api-delivery", workspace["profile_id"])
         self.assertEqual("workspace", workspace["scope"])
         self.assertNotIn("instructions", workspace)
+
+    def test_memory_policy_examples_are_packaged_and_default_off_capable(self) -> None:
+        from workflow_skill_router.memory.policy import decode_policy_text
+
+        expected = ("disabled", "reviewed", "automatic")
+        actual = []
+        for name in (
+            "memory-policy.disabled.example.yaml",
+            "memory-policy.reviewed.example.yaml",
+            "memory-policy.automatic.example.yaml",
+        ):
+            source = SOURCE / "assets" / name
+            target = TARGET / "assets" / name
+            self.assertEqual(source.read_bytes(), target.read_bytes(), name)
+            policy = decode_policy_text(source.read_text("utf-8"), format="yaml")
+            actual.append(policy.mode.value)
+            self.assertEqual("personal", policy.scope.value)
+        self.assertEqual(expected, tuple(actual))
+
 
 if __name__ == "__main__":
     unittest.main()

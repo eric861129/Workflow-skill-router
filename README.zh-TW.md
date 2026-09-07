@@ -183,6 +183,16 @@ prepared GA candidate 的正確宣稱是 **4 always local-ready + 3 Router-owned
 
 不可用的呼叫會回傳 typed `capability-unavailable`、required capabilities 與 fallback action。Router 不會捏造 scheduler 或 evaluation 成功結果；`latest` compatibility channel 在 V2 通過 GA gate 前仍維持 V1.3.1。
 
+<!-- M4-B adaptive-memory:start -->
+## Adaptive Workflow Memory
+
+Adaptive Workflow Memory 是選擇加入、本機優先的路由記憶層，會把重複成功的路由整理成可審查的 Managed Profile。它維持 `default-off`：升級後不會自動 capture、不建立 Optional Memory DB，也不修改 User-owned Profile。
+
+建議採 `observe -> reviewed -> automatic`。Personal Policy 是自主上限，Workspace 只能收緊。Automatic promotion 僅寫入 `automatic-managed` target，必須顯示通知，且仍是明確觸發的本機 pass，維持 `no background learning` 與 no telemetry。
+
+完整說明位於 `site/src/content/docs/zh-tw/concepts/adaptive-workflow-memory.md` 與設定指南。
+<!-- M4-B adaptive-memory:end -->
+
 ## Real Model Evaluation
 
 **Tier 0 Contract** fixtures 只證明 deterministic compatibility，不是模型行為。Behavior evidence 需要 fresh isolated attempts、sealed case package、paired baseline/candidate manifests、bounded output、零 hard violation，以及公開前的可信任審查。Baseline arm 明確採 `model-only`，candidate 採 `hybrid-router`；consent follow-up 由 fresh model 分類 intent，再由持久化 MCP state machine 產生最終 route。

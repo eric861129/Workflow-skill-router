@@ -59,6 +59,9 @@ class DocumentationParityTests(unittest.TestCase):
             "concepts/runtime-capability-discovery",
             "concepts/routing-envelopes",
             "concepts/personal-routing-profiles",
+            "concepts/adaptive-workflow-memory",
+            "guides/configure-workflow-memory",
+            "guides/migrate-to-workflow-memory",
             "reference/mcp-tools",
             "contributing/release-process",
         ):

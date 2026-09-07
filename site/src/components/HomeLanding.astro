@@ -248,6 +248,8 @@ const heroPreview = isZh
         ['Boundary', 'Scheduling requires verified Host capabilities.'],
       ],
     };
+import memoryFlightRecorder from '../data/memory-flight-recorder.generated.json';
+const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
 ---
 
 <main class="wsr-landing" data-wsr-home data-locale={locale}>
@@ -447,6 +449,138 @@ const heroPreview = isZh
       </div>
     </div>
   </section>
+<!-- M4-B memory-flight-recorder:start -->
+<section class="memory-flight-recorder" data-memory-flight-recorder aria-labelledby="memory-flight-recorder-title">
+  <div class="memory-flight-recorder__intro">
+    <h2 id="memory-flight-recorder-title">
+      {m4bIsZh ? 'Memory Flight Recorder' : 'Memory Flight Recorder'}
+    </h2>
+    <p>
+      {m4bIsZh
+        ? '切換五種去識別情境，查看 Policy、提案、Managed Promotion 與 Purge 的公開安全事件。'
+        : 'Switch between five sanitized scenarios to inspect public-safe Policy, proposal, managed-promotion and purge events.'}
+    </p>
+    <p class="memory-flight-recorder__boundary">
+      <strong>deterministic-local-pilot</strong>
+      <span>{m4bIsZh ? '不是 Model Evidence' : 'not Model Evidence'}</span>
+    </p>
+  </div>
+
+  <div class="memory-flight-recorder__workspace">
+    <div class="memory-flight-recorder__tabs" role="tablist" aria-label="Memory scenarios">
+      {memoryFlightRecorder.scenarios.map((scenario, index) => (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={index === 0 ? 'true' : 'false'}
+          aria-controls={`memory-panel-${scenario.id}`}
+          id={`memory-tab-${scenario.id}`}
+          data-memory-tab={scenario.id}
+        >
+          {m4bIsZh ? scenario.title_zh_tw : scenario.title}
+        </button>
+      ))}
+    </div>
+
+    <div class="memory-flight-recorder__panels">
+      {memoryFlightRecorder.scenarios.map((scenario, index) => (
+        <article
+          id={`memory-panel-${scenario.id}`}
+          role="tabpanel"
+          aria-labelledby={`memory-tab-${scenario.id}`}
+          data-memory-panel={scenario.id}
+          hidden={index !== 0}
+        >
+          <div class="memory-flight-recorder__panel-heading">
+            <h3>{m4bIsZh ? scenario.title_zh_tw : scenario.title}</h3>
+            <code>{scenario.evidence_class}</code>
+          </div>
+          <p>{m4bIsZh ? scenario.summary_zh_tw : scenario.summary}</p>
+          <ol>
+            {scenario.events.map((event) => (
+              <li>
+                <span>{String(event.seq).padStart(2, '0')}</span>
+                <div>
+                  <strong>{event.event}</strong>
+                  <small>{event.state} · {event.reason}</small>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </article>
+      ))}
+    </div>
+  </div>
+
+  <dl class="memory-flight-recorder__pilot" aria-label="Deterministic local Pilot distribution">
+    <div><dt>{m4bIsZh ? '總筆數' : 'Records'}</dt><dd>{memoryFlightRecorder.pilot.summary.total}</dd></div>
+    <div><dt>Single</dt><dd>{memoryFlightRecorder.pilot.summary.single}</dd></div>
+    <div><dt>Phased</dt><dd>{memoryFlightRecorder.pilot.summary.phased}</dd></div>
+    <div><dt>Goal-like</dt><dd>{memoryFlightRecorder.pilot.summary.goal_like}</dd></div>
+    <div><dt>{m4bIsZh ? '使用 Profile' : 'Profile-assisted'}</dt><dd>{memoryFlightRecorder.pilot.summary.profile_used}</dd></div>
+  </dl>
+</section>
+
+<script>
+  document.querySelectorAll('[data-memory-flight-recorder]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll('[data-memory-tab]'));
+    const panels = Array.from(root.querySelectorAll('[data-memory-panel]'));
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const selected = tab.getAttribute('data-memory-tab');
+        tabs.forEach((item) => item.setAttribute('aria-selected', item === tab ? 'true' : 'false'));
+        panels.forEach((panel) => {
+          panel.hidden = panel.getAttribute('data-memory-panel') !== selected;
+        });
+      });
+    });
+  });
+</script>
+
+<style>
+  .memory-flight-recorder {
+    width: min(1120px, calc(100% - 2rem));
+    margin: clamp(4rem, 9vw, 8rem) auto;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+    border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--sl-color-bg, #08111f) 94%, white 6%);
+  }
+  .memory-flight-recorder__intro { max-width: 48rem; }
+  .memory-flight-recorder__intro h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.8rem); line-height: .98; }
+  .memory-flight-recorder__intro > p { max-width: 42rem; line-height: 1.7; }
+  .memory-flight-recorder__boundary { display: flex; gap: .75rem; flex-wrap: wrap; align-items: baseline; }
+  .memory-flight-recorder__boundary span { opacity: .72; }
+  .memory-flight-recorder__workspace { display: grid; grid-template-columns: minmax(13rem, .72fr) minmax(0, 1.7fr); gap: 1rem; margin-top: 2rem; }
+  .memory-flight-recorder__tabs { display: flex; flex-direction: column; gap: .5rem; }
+  .memory-flight-recorder__tabs button {
+    appearance: none; width: 100%; padding: .8rem .9rem; border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    border-radius: .7rem; background: transparent; color: inherit; text-align: left; font: inherit; font-size: .9rem; line-height: 1.3; cursor: pointer;
+  }
+  .memory-flight-recorder__tabs button[aria-selected='true'] { background: color-mix(in srgb, currentColor 10%, transparent); border-color: color-mix(in srgb, currentColor 38%, transparent); }
+  .memory-flight-recorder__tabs button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  .memory-flight-recorder__panels article { min-height: 21rem; padding: clamp(1rem, 2.5vw, 1.6rem); border-radius: .9rem; background: color-mix(in srgb, currentColor 6%, transparent); }
+  .memory-flight-recorder__panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .memory-flight-recorder__panel-heading h3 { margin: 0; font-size: 1.25rem; }
+  .memory-flight-recorder__panel-heading code { font-size: .72rem; }
+  .memory-flight-recorder__panels ol { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: .65rem; }
+  .memory-flight-recorder__panels li { display: grid; grid-template-columns: 2.25rem 1fr; gap: .7rem; align-items: start; padding: .75rem 0; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+  .memory-flight-recorder__panels li > span { font-family: ui-monospace, monospace; opacity: .55; }
+  .memory-flight-recorder__panels li strong, .memory-flight-recorder__panels li small { display: block; }
+  .memory-flight-recorder__panels li small { margin-top: .2rem; opacity: .68; }
+  .memory-flight-recorder__pilot { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0 0; }
+  .memory-flight-recorder__pilot div { padding: .9rem; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+  .memory-flight-recorder__pilot dt { font-size: .75rem; opacity: .66; }
+  .memory-flight-recorder__pilot dd { margin: .25rem 0 0; font-size: 1.35rem; font-weight: 700; }
+  @media (max-width: 760px) {
+    .memory-flight-recorder__workspace { grid-template-columns: 1fr; }
+    .memory-flight-recorder__tabs { flex-direction: row; overflow-x: auto; padding-bottom: .35rem; }
+    .memory-flight-recorder__tabs button { min-width: 10rem; }
+    .memory-flight-recorder__pilot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+<!-- M4-B memory-flight-recorder:end -->
+
 </main>
 
 <script>

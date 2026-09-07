@@ -205,5 +205,27 @@ class V2DocumentationTests(unittest.TestCase):
         self.assertNotIn("it does not prove real-model behavior", roadmap_zh)
         self.assertIn("無法證明真實模型的行為", roadmap_zh)
 
+    def test_adaptive_workflow_memory_is_default_off_bilingual_and_non_elevating(self):
+        pages = (
+            "site/src/content/docs/concepts/adaptive-workflow-memory.md",
+            "site/src/content/docs/zh-tw/concepts/adaptive-workflow-memory.md",
+            "site/src/content/docs/guides/configure-workflow-memory.md",
+            "site/src/content/docs/zh-tw/guides/configure-workflow-memory.md",
+            "site/src/content/docs/guides/migrate-to-workflow-memory.md",
+            "site/src/content/docs/zh-tw/guides/migrate-to-workflow-memory.md",
+        )
+        for relative in pages:
+            text = (ROOT / relative).read_text("utf-8")
+            with self.subTest(relative=relative):
+                self.assertIn("default-off", text)
+                self.assertIn("disabled < observe < reviewed < automatic", text)
+                self.assertIn("Workspace cannot elevate Personal", text)
+                self.assertIn("automatic-managed", text)
+                self.assertIn("intended-unverified", text)
+                self.assertIn("no telemetry", text)
+                self.assertIn("no background learning", text)
+                self.assertIn("User-owned Profile", text)
+
+
 
 if __name__=="__main__":unittest.main()

@@ -52,3 +52,17 @@ Native Goal boundaries remain tool-specific: `verified-host-scheduler` for next 
 node scripts/build-mcp-reference-data.mjs
 node scripts/build-mcp-reference-data.mjs --check
 ```
+
+{/* M4-B adaptive-memory-reference:start */}
+## Adaptive Workflow Memory public contract
+
+The public surface contains **20** MCP tools. Memory uses a separate **Operational DB** and **Optional Memory DB**. Managed writes are limited to `managed-personal` and `managed-workspace-local`; User-owned Profile writes still require their original authority.
+
+The four decisions remain separate: policy autonomy, trusted Workspace binding, Profile ownership/target authority, and Runtime/Side-effect execution authority. A trusted root is not a Host write grant.
+
+**Skill consistency** is **unavailable** without **receipt evidence**. A planned route may be `intended-unverified`; it is not activation proof. The Memory Flight Recorder uses `fixture-trace` or sanitized runtime records. Its `deterministic-local-pilot` is **not Model Evidence** and never contains actual Personal Memory.
+
+### Memory tool subset
+
+The eight Memory tools are `get_memory_status`, `remember_workflow`, `record_route_feedback`, `list_workflow_candidates`, `preview_profile_update`, `transition_profile_update`, `rollback_profile_revision`, and `purge_workflow_memory`. Status/list/preview are read-only; transition/rollback remain conditional-local; purge is explicit and destructive.
+{/* M4-B adaptive-memory-reference:end */}

@@ -54,3 +54,17 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz evaluatio
 ```
 
 Never paste an executable path from model output into an authorized run. Review the [evaluation evidence contract](/Workflow-skill-router/concepts/evaluation-evidence/) first.
+
+<!-- M4-B adaptive-memory-reference:start -->
+## Adaptive Workflow Memory public contract
+
+The public surface contains **20** MCP tools. Memory uses a separate **Operational DB** and **Optional Memory DB**. Managed writes are limited to `managed-personal` and `managed-workspace-local`; User-owned Profile writes still require their original authority.
+
+The four decisions remain separate: policy autonomy, trusted Workspace binding, Profile ownership/target authority, and Runtime/Side-effect execution authority. A trusted root is not a Host write grant.
+
+**Skill consistency** is **unavailable** without **receipt evidence**. A planned route may be `intended-unverified`; it is not activation proof. The Memory Flight Recorder uses `fixture-trace` or sanitized runtime records. Its `deterministic-local-pilot` is **not Model Evidence** and never contains actual Personal Memory.
+
+### CLI operations
+
+Use `memory status`, `memory policy validate`, `memory policy explain`, `memory remember`, `memory candidates rebuild|list|show|reject|promote-eligible`, `memory history summary|export|purge`, and the Profile Revision commands. `promote-eligible` is explicit local work, not a daemon.
+<!-- M4-B adaptive-memory-reference:end -->

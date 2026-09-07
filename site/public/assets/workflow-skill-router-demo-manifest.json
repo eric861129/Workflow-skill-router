@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "source": {
     "path": "site/src/data/router-demo-v2.generated.json",
-    "sha256": "ce601ec1b3bd68fc5ff237e75bbba89e5dd21e12805def55316d73b44e39de23"
+    "sha256": "223d05f2d8b1d38218a0c231be89518c4c7942b98b95e3e428cf6485a2ab4a0b"
   },
   "presentation": {
     "source_preset_ids": [

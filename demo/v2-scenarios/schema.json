@@ -1,1 +1,249 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"workflow-skill-router/demo-scenario-input","type":"object","required":["schema_id","schema_version","presets"],"additionalProperties":false}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workflow-skill-router/demo-scenario-input",
+  "type": "object",
+  "required": [
+    "schema_id",
+    "schema_version",
+    "presets",
+    "memory_flight_recorder",
+    "memory_pilot"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_id": {
+      "const": "workflow-skill-router/demo-scenario-input"
+    },
+    "schema_version": {
+      "const": "2.0.0-alpha.1"
+    },
+    "presets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    },
+    "memory_flight_recorder": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "title_zh_tw",
+          "evidence_class",
+          "summary",
+          "summary_zh_tw",
+          "events"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "policy-resolution",
+              "observe",
+              "reviewed-proposal",
+              "automatic-managed-promotion",
+              "purge"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title_zh_tw": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_class": {
+            "enum": [
+              "fixture-trace",
+              "sanitized-runtime-trace"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary_zh_tw": {
+            "type": "string",
+            "minLength": 1
+          },
+          "events": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "seq",
+                "event",
+                "state",
+                "reason"
+              ],
+              "properties": {
+                "seq": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "event": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$"
+                },
+                "state": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "memory_pilot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilot_id",
+        "evidence_class",
+        "claim",
+        "summary",
+        "records"
+      ],
+      "properties": {
+        "pilot_id": {
+          "const": "adaptive-memory-local-pilot-v1"
+        },
+        "evidence_class": {
+          "const": "deterministic-local-pilot"
+        },
+        "claim": {
+          "const": "not-model-evidence"
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total",
+            "single",
+            "phased",
+            "goal_like",
+            "profile_used"
+          ],
+          "properties": {
+            "total": {
+              "const": 20
+            },
+            "single": {
+              "const": 6
+            },
+            "phased": {
+              "const": 8
+            },
+            "goal_like": {
+              "const": 6
+            },
+            "profile_used": {
+              "type": "integer",
+              "minimum": 8
+            }
+          }
+        },
+        "records": {
+          "type": "array",
+          "minItems": 20,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "record_id",
+              "shape",
+              "scenario",
+              "mode",
+              "profile_used",
+              "profile_target",
+              "receipt_evidence",
+              "skill_consistency",
+              "evidence_class",
+              "result"
+            ],
+            "properties": {
+              "record_id": {
+                "type": "string",
+                "pattern": "^pilot-[0-9]{2}$"
+              },
+              "shape": {
+                "enum": [
+                  "single",
+                  "phased",
+                  "goal-like"
+                ]
+              },
+              "scenario": {
+                "enum": [
+                  "default-off",
+                  "observe-metrics",
+                  "reviewed-approval",
+                  "automatic-managed-write",
+                  "correction",
+                  "suppression",
+                  "rollback",
+                  "purge",
+                  "routing-consistency"
+                ]
+              },
+              "mode": {
+                "enum": [
+                  "disabled",
+                  "observe",
+                  "reviewed",
+                  "automatic"
+                ]
+              },
+              "profile_used": {
+                "type": "boolean"
+              },
+              "profile_target": {
+                "enum": [
+                  "none",
+                  "managed-personal",
+                  "managed-workspace-local"
+                ]
+              },
+              "receipt_evidence": {
+                "type": "boolean"
+              },
+              "skill_consistency": {
+                "enum": [
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "evidence_class": {
+                "enum": [
+                  "fixture-trace",
+                  "sanitized-runtime-trace"
+                ]
+              },
+              "result": {
+                "enum": [
+                  "verified-local",
+                  "disabled-no-state"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
