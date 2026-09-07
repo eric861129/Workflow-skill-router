@@ -1,0 +1,1 @@
+All temporary marker and split correction files must be absent before materialization.
