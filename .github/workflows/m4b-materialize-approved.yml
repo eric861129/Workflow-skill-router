@@ -131,6 +131,22 @@ jobs:
               raise SystemExit("expected exactly one archived starter-test syntax defect")
           test_path.write_text(test_text.replace(broken, fixed), encoding="utf-8")
 
+          for relative_path in (
+              "site/src/content/docs/reference/mcp-tools.mdx",
+              "site/src/content/docs/zh-tw/reference/mcp-tools.mdx",
+          ):
+              mdx_path = Path(relative_path)
+              mdx_text = mdx_path.read_text(encoding="utf-8")
+              replacements = {
+                  "<!-- M4-B adaptive-memory-reference:start -->": "{/* M4-B adaptive-memory-reference:start */}",
+                  "<!-- M4-B adaptive-memory-reference:end -->": "{/* M4-B adaptive-memory-reference:end */}",
+              }
+              for old, new in replacements.items():
+                  if mdx_text.count(old) != 1:
+                      raise SystemExit(f"expected exactly one archived MDX marker {old!r} in {relative_path}")
+                  mdx_text = mdx_text.replace(old, new)
+              mdx_path.write_text(mdx_text, encoding="utf-8")
+
           demo_path = Path("site/src/data/router-demo-v2.generated.json")
           manifest_path = Path("site/public/assets/workflow-skill-router-demo-manifest.json")
           manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -142,6 +158,7 @@ jobs:
           PY
 
           python -m py_compile tests/test_v2_starter_surface.py
+          ! grep -RIn --include='*.mdx' '<!-- M4-B adaptive-memory-reference:' site/src/content/docs
           git diff --check
 
           cat > /tmp/feature.expected <<'EOF'
@@ -260,7 +277,7 @@ jobs:
             echo "- Head: \`$(git rev-parse HEAD)\`"
             echo "- Tree: \`$FEATURE_TREE\`"
             echo '- Archived Base64, Gzip, and Git Patch digests verified.'
-            echo '- Bounded starter-test syntax and deterministic demo-manifest bindings repaired.'
+            echo '- Bounded starter-test, MDX-marker, and demo-manifest repairs applied.'
             echo '- Exact 42-file boundary verified.'
             echo '- Focused contracts, deterministic checks, Plugin/MCP, and site build passed.'
             echo '- Published as exactly one clean feature commit.'
