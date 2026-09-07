@@ -93,7 +93,7 @@ jobs:
           test "$(wc -c < /tmp/m4b.patch)" -eq 253912
           printf '%s  %s\n' "$PATCH_SHA256" /tmp/m4b.patch | sha256sum --check --strict
 
-      - name: Apply exact M4-B patch and prove its file boundary
+      - name: Apply exact M4-B patch and bounded starter-test repair
         shell: bash
         run: |
           set -euo pipefail
@@ -102,6 +102,35 @@ jobs:
           git clean -fdx
           git apply --check --binary /tmp/m4b.patch
           git apply --binary /tmp/m4b.patch
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tests/test_v2_starter_surface.py")
+          text = path.read_text(encoding="utf-8")
+          broken = '''        self.assertTrue(
+                      (STARTER / "assets/workspace-routing-profile.example.json").is_file()
+                      "assets/memory-policy.disabled.example.yaml"
+                      "assets/memory-policy.reviewed.example.yaml"
+                      "assets/memory-policy.automatic.example.yaml"
+                  )
+          '''
+          fixed = '''        self.assertTrue(
+                      (STARTER / "assets/workspace-routing-profile.example.json").is_file()
+                  )
+                  for relative_path in (
+                      "assets/memory-policy.disabled.example.yaml",
+                      "assets/memory-policy.reviewed.example.yaml",
+                      "assets/memory-policy.automatic.example.yaml",
+                  ):
+                      self.assertTrue((STARTER / relative_path).is_file(), relative_path)
+          '''
+          if text.count(broken) != 1:
+              raise SystemExit("expected exactly one archived starter-test syntax defect")
+          path.write_text(text.replace(broken, fixed), encoding="utf-8")
+          PY
+
+          python -m py_compile tests/test_v2_starter_surface.py
           git diff --check
 
           cat > /tmp/feature.expected <<'EOF'
@@ -218,7 +247,8 @@ jobs:
             echo "- Base: \`$BASE_SHA\`"
             echo "- Head: \`$(git rev-parse HEAD)\`"
             echo "- Tree: \`$FEATURE_TREE\`"
-            echo '- Base64, Gzip, and Git Patch digests verified.'
+            echo '- Archived Base64, Gzip, and Git Patch digests verified.'
+            echo '- One bounded, compile-proven starter-test syntax repair applied.'
             echo '- Exact 41-file boundary verified.'
             echo '- Focused contracts, deterministic checks, Plugin/MCP, and site build passed.'
             echo '- Published as exactly one clean feature commit.'
