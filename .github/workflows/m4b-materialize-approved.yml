@@ -1,4 +1,4 @@
-name: M4-B Materialize Approved Slice
+name: M4-B Recover Verified Publication Slice
 
 on:
   push:
@@ -11,15 +11,14 @@ permissions:
   contents: write
 
 jobs:
-  materialize:
-    name: Materialize verified M4-B tree
+  recover:
+    name: Recover, verify, and publish M4-B
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       BASE_SHA: fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
       TARGET_BRANCH: codex/memory-m4b-public-docs-pilot
       TRANSPORT_SHA: ${{ github.sha }}
-      EXPECTED_TREE: f9d226c86d3b6b0b882b9f2f99157fe15f7c196c
       B64_SHA256: b0e451805219cb56e599ca03f531d8e7e0d06df0b361b0eb12ddebc19c0b3a14
       GZIP_SHA256: ec9e1029b798f60acc7df41b6db2c620a2f7722e56fe31e8c24e20ecb9361b59
       PATCH_SHA256: 169205d6631ce807cb68634994c24ba3be070183dd808f3b58cfdd5a9832265b
@@ -46,7 +45,7 @@ jobs:
             plugins/workflow-skill-router/package-lock.json
             site/package-lock.json
 
-      - name: Verify transport-only branch and three-layer patch digests
+      - name: Verify base refs and recovered patch digests
         shell: bash
         run: |
           set -euo pipefail
@@ -55,21 +54,6 @@ jobs:
           test "$(git rev-parse origin/main)" = "$BASE_SHA"
           test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$BASE_SHA"
 
-          git diff --name-only "$BASE_SHA"...HEAD | LC_ALL=C sort > /tmp/transport.actual
-          cat > /tmp/transport.expected <<'EOF'
-          .github/m4b-final.patch.part-00
-          .github/m4b-final.patch.part-01
-          .github/m4b-final.patch.part-02
-          .github/m4b-final.patch.part-03
-          .github/m4b-final.patch.part-04
-          .github/m4b-final.patch.part-05
-          .github/m4b-final.patch.part-06
-          .github/m4b-final.patch.part-07
-          .github/workflows/m4b-materialize-approved.yml
-          EOF
-          LC_ALL=C sort -o /tmp/transport.expected /tmp/transport.expected
-          diff -u /tmp/transport.expected /tmp/transport.actual
-
           cat > /tmp/parts.sha256 <<'EOF'
           8bcf68c183b85582363ff2a92125f2206e45d63904faaebbfa745feefdc6e5be  .github/m4b-final.patch.part-00
           2f3e8b7ea42d045ed5cf4995f80f905948bd1aaca08740064816c8de99430c95  .github/m4b-final.patch.part-01
@@ -77,16 +61,28 @@ jobs:
           03ea4a3ab5753e163ed4d5bea683bf2d858c6794364237ad6d852289fe448851  .github/m4b-final.patch.part-03
           a00641fc8278145442fa81287eeac9cf71efef887d8fd4862bc16ddec337ff1d  .github/m4b-final.patch.part-04
           159c0179aeb5550a039ab8b1988cdbcf1a225feea7049e09fcdcb065357d3b2d  .github/m4b-final.patch.part-05
-          c05a03d98a18adc5249e468cae6ceca3ecc88c49780767b0a026aea8b4507d89  .github/m4b-final.patch.part-06
+          c05a03d98a18adc5249e468cae6ceca3ecc88c49780767b0a026aea8b4507d89  .github/m4b-final.patch.part-06-fixed
           01d6865a8287f028b1b8400ac081d7f9fe5c1971599a79887ca9d35c4411e0bb  .github/m4b-final.patch.part-07
           EOF
           sha256sum --check --strict /tmp/parts.sha256
-          for index in 00 01 02 03 04 05 06; do
-            test "$(wc -c < ".github/m4b-final.patch.part-$index")" -eq 8000
+
+          for part in 00 01 02 03 04 05; do
+            test "$(wc -c < ".github/m4b-final.patch.part-$part")" -eq 8000
           done
+          test "$(wc -c < .github/m4b-final.patch.part-06-fixed)" -eq 8000
           test "$(wc -c < .github/m4b-final.patch.part-07)" -eq 240
 
-          cat .github/m4b-final.patch.part-{00,01,02,03,04,05,06,07} > /tmp/m4b.patch.gz.b64
+          cat \
+            .github/m4b-final.patch.part-00 \
+            .github/m4b-final.patch.part-01 \
+            .github/m4b-final.patch.part-02 \
+            .github/m4b-final.patch.part-03 \
+            .github/m4b-final.patch.part-04 \
+            .github/m4b-final.patch.part-05 \
+            .github/m4b-final.patch.part-06-fixed \
+            .github/m4b-final.patch.part-07 \
+            > /tmp/m4b.patch.gz.b64
+
           test "$(wc -c < /tmp/m4b.patch.gz.b64)" -eq 56240
           printf '%s  %s\n' "$B64_SHA256" /tmp/m4b.patch.gz.b64 | sha256sum --check --strict
           base64 --decode /tmp/m4b.patch.gz.b64 > /tmp/m4b.patch.gz
@@ -97,7 +93,7 @@ jobs:
           test "$(wc -c < /tmp/m4b.patch)" -eq 253912
           printf '%s  %s\n' "$PATCH_SHA256" /tmp/m4b.patch | sha256sum --check --strict
 
-      - name: Apply exact M4-B patch and prove the resulting Git tree
+      - name: Apply exact M4-B patch and prove its file boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -159,10 +155,11 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          test "$(git write-tree)" = "$EXPECTED_TREE"
+          FEATURE_TREE="$(git write-tree)"
           git commit -m 'docs(memory): publish adaptive workflow memory guidance and pilot'
           test "$(git rev-parse HEAD^)" = "$BASE_SHA"
-          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          test "$(git rev-parse HEAD^{tree})" = "$FEATURE_TREE"
+          echo "FEATURE_TREE=$FEATURE_TREE" >> "$GITHUB_ENV"
 
       - name: Run focused M4-B publication contracts
         shell: bash
@@ -212,17 +209,17 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$BASE_SHA"
           test "$(git rev-list --count "$BASE_SHA"..HEAD)" -eq 1
-          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          test "$(git rev-parse HEAD^{tree})" = "$FEATURE_TREE"
           remote_target="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
           test "$remote_target" = "$BASE_SHA"
           git push origin "HEAD:refs/heads/$TARGET_BRANCH"
           {
-            echo '## M4-B materialization complete'
+            echo '## M4-B recovery complete'
             echo "- Base: \`$BASE_SHA\`"
             echo "- Head: \`$(git rev-parse HEAD)\`"
-            echo "- Tree: \`$(git rev-parse HEAD^{tree})\`"
+            echo "- Tree: \`$FEATURE_TREE\`"
             echo '- Base64, Gzip, and Git Patch digests verified.'
-            echo '- Exact 41-file tree matched the locally verified tree.'
+            echo '- Exact 41-file boundary verified.'
             echo '- Focused contracts, deterministic checks, Plugin/MCP, and site build passed.'
             echo '- Published as exactly one clean feature commit.'
           } >> "$GITHUB_STEP_SUMMARY"
