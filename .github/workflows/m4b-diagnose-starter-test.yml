@@ -1,4 +1,4 @@
-name: M4-B Diagnose Starter Test
+name: M4-B Diagnose MDX Source
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-      - name: Reconstruct exact patch and print failing source
+      - name: Reconstruct patch and print suspicious MDX lines
         shell: bash
         run: |
           set -euo pipefail
@@ -37,7 +37,10 @@ jobs:
           git checkout --detach fcd849bd1c63d43c2182ccdb15e05f8de750e9f3
           git apply --check --binary /tmp/m4b.patch
           git apply --binary /tmp/m4b.patch
-          echo '=== tests/test_v2_starter_surface.py ==='
-          nl -ba tests/test_v2_starter_surface.py | sed -n '1,100p'
-          echo '=== compile result ==='
-          python -m py_compile tests/test_v2_starter_surface.py
+
+          echo '=== all suspicious MDX tokens ==='
+          grep -RIn --include='*.mdx' '<!' site/src/content/docs || true
+          echo '=== English MCP reference lines 45-70 ==='
+          nl -ba site/src/content/docs/reference/mcp-tools.mdx | sed -n '45,70p'
+          echo '=== zh-TW MCP reference lines 45-70 ==='
+          nl -ba site/src/content/docs/zh-tw/reference/mcp-tools.mdx | sed -n '45,70p'
