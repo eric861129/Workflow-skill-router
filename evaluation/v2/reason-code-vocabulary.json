@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "contract_revision": "2.3.0",
+  "contract_revision": "2.3.1",
   "description": "Public, non-oracle vocabulary for bounded routing evidence.",
   "classification_sources": [
     "native-goal-binding",

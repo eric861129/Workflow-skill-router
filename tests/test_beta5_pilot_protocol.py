@@ -494,7 +494,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         self.assertFalse(plan["claims"]["hybrid_full_permitted"])
         self.assertNotIn("results", plan)
 
-    def test_protocol_docs_preserve_beta_truth_and_define_semantic_gate(self) -> None:
+    def test_protocol_docs_separate_published_release_from_pending_pilot(self) -> None:
         self.assertTrue(PILOT_TEMPLATE.is_file(), "missing Pilot evidence template")
         readme = EVALUATION_README.read_text(encoding="utf-8")
         template = PILOT_TEMPLATE.read_text(encoding="utf-8")
@@ -510,9 +510,9 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "profile preview --explain",
             "server-configured advisory-only adapter",
             "No Pilot data means the gate is unmet",
-            "published beta.3",
-            "prepared GA candidate",
-            "`v2.0.0` is the prepared GA candidate",
+            "The published release is `v2.0.2`",
+            "does not establish a new model qualification",
+            "gpt-5.6-sol",
         ):
             self.assertIn(phrase, combined)
         self.assertIn("local-work-loop-plan.json", readme)
@@ -537,7 +537,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
         for phrase in (
             "title: 真實模型評測邊界",
             "# 評測證據",
-            "尚未執行或計入任何真實 Pilot 任務",
+            "尚未計入真實 Pilot 任務",
             "離線參考適配器",
             "真實 Host Pilot",
             "能力不可用",

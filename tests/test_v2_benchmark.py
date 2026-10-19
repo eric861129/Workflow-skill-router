@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -79,6 +80,121 @@ def canonical_package_digest(paths: list[Path]) -> str:
 
 
 class V2BenchmarkTests(unittest.TestCase):
+    def test_cases_state_envelope_and_goal_binding_preconditions(self):
+        cases = {case["id"]: case for case in RUNNER.load_cases("full")}
+        for case_id in ("phased-explicit-consent-approve", "phased-explicit-consent-reject"):
+            self.assertIn("existing phased workflow", cases[case_id]["prompt"])
+        goal = cases["managed-goal"]
+        self.assertIn("No existing Native Goal is bound", goal["prompt"])
+        self.assertEqual("none", goal["expected"]["goal_relation"])
+        self.assertEqual("none", REFERENCE_DRIVER._route(goal["prompt"])["goal_relation"])
+
+    def test_route_choice_is_reported_separately_from_evidence_contract_failure(self):
+        case = RUNNER.load_cases("beta-smoke")[0]
+        record = {"case_id": case["id"], "route": copy.deepcopy(case["expected"]),
+                  "passed": False, "hard_violations": [],
+                  "dimensions": {"envelope_source_match": False}}
+        metrics = RUNNER.arm_metrics([record], [case])
+        self.assertEqual(1.0, metrics["final_route_field_match_rate"])
+        self.assertEqual(0.0, metrics["route_contract_match_rate"])
+        self.assertEqual(0.0, metrics["envelope_source_match_rate"])
+
+    def test_screening_report_is_locked_and_cannot_claim_repeat_consistency(self):
+        class FakeAdapter:
+            def __init__(self, *args, **kwargs):
+                self.counter = 0
+
+            def start_attempt(self, payload, nonce):
+                self.counter += 1
+                self.context_id = f"{self.counter:032x}"
+                return self.context_id
+
+            def execute_turn(self, request):
+                return {"attempt_nonce": request.attempt_nonce, "context_id": self.context_id,
+                        "route": {"envelope": "single", "selection_mode": "auto",
+                                  "primary_skill": "skill:code-documenter", "support_skills": [],
+                                  "consent_action": "not-required", "goal_relation": "none",
+                                  "rationale": "Test fixture", "evaluation_evidence": copy.deepcopy(SAFE_EVIDENCE)}}
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "screening"
+            with (
+                patch.object(RUNNER, "verify_behavior_source_revision", return_value="a" * 40),
+                patch.object(RUNNER, "verify_behavior_adapter_revision", return_value="sha256:" + "b" * 64),
+                patch.object(RUNNER, "SubprocessExecutionAdapter", FakeAdapter),
+                patch.object(RUNNER.LocalEvidenceProtector, "protect_directory"),
+                patch.object(RUNNER.LocalEvidenceProtector, "protect_file"),
+                patch.object(RUNNER.LocalEvidenceProtector, "verify_directory", return_value=True),
+                patch.object(RUNNER.LocalEvidenceProtector, "verify_file", return_value=True),
+            ):
+                RUNNER.main([
+                    "--suite", "beta-smoke", "--screening", "--repeats", "1",
+                    "--evidence-class", "behavior", "--confirm-live-run",
+                    "--adapter-executable", sys.executable,
+                    "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
+                    "--adapter-arg=--model", "--adapter-arg", "gpt-test",
+                    "--adapter-arg=--reasoning-effort", "--adapter-arg", "medium",
+                    "--output-dir", str(output), "--authorized-source-revision", "a" * 40,
+                    "--authorized-adapter-revision", "sha256:" + "b" * 64,
+                ])
+            report = json.loads((output / "sanitized-report.json").read_text(encoding="utf-8"))
+        self.assertEqual("exploratory-model", report["evidence_class"])
+        self.assertTrue(report["evidence_class_locked"])
+        self.assertFalse(report["qualification_eligible"])
+        self.assertEqual(12, report["attempt_count"])
+        self.assertEqual("medium", report["provenance"]["sampling_settings"]["reasoning_effort"])
+        for arm in ("baseline", "candidate"):
+            self.assertIsNone(report["comparison"][arm]["within_case_consistency_rate"])
+
+    def test_reasoning_changes_cannot_resume_a_previous_attempt(self):
+        args = ("beta-smoke", "baseline", "small-auto", 0, "Route", [])
+        kwargs = {"instruction_digest": None, "public_case_digest": "sha256:" + "a" * 64,
+                  "model_version": "gpt-6.1-sol", "scoring_spec_digest": "sha256:" + "b" * 64}
+        medium = RUNNER.make_attempt_nonce(*args, **kwargs, reasoning_effort="medium")
+        high = RUNNER.make_attempt_nonce(*args, **kwargs, reasoning_effort="high")
+        legacy = RUNNER.make_attempt_nonce(*args, **kwargs)
+        self.assertEqual(3, len({medium, high, legacy}))
+
+    def test_recorded_effort_matches_the_executed_adapter_arguments(self):
+        parser = runpy.run_path(str(CANONICAL_BEHAVIOR_ADAPTER))["build_parser"]()
+        base = ["--codex-executable", str(Path(sys.executable).resolve())]
+        nonce_args = ("beta-smoke", "baseline", "small-auto", 0, "Route", [])
+        nonce_options = {"instruction_digest": None, "public_case_digest": "sha256:" + "a" * 64,
+                         "model_version": "test-model", "scoring_spec_digest": "sha256:" + "b" * 64}
+        by_effort = {"medium": set(), "high": set()}
+        for flags, expected in (
+            (["--reasoning-effort", "medium"], "medium"),
+            (["--reasoning-effort=medium"], "medium"),
+            (["--reasoning-effort=high"], "high"),
+            (["--reasoning-effort", "medium", "--reasoning-effort", "high"], "high"),
+            (["--reasoning-effort=high", "--reasoning-effort", "medium"], "medium"),
+        ):
+            with self.subTest(flags=flags):
+                executed = parser.parse_args([*base, *flags]).reasoning_effort
+                recorded = RUNNER.adapter_option([*base, *flags], "--reasoning-effort")
+                self.assertEqual(expected, executed)
+                self.assertEqual(executed, recorded)
+                by_effort[expected].add(RUNNER.make_attempt_nonce(
+                    *nonce_args, **nonce_options, reasoning_effort=recorded,
+                ))
+        self.assertEqual(1, len(by_effort["medium"]))
+        self.assertEqual(1, len(by_effort["high"]))
+        self.assertTrue(by_effort["medium"].isdisjoint(by_effort["high"]))
+        self.assertFalse(parser.allow_abbrev)
+
+    def test_screening_cannot_weaken_formal_or_delta_qualification(self):
+        base = ["--evidence-class", "behavior", "--adapter-executable", sys.executable,
+                "--output-dir", "unused-screening-output"]
+        for options, message in (
+            (["--suite", "beta-smoke", "--repeats", "1"], "at least three repeats"),
+            (["--suite", "full", "--repeats", "1", "--screening"], "Screening requires"),
+            (["--suite", "beta-smoke", "--repeats", "3", "--screening"], "Screening requires"),
+            (["--suite", "beta-smoke", "--repeats", "1", "--screening", "--delta-qualification", "activation-claim-v1"], "Screening requires"),
+            (["--suite", "beta-smoke", "--repeats", "1", "--screening"], "confirm-live-run"),
+        ):
+            with self.subTest(options=options), self.assertRaisesRegex(SystemExit, message):
+                RUNNER.main([*base, *options])
+
     def test_behavior_cli_requires_authorized_source_and_adapter_revisions(self):
         destinations = {
             action.dest for action in RUNNER.build_parser()._actions
@@ -1053,10 +1169,10 @@ class V2BenchmarkTests(unittest.TestCase):
         ]
 
         self.assertEqual("workflow-skill-router.behavior-routing", smoke["contract_id"])
-        self.assertEqual("2.3.0", smoke["contract_revision"])
-        self.assertTrue(all(row["contract_revision"] == "2.3.0" for row in rows))
+        self.assertEqual("2.3.1", smoke["contract_revision"])
+        self.assertTrue(all(row["contract_revision"] == "2.3.1" for row in rows))
         self.assertTrue(all(
-            RUNNER.public_case_payload(row)["contract_revision"] == "2.3.0"
+            RUNNER.public_case_payload(row)["contract_revision"] == "2.3.1"
             for row in rows
         ))
 
@@ -1522,7 +1638,7 @@ class V2BenchmarkTests(unittest.TestCase):
             "workflow-skill-router.behavior-routing",
             report["provenance"]["evaluation_contract_id"],
         )
-        self.assertEqual("2.3.0", report["provenance"]["evaluation_contract_revision"])
+        self.assertEqual("2.3.1", report["provenance"]["evaluation_contract_revision"])
         self.assertEqual("verified", report["provenance"]["evidence_protection"]["status"])
         self.assertEqual("restricted", report["provenance"]["evidence_protection"]["directory"])
         self.assertEqual(6, len(report["case_diagnostics"]))
@@ -1997,7 +2113,7 @@ class V2BenchmarkTests(unittest.TestCase):
     def test_public_case_payload_binds_profile_fixture_without_scoring_oracle(self):
         case = {
             "id": "profile-explain-miss",
-            "contract_revision": "2.3.0",
+            "contract_revision": "2.3.1",
             "prompt": "Preview a profile miss.",
             "allowed_tools": [],
             "interaction_script": [],

@@ -12,6 +12,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import time
 from typing import Mapping
 
 
@@ -98,6 +99,7 @@ class CodexCliDriver:
         timeout_seconds: int = 120,
         auth_source: Path | None = None,
         model: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
         self._codex_executable = codex_executable.resolve()
         self._output_schema = output_schema.resolve()
@@ -105,6 +107,9 @@ class CodexCliDriver:
         self._timeout_seconds = timeout_seconds
         self._auth_source = (auth_source or self._default_auth_source()).resolve()
         self._model = model
+        if reasoning_effort not in {None, "low", "medium", "high", "xhigh", "max"}:
+            raise ValueError("codex_driver_reasoning_effort_invalid")
+        self._reasoning_effort = reasoning_effort
         self._evidence_protector = LocalEvidenceProtector()
         if not self._codex_executable.is_absolute() or not self._output_schema.is_absolute():
             raise ValueError("codex_driver_paths_must_be_absolute")
@@ -224,6 +229,10 @@ class CodexCliDriver:
             command[command.index("--output-schema"):command.index("--output-schema")] = [
                 "--model", self._model,
             ]
+        if self._reasoning_effort:
+            command[command.index("--output-schema"):command.index("--output-schema")] = [
+                "-c", f'model_reasoning_effort="{self._reasoning_effort}"',
+            ]
         environment = {name: os.environ[name] for name in _ENV_ALLOWLIST if name in os.environ}
         environment.update({
             "CODEX_HOME": str(directory / "codex-home"),
@@ -235,6 +244,7 @@ class CodexCliDriver:
             try:
                 shutil.copyfile(self._auth_source, isolated_auth)
                 self._evidence_protector.protect_file(isolated_auth)
+                started = time.perf_counter()
                 completed = subprocess.run(
                     command,
                     shell=False,
@@ -247,6 +257,7 @@ class CodexCliDriver:
                     check=False,
                     env=environment,
                 )
+                elapsed_ms = (time.perf_counter() - started) * 1000
             finally:
                 isolated_auth.unlink(missing_ok=True)
         except subprocess.TimeoutExpired as error:
@@ -314,6 +325,13 @@ class CodexCliDriver:
                     transcript["hybrid_binding"] = asdict(binding)
         self._validate_route(route)
         turn_record = {"user": request.get("prompt"), "assistant": route}
+        # 僅保存 CLI 實際回報的用量；缺漏不得以零或估算值取代。
+        turn_record["execution_metrics"] = {
+            "requested_model": self._model,
+            "requested_reasoning_effort": self._reasoning_effort,
+            "elapsed_ms": elapsed_ms,
+            "usage": self._extract_usage(completed.stdout),
+        }
         if model_consent_intent is not None:
             turn_record["model_consent_intent"] = model_consent_intent
         turns.append(turn_record)
@@ -329,6 +347,26 @@ class CodexCliDriver:
                 else {}
             ),
         }
+
+    @staticmethod
+    def _extract_usage(stdout: str) -> dict[str, int] | None:
+        """擷取單一完成回合的用量，拒絕缺漏、負數或格式不明的數據。"""
+        usages = []
+        for line in stdout.splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(event, dict) and event.get("type") == "turn.completed":
+                usages.append(event.get("usage"))
+        if len(usages) != 1 or not isinstance(usages[0], dict):
+            return None
+        fields = ("input_tokens", "cached_input_tokens", "output_tokens")
+        if not all(type(usages[0].get(key)) is int and usages[0][key] >= 0 for key in fields):
+            return None
+        if usages[0]["cached_input_tokens"] > usages[0]["input_tokens"]:
+            return None
+        return {key: usages[0][key] for key in fields}
 
     @staticmethod
     def _render_prompt(turns: list[object], request: Mapping[str, object]) -> str:
@@ -502,7 +540,9 @@ class CodexCliDriver:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Workflow Skill Router Codex CLI evaluation driver")
+    parser = argparse.ArgumentParser(
+        description="Workflow Skill Router Codex CLI evaluation driver", allow_abbrev=False,
+    )
     parser.add_argument("--codex-executable", required=True, type=Path)
     parser.add_argument(
         "--output-schema",
@@ -517,6 +557,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--auth-source", type=Path)
     parser.add_argument("--model")
+    parser.add_argument("--reasoning-effort", choices=("low", "medium", "high", "xhigh", "max"))
     return parser
 
 
@@ -530,6 +571,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout_seconds,
         auth_source=args.auth_source.resolve() if args.auth_source else None,
         model=args.model,
+        reasoning_effort=args.reasoning_effort,
     )
     response = json.dumps(driver.handle(request), ensure_ascii=False, sort_keys=True).encode("utf-8")
     sys.stdout.buffer.write(response + b"\n")

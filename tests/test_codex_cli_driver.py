@@ -58,6 +58,38 @@ def completed(route=VALID_ROUTE, *, returncode=0, stderr=""):
 
 @unittest.skipIf(DRIVER_MODULE is None, "driver module could not be loaded")
 class CodexCliDriverTests(unittest.TestCase):
+    def test_usage_requires_one_complete_nonnegative_cli_event(self):
+        usage = {"input_tokens": 100, "cached_input_tokens": 20, "output_tokens": 30}
+        event = json.dumps({"type": "turn.completed", "usage": usage})
+        self.assertEqual(usage, DRIVER_MODULE.CodexCliDriver._extract_usage(event))
+        for invalid in ("", event + "\n" + event, json.dumps({"type": "turn.completed", "usage": {}})):
+            self.assertIsNone(DRIVER_MODULE.CodexCliDriver._extract_usage(invalid))
+        for key, value in (("input_tokens", True), ("output_tokens", -1), ("cached_input_tokens", 101)):
+            self.assertIsNone(DRIVER_MODULE.CodexCliDriver._extract_usage(json.dumps({
+                "type": "turn.completed", "usage": {**usage, key: value},
+            })))
+
+    def test_explicit_effort_and_observed_usage_are_retained_without_leaking_into_prompt(self):
+        self.driver._model = "gpt-6.1-sol"
+        self.driver._reasoning_effort = "medium"
+        context = self.start()
+        result = completed()
+        usage = {"input_tokens": 100, "cached_input_tokens": 20, "output_tokens": 30}
+        result.stdout += json.dumps({"type": "turn.completed", "usage": usage}) + "\n"
+        with patch.object(DRIVER_MODULE.subprocess, "run", return_value=result) as run:
+            self.driver.handle({
+                "type": "execute_turn", "context_id": context["context_id"],
+                "attempt_nonce": "nonce-1", "turn_index": 0,
+                "prompt": "Route", "allowed_tools": [],
+            })
+        self.assertIn('model_reasoning_effort="medium"', run.call_args.args[0])
+        transcript = json.loads((self.root / "attempts" / context["context_id"] / "transcript.json").read_text(encoding="utf-8"))
+        metrics = transcript["turns"][0]["execution_metrics"]
+        self.assertEqual(usage, metrics["usage"])
+        self.assertEqual("medium", metrics["requested_reasoning_effort"])
+        self.assertGreaterEqual(metrics["elapsed_ms"], 0)
+        self.assertNotIn("execution_metrics", self.driver._render_prompt(transcript["turns"], {"prompt": "Next"}))
+
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)

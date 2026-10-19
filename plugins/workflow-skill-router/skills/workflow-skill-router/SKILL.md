@@ -9,6 +9,8 @@ description: 當 Codex 任務需要依小型、中型、大型或 Goal 模式選
 
 再選 envelope：單一意圖用 `single`；有兩個以上相異階段用 `phased`，每個 Phase 重新選擇能力；長期、可恢復、跨 repo、dependency DAG 或 Goal progress/steer 用 `managed-goal`，每個 Work Item 再分成 `single` 或 `phased`。
 
+外層 workflow envelope 與目前 Phase／Work Item 的範圍分開判斷。已有明確 `phased` 或 `managed-goal` 上下文時，只處理目前 Phase 不代表把外層改成 `single`。`managed-goal` 是工作組織方式，不代表已有 Native Goal 綁定；未提供既有 Goal 時，`goal_relation` 為 `none`，不可自行推定 `progress`。
+
 在開始實作或呼叫工具前，先明確宣告本次預計使用的 SKILL 與各自用途。
 
 使用者未指定 SKILL 時，Router 自動選擇最小且足以完成工作的 Primary／Supporting SKILL 組合，不為 Router 自己推薦的輔助 SKILL 額外詢問同意；仍須遵守最小路由、能力可用性與 host 權限邊界。

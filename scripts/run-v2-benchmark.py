@@ -333,7 +333,7 @@ def load_cases(suite: str) -> list[dict[str, Any]]:
         if line.strip()
     ]
     revisions = {case.get("contract_revision") for case in cases}
-    if revisions != {"2.3.0"}:
+    if revisions != {"2.3.1"}:
         raise EvaluationIntegrityError("evaluation_contract_revision_mismatch")
     if len({case["id"] for case in cases}) != len(cases):
         raise EvaluationIntegrityError("evaluation_case_id_duplicate")
@@ -452,6 +452,7 @@ def make_attempt_nonce(
     scoring_spec_digest: str,
     source_revision: str | None = None,
     adapter_revision: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> str:
     execution_binding = digest({
         "suite": suite,
@@ -463,6 +464,7 @@ def make_attempt_nonce(
         "instruction_digest": instruction_digest,
         "public_case_digest": public_case_digest,
         "model_version": model_version,
+        **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
     })
     parts = [
         "attempt",
@@ -522,7 +524,7 @@ def scoring_spec_digest(case: Mapping[str, Any]) -> str:
         if name in case
     }
     policy = {
-        "contract_revision": "2.3.0",
+        "contract_revision": "2.3.1",
         "route_fields": ROUTE_FIELDS,
         "dimensions": EVALUATION_DIMENSIONS,
         "hard_violations": sorted(CONTRACT_2_3_HARD_VIOLATIONS),
@@ -796,12 +798,18 @@ def score_attempt(
 def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> dict[str, object]:
     by_case = {case["id"]: case for case in cases}
     matches = {name: 0 for name in ROUTE_FIELDS}
+    final_route_matches = 0
     explicit_total = 0
     explicit_preserved = 0
     signatures: dict[str, set[str]] = {case["id"]: set() for case in cases}
     for record in records:
         expected = by_case[record["case_id"]]["expected"]
         route = record["route"]
+        if all(
+            normalized_field(name, route.get(name)) == normalized_field(name, expected.get(name))
+            for name in ROUTE_FIELDS
+        ):
+            final_route_matches += 1
         for name in ROUTE_FIELDS:
             if normalized_field(name, route.get(name)) == normalized_field(name, expected.get(name)):
                 matches[name] += 1
@@ -840,6 +848,7 @@ def arm_metrics(records: list[dict[str, Any]], cases: list[dict[str, Any]]) -> d
             dimension_rates[f"{name}_rate"] = sum(1 for value in values if value) / len(values)
     return {
         "attempt_count": total,
+        "final_route_field_match_rate": final_route_matches / total,
         "route_contract_match_rate": sum(1 for record in records if record["passed"]) / total,
         "turn_contract_match_rate": turn_pass_total / turn_total if turn_total else None,
         "envelope_match_rate": matches["envelope"] / total,
@@ -1005,10 +1014,11 @@ def codex_version(adapter_arguments: list[str]) -> str | None:
 
 
 def adapter_option(adapter_arguments: list[str], name: str) -> str | None:
-    if name not in adapter_arguments:
-        return None
-    index = adapter_arguments.index(name) + 1
-    return adapter_arguments[index] if index < len(adapter_arguments) else None
+    """依 adapter 的參數規則解析設定，支援等號寫法與最後一次指定。"""
+    parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    parser.add_argument(name, dest="value")
+    options, _ = parser.parse_known_args(adapter_arguments)
+    return options.value
 
 
 def verify_behavior_source_revision(authorized_revision: str | None) -> str:
@@ -1460,6 +1470,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--adapter-executable", required=True)
     parser.add_argument("--adapter-arg", action="append", default=[])
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--screening", action="store_true", help="Exploratory beta smoke only; never formal Behavior qualification")
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--confirm-live-run", action="store_true")
@@ -1479,7 +1490,9 @@ def main(argv: list[str] | None = None) -> int:
         print(behavior_adapter_closure_revision())
         return 0
     args = build_parser().parse_args(effective_argv)
-    if args.repeats < 3:
+    if args.screening and (args.suite != "beta-smoke" or args.repeats != 1 or args.delta_qualification):
+        raise SystemExit("Screening requires beta-smoke, one repeat, and no delta qualification.")
+    if args.repeats < 3 and not args.screening:
         raise SystemExit("Behavior benchmark requires at least three repeats.")
     if args.evidence_class == "behavior" and not args.confirm_live_run:
         raise SystemExit("Behavior model execution requires --confirm-live-run.")
@@ -1580,6 +1593,8 @@ def main(argv: list[str] | None = None) -> int:
         if qualification is not None
         else args.suite
     )
+    if args.screening:
+        run_identity = f"screening:{run_identity}"
     for arm in selected_arms:
         profile = profiles[arm]
         for case in cases:
@@ -1621,6 +1636,7 @@ def main(argv: list[str] | None = None) -> int:
                     adapter_revision=(
                         adapter_revision if args.evidence_class == "behavior" else None
                     ),
+                    reasoning_effort=adapter_option(args.adapter_arg, "--reasoning-effort"),
                 )
                 attempt_binding_digest = digest({
                     "attempt_nonce": nonce,
@@ -1748,7 +1764,12 @@ def main(argv: list[str] | None = None) -> int:
         arm: arm_metrics(arm_records, cases)
         for arm, arm_records in records_by_arm.items()
     }
+    if args.screening:
+        # 每個案例只有一次觀測，不能宣稱重複執行的一致性。
+        for metrics in metrics_by_arm.values():
+            metrics["within_case_consistency_rate"] = None
     delta_fields = (
+        "final_route_field_match_rate",
         "route_contract_match_rate",
         "turn_contract_match_rate",
         "envelope_match_rate",
@@ -1807,6 +1828,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     summary = {
         "suite": args.suite,
+        "evaluation_purpose": "screening" if args.screening else "qualification",
+        "qualification_eligible": not args.screening and args.evidence_class == "behavior",
         "qualification": (
             {
                 "id": qualification["id"],
@@ -1920,8 +1943,14 @@ def main(argv: list[str] | None = None) -> int:
             "model_identity_status": (
                 "configured" if adapter_option(args.adapter_arg, "--model") else "unavailable"
             ),
-            "sampling_settings": None,
-            "sampling_settings_status": "unavailable",
+            "sampling_settings": (
+                {"reasoning_effort": adapter_option(args.adapter_arg, "--reasoning-effort"),
+                 "speed": "isolated-client-default"}
+                if adapter_option(args.adapter_arg, "--reasoning-effort") else None
+            ),
+            "sampling_settings_status": (
+                "configured" if adapter_option(args.adapter_arg, "--reasoning-effort") else "unavailable"
+            ),
             "adapter_timeout_seconds": args.timeout_seconds,
             "model_turn_timeout_seconds": int(
                 adapter_option(args.adapter_arg, "--timeout-seconds") or args.timeout_seconds
@@ -1970,8 +1999,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     report = build_benchmark_review_report(
         summary,
-        args.evidence_class,
-        evidence_class_locked=args.evidence_class == "reference-driver",
+        "exploratory-model" if args.screening and args.evidence_class == "behavior" else args.evidence_class,
+        evidence_class_locked=args.screening or args.evidence_class == "reference-driver",
     )
     raw_path = restricted_dir / "raw-results.json"
     raw_path.write_text(json.dumps({
@@ -1988,7 +2017,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(json.dumps({
         "attempt_count": len(records),
-        "evidence_class": args.evidence_class,
+        "evidence_class": report["evidence_class"],
         "report": report_path.name,
         "status": "review-required",
     }, ensure_ascii=False, sort_keys=True))

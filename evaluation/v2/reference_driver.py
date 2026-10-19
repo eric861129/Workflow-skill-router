@@ -221,6 +221,8 @@ def _route(prompt: str) -> dict[str, object]:
         relation = "steer"
     elif "side question" in lowered:
         relation = "side-question"
+    elif "no existing native goal is bound" in lowered:
+        relation = "none"
     elif envelope == "managed-goal":
         relation = "progress"
     else:

@@ -30,7 +30,7 @@
     },
     "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
     "evaluation_evidence": {
-      "description": "Required public-safe Contract 2.3.0 observations. Never include prompts, instructions, profile contents, paths, or scoring expectations.",
+      "description": "Required public-safe Contract 2.3.1 observations. Never include prompts, instructions, profile contents, paths, or scoring expectations.",
       "type": "object",
       "required": [
         "classification",
