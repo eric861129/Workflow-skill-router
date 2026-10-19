@@ -48,6 +48,9 @@ jobs:
       - name: Type-check and test Plugin/MCP
         working-directory: plugins/workflow-skill-router
         run: npm run check
+      - name: Smoke test bundled Plugin/MCP
+        working-directory: plugins/workflow-skill-router
+        run: node ./scripts/smoke-plugin.mjs
 
   validate:
     name: Core, documentation, and policy contracts

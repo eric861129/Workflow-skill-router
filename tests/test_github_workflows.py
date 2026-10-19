@@ -267,10 +267,10 @@ class GitHubWorkflowTests(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, content)
 
-    def test_validate_and_plugin_smoke_run_local_v2_quality_gates(self) -> None:
+    def test_validate_runs_consolidated_local_v2_quality_gates(self) -> None:
         validate = workflow_text("validate.yml")
         validation_job = workflow_job_body("validate.yml", "validate")
-        plugin = workflow_text("v2-plugin-smoke.yml")
+        artifact_job = workflow_job_body("validate.yml", "release-artifacts")
 
         for required in (
             "build-release-artifacts.py --check",
@@ -284,7 +284,23 @@ class GitHubWorkflowTests(unittest.TestCase):
             "npm run check",
             "smoke-plugin.mjs",
         ):
-            self.assertIn(required, plugin)
+            self.assertIn(required, artifact_job)
+
+        continuous_workflows = "\n".join(
+            content
+            for path in sorted(WORKFLOWS.glob("*.y*ml"))
+            if re.search(
+                r"(?m)^  (?:push|pull_request):",
+                content := path.read_text(encoding="utf-8"),
+            )
+        )
+        for command in (
+            'python -m unittest discover -s packages/router-core/tests -p "test_*.py" -v',
+            "npm run check",
+            "node ./scripts/smoke-plugin.mjs",
+        ):
+            with self.subTest(command=command):
+                self.assertEqual(1, continuous_workflows.count(command))
 
         plugin_install = validate.index("Install plugin build dependencies")
         repository_tests = validate.index("Run repository unit tests")
@@ -357,9 +373,11 @@ class GitHubWorkflowTests(unittest.TestCase):
             "working-directory: plugins/workflow-skill-router",
             "npm ci",
             "npm run check",
+            "node ./scripts/smoke-plugin.mjs",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, artifact_job)
+        self.assertNotIn("continue-on-error:", artifact_job)
 
         self.assertIn(
             "needs: [release-artifacts, validate, site-visual]",
@@ -390,6 +408,10 @@ class GitHubWorkflowTests(unittest.TestCase):
 
     def test_scorecard_uploads_sarif_with_bounded_permissions(self) -> None:
         content = workflow_text("scorecard.yml")
+        self.assertIn("  schedule:\n", content)
+        self.assertIn("    - cron: '23 1 * * 1'", content)
+        self.assertIn("  workflow_dispatch:", content)
+        self.assertNotRegex(content, r"(?m)^  (?:push|pull_request):")
         for required in (
             "contents: read",
             "security-events: write",
@@ -1272,6 +1294,30 @@ class GitHubWorkflowTests(unittest.TestCase):
         for required in ('directory: "/site"', 'directory: "/plugins/workflow-skill-router"'):
             self.assertIn(required, content)
         self.assertIn('package-ecosystem: "github-actions"', content)
+
+    def test_dependabot_groups_routine_and_security_updates_separately(self) -> None:
+        content = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        projects = content.split("  - package-ecosystem:")[1:]
+        self.assertEqual(3, len(projects))
+        for project in projects:
+            with self.subTest(project=project.splitlines()[0].strip()):
+                self.assertIn('interval: "weekly"', project)
+                groups = re.findall(
+                    r"(?ms)^      [a-z-]+:\n(.*?)(?=^      [a-z-]+:|^    \S|\Z)",
+                    project,
+                )
+                self.assertEqual(2, len(groups))
+                by_purpose = {}
+                for group in groups:
+                    purpose = re.search(r"applies-to: ([a-z-]+)", group)
+                    self.assertIsNotNone(purpose)
+                    by_purpose[purpose.group(1)] = group
+                    self.assertIn('patterns: ["*"]', group)
+                self.assertEqual({"version-updates", "security-updates"}, set(by_purpose))
+                self.assertIn('update-types: ["minor", "patch"]', by_purpose["version-updates"])
+                self.assertNotIn("update-types:", by_purpose["security-updates"])
+                self.assertNotIn("ignore:", project)
+                self.assertNotIn("target-branch:", project)
 
     def test_branch_protection_contract_tracks_actual_check_run_names(self) -> None:
         contract = json.loads(
