@@ -13,7 +13,6 @@ _POWERSHELL_ENV_ALLOWLIST = (
     "LOCALAPPDATA",
     "PATH",
     "PATHEXT",
-    "PSModulePath",
     "SystemRoot",
     "TEMP",
     "TMP",
@@ -98,15 +97,18 @@ class LocalEvidenceProtector:
 
     @classmethod
     def _run_powershell(cls, script: str, path: Path, kind: str | None = None) -> str:
+        executable = cls._powershell_executable()
         environment = {
             name: os.environ[name]
             for name in _POWERSHELL_ENV_ALLOWLIST
             if name in os.environ
         }
+        # 固定使用 Windows PowerShell 內建模組，避免繼承其他版本或使用者模組路徑。
+        environment["PSModulePath"] = str(executable.parent / "Modules")
         environment["WSR_EVIDENCE_PATH"] = str(path)
         environment["WSR_EVIDENCE_KIND"] = kind or ""
         command = [
-            str(cls._powershell_executable()),
+            str(executable),
             "-NoLogo",
             "-NoProfile",
             "-NonInteractive",

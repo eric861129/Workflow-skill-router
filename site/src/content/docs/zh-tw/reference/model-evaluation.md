@@ -9,13 +9,9 @@ Workflow Skill Router 將「確定性合約測試」、「真實模型行為評�
 
 ## GA candidate Pilot 目前狀態
 
-目前狀態是 `protocol-frozen-awaiting-real-pilot`：Pilot 規則已凍結，但尚未執行或計入任何真實 Pilot 任務。
+目前已發布版本是 `v2.0.2`；發布紀錄沿用 `v2.0.0` 的有限 `gpt-5.6-sol` 證據，並未建立新的模型資格驗證。後續本機工作迴圈與 Host Pilot 仍為 `protocol-frozen-awaiting-real-pilot`，尚未計入真實 Pilot 任務。主分支的 Memory 確定性案例不是真實模型成效證據。
 
-- 對外發布的 V2 仍是 beta.3。
-- `v2.0.0` 是已準備但尚未發布的 GA candidate，仍等待真實 Pilot 與最終模型資格驗證。
-- 這個 candidate 的 `release_source_revision` 尚未重綁；後續受信任的 metadata-only promotion 必須把它綁定到 exact reviewed candidate SHA，才可 dispatch。
-- 協定、範本與 dry-run 都不是 Pilot 結果，也不會自動授權模型額度、Host
-  存取或版本發布。
+協定、範本與 dry-run 不會自動授權模型額度、Host 存取或版本發布。
 
 ## 本機工作迴圈 Pilot
 
@@ -144,9 +140,11 @@ Profile、alias、lint 與 `profile preview --explain`，不讓語意候選直�
 Tier 0 Contract 只驗證確定性相容性。Behavior 與 Outcome 評測必須使用新的隔離
 attempt、sealed scoring、paired manifest，且 hard violation 為零。沒有 adapter 時
 狀態是 `manual-required`；沒有可信任的人工 attestation 時，輸出是
-`review-required`，不得呈現為已審核分數。
+`review-required`，不提供公開綜合分數，也不得呈現為已審核分數或正式資格。去識別化的計數與符合率仍屬待審查的診斷資料。
 
-Contract `workflow-skill-router.behavior-routing@2.3.0` 維持完整套件 13 個案例、beta
+開發中的 2.3.1 已補齊既有 phased workflow 與「沒有 Native Goal 綁定」的案例前提。歷史 2.3.0 報表不會重新計分。探索性 `--screening` 結果不具正式資格；應分別閱讀最終路由欄位符合率與包含證據代碼的完整契約符合率。
+
+Contract `workflow-skill-router.behavior-routing@2.3.1` 維持完整套件 13 個案例、beta
 smoke 6 個案例。Smoke 保留一個雙回合 scoped-consent 案例，因此未來另行授權的
 評測仍是 36 attempts、42 model turns。歷史 2.2.0 報表保留原始 case 與 instruction
 digest，不會套用新版規則重算。

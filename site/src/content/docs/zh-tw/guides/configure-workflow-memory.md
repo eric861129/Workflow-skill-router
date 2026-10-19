@@ -12,7 +12,7 @@ workflow-skill-router memory policy explain
 
 ## Data root 與固定來源
 
-Plugin 的 durable state 位於安裝快取之外。常見 data root：Windows `%LOCALAPPDATA%\workflow-skill-router`、macOS `~/Library/Application Support/workflow-skill-router`、Linux `${XDG_DATA_HOME:-~/.local/share}/workflow-skill-router`。設定 data-root override 時以 override 為準；public-safe status 只回報來源狀態與 Digest，不回傳絕對路徑。
+Plugin 的 durable state 位於安裝快取之外。常見 data root：Windows `%LOCALAPPDATA%\Codex\workflow-skill-router`、macOS `~/Library/Application Support/Codex/workflow-skill-router`、Linux `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router`。設定 data-root override 時以 override 為準；public-safe status 只回報來源狀態與 Digest，不回傳絕對路徑。
 
 Personal Policy 只從 data root 下支援的固定 Memory Policy 檔名讀取。Workspace Policy 只從 MCP Client 宣告或 operator 信任的 Workspace root 之固定 `.codex` 位置讀取。相同 scope 同時出現兩種格式會視為 ambiguous 並 fail closed；Workspace symlink 也不能重新導向來源。
 

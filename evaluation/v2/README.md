@@ -22,9 +22,7 @@ The safe preparation artifacts are now frozen with
 - [`docs/evidence/v2-beta5-pilot-template.md`](../../docs/evidence/v2-beta5-pilot-template.md)
   is the maintainer evidence template.
 
-No real Pilot task has been executed or counted. Published beta.3 remains the
-historical V2 snapshot, while `v2.0.0` is the prepared GA candidate and is not
-yet released.
+The published release is `v2.0.2`. Its attestation inherits the bounded `gpt-5.6-sol` evidence from `v2.0.0`; it does not establish a new model qualification. The later real local-work-loop and Host Pilots remain `protocol-frozen-awaiting-real-pilot`. No real Pilot task has been counted. Current-source Memory fixtures are not real-model evidence.
 These protocols do not authorize a live model, a real Host, or a release.
 
 The binding-manifest commitment, task-set commitment, and reviewer-attestation
@@ -86,7 +84,11 @@ Contract or reference-driver results do **not** prove real-model routing quality
 
 ## Versioned scoring contract
 
-Public cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.3.0`. The full suite remains 13 cases: the existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode` and bind public-safe classification evidence, while `profile-explain-miss` replaces `evaluation-manual-required`. The six-case beta smoke keeps one two-turn consent case, so a future authorized run remains 36 attempts and 42 model turns. The prepared GA candidate carries the sealed Contract 2.3.0 classification coverage without changing the frozen execution budget; historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
+Current-source cases and profiles are bound to `workflow-skill-router.behavior-routing` revision `2.3.1`. The full suite remains 13 cases: the existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode` and bind public-safe classification evidence, while `profile-explain-miss` replaces `evaluation-manual-required`. The six-case beta smoke keeps one two-turn consent case, so a future authorized run remains 36 attempts and 42 model turns. The published V2 line carries the sealed Contract 2.3.0 classification coverage without changing the frozen execution budget; historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
+
+Contract 2.3.1 corrects two underspecified case preconditions: the consent cases explicitly continue an existing phased workflow, and the resumable migration case explicitly has no existing Native Goal binding, so its Goal relation is `none`. These match the local runtime authority boundary. Reports from Contract 2.3.0 retain their original inputs and scores; do not rescore them or treat a cross-contract score difference as a product improvement.
+
+The separate `final_route_field_match_rate` measures the six final routing fields. `route_contract_match_rate` additionally requires all turn and evidence-contract checks. Report both: a mismatch in a Router-specific evidence code is not by itself a wrong Skill choice. Neither metric proves completed-task quality.
 
 Contract 2.3.0 adds aggregate dimensions for envelope source, classification reasons, local authority, Profile explain, and unnecessary consent. It also treats goal-bound local mutation, a local activation claim, direct semantic-candidate persistence, and missing or invalid required evidence as hard violations. Every turn must return `evaluation_evidence` using the public, non-oracle [reason-code vocabulary](reason-code-vocabulary.json). Expected evidence remains in the private scoring oracle; it is excluded from the public case payload and execution driver.
 
@@ -155,6 +157,67 @@ workflow-skill-router evaluation run `
 ```
 
 For a real Behavior or Outcome run, use `--evidence-class fresh-model-execution` and explicitly add `--confirm-live-run`. This confirmation matters because providers may incur quota, latency, or monetary cost. The CLI prints a dry-run manifest before execution orchestration consumes it.
+
+## Requalifying current Codex models
+
+As of 2026-10-19, the [official model guidance](https://learn.chatgpt.com/docs/models)
+positions `gpt-6.1-sol` for general complex work, `gpt-6-astra` for the most
+demanding work, and `gpt-6-luna` for focused repeatable work. Availability is
+account- and client-dependent. These are evaluation candidates, not new Router
+qualification results. Historical `gpt-5.6-sol` reports keep their original model.
+
+Freeze a clean source commit and adapter digest after local gates pass. Start
+with a separately authorized `beta-smoke --screening --repeats 1` comparison:
+6 cases × 2 arms = 12 attempts and 14 model turns per model; all three models
+total 36 attempts and 42 model turns. Use a separate empty output directory per
+model and pass the exact model through the Codex driver's `--model` argument.
+Pass `--reasoning-effort` to the driver and record the CLI version. The isolated
+client speed remains its default; no personal configuration is loaded. Do not compare
+unrecorded defaults as if they were controlled model settings.
+
+Screening reports use the locked `exploratory-model` evidence class and
+`qualification_eligible: false`; repeated-run consistency is unavailable.
+This is a screening run, not the three-repeat full qualification. The existing
+behavior harness measures routing-contract behavior; it does not establish real
+Skill activation, token savings, or completed-task quality. Those require
+separate observable receipts and an outcome protocol. No live run is authorized
+by this preparation note.
+
+### 2026-10-19 本機探索性比較（待人工審查）
+
+使用隔離的 Codex CLI `0.163.0`、固定 `medium` 推理設定，以及相同的六個案例與 Skill catalog。每個模型、每個 arm、每個案例只執行一次；這不是模型能力排名，也不是三次重複的正式資格測試。模型識別來自 CLI 設定，供應端沒有另外提供模型 snapshot 證明。兩組都不執行實際開發工作；candidate 的同意續接使用本機確定性狀態機，沒有證明完整 MCP／Host 整合或真實 Skill 啟用。
+
+第一輪使用原有 Contract 2.3.0，結果完整保留：
+
+| 模型 | 未使用 Router：最終路由欄位符合 | 使用 Router：最終路由欄位符合 | 輸入 Token 變化 |
+| --- | ---: | ---: | ---: |
+| GPT-6.1 Sol | 4 / 6 | 4 / 6 | +26.32% |
+| GPT-6 Astra | 4 / 6 | 4 / 6 | +26.44% |
+| GPT-6 Luna | 4 / 6 | 3 / 6 | +27.62% |
+
+第一輪發現兩個前提問題：同意案例未明確提供既有 phased workflow；跨專案案例沒有既有 Native Goal 綁定，卻要求 `progress`。這些分數只能用來診斷，不能據此宣稱模型優劣。Luna 另遇到一次服務容量不足；失敗紀錄保留，續跑重用八筆完整結果，只重新執行中斷及未執行的案例。
+
+Contract 2.3.1 補齊上述前提，並在兩份發行用 SKILL 中釐清外層 workflow 與目前 Phase／Work Item，以及 managed envelope 與 Native Goal 綁定的差異。新的 GPT-6.1 Sol 對照結果如下；不得與 2.3.0 的分數相減，當成純粹的產品改善幅度。
+
+| 指標 | 未使用 Router | 使用 Router |
+| --- | ---: | ---: |
+| 最終六個路由欄位全部符合 | 3 / 6 | 6 / 6 |
+| 完整契約符合，含所有回合及證據代碼 | 0 / 6 | 3 / 6 |
+| Hard violation | 0 | 0 |
+| 輸入 Token（含快取） | 104,473 | 132,551 |
+| 輸出 Token | 1,965 | 1,182 |
+
+目前能支持的解讀：Router 有助於讓長期工作模式、目前 Work Item 的支援範圍與指定路由規則保持一致；簡單任務常是兩組都選對。第一輪三個模型都將跨專案工作改以 managed envelope 組織；Luna 也減少了該案例中超出目前規劃範圍的支援項目。這些是工作政策的一致性，不能直接等同程式品質提升。
+
+仍需保留的限制：
+
+- 新指引目前只在 Sol 做了成對重測，尚未重新驗證 Astra 與 Luna。
+- 完整契約剩三個未通過案例，差異都在分類來源或理由代碼；不得宣稱正式資格通過。
+- `capability-unavailable` 案例的 `auto`／`explicit-locked` 標籤仍涉及「使用者間接指定能力」的解讀；兩組都保留同一個不可啟用的必要能力，因此不能把標籤差異宣稱為能力選擇品質提升。
+- 這個封閉評測完整載入 Router 指令套件，輸入量增加約 26–28%。真實 Codex 按需讀取參考資料時可能不同；本次沒有證明節省 Token、費用或完整任務時間。
+- 每個案例只有一次觀測，沒有估計重複執行的穩定性；正式模型資格、真實開發 Outcome 與 Host Pilot 均未完成。
+
+合計完成 48 個獨立 attempt、56 個模型回合，另保留一次容量失敗。四份原始 sanitized reports 與兩組比較摘要都保留在維護者本機的 `dist/evaluation/20261019-current-models/`；`integrity-receipt.json` 綁定報表雜湊、48 個唯一 nonce／context，並確認沒有留下登入暫存。原始逐回合回應留在受限目錄，尚未公開發布或人工簽署。公開版本的歷史 attestation 維持原狀。
 
 ## Freshness and failure handling
 

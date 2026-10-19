@@ -76,7 +76,7 @@ deterministic builder 或 live governance prerequisite，修正後審查新的
 candidate，再透過已授權 dispatch 重跑。不得繞過 Scanner，也不得手動
 修補、push、delete 或 retag 生成後 target。
 
-`latest-v2` 保留歷史已審查 prerelease；在正式 V2 GA gate 通過前，`latest` 維持 V1.3.1。建立 tag、發布非 prerelease GitHub Release、推進 channel、部署 Pages 與 push 都是個別授權的 actions；本機驗證不會自動執行它們。
+`v2.0.2` 是已發布的 GA snapshot；歷史 prerelease 保留各自證據。`latest` 與 `latest-v2` 的目標以經審查的頻道 metadata 為準，開發中 checkout 不等於發布版。建立 tag、發布非 prerelease GitHub Release、推進 channel、部署 Pages 與 push 都是個別授權的 actions；本機驗證不會自動執行它們。
 
 ## 5. 保留 V1 recovery
 

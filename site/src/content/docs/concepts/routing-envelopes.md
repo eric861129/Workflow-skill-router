@@ -21,7 +21,9 @@ A Managed Goal work item may use `single` or `phased` as its inner envelope. Cla
 2. Native Goal progress or steer establishes the outer `managed-goal` envelope.
 3. For a detached request or the current work item, `requested_work_mode`, the deterministic analyzer, a deterministic Profile route, and the builtin fallback choose the inner envelope, in that order.
 
-The structural analyzer records `classifier_revision: deterministic-objective-v1`, `classification_source`, and `classification_reason_codes`. It evaluates bounded signals such as stages, dependencies, and resumability. It does not claim to understand every task semantically, and classification never authorizes a Skill, tool, or side effect. A semantic adapter may suggest a reviewable candidate but cannot directly rewrite a persisted route.
+The structural analyzer records `classifier_revision: deterministic-objective-v2`, `classification_source`, and `classification_reason_codes`. It evaluates bounded signals such as stages, dependencies, and resumability. It does not claim to understand every task semantically, and classification never authorizes a Skill, tool, or side effect. A semantic adapter may suggest a reviewable candidate but cannot directly rewrite a persisted route.
+
+`deterministic-objective-v2` adds common Traditional Chinese repair, requirements, cross-project, and progress-retention signals, and ignores negated long-running signals. Existing records retain their original classifier revision on replay.
 
 <a id="example"></a>
 ## State, input, and output example
@@ -32,7 +34,7 @@ The structural analyzer records `classifier_revision: deterministic-objective-v1
   "decision": {
     "execution_kind": "routed-work",
     "envelope": "phased",
-    "classifier_revision": "deterministic-objective-v1",
+    "classifier_revision": "deterministic-objective-v2",
     "classification_source": "deterministic-analyzer",
     "classification_reason_codes": ["multiple-distinct-stages"]
   },
@@ -43,28 +45,20 @@ The structural analyzer records `classifier_revision: deterministic-objective-v1
 <a id="runtime-readiness"></a>
 ## Runtime readiness
 
-### Published beta.3 (`published-beta.3`)
+### Published release (`published-v2.0.2`)
 
-| Current class | Tools | What it means |
+`v2.0.2` has 12 tools: **4 always local-ready + 3 Router-owned conditional-local**, 2 verified-Host-required, and 3 configured-adapter-required. The release includes the local work loop, but not the later Adaptive Workflow Memory implementation.
+
+### Development branch (`development-main`)
+
+The current source adds 8 Memory tools, for 20 total; Memory is default-off. This table describes the checkout, not an installed release.
+
+| Availability | Tools | Conditions |
 | --- | --- | --- |
-| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Bundled R0 supports their documented Router-local scope. |
-| `verified-host` (5) | `sync_runtime_context`, `get_next_work`, `validate_route`, `record_work_event`, `evaluate_gate` | Requires verified Host state, policy, and receipts; local calls fail closed. |
-| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Requires a server-configured adapter, authorization, and applicable attestation. |
-
-### Prepared GA candidate (`prepared-ga-candidate`)
-
-This candidate implements `conditional-local` work, but it is **not included in published beta.3** and is not a released GA version. Its lifecycle remains `prepared-local-candidate`; a later trusted metadata-only promotion must bind `release_source_revision` to this exact reviewed GA candidate SHA before dispatch.
-
-| Source class | Tools | What it means in this checkout |
-| --- | --- | --- |
-| `local-ready` (4) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status` | Unchanged Router-local R0 operations. |
-| `conditional-local` (3) | `get_next_work`, `record_work_event`, `evaluate_gate` | Router-owned graphs and local advisory evidence only; outputs use `authority_mode=router-local` and `host_transition_authorized=false`. |
-| `verified-host` (2) | `sync_runtime_context`, `validate_route` | Host authority remains mandatory. |
-| `configured-adapter` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | Configured-adapter authority remains mandatory. |
-
-Host-authoritative state uses a separate `authority_mode=verified-host`; configured evaluation uses `authority_mode=configured-adapter`. GA does not mean all 12 tools are locally usable.
-
-The conditional boundary is tool- and condition-specific:
+| `local-ready` (10) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status`, `get_memory_status`, `remember_workflow`, `record_route_feedback`, `list_workflow_candidates`, `preview_profile_update`, `purge_workflow_memory` | Local tools still enforce input, policy, and confirmation requirements; readiness is not blanket side-effect authorization. |
+| `conditional-local` (5) | `get_next_work`, `record_work_event`, `evaluate_gate`, `transition_profile_update`, `rollback_profile_revision` | Requires a Router-owned graph or a policy-bound local Profile operation; local work-loop calls report `authority_mode=router-local`. `get_next_work` reports `host_goal_mutated=false`; event and gate calls report `host_transition_authorized=false`. |
+| `verified-host-required` (2) | `sync_runtime_context`, `validate_route` | Verified Host authority remains mandatory. |
+| `configured-adapter-required` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | A configured evaluation adapter and authorization remain mandatory. |
 
 | Condition | `get_next_work` | `record_work_event` | `evaluate_gate` |
 | --- | --- | --- | --- |
@@ -79,8 +73,7 @@ The conditional boundary is tool- and condition-specific:
 - A large request forced into `single` loses phase-specific capability and evidence checks.
 - A copy edit forced into `managed-goal` creates needless state and consent overhead.
 - Reusing one route across phases keeps stale capabilities active after the work changes.
-- In published beta.3, local `get_next_work`, `record_work_event`, and `evaluate_gate` calls require the verified Host.
-- In the prepared GA candidate, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
+- In both `v2.0.2` and development main, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
 - A missing Router-owned graph requests local graph creation or replay; it does not switch to an invented Host path.
 - A corrupt graph returns a sanitized `internal-error`; corruption details stay in internal diagnostics.
 - A passing Router-local gate is only advisory. It does not activate a Skill, authorize a native Goal transition, or grant deployment or production permission.

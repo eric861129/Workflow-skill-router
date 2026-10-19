@@ -1070,7 +1070,7 @@ class LocalWorkLoopTests(unittest.TestCase):
         self.assertEqual("single", plan.routing_envelope)
         self.assertEqual("builtin-fallback", plan.classification.source)
         self.assertEqual(
-            "deterministic-objective-v1",
+            "deterministic-objective-v2",
             plan.classification.classifier_revision,
         )
         self.service.record_work_event(self.record_command(

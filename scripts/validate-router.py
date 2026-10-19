@@ -242,10 +242,10 @@ def validate_readme_public_surface(root: Path, issues: list[str]) -> None:
     if not readme.is_file():
         return
 
-    text = read_text(readme)
+    text = read_text(readme).replace("\\", "/")
     required_snippets = [
         "plugins/workflow-skill-router/runtime/workflow_skill_router.pyz",
-        "starter\\v2\\workflow-skill-router",
+        "starter/v2/workflow-skill-router",
         "site/src/content/docs/guides/install-plugin.md",
         "site/src/content/docs/guides/install-skill.md",
         "release/version.json",

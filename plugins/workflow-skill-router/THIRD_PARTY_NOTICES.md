@@ -4,7 +4,7 @@ The shipped MCP bundle contains the following runtime libraries:
 
 | Package | Version | License | Purpose |
 | --- | --- | --- | --- |
-| `@modelcontextprotocol/sdk` | 1.29.0 | MIT | MCP server transport and protocol implementation |
+| `@modelcontextprotocol/sdk` | 1.32.1 | MIT | MCP server transport and protocol implementation |
 | `zod` | 4.1.12 | MIT | Runtime input validation |
 
 `esbuild` 0.28.1 (MIT) is used only to produce the deterministic MCP bundle and is not shipped as a standalone runtime dependency.

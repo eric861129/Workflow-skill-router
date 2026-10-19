@@ -20,13 +20,23 @@ def version_tuple(value: str) -> tuple[int, int, int]:
 
 
 class PluginDependencySecurityTests(unittest.TestCase):
-    def test_plugin_lockfile_excludes_the_known_vulnerable_fast_uri_range(self) -> None:
+    def test_plugin_lockfile_excludes_reviewed_vulnerable_dependency_ranges(self) -> None:
         lockfile = json.loads(LOCKFILE.read_text(encoding="utf-8"))
-        fast_uri = lockfile["packages"]["node_modules/fast-uri"]["version"]
+        minimum_versions = {
+            "@modelcontextprotocol/sdk": (1, 32, 1),
+            "@hono/node-server": (2, 1, 5),
+            "fast-uri": (3, 1, 8),
+            "proxy-addr": (2, 0, 8),
+            "hono": (4, 13, 13),
+            "ip-address": (10, 7, 4),
+            "qs": (6, 16, 1),
+        }
+        for name, minimum in minimum_versions.items():
+            with self.subTest(package=name):
+                version = lockfile["packages"][f"node_modules/{name}"]["version"]
+                self.assertGreaterEqual(version_tuple(version), minimum)
 
-        self.assertGreaterEqual(version_tuple(fast_uri), (3, 1, 4))
-
-    def test_temporary_mcp_sdk_dependency_exception_has_an_expiry_path(self) -> None:
+    def test_dependency_decision_records_resolved_exception_and_release_gate(self) -> None:
         risk_register = RISK_REGISTER.read_text(encoding="utf-8")
 
         for required in (
@@ -34,8 +44,10 @@ class PluginDependencySecurityTests(unittest.TestCase):
             "@hono/node-server",
             "No HTTP listener or",
             "static-file middleware is started by the Plugin runtime.",
-            "Exit criterion",
-            "2.0.5",
+            "zero findings",
+            "no active dependency exception",
+            "npm audit --omit=dev",
+            "2026-10-19",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, risk_register)

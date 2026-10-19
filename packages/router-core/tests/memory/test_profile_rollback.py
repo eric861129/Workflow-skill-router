@@ -83,6 +83,7 @@ class ProfileRollbackTests(unittest.TestCase):
                     expected_state_version=rollback.state_version,
                     idempotency_key="approve-rollback",
                     correlation_id="corr-approve-rollback",
+                    now="2026-09-04T01:01:00.000Z",
                 )
                 restored = materializer.apply_approved(
                     approved.proposal_id,

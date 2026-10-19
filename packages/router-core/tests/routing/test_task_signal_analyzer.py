@@ -17,12 +17,52 @@ from workflow_skill_router.routing.task_signal_analyzer import analyze_task_sign
 
 
 class TaskSignalAnalyzerTests(unittest.TestCase):
+    def test_chinese_repair_and_verification_are_separate_stages(self) -> None:
+        for objective in ("修復登入錯誤並補上測試", "修正 API 後驗證結果"):
+            with self.subTest(objective=objective):
+                analysis = analyze_task_signals(objective)
+                self.assertEqual(2, analysis.signals.distinct_stages)
+                self.assert_envelope(analysis, RoutingEnvelope.PHASED)
+
+    def test_chinese_requirements_implementation_and_test_sequence(self) -> None:
+        analysis = analyze_task_signals("先釐清需求，再實作 API，最後測試")
+        self.assertEqual(3, analysis.signals.distinct_stages)
+        self.assert_envelope(analysis, RoutingEnvelope.PHASED)
+
+    def test_chinese_cross_project_resumable_work(self) -> None:
+        analysis = analyze_task_signals("跨專案分里程碑執行，保留進度以便恢復")
+        self.assertTrue(analysis.signals.cross_repo)
+        self.assertTrue(analysis.signals.resumable)
+        self.assertEqual(RiskLevel.R0, analysis.signals.risk)
+        self.assert_envelope(analysis, RoutingEnvelope.MANAGED_GOAL)
+
+    def test_recovery_of_application_data_is_not_resumable_work(self) -> None:
+        analysis = analyze_task_signals("修復登入並恢復資料庫備份")
+        self.assertNotIn("resumable-signal", analysis.reason_codes)
+        self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
+
+    def test_negated_strong_signals_do_not_escalate_work(self) -> None:
+        for objective in (
+            "修復登入，不要跨專案，也不需要保留進度",
+            "Plan a change, do not resume or cross-repository migrate",
+            "規劃遷移，不要跨儲存庫，也不要持續執行",
+        ):
+            with self.subTest(objective=objective):
+                analysis = analyze_task_signals(objective)
+                self.assertNotIn("managed-goal-evidence", analysis.reason_codes)
+                self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
+
+    def test_negated_chinese_repair_does_not_add_a_stage(self) -> None:
+        analysis = analyze_task_signals("先釐清需求，不需要修復或測試")
+        self.assertEqual(1, analysis.signals.distinct_stages)
+        self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
+
     def test_required_single_fixture(self) -> None:
         analysis = analyze_task_signals("修正登入頁的空白錯誤")
 
         self.assertEqual(1, analysis.signals.distinct_stages)
         self.assertEqual("low", analysis.confidence)
-        self.assertEqual("deterministic-objective-v1", analysis.classifier_revision)
+        self.assertEqual("deterministic-objective-v2", analysis.classifier_revision)
         self.assertEqual(("single-default",), analysis.reason_codes)
         self.assert_envelope(analysis, RoutingEnvelope.SINGLE)
 

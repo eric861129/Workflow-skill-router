@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-07-21
 
+> Historical decision recorded on 2026-07-21. `v2.0.2` has since shipped the local work loop; development main adds Memory and `deterministic-objective-v2`. Current capability matrices live in the [architecture overview](../architecture/v2-overview.md). The beta/candidate matrices below describe the original decision, not current release status.
+
 ## Context
 
 The Router needs to choose a useful execution envelope without implying that it understands every task semantically. It also needs to expose more Router-owned operations locally without weakening Explicit Skill Lock, consent, verified-Host authority, or configured-adapter authority.

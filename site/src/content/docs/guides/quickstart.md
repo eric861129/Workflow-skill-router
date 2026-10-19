@@ -33,7 +33,7 @@ Explicit Skill Lock:
 Use api-designer only. Do not add support without asking.
 ```
 
-Expected: the named SKILL remains active; proposed outside support requires consent and stays inactive after rejection.
+Expected: the named SKILL remains the primary planned selection; proposed outside support requires consent and stays out of the plan after rejection. A plan alone does not prove actual Skill activation.
 
 Managed Goal:
 
@@ -41,7 +41,7 @@ Managed Goal:
 Continue the migration Goal across API, Web, and docs.
 ```
 
-Expected local behavior: `plan_work` succeeds, `get_next_work` returns typed `capability-unavailable`, and `get_router_status` remains readable. A verified Host integration is required for actual scheduling.
+Expected local behavior depends on the work graph. With a valid Router-owned graph, `get_next_work` can return the next local Work Item with `authority_mode=router-local` and `host_goal_mutated=false`. Scheduling for a bound Native Goal requires verified Host capabilities; without them, the tool returns typed `capability-unavailable`. `get_router_status` remains readable. A local plan or next step does not prove Skill activation or authorize deployment.
 
 ## 4. Try a Personal Routing Profile
 

@@ -33,7 +33,7 @@ Explicit Skill Lock：
 只使用 api-designer。未詢問前不要加入輔助技能。
 ```
 
-預期：指定的 SKILL 保持 active；任何 lock 外的輔助建議都必須取得同意，被拒絕後維持 inactive。
+預期：指定的 SKILL 維持主要規劃選擇；任何指定範圍外的輔助建議都必須取得同意，被拒絕後不納入計畫。計畫本身不能證明 Skill 已實際啟用。
 
 Managed Goal：
 
@@ -41,7 +41,7 @@ Managed Goal：
 繼續跨 API、Web 與 docs 的 migration Goal。
 ```
 
-預期本機行為：`plan_work` 成功、`get_next_work` 回傳 typed `capability-unavailable`，而 `get_router_status` 仍可讀取。真正排程需要 verified Host integration。
+預期本機行為取決於工作圖。有效的 Router-owned graph 可讓 `get_next_work` 回傳下一個本機 Work Item，並標示 `authority_mode=router-local`、`host_goal_mutated=false`。若已綁定 Native Goal，排程仍需要已驗證的 Host 能力；缺少時回傳 typed `capability-unavailable`。`get_router_status` 仍可讀取。本機計畫或下一步不能證明 Skill 已啟用，也不會授予部署權限。
 
 ## 4. 試跑 Personal Routing Profile
 

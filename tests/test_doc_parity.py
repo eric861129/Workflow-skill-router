@@ -18,11 +18,8 @@ SPEC.loader.exec_module(module)
 
 
 class DocumentationParityTests(unittest.TestCase):
-    def test_readmes_present_v2_contract_in_the_required_order(self) -> None:
+    def test_readmes_preserve_v2_contract_in_the_contributor_reference(self) -> None:
         required = [
-            "60-second outcome",
-            "Plugin + MCP",
-            "Skill-only",
             "Runtime Capability Discovery",
             "Single",
             "Phased",
@@ -37,7 +34,9 @@ class DocumentationParityTests(unittest.TestCase):
         for name in ("README.md", "README.zh-TW.md"):
             text = (ROOT / name).read_text("utf-8")
             with self.subTest(readme=name):
-                positions = [text.casefold().find(token.casefold()) for token in required]
+                self.assertIn("<details>", text)
+                reference = text.split("<details>", 1)[1]
+                positions = [reference.casefold().find(token.casefold()) for token in required]
                 self.assertNotIn(-1, positions)
                 self.assertEqual(positions, sorted(positions))
 

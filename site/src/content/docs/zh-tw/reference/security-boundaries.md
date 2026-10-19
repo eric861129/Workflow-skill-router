@@ -29,7 +29,7 @@ R0 local planning 可在 bundled control plane 執行。R1 需要更嚴格的 ru
 
 ## 相依套件決策
 
-Plugin lockfile 會先排除已知的 High 與 Critical 相依套件風險，才接受新的 release candidate。目前 MCP SDK 的間接 HTTP adapter 仍有一項由上游追蹤的 Moderate 例外；其暴露邊界與移除條件已記錄在 [Plugin 相依套件安全決策](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md)。Plugin 本身只啟動 MCP stdio transport，不會啟動 HTTP listener。
+Plugin lockfile 會先排除已知的 High 與 Critical 相依套件風險，才接受新的 release candidate。開發中 lockfile 已解決原有 Moderate 例外，2026-10-19 的正式執行依賴掃描結果為零弱點；此結果的日期與回歸檢查已記錄在 [Plugin 相依套件安全決策](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md)。Plugin 本身只啟動 MCP stdio transport，不會啟動 HTTP listener。
 
 ## 回報弱點
 

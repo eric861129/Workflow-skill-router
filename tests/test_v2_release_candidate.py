@@ -84,8 +84,8 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
         if version["release_lifecycle"] == "reviewed-attested-publishable":
-            self.assertIn("Current published V2 release: `2.0.2`", english)
-            self.assertIn("目前已發布的 V2 正式版：`2.0.2`", traditional_chinese)
+            self.assertIn(f"The published release is **v{GA_VERSION}**", english)
+            self.assertIn(f"已發布版本為 **v{GA_VERSION}**", traditional_chinese)
             self.assertIn("## 2.0.2", changelog)
             self.assertNotIn("## 2.0.2 (prepared", changelog)
             return

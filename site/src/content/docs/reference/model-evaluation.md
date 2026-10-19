@@ -6,10 +6,7 @@ title: Real model evaluation boundary
 
 ## Frozen GA-candidate Pilot boundary
 
-The local-work-loop and Host conformance protocols are frozen as
-`protocol-frozen-awaiting-real-pilot`. No real Pilot task has been executed or
-counted. Published beta.3 remains the historical public snapshot; `v2.0.0` is
-the prepared GA candidate and is not yet released.
+The published release is `v2.0.2`. Its attestation inherits the bounded `gpt-5.6-sol` evidence from `v2.0.0`; it does not establish a new model qualification. The later real local-work-loop and Host Pilots remain `protocol-frozen-awaiting-real-pilot`. No real Pilot task has been counted. Current-source Memory fixtures are not real-model evidence.
 
 The local protocol requires at least twenty real tasks: 6 Single, 8 Phased, and
 6 Goal-like, including at least 8 Profile-backed tasks. Before the first task,
@@ -85,7 +82,7 @@ synonym misses, `profile preview --explain` rules out deterministic
 configuration causes, and a server-configured advisory-only adapter exists.
 No Pilot data means the gate is unmet, not a negative performance claim.
 
-**Tier 0 Contract** checks deterministic compatibility. Behavior and Outcome require fresh isolated attempts, sealed scoring, paired manifests, and zero hard violations. Without an adapter the run is `manual-required`; without a trusted human attestation the export is `review-required` and contains no score.
+**Tier 0 Contract** checks deterministic compatibility. Behavior and Outcome require fresh isolated attempts, sealed scoring, paired manifests, and zero hard violations. Without an adapter the run is `manual-required`; without a trusted human attestation the export is `review-required` and contains no public composite score or claim of reviewed qualification. Sanitized counts and match rates remain review-required diagnostics.
 
 Neither `skill-only-fallback` nor `hybrid-full` may self-assert review authority.
 
@@ -95,7 +92,9 @@ Every run requires a missing or empty output root. Preflight rejects any existin
 
 The public report exposes safe case-level diagnostics: counts, match rates, and paired deltas only. Prompts, expected or actual Skill values, rationales, and route payloads remain restricted.
 
-Contract `workflow-skill-router.behavior-routing@2.3.0` keeps the full suite at 13 cases and the beta smoke at six cases. Existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode`; `profile-explain-miss` replaces `evaluation-manual-required`. The smoke still has one two-turn scoped-consent case, preserving 36 attempts and 42 model turns. Historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
+Current-source 2.3.1 clarifies existing phased-workflow and absent Native Goal binding preconditions. Historical 2.3.0 reports are not rescored. Exploratory `--screening` results are not qualification: distinguish final route field matches from the full evidence-contract match rate.
+
+Contract `workflow-skill-router.behavior-routing@2.3.1` keeps the full suite at 13 cases and the beta smoke at six cases. Existing Single, Phased, and Managed Goal structural cases now omit `requested_work_mode`; `profile-explain-miss` replaces `evaluation-manual-required`. The smoke still has one two-turn scoped-consent case, preserving 36 attempts and 42 model turns. Historical 2.2.0 reports retain their original case and instruction digests and are never rescored.
 
 The contract scores public-safe classification source/reason codes, local authority, Profile explain, and unnecessary consent. Goal-bound local mutation, local output that claims activation, direct semantic-candidate persistence, and missing or invalid required evidence are hard violations. Every turn must include the evidence object using the shared public non-oracle vocabulary; it never includes raw prompts, instruction bodies, Profile contents, paths, or scoring expectations. Attempt identity binds the nonce, tool inventory, instruction digest, public case payload digest, model/reference-driver version, and an irreversible scorer-side digest of the private oracle and scoring policy. Resume rejects a transcript produced under a different scoring digest.
 
