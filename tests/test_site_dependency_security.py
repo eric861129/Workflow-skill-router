@@ -18,12 +18,21 @@ def version_tuple(value: str) -> tuple[int, int, int]:
 
 
 class SiteDependencySecurityTests(unittest.TestCase):
+    def test_locked_image_pipeline_includes_reviewed_security_fixes(self) -> None:
+        lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
+        for name, minimum in (("astro", (7, 2, 8)), ("sharp", (0, 35, 5))):
+            with self.subTest(package=name):
+                self.assertGreaterEqual(
+                    version_tuple(lock["packages"][f"node_modules/{name}"]["version"]),
+                    minimum,
+                )
+
     def test_site_declares_astro_security_floor(self) -> None:
         package = json.loads(PACKAGE.read_text(encoding="utf-8"))
 
         self.assertGreaterEqual(
             version_tuple(package["dependencies"]["astro"].lstrip("^~")),
-            (7, 1, 3),
+            (7, 2, 8),
         )
 
     def test_site_declares_starlight_version_compatible_with_astro_7(self) -> None:

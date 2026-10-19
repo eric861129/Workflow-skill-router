@@ -9,7 +9,7 @@ import unicodedata
 from workflow_skill_router.routing.models import TaskSignals
 
 
-_CLASSIFIER_REVISION = "deterministic-objective-v1"
+_CLASSIFIER_REVISION = "deterministic-objective-v2"
 _MAX_OBJECTIVE_LENGTH = 4096
 _STRONG_TAGS = {
     "cross-repo": "cross-repository-signal",
@@ -18,14 +18,16 @@ _STRONG_TAGS = {
     "dependency-dag": "dependency-signal",
 }
 _STRONG_PATTERNS = {
-    "cross-repo": re.compile(r"\bcross[-\s]?repositor(?:y|ies)\b|跨(?:儲存庫|倉庫)"),
-    "resumable": re.compile(r"\b(?:resumable|long[-\s]?running|resume)\b|(?:可續|持續)"),
+    "cross-repo": re.compile(r"\bcross[-\s]?repositor(?:y|ies)\b|跨(?:儲存庫|倉庫|專案)"),
+    "resumable": re.compile(
+        r"\b(?:resumable|long[-\s]?running|resume)\b|(?:可續|持續|續作|保留進度|恢復(?:工作|任務|進度))"
+    ),
     "milestone": re.compile(r"\bmilestones?\b|里程碑"),
     "dependency-dag": re.compile(r"\bdependency[-\s]?(?:dag|graph)\b|相依(?:性)?(?:圖|工作|dag)"),
 }
 _ACTION_PATTERNS = {
-    "plan": re.compile(r"\b(?:plan|analyze|analyse)\b|(?:規劃|分析|盤點)"),
-    "implement": re.compile(r"\b(?:implement|build|develop|code)\b|(?:實作|開發)"),
+    "plan": re.compile(r"\b(?:plan|analyze|analyse)\b|(?:規劃|分析|盤點|釐清需求)"),
+    "implement": re.compile(r"\b(?:implement|build|develop|code|fix|repair)\b|(?:實作|開發|修復|修正)"),
     "test": re.compile(r"\b(?:test|verify|validate)\b|(?:測試|驗證)"),
     "document": re.compile(
         r"\b(?:document|write\s+(?:documentation|docs))\b|(?:撰寫文件|文件化|更新文件)"
@@ -204,7 +206,12 @@ def _find_strong_evidence(objective: str, tags: frozenset[str]) -> frozenset[str
     return frozenset(
         tag
         for tag, pattern in _STRONG_PATTERNS.items()
-        if tag in tags or pattern.search(objective)
+        if tag in tags or any(
+            not _is_negated_occurrence(
+                objective, _ActionOccurrence(tag, match.start(), match.end())
+            )
+            for match in pattern.finditer(objective)
+        )
     )
 
 

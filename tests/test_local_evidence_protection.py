@@ -64,7 +64,10 @@ class LocalEvidenceProtectionTests(unittest.TestCase):
         completed = subprocess.CompletedProcess([], 0, "{}", "")
         with patch.dict(
             os.environ,
-            {"WORKFLOW_ROUTER_TEST_SECRET": "must-not-leak"},
+            {
+                "WORKFLOW_ROUTER_TEST_SECRET": "must-not-leak",
+                "PSModulePath": "C:/untrusted-or-incompatible/modules",
+            },
         ), patch.object(local_evidence, "_RUN_PROCESS", return_value=completed) as run:
             LocalEvidenceProtector._run_powershell(
                 "Write-Output '{}'",
@@ -79,6 +82,10 @@ class LocalEvidenceProtectionTests(unittest.TestCase):
             Path(environment["WSR_EVIDENCE_PATH"]).as_posix(),
         )
         self.assertEqual("file", environment["WSR_EVIDENCE_KIND"])
+        self.assertEqual(
+            str(LocalEvidenceProtector._powershell_executable().parent / "Modules"),
+            environment["PSModulePath"],
+        )
         self.assertTrue(set(environment).issubset({
             "ComSpec", "LOCALAPPDATA", "PATH", "PATHEXT", "PSModulePath", "SystemRoot",
             "TEMP", "TMP", "USERPROFILE", "WINDIR", "WSR_EVIDENCE_KIND",
@@ -158,7 +165,11 @@ class LocalEvidenceProtectionTests(unittest.TestCase):
             encoding="utf-8",
             capture_output=True,
             check=False,
-            env={**os.environ, "WSR_EVIDENCE_PATH": str(path)},
+            env={
+                **os.environ,
+                "PSModulePath": str(powershell.parent / "Modules"),
+                "WSR_EVIDENCE_PATH": str(path),
+            },
         )
         if result.returncode != 0:
             raise AssertionError(result.stderr)

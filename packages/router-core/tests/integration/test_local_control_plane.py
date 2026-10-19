@@ -68,7 +68,7 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual("mcp-local-control-plane", result.runtime_mode)
         self.assertEqual("caller-work-mode-hint", result.classification.source)
         self.assertEqual(
-            "deterministic-objective-v1",
+            "deterministic-objective-v2",
             result.classification.classifier_revision,
         )
         self.assertNotIn("修正小型文件問題", self.database.read_text("utf-8", errors="ignore"))
@@ -113,7 +113,7 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual("deterministic-analyzer", result.classification.source)
         self.assertEqual("high", result.classification.confidence)
         self.assertEqual(
-            "deterministic-objective-v1",
+            "deterministic-objective-v2",
             result.classification.classifier_revision,
         )
         self.assertEqual(
@@ -364,7 +364,7 @@ class LocalControlPlaneTests(unittest.TestCase):
 
         with patch(
             "workflow_skill_router.routing.task_signal_analyzer._CLASSIFIER_REVISION",
-            "deterministic-objective-v2",
+            "deterministic-objective-future",
         ):
             replay = self.service.plan_work(command)
             new_plan = self.service.plan_work(self.command(
@@ -372,10 +372,10 @@ class LocalControlPlaneTests(unittest.TestCase):
                 idempotency_key="classifier-new-plan",
             ))
 
-        self.assertEqual("deterministic-objective-v1", first.classification.classifier_revision)
+        self.assertEqual("deterministic-objective-v2", first.classification.classifier_revision)
         self.assertEqual(first.classification, replay.classification)
         self.assertEqual(
-            "deterministic-objective-v2",
+            "deterministic-objective-future",
             new_plan.classification.classifier_revision,
         )
 
@@ -418,7 +418,7 @@ class LocalControlPlaneTests(unittest.TestCase):
         revised_analysis = TaskSignalAnalysis(
             signals=TaskSignals(distinct_stages=2),
             confidence="medium",
-            classifier_revision="deterministic-objective-v2",
+            classifier_revision="deterministic-objective-future",
             reason_codes=("multi-action-family",),
         )
 
@@ -434,7 +434,7 @@ class LocalControlPlaneTests(unittest.TestCase):
         self.assertEqual(first, replay)
         self.assertEqual("profile-route", replay.classification.source)
         self.assertEqual(
-            "deterministic-objective-v1",
+            "deterministic-objective-v2",
             replay.classification.classifier_revision,
         )
         self.assertIsNotNone(replay.routing_profile_digest)

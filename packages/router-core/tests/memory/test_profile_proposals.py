@@ -34,7 +34,7 @@ class ProfileProposalTests(unittest.TestCase):
                 self.assertEqual("pending", proposal.status)
                 self.assertEqual("missing", proposal.expected_profile_digest)
                 self.assertRegex(proposal.proposal_digest, r"^sha256:[0-9a-f]{64}$")
-                approved = transition_profile_update(store, proposal.proposal_id, action="approve", expected_state_version=1, idempotency_key="approve-1", correlation_id="corr-1")
+                approved = transition_profile_update(store, proposal.proposal_id, action="approve", expected_state_version=1, idempotency_key="approve-1", correlation_id="corr-1", now="2026-09-04T00:01:00.000Z")
                 self.assertEqual("approved", approved.status)
                 self.assertEqual(2, approved.state_version)
                 self.assertIsNotNone(store.load_profile_update_proposal(proposal.proposal_id))
@@ -51,11 +51,11 @@ class ProfileProposalTests(unittest.TestCase):
             with store:
                 candidate = CandidateEngine(store, policy).rebuild(MemoryScope.PERSONAL, "2026-09-04T00:00:00.000Z")[0]
                 proposal = create_profile_update_proposal(store, candidate, current_profile=None, policy=policy, now="2026-09-04T00:00:00.000Z")
-                first = transition_profile_update(store, proposal.proposal_id, action="reject", expected_state_version=1, idempotency_key="decision", correlation_id="corr")
-                replay = transition_profile_update(store, proposal.proposal_id, action="reject", expected_state_version=1, idempotency_key="decision", correlation_id="corr")
+                first = transition_profile_update(store, proposal.proposal_id, action="reject", expected_state_version=1, idempotency_key="decision", correlation_id="corr", now="2026-09-04T00:01:00.000Z")
+                replay = transition_profile_update(store, proposal.proposal_id, action="reject", expected_state_version=1, idempotency_key="decision", correlation_id="corr", now="2026-09-04T00:02:00.000Z")
                 self.assertEqual(first.to_dict(), replay.to_dict())
                 with self.assertRaisesRegex(ProfileProposalError, "idempotency-conflict"):
-                    transition_profile_update(store, proposal.proposal_id, action="approve", expected_state_version=1, idempotency_key="decision", correlation_id="corr")
+                    transition_profile_update(store, proposal.proposal_id, action="approve", expected_state_version=1, idempotency_key="decision", correlation_id="corr", now="2026-09-04T00:02:00.000Z")
 
 
 if __name__ == "__main__":

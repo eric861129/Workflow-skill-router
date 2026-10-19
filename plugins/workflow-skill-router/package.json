@@ -14,7 +14,9 @@
     "url": "https://github.com/eric861129/Workflow-skill-router/issues"
   },
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "node ./scripts/build-mcp.mjs",
     "test": "node ./scripts/build-mcp.mjs --tests && node --test ./.test-build/*.test.mjs",
@@ -24,8 +26,11 @@
   },
   "dependencies": {
     "@cfworker/json-schema": "4.1.1",
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "zod": "4.1.12"
   },
-  "devDependencies": { "esbuild": "0.28.1", "fast-check": "4.9.0" }
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "fast-check": "4.9.0"
+  }
 }

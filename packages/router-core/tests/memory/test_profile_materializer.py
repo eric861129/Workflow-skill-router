@@ -66,6 +66,7 @@ def prepare_approved(root: Path, *, mode: str = "reviewed"):
         expected_state_version=proposal.state_version,
         idempotency_key="approve-materialization",
         correlation_id="corr-approve-materialization",
+        now="2026-09-04T00:00:00.000Z",
     )
     return fixture, policy, store, candidate, proposal
 
@@ -288,6 +289,7 @@ class ProfileMaterializerTests(unittest.TestCase):
                     expected_state_version=proposal.state_version,
                     idempotency_key="approve-workspace-managed",
                     correlation_id="corr-approve-workspace-managed",
+                    now="2026-09-04T00:01:00.000Z",
                 )
                 materializer = ProfileMaterializer(store, root, policy)
                 revision = materializer.apply_approved(
