@@ -1,8 +1,9 @@
 name: OpenSSF Scorecard
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    # 每週一台灣時間 09:23，避開整點的排程尖峰。
+    - cron: '23 1 * * 1'
   workflow_dispatch:
 
 permissions:
