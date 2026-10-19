@@ -21,7 +21,9 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
 2. 原生 Goal progress 或 steer 決定外層 `managed-goal` envelope。
 3. 對獨立請求或目前 Work Item，依序由 `requested_work_mode`、deterministic analyzer、deterministic Profile route 與 builtin fallback 選擇內層 envelope。
 
-結構分析器會記錄 `classifier_revision: deterministic-objective-v1`、`classification_source` 與 `classification_reason_codes`。它只分析階段、依賴與可續作性等有界結構訊號，不宣稱能理解所有工作的語意；分類也絕不授權 Skill、工具或 side effect。Semantic adapter 可以提出供審查的候選結果，但不能直接改寫已持久化的路由。
+結構分析器會記錄 `classifier_revision: deterministic-objective-v2`、`classification_source` 與 `classification_reason_codes`。它只分析階段、依賴與可續作性等有界結構訊號，不宣稱能理解所有工作的語意；分類也絕不授權 Skill、工具或 side effect。Semantic adapter 可以提出供審查的候選結果，但不能直接改寫已持久化的路由。
+
+目前 `deterministic-objective-v2` 增加「修復／修正」「釐清需求」「跨專案」「保留進度」等結構訊號，並排除否定的長期工作訊號。既有紀錄保留建立時的分類版本，重播不重新分類。
 
 <a id="example"></a>
 ## State、input 與 output 範例
@@ -32,7 +34,7 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
   "decision": {
     "execution_kind": "routed-work",
     "envelope": "phased",
-    "classifier_revision": "deterministic-objective-v1",
+    "classifier_revision": "deterministic-objective-v2",
     "classification_source": "deterministic-analyzer",
     "classification_reason_codes": ["multiple-distinct-stages"]
   },
@@ -43,28 +45,20 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
 <a id="runtime-readiness"></a>
 ## Runtime readiness
 
-### 已發布 beta.3（`published-beta.3`）
+### 已發布版本（`published-v2.0.2`）
 
-| 目前類別 | 工具 | 意義 |
+`v2.0.2` 有 12 個工具：**4 always local-ready + 3 Router-owned conditional-local**、2 個 verified-Host-required，以及 3 個 configured-adapter-required。發布版已包含本機工作迴圈，但不包含後續的 Adaptive Workflow Memory。
+
+### 開發中主分支（`development-main`）
+
+主分支增加 8 個 Memory 工具，合計 20 個；Memory 預設關閉。下表描述目前原始碼，不能用它推定已安裝發布版的能力。
+
+| Availability | Tools | 條件 |
 | --- | --- | --- |
-| `local-ready`（4） | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | bundled R0 支援其文件定義的 Router-local 範圍。 |
-| `verified-host`（5） | `sync_runtime_context`、`get_next_work`、`validate_route`、`record_work_event`、`evaluate_gate` | 必須具備經驗證的 Host 狀態、政策與 receipt；本機呼叫會 fail closed。 |
-| `configured-adapter`（3） | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | 必須具備伺服器端設定的 adapter、授權與適用的 attestation。 |
-
-### 已準備的 GA candidate（`prepared-ga-candidate`）
-
-此 candidate 已實作 `conditional-local` work，但它 **not included in published beta.3**，也不代表 GA 已發布。它維持 `prepared-local-candidate` lifecycle；後續受信任的 metadata-only promotion 必須把 `release_source_revision` 綁定到這個 exact reviewed GA candidate SHA，才可 dispatch。
-
-| Source 類別 | 工具 | 此 checkout 中的意義 |
-| --- | --- | --- |
-| `local-ready`（4） | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | 維持既有 Router-local R0 操作。 |
-| `conditional-local`（3） | `get_next_work`、`record_work_event`、`evaluate_gate` | 僅限 Router 自有 work graph 與本機 advisory evidence；輸出使用 `authority_mode=router-local` 與 `host_transition_authorized=false`。 |
-| `verified-host`（2） | `sync_runtime_context`、`validate_route` | Host 權威仍為必要條件。 |
-| `configured-adapter`（3） | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | configured-adapter 權威仍為必要條件。 |
-
-Host 權威狀態使用獨立的 `authority_mode=verified-host`；設定式評估使用 `authority_mode=configured-adapter`。GA 並不代表 12 項工具全部可在本機使用。
-
-Conditional boundary 會依工具與情況分開處理：
+| `local-ready` (10) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status`, `get_memory_status`, `remember_workflow`, `record_route_feedback`, `list_workflow_candidates`, `preview_profile_update`, `purge_workflow_memory` | 本機工具仍須通過個別輸入、Policy 與確認條件；local-ready 不等於所有副作用都已獲准。 |
+| `conditional-local` (5) | `get_next_work`, `record_work_event`, `evaluate_gate`, `transition_profile_update`, `rollback_profile_revision` | 依工具檢查 Router 自有工作圖或受 Policy 約束的本機 Profile；本機工作迴圈回傳 `authority_mode=router-local`。`get_next_work` 回傳 `host_goal_mutated=false`；事件與閘門呼叫則回傳 `host_transition_authorized=false`。 |
+| `verified-host-required` (2) | `sync_runtime_context`, `validate_route` | 必須具備已驗證的 Host 權威。 |
+| `configured-adapter-required` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | 必須具備已設定的評估介面與授權。 |
 
 | 情況 | `get_next_work` | `record_work_event` | `evaluate_gate` |
 | --- | --- | --- | --- |
@@ -79,8 +73,7 @@ Conditional boundary 會依工具與情況分開處理：
 - 大型需求被迫塞進 `single` 時，會遺失 phase-specific capability 與 evidence checks。
 - 小型 copy edit 被塞進 `managed-goal` 時，會產生不必要的 state 與 consent overhead。
 - 跨 Phase 重用單一路由，會在工作改變後保留 stale capabilities。
-- 在已發布 beta.3 中，本機呼叫 `get_next_work`、`record_work_event` 或 `evaluate_gate` 仍需要 verified Host。
-- 在尚未發布的 source checkout 中，Native Goal work 依各工具的 verified Host capability fail closed，且不修改原生 Codex Goal。
+- 在 `v2.0.2` 與開發中主分支中，Native Goal work 依各工具的 verified Host capability fail closed，且不修改原生 Codex Goal。
 - 缺少 Router-owned graph 時要求在本機建立或 replay，不會捏造 Host 路徑。
 - Graph 損毀時只回傳已清理的 `internal-error`，損毀細節留在內部 diagnostics。
 - Router-local gate 通過只代表 advisory gate，不會啟用 Skill、不會授權原生 Goal transition，也不會授予部署或正式環境權限。

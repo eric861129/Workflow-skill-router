@@ -8,246 +8,286 @@ const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflo
 const isZh = locale === 'zh-tw';
 const alternateLocalePath = isZh ? '/Workflow-skill-router/' : '/Workflow-skill-router/zh-tw/';
 const alternateLocaleLabel = isZh ? 'EN' : '繁中';
-const localeSwitchLabel = isZh ? '切換到英文版' : 'Switch to Traditional Chinese';
+const localeSwitchLabel = isZh ? 'EN：切換到英文版' : '繁中: Switch to Traditional Chinese';
 const themeToggleLabel = isZh ? '切換深淺模式' : 'Toggle color theme';
 const themeLabels = isZh
   ? { light: '淺色', dark: '深色' }
   : { light: 'Light', dark: 'Dark' };
 
 const text = {
-  en: {
-    nav: ['Runtime', 'Envelopes', 'Evidence'],
-    navLinks: ['#why-it-works', '#examples', '#validator'],
-    star: 'View on GitHub',
-    quickstart: 'V2 quickstart',
-    downloadBlank: 'Install Plugin + MCP',
-    download: 'Install V2',
-    showcase: 'Routing showcase',
-    gifAlt: 'A fuzzy request becoming a small routing output',
-    heroTitle: 'Runtime-aware routing before the work begins',
-    heroCopy:
-      'Bring your own Skill Tree. V2 applies personal and workspace routing preferences, then chooses a Single, Phased, or Managed Goal envelope from current runtime evidence.',
-    positioningLabel: 'Positioning',
-    positioningTitle: 'A routing control plane, not a permission system',
-    positioningCopy:
-      'It does not replace Host permissions, approval policies, native Goal state, or tool controls. It plans only from capabilities that current evidence can justify.',
-    routeLabel: 'Routing output',
-    route:
-      'Route: Frontend / Vue / UI > Browser regression > Rendered behavior\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert handles component reactivity; systematic-debugging isolates the cause; playwright captures the regression.',
-    introTitle: 'Discover what can actually run before routing',
-    introCopy:
-      'V2 separates installed metadata, Host exposure, authorization, policy eligibility, freshness, and risk. A local file or cached observation never becomes runtime authority by itself.',
-    introLink: 'Read Runtime Capability Discovery',
-    processLabel: 'How V2 routes work',
-    processSteps: [
+  "en": {
+    "nav": [
+      "Why use it",
+      "How it works",
+      "Evidence"
+    ],
+    "navLinks": [
+      "#why-it-works",
+      "#examples",
+      "#validator"
+    ],
+    "star": "View on GitHub",
+    "download": "Get started",
+    "showcase": "Inspect recorded routes",
+    "introTitle": "Your Skills need a workflow you can reuse",
+    "introCopy": "As your Skill library grows, you keep deciding which Skill should lead, when another should help, and what belongs in the next phase. Codex can make these choices. The Router lets you make your preferred process explicit, inspect it, and reuse it across tasks.",
+    "introLink": "Define your own routing profile",
+    "processLabel": "Why the Router is designed this way",
+    "processSteps": [
       [
-        'Work envelope',
-        'Choose Single, Phased, or Managed Goal',
-        'The Router classifies dependencies, verification boundaries, resume needs, and Goal relation before selecting capabilities.',
+        "Focus",
+        "Give each phase one primary Skill",
+        "Select only the support needed now. Keep implementation and deployment out of a phase that is still about planning."
       ],
       [
-        'Your Skill Tree',
-        'Apply Personal Routing Profiles',
-        'Workspace and personal preferences become deterministic intended routes without bypassing runtime discovery.',
+        "Your workflow",
+        "Make repeated choices reusable",
+        "Personal and workspace profiles map tasks to the Skills and completion checks you prefer."
       ],
       [
-        'User authority',
-        'Preserve Explicit Skill Lock',
-        'Named SKILLs remain authoritative. Support outside the lock stays inactive until the user accepts it.',
+        "Your choices",
+        "Respect the Skill you name",
+        "Keep an explicitly named Skill in charge. Adding support outside that choice requires your consent."
       ],
       [
-        'Runtime evidence',
-        'Activate only what current proof allows',
-        'Every selected capability keeps its exposure, authorization, policy, freshness, and risk boundary visible.',
+        "Available capabilities",
+        "Distinguish a plan from execution",
+        "Show missing capabilities and runtime limits. A planned Skill is not proof that it was activated."
+      ]
+    ],
+    "processNoteTitle": "A useful fit when process matters",
+    "processNote": "Use it for overlapping Skills, repeated team workflows, or work that crosses phases and projects. For a small task with a clear Skill choice, extra configuration may add little value.",
+    "contractLink": "Read the routing rules",
+    "templateLink": "Explore the three work modes",
+    "examplesTitle": "Start small. Add structure when the work needs it.",
+    "examplesCopy": "The Router reads the task, applies your workflow preferences, and reports the plan and its limits. Codex and the selected Skills still do the work.",
+    "templateCode": "Your request + workflow preferences\n→ Current phase and intended Skills\n→ Available capabilities, limits, and next step",
+    "templateHighlights": [
+      [
+        "Single",
+        "One bounded task, such as diagnosing a bug, with only the Skills needed for that task."
       ],
+      [
+        "Phased",
+        "Plan, implement, and verify separately. Reconsider the Skill selection at each phase."
+      ],
+      [
+        "Managed Goal",
+        "Keep a local work graph for dependencies and resuming work. Native Codex Goal integration still needs host support."
+      ]
     ],
-    processNoteTitle: 'The result is inspectable before and after execution',
-    processNote:
-      'The Router declares planned SKILL usage before work, records typed runtime results, and discloses actual usage at completion.',
-    contractLink: 'View routing contract',
-    templateLink: 'Compare routing envelopes',
-    examplesTitle: 'One Router, three work envelopes',
-    examplesCopy:
-      'Small work stays small, multi-stage work reroutes at phase gates, and durable dependency graphs bind to a Host-owned Goal without pretending local authority.',
-    templateHighlights: [
-      ['Single', 'One bounded outcome, one verification path, and the smallest justified SKILL set.'],
-      ['Phased', 'Each phase selects from fresh evidence and must pass its own verification gate.'],
-      ['Managed Goal', 'Durable Work Items and dependencies, while native Goal mutation remains Host-owned.'],
+    "outcomesTitle": "Choose the level you need",
+    "outcomes": [
+      [
+        "Standalone Skill",
+        "Routing instructions for Codex. No local MCP state machine or persistent consent records."
+      ],
+      [
+        "Plugin + MCP",
+        "Routing instructions plus local plans, state, and consent records. Requires Node.js 24+ and Python 3.11+."
+      ],
+      [
+        "Host integration",
+        "Native Goal scheduling and verified execution depend on additional host capabilities. Installing the Plugin alone does not provide them."
+      ],
+      [
+        "Your specialist Skills",
+        "Install the Skills your workflow references separately. The Router does not bundle every specialist or switch your model."
+      ]
     ],
-    templateCode:
-      'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
-    outcomesTitle: 'Designed for trustworthy outcomes',
-    outcomes: [
-      ['Own the route', 'Define repeatable personal or workspace Skill Trees without turning them into executable prompts.'],
-      ['Less context noise', 'Automatic routing stays minimal and does not add a consent ceremony when no SKILL was named.'],
-      ['Honest degradation', 'Unavailable Host or adapter capabilities return typed fallbacks instead of simulated success.'],
-      ['Auditable execution', 'Sanitized traces show what was planned, called, rejected, and actually used.'],
+    "validatorTitle": "What the tests show so far",
+    "validatorCopy": "On 2026-10-19, we compared routing with and without the Router using GPT-6.1 Sol, GPT-6 Astra, and GPT-6 Luna at medium reasoning. The six-case exploration showed some more consistent workflow decisions. It did not execute development tasks or measure code quality.",
+    "validatorEvidenceNote": "After clarifying ambiguous case assumptions and updating the instructions, only Sol was retested. These single-run observations do not establish repeatability, formal model qualification, or full Plugin/host integration. The complete instruction package increased input tokens; lower cost and faster delivery have not been demonstrated.",
+    "proofStats": [
+      [
+        "6",
+        "routing cases"
+      ],
+      [
+        "1",
+        "run per case and arm"
+      ],
+      [
+        "26–28%",
+        "more input tokens in this setup"
+      ]
     ],
-    validatorTitle: 'Evidence before claims',
-    validatorCopy:
-      'Contract fixtures prove compatibility. Runtime traces prove bundled execution. Real Model Evaluation requires fresh paired attempts, explicit quota authorization, review, and attestation.',
-    validatorEvidenceNote:
-      'Evidence boundary: 36 attempts and 42 model turns are historical beta.1 evidence. Personal Routing Profiles and beta.2 currently have deterministic contract, integration, security, and package evidence only.',
-    proofStats: [
-      ['12', 'typed MCP tools'],
-      ['4', 'local-ready tools'],
-      ['36', 'beta.1 attempts · 42 model turns'],
-    ],
-    validatorCommand: `# Inspect truthful runtime readiness
-python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
-
-# Verify generated MCP contracts and V2 docs
-node scripts/build-mcp-reference-data.mjs --check
-python scripts/check-doc-parity.py
-
-# Run repository tests
-$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
-python -m unittest discover -s packages/router-core/tests -v
-python -m unittest discover -s tests -v`,
-    finalTitle: 'Make runtime-aware skill routing reusable',
-    finalCopy:
-      'Install the Plugin + MCP runtime, or load the standalone SKILL when your Host supports instructions only.',
+    "validatorCommand": "# Published release: v2.0.2\ncodex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2\ncodex plugin add workflow-skill-router@workflow-skill-router\ncodex plugin list",
+    "releaseTitle": "Start with the published release",
+    "releaseCopy": "v2.0.2 contains the routing instructions and local MCP runtime. Development main includes additional work, such as opt-in Workflow Memory, that is not in this release. The current exploration does not qualify v2.0.2.",
+    "evidenceLink": "Read the evaluation method and limits",
+    "finalTitle": "Bring your workflow. Inspect the route.",
+    "finalCopy": "Start with the published package, check the available capabilities, and decide whether the routing fits your work. The code and routing rules are open source under the MIT License."
   },
-  'zh-tw': {
-    nav: ['Runtime', 'Envelopes', 'Evidence'],
-    navLinks: ['#why-it-works', '#examples', '#validator'],
-    star: '查看 GitHub',
-    quickstart: 'V2 快速開始',
-    downloadBlank: '安裝 Plugin + MCP',
-    download: '安裝 V2',
-    showcase: '案例展示',
-    gifAlt: '模糊需求轉成小而可檢查 routing output 的短動畫',
-    heroTitle: '工作開始前，先用 runtime evidence 決定 route',
-    heroCopy:
-      '帶入自己的 Skill Tree。V2 先套用 personal 與 workspace 路由偏好，再依目前 runtime evidence 選擇 Single、Phased 或 Managed Goal envelope。',
-    positioningLabel: '專案定位',
-    positioningTitle: '它是 routing control plane，不是權限系統',
-    positioningCopy:
-      '它不取代 Host permissions、approval policies、native Goal state 或 tool controls，只會依目前證據規劃可被合理使用的 capabilities。',
-    routeLabel: 'Routing output',
-    route:
-      'Route: 前端 / Vue / UI > 瀏覽器回歸 > 畫面呈現行為\nUse SKILL: vue-expert, systematic-debugging, playwright\nReason: vue-expert 處理 component 與 reactivity；systematic-debugging 釐清真正原因；playwright 補上可重複的回歸驗證。',
-    introTitle: 'Routing 前先確認什麼真的能執行',
-    introCopy:
-      'V2 會分開判斷 installed metadata、Host exposure、authorization、policy eligibility、freshness 與 risk。本機檔案或 cached observation 不會自行變成 runtime authority。',
-    introLink: '閱讀 Runtime Capability Discovery',
-    processLabel: 'V2 routing 流程',
-    processSteps: [
+  "zh-tw": {
+    "nav": [
+      "為何使用",
+      "如何運作",
+      "實測證據"
+    ],
+    "navLinks": [
+      "#why-it-works",
+      "#examples",
+      "#validator"
+    ],
+    "star": "查看 GitHub",
+    "download": "開始使用",
+    "showcase": "查看既有路由紀錄",
+    "introTitle": "讓常用的 Skills 有一套可重用的工作流程",
+    "introCopy": "Skills 越裝越多，你也需要反覆決定由誰主導、何時需要支援，以及哪些工作留到下一階段。Codex 可以自行判斷；Router 讓你把偏好的流程明確定義、檢查後，在不同任務中重複使用。",
+    "introLink": "設定自己的路由規則",
+    "processLabel": "為什麼這樣設計",
+    "processSteps": [
       [
-        '工作 envelope',
-        '選擇 Single、Phased 或 Managed Goal',
-        'Router 先判斷 dependencies、verification boundaries、resume needs 與 Goal relation，再選擇 capabilities。',
+        "聚焦當下",
+        "每個階段由一個主要 Skill 負責",
+        "只選擇目前需要的支援。還在規劃時，就先聚焦規劃，將實作與部署留到對應階段。"
       ],
       [
-        '你的 Skill Tree',
-        '套用 Personal Routing Profile',
-        'Workspace 與 personal 偏好會成為 deterministic intended route，但不會繞過 runtime discovery。',
+        "你的流程",
+        "讓重複的選擇變成可重用設定",
+        "個人與工作區設定將任務對應到你偏好的 Skills 與完成條件。"
       ],
       [
-        '使用者權威',
-        '保留 Explicit Skill Lock',
-        '使用者指定的 SKILL 維持權威；lock 外的輔助技能在取得同意前保持 inactive。',
+        "你的選擇",
+        "尊重你明確指定的 Skill",
+        "指定的 Skill 維持主導地位。加入指定範圍外的支援前，需要取得你的同意。"
       ],
       [
-        'Runtime evidence',
-        '只啟用目前證據允許的能力',
-        '每個 selected capability 都保留其 exposure、authorization、policy、freshness 與 risk boundary。',
+        "可用能力",
+        "分清楚計畫與實際執行",
+        "顯示缺少的能力與執行環境限制。計畫選用某個 Skill，不代表它已經啟用。"
+      ]
+    ],
+    "processNoteTitle": "適合需要固定流程的工作",
+    "processNote": "當 Skills 職責重疊、團隊反覆使用相同流程，或工作跨越階段與專案時，可以考慮使用。若只是小任務，也已知道要用哪個 Skill，額外設定可能沒有太多幫助。",
+    "contractLink": "閱讀路由規則",
+    "templateLink": "了解三種工作模式",
+    "examplesTitle": "從小任務開始，依工作需要加入流程",
+    "examplesCopy": "Router 讀取任務、套用你的流程偏好，並回報計畫與限制。實際工作仍由 Codex 與選定的 Skills 執行。",
+    "templateCode": "你的需求與流程偏好\n→ 目前階段與預計使用的 Skills\n→ 可用能力、限制與下一步",
+    "templateHighlights": [
+      [
+        "單一任務 Single",
+        "處理一件範圍明確的工作，例如釐清錯誤原因，只選擇這件事需要的 Skills。"
       ],
+      [
+        "多階段 Phased",
+        "分開規劃、實作與驗證，在每個階段重新判斷需要哪些 Skills。"
+      ],
+      [
+        "工作圖 Managed Goal",
+        "在本機保留相依關係與續作進度。整合 Codex 原生 Goal 仍需要執行環境支援。"
+      ]
     ],
-    processNoteTitle: '執行前後都能被檢查',
-    processNote:
-      'Router 在工作前宣告預計使用的 SKILL，記錄 typed runtime result，完成後揭露實際使用情況。',
-    contractLink: '查看 routing contract',
-    templateLink: '比較 routing envelopes',
-    examplesTitle: '一個 Router，三種工作 envelope',
-    examplesCopy:
-      '小型工作保持小型、多階段工作在 phase gate 重新 routing，durable dependency graph 則綁定 Host-owned Goal，不虛構本機 authority。',
-    templateHighlights: [
-      ['Single', '一個範圍明確的 outcome、一條 verification path，以及最小合理 SKILL 組合。'],
-      ['Phased', '每個 phase 都從最新 evidence 選擇，並通過自己的 verification gate。'],
-      ['Managed Goal', 'Durable Work Items 與 dependencies；native Goal mutation 仍由 Host 所有。'],
+    "outcomesTitle": "選擇需要的使用方式",
+    "outcomes": [
+      [
+        "獨立 Skill",
+        "提供 Codex 路由指引，沒有本機 MCP 狀態機，也不會持久保存同意紀錄。"
+      ],
+      [
+        "Plugin + MCP",
+        "除了路由指引，也在本機保存計畫、狀態與同意紀錄。需要 Node.js 24+ 與 Python 3.11+。"
+      ],
+      [
+        "執行環境整合",
+        "原生 Goal 排程與經驗證的執行需要額外能力，安裝 Plugin 本身不會提供這些整合。"
+      ],
+      [
+        "你使用的專業 Skills",
+        "工作流程引用的 Skills 需要另外安裝。Router 不會附帶所有專業 Skills，也不會替你切換模型。"
+      ]
     ],
-    templateCode:
-      'Request → Runtime Capability Discovery\nEnvelope → Single | Phased | Managed Goal\nResult → plan, gate, evidence, disclosure',
-    outcomesTitle: '為可信任的成果設計',
-    outcomes: [
-      ['擁有自己的 route', '定義可重複使用的 personal 或 workspace Skill Tree，又不把它變成 executable prompt。'],
-      ['降低上下文噪音', '自動 routing 維持最小集合；未指定 SKILL 時不增加多餘 consent ceremony。'],
-      ['誠實降級', 'Host 或 adapter 能力不可用時回傳 typed fallback，不模擬成功。'],
-      ['可稽核執行', 'Sanitized traces 呈現 plan、call、reject 與實際使用結果。'],
+    "validatorTitle": "目前實測能說明什麼",
+    "validatorCopy": "2026-10-19 使用 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，在 medium 推理設定下比較有無 Router 的路由決策。六個案例的探索性測試觀察到部分流程決策更一致，但沒有執行開發任務或量測程式品質。",
+    "validatorEvidenceNote": "釐清案例前提的歧義並更新指引後，僅對 Sol 重新測試。這些單次觀測尚未證明穩定性、正式模型資格或完整 Plugin／執行環境整合。完整載入指令套件會增加輸入 Token；尚未證明能降低成本或加快交付。",
+    "proofStats": [
+      [
+        "6",
+        "個路由案例"
+      ],
+      [
+        "1",
+        "次執行，每組每個案例"
+      ],
+      [
+        "26–28%",
+        "本次測試增加的輸入 Token"
+      ]
     ],
-    validatorTitle: '有證據，才提出主張',
-    validatorCopy:
-      'Contract fixtures 證明 compatibility，runtime traces 證明 bundled execution。Real Model Evaluation 需要 fresh paired attempts、明確 quota authorization、review 與 attestation。',
-    validatorEvidenceNote:
-      '證據邊界：36 次 attempts 與 42 次 model turns 是 beta.1 的歷史證據。Personal Routing Profiles 與 beta.2 目前只有 deterministic contract、integration、security 與 package evidence。',
-    proofStats: [
-      ['12', '個型別化 MCP 工具'],
-      ['4', '個本機可用工具'],
-      ['36', '次 beta.1 嘗試 · 42 次模型呼叫'],
-    ],
-    validatorCommand: `# 檢查真實 runtime readiness
-python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
-
-# 驗證 generated MCP contracts 與 V2 docs
-node scripts/build-mcp-reference-data.mjs --check
-python scripts/check-doc-parity.py
-
-# 執行 repository tests
-$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
-python -m unittest discover -s packages/router-core/tests -v
-python -m unittest discover -s tests -v`,
-    finalTitle: '讓 runtime-aware skill routing 成為可重用能力',
-    finalCopy:
-      '環境支援 runtime 時安裝 Plugin + MCP；只有 instructions 的 Host 則載入獨立 SKILL。',
-  },
+    "validatorCommand": "# 已發布版本：v2.0.2\ncodex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2\ncodex plugin add workflow-skill-router@workflow-skill-router\ncodex plugin list",
+    "releaseTitle": "從已發布的版本開始",
+    "releaseCopy": "v2.0.2 包含路由指引與本機 MCP 執行程式。開發中主分支另有尚未納入此版本的內容，例如需自行啟用的 Workflow Memory。目前的探索性測試不能作為 v2.0.2 的資格證明。",
+    "evidenceLink": "閱讀評測方法與限制",
+    "finalTitle": "帶入你的流程，檢查每次路由",
+    "finalCopy": "從發布套件開始，確認可用能力，再判斷路由是否符合你的工作方式。程式碼與路由規則以 MIT 授權開放使用。"
+  }
 }[locale];
 
-const heroText = isZh
-  ? {
-      eyebrow: 'Codex Plugin / MCP / SKILL',
-      title: '為真實 Codex 工作提供 Runtime-aware SKILL routing',
-      body: '分類 Single、Phased 與 Managed Goal 工作，保留使用者明確指定的 SKILL 邊界，並揭露下一步可由哪個 runtime 執行。',
-      primary: '安裝 Plugin + MCP',
-      secondary: '只使用 SKILL',
-      tertiary: '看 Router 如何決策',
-      explainerLabel: 'V2 routing outcome',
-      explainerTitle: '從 request 到 envelope 與 evidence',
-    }
-  : {
-      eyebrow: 'Codex Plugin / MCP / SKILL',
-      title: 'Runtime-aware Skill routing for real Codex work',
-      body: 'Classify Single, Phased, and Managed Goal work; preserve explicit Skill boundaries; and expose exactly which runtime can execute the next step.',
-      primary: 'Install Plugin + MCP',
-      secondary: 'Use Skill only',
-      tertiary: 'Watch the Router decide',
-      explainerLabel: 'V2 routing outcome',
-      explainerTitle: 'From request to envelope and evidence',
-    };
+const heroText = {
+  "en": {
+    "eyebrow": "Open-source workflow routing for Codex",
+    "title": "Make your Codex workflow repeatable.",
+    "body": "Choose Skills for the task at hand, keep each phase focused, and respect the workflow you define. Use routing instructions on their own, or add the Plugin for local plans and consent records.",
+    "primary": "Install Plugin + MCP",
+    "secondary": "Use Skill only",
+    "tertiary": "Why use a Router?",
+    "explainerLabel": "Illustrative workflow",
+    "explainerTitle": "One phase at a time."
+  },
+  "zh-tw": {
+    "eyebrow": "開放原始碼的 Codex 工作流程路由工具",
+    "title": "讓 Codex 按照你的工作流程做事",
+    "body": "為目前任務選擇 Skills、聚焦當下階段，並遵循你設定的工作流程。可以單獨使用路由指引，或安裝 Plugin，在本機保存計畫與同意紀錄。",
+    "primary": "安裝 Plugin + MCP",
+    "secondary": "只使用 Skill",
+    "tertiary": "為什麼需要 Router？",
+    "explainerLabel": "流程示意",
+    "explainerTitle": "每次聚焦一個階段"
+  }
+}[locale];
 
-const heroPreview = isZh
-  ? {
-      requestLabel: '大型任務',
-      request: '繼續跨 API、Web 與 docs 的 migration Goal。',
-      routeLabel: 'V2 routing decision',
-      route: [
-        ['Envelope', 'managed-goal'],
-        ['Runtime', 'bundled-local-r0'],
-        ['Local-ready', 'plan_work, propose_support_consent, transition_support_consent, get_router_status'],
-        ['Boundary', 'Scheduling requires verified Host capabilities.'],
+const heroPreview = {
+  "en": {
+    "requestLabel": "Example request",
+    "request": "Plan an API change with my planning Skill. Implement later.",
+    "routeLabel": "Example plan · activation unverified",
+    "route": [
+      [
+        "Now",
+        "Named planning Skill."
       ],
-    }
-  : {
-      requestLabel: 'Large request',
-      request: 'Continue the migration Goal across API, Web, and docs.',
-      routeLabel: 'V2 routing decision',
-      route: [
-        ['Envelope', 'managed-goal'],
-        ['Runtime', 'bundled-local-r0'],
-        ['Local-ready', 'plan_work, propose_support_consent, transition_support_consent, get_router_status'],
-        ['Boundary', 'Scheduling requires verified Host capabilities.'],
+      [
+        "Later",
+        "Build → verify."
       ],
-    };
+      [
+        "Boundary",
+        "Extra support needs consent. Check availability."
+      ]
+    ]
+  },
+  "zh-tw": {
+    "requestLabel": "需求範例",
+    "request": "使用我指定的規劃 Skill，先規劃 API 變更，之後再實作。",
+    "routeLabel": "流程示意，尚未驗證啟用",
+    "route": [
+      [
+        "現在",
+        "指定的規劃 Skill。"
+      ],
+      [
+        "之後",
+        "實作 → 驗證。"
+      ],
+      [
+        "邊界",
+        "額外支援需同意，能力須確認可用。"
+      ]
+    ]
+  }
+}[locale];
 import memoryFlightRecorder from '../data/memory-flight-recorder.generated.json';
 const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
 ---
@@ -294,7 +334,7 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
         <div class="wsr-hero-actions">
           <a class="wsr-button wsr-button-primary" href={`${rootPath}/guides/install-plugin/`} data-analytics-event="site_hero_install_plugin">{heroText.primary}</a>
           <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/install-skill/`}>{heroText.secondary}</a>
-          <a class="wsr-hero-tertiary" href="#router-demo">{heroText.tertiary}</a>
+          <a class="wsr-hero-tertiary" href="#why-it-works">{heroText.tertiary}</a>
         </div>
       </div>
 
@@ -327,14 +367,13 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
     </div>
   </section>
 
-  <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} initialPreset="personal-skill-tree" />
 
   <section id="why-it-works" class="wsr-section wsr-section-light">
     <div class="wsr-shell wsr-section-grid">
       <div>
         <h2>{text.introTitle}</h2>
         <p>{text.introCopy}</p>
-        <a class="wsr-text-link" href={`${rootPath}/concepts/runtime-capability-discovery/`}>{text.introLink}</a>
+        <a class="wsr-text-link" href={`${rootPath}/concepts/personal-routing-profiles/`}>{text.introLink}</a>
       </div>
       <div class="wsr-process-panel" aria-label={text.processLabel}>
         <span class="wsr-process-kicker">{text.processLabel}</span>
@@ -375,8 +414,8 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
         <div class="wsr-template-showcase wsr-motion-image">
           <div>
             <span class="wsr-template-kicker">Single / Phased / Managed Goal</span>
-            <h3>{isZh ? '工作形狀決定 envelope' : 'Work shape decides the envelope'}</h3>
-            <p>{isZh ? 'Router 不會因為需求很長就強迫使用 Goal，而是依 dependencies、resume needs、risk 與 verification boundaries 做決策。' : 'The Router does not force a Goal because a request is long. Dependencies, resume needs, risk, and verification boundaries drive the decision.'}</p>
+            <h3>{isZh ? '配合任務的範圍安排流程' : 'Match the structure to the task'}</h3>
+            <p>{isZh ? '本機執行程式使用固定規則分類工作與比對設定。計畫、相依關係與完成條件都可以檢查；實際執行仍受使用者授權與環境能力限制。' : 'The local runtime uses deterministic rules to classify work and match profiles. Plans, dependencies, and completion checks stay inspectable; execution still depends on user authorization and available capabilities.'}</p>
           </div>
           <pre><code>{text.templateCode}</code></pre>
           <div class="wsr-template-grid">
@@ -423,7 +462,7 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
         <h2>{text.validatorTitle}</h2>
         <p>{text.validatorCopy}</p>
         <p>{text.validatorEvidenceNote}</p>
-        <div class="wsr-proof-stats" aria-label={isZh ? '驗證數字' : 'Validation stats'}>
+        <div class="wsr-proof-stats" aria-label={isZh ? '探索性測試範圍與成本' : 'Exploratory test scope and cost'}>
           {text.proofStats.map(([value, label]) => (
             <span>
               <strong>{value}</strong>
@@ -433,11 +472,15 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
         </div>
       </div>
       <div class="wsr-command-card">
+        <h3>{text.releaseTitle}</h3>
+        <p>{text.releaseCopy}</p>
         <pre><code>{text.validatorCommand}</code></pre>
-        <a class="wsr-text-link" href={`${rootPath}/concepts/evaluation-evidence/`}>{isZh ? '查看 evidence contract' : 'View the evidence contract'}</a>
+        <a class="wsr-text-link" href={`${rootPath}/reference/model-evaluation/`}>{text.evidenceLink}</a>
       </div>
     </div>
   </section>
+
+  <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} initialPreset="personal-skill-tree" />
 
   <section class="wsr-final-cta">
     <div class="wsr-shell">
@@ -457,8 +500,8 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
     </h2>
     <p>
       {m4bIsZh
-        ? '切換五種去識別情境，查看 Policy、提案、Managed Promotion 與 Purge 的公開安全事件。'
-        : 'Switch between five sanitized scenarios to inspect public-safe Policy, proposal, managed-promotion and purge events.'}
+        ? '開發中功能，尚未包含在 v2.0.2。以下既有紀錄呈現五種去識別情境中的政策、提案、設定更新與清除事件；Workflow Memory 預設關閉。'
+        : 'Development feature, not included in v2.0.2. These existing records cover five sanitized scenarios for policy, proposals, profile updates, and purge events. Workflow Memory is off by default.'}
     </p>
     <p class="memory-flight-recorder__boundary">
       <strong>deterministic-local-pilot</strong>
@@ -565,7 +608,7 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
   .memory-flight-recorder__panel-heading code { font-size: .72rem; }
   .memory-flight-recorder__panels ol { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: .65rem; }
   .memory-flight-recorder__panels li { display: grid; grid-template-columns: 2.25rem 1fr; gap: .7rem; align-items: start; padding: .75rem 0; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
-  .memory-flight-recorder__panels li > span { font-family: ui-monospace, monospace; opacity: .55; }
+  .memory-flight-recorder__panels li > span { font-family: ui-monospace, monospace; opacity: .75; }
   .memory-flight-recorder__panels li strong, .memory-flight-recorder__panels li small { display: block; }
   .memory-flight-recorder__panels li small { margin-top: .2rem; opacity: .68; }
   .memory-flight-recorder__pilot { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0 0; }

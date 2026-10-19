@@ -15,9 +15,6 @@ Exact archive paths:
 
 ```text
 workflow-skill-router/SKILL.md
-workflow-skill-router/assets/memory-policy.automatic.example.yaml
-workflow-skill-router/assets/memory-policy.disabled.example.yaml
-workflow-skill-router/assets/memory-policy.reviewed.example.yaml
 workflow-skill-router/assets/personal-routing-profile.example.json
 workflow-skill-router/assets/workspace-routing-profile.example.json
 workflow-skill-router/references/evaluation-boundary.md
@@ -26,29 +23,32 @@ workflow-skill-router/references/personal-routing-profiles.md
 workflow-skill-router/references/routing-protocol.md
 ```
 
-After extraction, `.codex/skills/workflow-skill-router/SKILL.md` must exist directly under the Skill directory.
+After extraction, `.agents/skills/workflow-skill-router/SKILL.md` must exist directly under the Skill directory.
+
+Current Codex uses user `~/.agents/skills` or repository `.agents/skills`. Treat existing `.codex/skills` installations as client-dependent compatibility paths; avoid duplicate installs. [Official Skills documentation](https://learn.chatgpt.com/docs/build-skills)
 
 ## Install from a contributor checkout
 
 Windows PowerShell:
 
 ```powershell
-$Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
-Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
+$Target = Join-Path $env:USERPROFILE ".agents\skills\workflow-skill-router"
+New-Item -ItemType Directory -Force -Path $Target | Out-Null
+Copy-Item -Recurse -Force "starter\v2\workflow-skill-router\*" $Target
 Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
 ```
 
 macOS or Linux:
 
 ```bash
-mkdir -p "$HOME/.codex/skills"
-cp -R starter/v2/workflow-skill-router "$HOME/.codex/skills/workflow-skill-router"
-sed -n '1,8p' "$HOME/.codex/skills/workflow-skill-router/SKILL.md"
+mkdir -p "$HOME/.agents/skills/workflow-skill-router"
+cp -R starter/v2/workflow-skill-router/. "$HOME/.agents/skills/workflow-skill-router/"
+sed -n '1,8p' "$HOME/.agents/skills/workflow-skill-router/SKILL.md"
 ```
 
 ## Verify behavior
 
-The package includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, `assets/memory-policy.automatic.example.yaml`, `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. The Policy files are examples only: Memory remains disabled unless the user deliberately chooses and installs a non-disabled policy. Put the workspace Profile example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile or Policy content in the conversation and treat the result as advisory.
+Development main adds Memory examples; `v2.0.2` does not contain these three Policy files. The current source includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, `assets/memory-policy.automatic.example.yaml`, `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. The Policy files are examples only: Memory remains disabled unless the user deliberately chooses and installs a non-disabled policy. Put the workspace Profile example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile or Policy content in the conversation and treat the result as advisory.
 
 Skill-only interprets the tree as `skill-only-fallback`. It must preserve workspace-over-personal precedence, explicit user SKILL priority, and the `intended-unverified` Runtime Capability Discovery boundary, but it cannot claim deterministic loading or durable enforcement. The `profile preview` CLI belongs to Plugin/Core mode.
 

@@ -44,7 +44,7 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, twelve tool names, external state boundary, and a real MCP initialize/tools-list exchange.
+`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, version-specific tool names (12 in `v2.0.2`, 20 in development main), external state boundary, and a real MCP initialize/tools-list exchange.
 
 ## What works locally
 
@@ -61,7 +61,7 @@ For project policy, copy `starter/v2/workflow-skill-router/assets/workspace-rout
 
 Profiles stay outside the Plugin cache. Their output is `intended-unverified` until Runtime Capability Discovery validates each selected SKILL.
 
-`plan_work`, `propose_support_consent`, `transition_support_consent`, and `get_router_status` are local-ready. Scheduling, protected route validation, work events, and gates require verified Host capabilities. Model evaluation tools require a configured adapter. An unavailable call returns `capability-unavailable` with its requirement and fallback.
+`plan_work`, `propose_support_consent`, `transition_support_consent`, and `get_router_status` are local-ready. `get_next_work`, `record_work_event`, and `evaluate_gate` are conditional-local for Router-owned work graphs. Native Goal operations, `sync_runtime_context`, and `validate_route` still require verified Host capabilities. Model evaluation tools require a configured adapter. An unavailable call returns `capability-unavailable` with its requirement and fallback.
 
 ## Uninstall
 

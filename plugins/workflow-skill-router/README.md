@@ -20,7 +20,7 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Restart Codex or open a new Codex task, then ask Codex to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label, twelve MCP tools, and four local-ready tools.
+Restart Codex or open a new Codex task, then ask Codex to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label. The published `v2.0.2` snapshot has 12 tools (4 local-ready, 3 conditional-local, 2 verified-host-required, 3 configured-adapter-required). Development main adds opt-in Memory, for 20 tools (10 local-ready, 5 conditional-local, 2 verified-host-required, 3 configured-adapter-required); inspect `doctor` for the installed surface.
 
 For a contributor checkout, run this from the repository root:
 
@@ -46,11 +46,11 @@ Repository contributors can run the full extracted-package handshake from the re
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-The smoke verifies the manifest, canonical SKILL, twelve MCP tool names, external state boundary, and a real stdio MCP initialize/tools-list exchange. Runtime readiness is authoritative: the bundled local R0 profile does not imply that every public tool is locally executable.
+The smoke verifies the manifest, canonical SKILL, the package-specific MCP tool names, external state boundary, and a real stdio MCP initialize/tools-list exchange. Runtime readiness is authoritative: the bundled local R0 profile does not imply that every public tool is locally executable.
 
 ## Personal Routing Profiles
 
-V2 supports user-owned Skill Trees without expanding the twelve-tool MCP surface. Validate and install a strict personal Profile, then preview the effective route:
+V2 supports user-owned Skill Trees through the existing planning tools. Validate and install a strict personal Profile, then preview the effective route:
 
 > Personal Routing Profiles ship in `v2.0.0-beta.2`. The 36-attempt beta.1 Model Evaluation does not cover this feature.
 

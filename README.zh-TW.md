@@ -1,82 +1,94 @@
 # Workflow Skill Router V2
 
-[English](README.md) · [線上文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [Routing Flight Recorder](https://huangchiyu.com/Workflow-skill-router/zh-tw/#routing-flight-recorder)
+**讓 Codex 按照你的工作流程做事。**
 
-Workflow Skill Router 會在 Codex 開始工作前先判斷任務大小、選擇合適的 SKILL，並說明目前哪些能力真的可用。技術上，它是一個 pre-execution、runtime-aware 的規劃與路由層；它不會擴大使用者權限，也不會把不可用的功能說成可用。它不能取代權限、核准政策、sandboxing 或 production orchestration。
+[English](README.md) · [繁體中文文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [開始使用](#開始使用) · [實測結果與限制](#實測結果與限制)
 
-> 目前已發布的 V2 正式版：`2.0.2`。遷移期間仍可使用 immutable V1.3.1 復原路徑。
+Workflow Skill Router 協助 Codex 為目前任務選擇 Skills、聚焦當下階段，並遵循你設定的工作流程。你可以安裝獨立 Skill，提供路由指引；也可以使用 Plugin 與 MCP 工具，在本機保存計畫、狀態與同意紀錄。
 
-每一個 V2 release 都會綁定來源。candidate 先處於 `prepared-local-candidate`；只有經審查的 metadata-only promotion 綁定 `release_source_revision`、記錄 maintainer attestation，並把 `release_lifecycle` 改為 `reviewed-attested-publishable` 後，才可以執行 `CREATE_V2_RELEASE`。受信任的預設分支 workflow 會再從凍結來源建置、建立 tag、attest 並發布。
+Skill 是針對特定工作整理的可重用指令。Router 協調何時使用哪些 Skills，實際工作仍由 Codex 與選定的 Skills 執行。
 
-## 60-second outcome / 60 秒成果
+## 為什麼需要這個專案
 
-把需求交給 Router，它會回傳 execution envelope、能力計畫、同意邊界，以及安全繼續工作所需的證據。公開 Flight Recorder 顯示真正經清理的 MCP request／response，不在瀏覽器重算決策。
+當 Skills 越裝越多，工作流程也多了幾個決定：誰負責主導、何時需要其他 Skill 協助、哪些事情應該留到下一階段？模型可以自行判斷，但你習慣的流程也需要明確定義，才能在不同任務中重複使用。
 
-```text
-需求
-  -> 判斷工作形狀
-  -> 探索可用的 Runtime 能力
-  -> 鎖定使用者明確指定
-  -> 規劃最小路由
-  -> 執行、驗證並揭露實際 SKILL 使用情形
-```
+Workflow Skill Router 讓這套流程可以被檢查與設定，設計上處理三種需求：
 
-## Plugin + MCP 與 Skill-only
+- **聚焦目前階段。** 規劃 API 變更時，不需要提早帶入實作與部署的 Skills。
+- **保留你的選擇。** 當你指定 Skill，就以它為主；加入指定範圍外的支援前，先取得你的同意。
+- **分清楚計畫與可用能力。** 計畫中提到的 Skill，不一定能在目前環境使用；Router 會揭露這個差異。
 
-| 能力 | Plugin + MCP | Skill-only |
-| --- | --- | --- |
-| 路由指令 | 內建 | 內建 |
-| Personal Routing Profile | deterministic 載入、驗證、優先序與 preview | 依相同固定 JSON contract 做 advisory 解讀 |
-| 本機 durable R0 規劃與 scoped consent | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | 無法觀測 |
-| verified-host 排程與 route validation | 完成 Host 整合後可用 | 不可用 |
-| 跨程序狀態與 compare-and-swap | 取決於 Host／Runtime | 不可用 |
-| sealed model evaluation | 需要 configured adapter | 只能人工執行 |
-| 誠實的 Runtime 標籤 | `bundled-local-r0` 或 verified profile | `skill-only-fallback` |
+開放原始碼讓使用者可以檢查路由規則、調整個人或團隊流程，並驗證它對自己的任務是否有幫助。
 
-Codex 支援 Plugin/MCP 時優先使用 Plugin。若 Host 不支援 Plugin，或只需要 instruction-only routing，再使用獨立 SKILL。Skill-only 絕不等於 `hybrid-full`。
+## 適合哪些情境
 
-## 五分鐘 Plugin + MCP quickstart
+| 你的情況 | Router 提供的幫助 |
+| --- | --- |
+| Skills 職責重疊，經常需要重複交代由誰主導 | 可重用的個人或工作區路由設定 |
+| 工作需要經過規劃、實作與驗證 | 每個階段分別選擇 Skills，並設定完成條件 |
+| 跨專案工作有相依關係，需要保留進度後續作 | 本機工作圖與明確的下一步；整合 Codex 原生 Goal 仍需要執行環境支援 |
+| 只有一件小任務，也已知道該用哪個 Skill | 維持小範圍路由；額外設定可能沒有太多幫助 |
 
-一般使用者請固定安裝不可變的 `v2.0.2` marketplace snapshot：
+## 如何運作
 
-```powershell
+1. **讀取任務與你的明確指定。** 判斷是單一任務、多階段流程，還是需要管理相依關係的工作圖。
+2. **套用你的工作流程。** Personal Routing Profiles 將任務對應到主要 Skill，以及目前階段需要的支援。
+3. **確認能力是否可用。** Runtime Capability Discovery 區分預計選用的能力，以及目前環境確實能使用的能力。
+4. **讓計畫可以被檢查。** 在 Codex 繼續前，顯示路由、缺少的能力，以及需要確認的支援項目。
+
+例如，你可以把 API 變更設定為先釐清需求，再實作，最後驗證。每個階段分別選擇 Skills。這是在說明可設定的行為，並非已量測的開發成果。
+
+本機執行程式以固定規則分類工作、比對路由設定。它不會安裝或啟用 Skills、選擇底層模型，也不會授予部署權限。[閱讀架構總覽](docs/architecture/v2-overview.md)。
+
+## 開始使用
+
+已發布版本為 **v2.0.2**。目前分支也包含尚未發布的開發內容，例如需自行啟用的 Adaptive Workflow Memory。一般安裝請固定使用發布版本。
+
+### Plugin + MCP
+
+Codex 環境支援 Plugin 與 MCP 時，可以選擇這個模式。除了路由指引，它也會在本機保存計畫與同意紀錄。**需要 Node.js 24+ 與 Python 3.11+。** 發布套件已包含建置產物，只有從原始碼重新建置時需要 npm。
+
+```sh
 codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-開啟新的 Codex 任務，要求它顯示 Workflow Skill Router 狀態。已發布的 V2 surface 共有 12 個 MCP tools：**4 always local-ready**、**5 verified-Host-required**，以及 3 個 configured-adapter-required tools；每一項操作仍以 Runtime readiness 為準。
+開啟新的 Codex 任務，輸入：**「顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。」** 接著依照 [Plugin 安裝指南](site/src/content/docs/zh-tw/guides/install-plugin.md) 確認結果。
 
-需要修改 Router 的貢獻者才使用 checkout：
+### 獨立 Skill
 
-```powershell
-git clone https://github.com/eric861129/Workflow-skill-router.git
-Set-Location Workflow-skill-router
-codex plugin marketplace add .
-codex plugin add workflow-skill-router@workflow-skill-router
-codex plugin list
-python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
-```
+只需要路由指引、不使用本機 MCP 執行程式時，可以選擇這個模式。下載 [v2.0.2 Skill 套件](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，將內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
 
-目前 checkout 是 V2 正式版的來源。貢獻者必須區分 candidate 與受信任 release metadata：後續 metadata-only promotion 會把 `release_source_revision` 綁定到 exact reviewed source SHA，之後 `Release V2` 才能 dispatch。
+[Skill-only 安裝指南](site/src/content/docs/zh-tw/guides/install-skill.md) 提供路徑與設定說明。這個模式引導模型行為，無法保存或強制執行 Plugin 的同意狀態機。兩種安裝都不會附帶工作流程可能引用的所有專業 Skills。
 
-`v2.0.2` 是由受信任 release workflow 建立並驗證的 immutable GA tag；一般使用者應固定使用此 tag，而不是 mutable branch。
+## 實測結果與限制
 
-正式 Plugin 已包含 MCP bundle 與 Python runtime。執行需要 Node.js 24+ 與 Python 3.11+；只有從原始碼重建時需要 npm。完整說明請看 [Plugin 安裝](site/src/content/docs/zh-tw/guides/install-plugin.md)。
+2026-10-19 的探索性測試使用六個案例，比較模型自行路由與加入 Router 後的決策。測試模型包含 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，推理設定固定為 `medium`，每組每個案例只執行一次。測量範圍是路由決策，沒有執行完整軟體開發。
 
-## 五分鐘 Skill-only quickstart
+第一輪發現案例前提有歧義。釐清前提並更新指引後，僅對 Sol 重新進行成對測試：最終路由欄位全部符合的案例，從基準組 3/6 到 Router 組 6/6；較嚴格的完整契約則分別為 0/6 與 3/6。新分數不能直接與舊契約的分數相比，Astra 與 Luna 尚未使用更新後的內容重測。其中一個評分標籤仍取決於如何解讀使用者的間接指定；在該案例中，兩組其實選擇了相同的必要能力。
 
-一般使用者請下載 [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，再把內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+目前觀測到的價值在於**工作流程的一致性**，但需要保留這些限制：
 
-需要修改 Router 的貢獻者可在 Windows checkout 中執行：
+- 部分簡單案例中，模型原本就能選對 Skills。Router 是否有額外價值，取決於你需要遵循哪些流程規則。
+- 測試完整載入指令套件，輸入 Token 增加約 26–28%；尚未證明能降低成本、加快交付或提升程式品質。
+- 單次執行無法證明穩定性，也不代表正式模型資格通過。這次比較沒有驗證完整 Plugin／執行環境整合或真實開發成果。
 
-```powershell
-$Target = Join-Path $env:USERPROFILE ".codex\skills\workflow-skill-router"
-Copy-Item -Recurse -Force "starter\v2\workflow-skill-router" $Target
-Get-Content -Encoding UTF8 (Join-Path $Target "SKILL.md") | Select-Object -First 8
-```
+詳細範圍與結果見[評測方法及實測紀錄](evaluation/v2/README.md)。評測方法以英文撰寫，這次的詳細結果以繁體中文記錄。結果仍屬探索性、待審查，不能作為已發布 v2.0.2 的資格證明，也不能用來替模型排名。
 
-此套件保留路由指令與使用者指定 SKILL 優先的政策，但無法證明 durable resume、完整 drift detection 或 sealed activation。完整說明請看 [Skill-only 安裝](site/src/content/docs/zh-tw/guides/install-skill.md)。
+## 延伸閱讀
+
+- [Personal Routing Profiles](site/src/content/docs/zh-tw/concepts/personal-routing-profiles.md)：定義自己的流程，並檢查規則為什麼命中。
+- [執行環境的可用能力](site/src/content/docs/zh-tw/concepts/runtime-capability-discovery.md)：理解已安裝、可使用與已授權的差異。
+- [安全邊界](site/src/content/docs/zh-tw/reference/security-boundaries.md)：了解哪些決定仍由使用者與執行環境掌握。
+- [參與貢獻](CONTRIBUTING.md)：改善專案，或回報可重現的路由問題。請附上版本、安裝模式、預期路由及已去識別的結果。
+
+<details>
+<summary>貢獻者與整合者的技術參考</summary>
+
+以下說明開發中原始碼與相關契約，發布版本及需要執行環境支援的行為會另外標示。
+
+獨立 Skill 使用 `skill-only-fallback` 標籤，不能宣稱符合 `hybrid-full`。
 
 ## 架構：先做 Runtime Capability Discovery
 
@@ -138,7 +150,7 @@ Generated Plugin runtime 支援 `profile preview --explain` 與 `profile lint`�
 
 ## MCP tool surface
 
-Plugin 提供十二個 typed tools：
+已發布 `v2.0.2` 提供以下十二個 typed tools；開發中主分支另有八個 Memory tools，合計 20 個：
 
 ```text
 sync_runtime_context       plan_work                  propose_support_consent
@@ -151,26 +163,22 @@ Tool schema、risk、required capabilities 與 fallback actions 都從 Server �
 
 ## Runtime readiness matrix
 
-### 已發布 beta.3（`published-beta.3`）
+### 已發布版本（`published-v2.0.2`）
 
-| 可用性 | Tools | 意義 |
+`v2.0.2` 有 12 個工具：**4 always local-ready + 3 Router-owned conditional-local**、2 個 verified-Host-required，以及 3 個 configured-adapter-required。發布版已包含本機工作迴圈，但不包含後續的 Adaptive Workflow Memory。
+
+### 開發中主分支（`development-main`）
+
+主分支增加 8 個 Memory 工具，合計 20 個；Memory 預設關閉。下表描述目前原始碼，不能用它推定已安裝發布版的能力。
+
+| Availability | Tools | 條件 |
 | --- | --- | --- |
-| `local-ready` | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | 四個 bundled Router-local 操作 |
-| `verified-host-required` | `sync_runtime_context`、`get_next_work`、`validate_route`、`record_work_event`、`evaluate_gate` | 五個操作需要 verified Host authority |
-| `configured-adapter-required` | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | 三個操作需要已授權的 evaluation adapter |
+| `local-ready` (10) | `plan_work`, `propose_support_consent`, `transition_support_consent`, `get_router_status`, `get_memory_status`, `remember_workflow`, `record_route_feedback`, `list_workflow_candidates`, `preview_profile_update`, `purge_workflow_memory` | 本機工具仍須通過個別輸入、Policy 與確認條件；local-ready 不等於所有副作用都已獲准。 |
+| `conditional-local` (5) | `get_next_work`, `record_work_event`, `evaluate_gate`, `transition_profile_update`, `rollback_profile_revision` | 依工具檢查 Router 自有工作圖或受 Policy 約束的本機 Profile；本機工作迴圈回傳 `authority_mode=router-local`。`get_next_work` 回傳 `host_goal_mutated=false`；事件與閘門呼叫則回傳 `host_transition_authorized=false`。 |
+| `verified-host-required` (2) | `sync_runtime_context`, `validate_route` | 必須具備已驗證的 Host 權威。 |
+| `configured-adapter-required` (3) | `run_model_evaluation`, `compare_evaluations`, `export_router_artifact` | 必須具備已設定的評估介面與授權。 |
 
-### 已準備的 GA candidate（`prepared-ga-candidate`）
-
-下列 prepared candidate matrix **not included in published beta.3**，也不代表 GA 已發布。在 exact candidate SHA 完成新的最終模型證據、maintainer attestation、review 與受信任的 metadata-only source binding 前，`prepared-local-candidate` lifecycle 會阻擋發布。
-
-| bundled local R0 可用性 | Tools | 意義 |
-| --- | --- | --- |
-| `local-ready` | `plan_work`、`propose_support_consent`、`transition_support_consent`、`get_router_status` | durable local R0 planning、scoped consent 與 status |
-| `conditional-local` | `get_next_work`、`record_work_event`、`evaluate_gate` | 僅限 Router-owned work graph 的排程、回報式本機進度與 advisory local gate |
-| `verified-host-required` | `sync_runtime_context`、`validate_route` | 需要 verified host authority 與 stores |
-| `configured-adapter-required` | `run_model_evaluation`、`compare_evaluations`、`export_router_artifact` | 需要授權的 evaluation adapter 與 evidence |
-
-prepared GA candidate 的正確宣稱是 **4 always local-ready + 3 Router-owned conditional-local**，不是 `7/12 local-ready`。Conditional-local 只在已驗證的 Router-owned work graph 且沒有 Native Goal authority 時執行；`get_next_work` 回傳 `authority_mode=router-local` 與 `host_goal_mutated=false`，進度和 local gate 使用 `evidence_class=user-or-agent-reported-local` 與 `host_transition_authorized=false`。Local gate 通過只代表 advisory 本機檢查，不是 Skill activation、Native Goal completion、deployment approval 或 production permission。Explicit Skill Lock 與 consent 行為不受影響。
+發布版與主分支都保留 Explicit Skill Lock 與 consent。Native Goal 仍由 Host 管理；local gate 通過不代表 Skill 啟用、部署或正式環境授權。
 
 | Runtime 情況 | `get_next_work` | `record_work_event` | `evaluate_gate` |
 | --- | --- | --- | --- |
@@ -181,7 +189,7 @@ prepared GA candidate 的正確宣稱是 **4 always local-ready + 3 Router-owned
 
 缺少 graph 是本機 graph 初始化條件，不應捏造 Host fallback。Graph 損毀代表完整性邊界失敗，公開回應只透過 `internal-error` 提供 correlation，內部細節只留在 diagnostics。Native Goal 則依上表使用各工具自己的 verified Host capability。
 
-不可用的呼叫會回傳 typed `capability-unavailable`、required capabilities 與 fallback action。Router 不會捏造 scheduler 或 evaluation 成功結果；`latest` compatibility channel 在 V2 通過 GA gate 前仍維持 V1.3.1。
+不可用的呼叫會回傳 typed `capability-unavailable`、required capabilities 與 fallback action。Router 不會捏造 scheduler 或 evaluation 成功結果；V1.3.1 可透過不可變 tag 取得；`latest` 等頻道以經審查的 release metadata 為準。
 
 <!-- M4-B adaptive-memory:start -->
 ## Adaptive Workflow Memory
@@ -197,7 +205,10 @@ Adaptive Workflow Memory 是選擇加入、本機優先的路由記憶層，會�
 
 **Tier 0 Contract** fixtures 只證明 deterministic compatibility，不是模型行為。Behavior evidence 需要 fresh isolated attempts、sealed case package、paired baseline/candidate manifests、bounded output、零 hard violation，以及公開前的可信任審查。Baseline arm 明確採 `model-only`，candidate 採 `hybrid-router`；consent follow-up 由 fresh model 分類 intent，再由持久化 MCP state machine 產生最終 route。
 
-Evaluation contract `2.3.0` 保留目前 Phase oracle 與有狀態的 Phase-transition 評分，並把每次 Behavior run 綁定到乾淨、完整的 source revision 與已驗證的 adapter entrypoint identity。Runner 會在每次 adapter invocation 前後重新驗證來源與 adapter，因此 source 改變、adapter 被複製、改名或替換時，都不能繼續既有 run。六案例 beta profile 維持 36 attempts／42 model turns；十三案例 full gate 在每個 arm 重複三次時是 78 attempts／96 model turns。歷史 `2.2.0` reports 保留原本的 case 與 instruction digests，不得用較新的契約重算。新的 `2.3.0` Behavior run 在授權執行前維持 `manual-required`，執行後則在可信 attestation 前維持 `review-required`。
+Evaluation contract `2.3.1` 保留目前 Phase oracle 與有狀態的 Phase-transition 評分，並把每次 Behavior run 綁定到乾淨、完整的 source revision 與已驗證的 adapter entrypoint identity。Runner 會在每次 adapter invocation 前後重新驗證來源與 adapter，因此 source 改變、adapter 被複製、改名或替換時，都不能繼續既有 run。六案例 beta profile 維持 36 attempts／42 model turns；十三案例 full gate 在每個 arm 重複三次時是 78 attempts／96 model turns。歷史 `2.2.0` reports 保留原本的 case 與 instruction digests，不得用較新的契約重算。新的 `2.3.1` Behavior run 在授權執行前維持 `manual-required`，執行後則在可信 attestation 前維持 `review-required`。
+
+開發中的 Contract 2.3.1 已明確區分既有 workflow 與 Native Goal 綁定前提。`--screening` 使用鎖定的 `exploratory-model` 證據類別，不能替代三次重複的正式資格測試。範圍與解讀方式見[評測協定及目前模型結果](evaluation/v2/README.md)。
+
 
 ## Security boundary 與 local state
 
@@ -217,6 +228,12 @@ Plugin 將 state 存在 cache 外：
 
 先讀 [CONTRIBUTING.md](CONTRIBUTING.md)，再針對修改範圍執行檢查。Release artifacts 由 allowlist 與 deterministic builder 產生，不手動修改 generated outputs。
 
+需要修改 Router、測試本機原始碼時，可在儲存庫根目錄執行 `codex plugin marketplace add .`，再從這個來源安裝 Plugin。這會載入開發中原始碼，與固定版本的安裝不同。完整步驟見[原始碼安裝指南](site/src/content/docs/zh-tw/guides/install-plugin.md)。
+
+[獨立 Skill 原始碼](starter/v2/workflow-skill-router/SKILL.md) 與 Plugin 內的副本同步維護。
+
+發布候選版本起始狀態為 `prepared-local-candidate`。經審查的 metadata-only promotion 必須綁定 `release_source_revision`、記錄維護者驗證，並將 `release_lifecycle` 設為 `reviewed-attested-publishable`，之後才能執行 `CREATE_V2_RELEASE`。[發布流程](site/src/content/docs/zh-tw/contributing/release-process.md) 定義完整的審查與發布步驟。
+
 ```powershell
 $env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
 python -m unittest discover -s packages/router-core/tests -v
@@ -233,7 +250,7 @@ Release builder 只允許覆寫目前 manifest 內的既有產物。如果 outpu
 
 | Channel | 目前用途 | Promotion rule |
 | --- | --- | --- |
-| `latest` | V2 GA 前維持 V1.3.1 compatibility | 通過 GA release gate 後才移動 |
+| `latest` | 穩定相容頻道 | 以經審查的 release channel metadata 確認目標 |
 | `latest-v1` | immutable V1 recovery | 固定 V1.3.1 |
 | `latest-v2` | 歷史 V2 prerelease 頻道 | 在 qualified GA promotion 前保留已審查的 prerelease 歷史 |
 
@@ -243,4 +260,6 @@ Release builder 只允許覆寫目前 manifest 內的既有產物。如果 outpu
 
 使用 [V1 到 V2 遷移指南](site/src/content/docs/zh-tw/guides/migrate-v1-to-v2.md)，從 template-based routing 遷移至 runtime-aware Plugin 或獨立 SKILL。V1 原始碼與套件仍可從 immutable [`v1.3.1` tag](https://github.com/eric861129/Workflow-skill-router/tree/v1.3.1) 與 GitHub Release 復原，但不再放在 V2 primary navigation。
 
-MIT License。
+</details>
+
+[MIT License](LICENSE).

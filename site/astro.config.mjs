@@ -33,7 +33,7 @@ export default defineConfig({
     starlight({
       title: 'Workflow Skill Router',
       description:
-        'Runtime-aware skill routing for single tasks, phased work, and managed goals.',
+        'Repeatable Codex workflows with explicit Skill choices, focused phases, and inspectable routing plans.',
       defaultLocale: 'root',
       locales: {
         root: {

@@ -16,103 +16,40 @@ DOCS=(
 
 class V2DocumentationTests(unittest.TestCase):
     def test_explainable_classification_and_runtime_mode_contract(self):
-        published_beta3_tools = {
-            "local-ready": (
-                "plan_work",
-                "propose_support_consent",
-                "transition_support_consent",
-                "get_router_status",
-            ),
-            "verified-host": (
-                "sync_runtime_context",
-                "get_next_work",
-                "validate_route",
-                "record_work_event",
-                "evaluate_gate",
-            ),
-            "configured-adapter": (
-                "run_model_evaluation",
-                "compare_evaluations",
-                "export_router_artifact",
-            ),
-        }
-        def readiness_row(section, readiness, relative):
-            matching_rows = tuple(
-                line
-                for line in section.splitlines()
-                if line.startswith("|") and f"`{readiness}`" in line
-            )
-            self.assertEqual(1, len(matching_rows), (relative, readiness))
-            row = matching_rows[0]
-            tool_cell = row.split("|")[2]
-            return tuple(re.findall(r"`([^`]+)`", tool_cell)), row
-
+        import json
+        reference = json.loads((ROOT / "site/src/data/mcp-tools.generated.json").read_text("utf-8"))
+        groups = {}
+        for tool in reference["tools"]:
+            groups.setdefault(tool["availability"], set()).add(tool["name"])
         documents = (
-            "docs/adr/0004-explainable-classification-and-runtime-modes.md",
+            "README.md", "README.zh-TW.md",
             "docs/architecture/v2-overview.md",
             "site/src/content/docs/concepts/routing-envelopes.md",
             "site/src/content/docs/zh-tw/concepts/routing-envelopes.md",
         )
-        required_terms = (
-            "deterministic-objective-v1",
-            "classification_source",
-            "classification_reason_codes",
-            "conditional-local",
-            "host_transition_authorized",
-            "published-beta.3",
-            "prepared-ga-candidate",
-            "propose_support_consent",
-            "transition_support_consent",
-            "not included in published beta.3",
-        )
-
         for relative in documents:
-            path = ROOT / relative
+            text = (ROOT / relative).read_text("utf-8")
             with self.subTest(relative=relative):
-                self.assertTrue(path.is_file(), relative)
-                text = path.read_text("utf-8")
-                for term in required_terms:
-                    self.assertIn(term, text, relative)
-
-                published_section = text.split("published-beta.3", 1)[1].split(
-                    "prepared-ga-candidate", 1
-                )[0]
-                source_section = text.split("prepared-ga-candidate", 1)[1]
-                for readiness, expected_tools in published_beta3_tools.items():
-                    documented_tools, _ = readiness_row(
-                        published_section, readiness, relative
-                    )
-                    self.assertEqual(expected_tools, documented_tools, relative)
-                self.assertNotIn("conditional-local", published_section, relative)
-                conditional_tools, conditional_row = readiness_row(
-                    source_section, "conditional-local", relative
-                )
-                self.assertEqual(
-                    ("get_next_work", "record_work_event", "evaluate_gate"),
-                    conditional_tools,
-                    relative,
-                )
-                self.assertIn("authority_mode=router-local", conditional_row, relative)
-                self.assertIn(
-                    "host_transition_authorized=false", conditional_row, relative
-                )
-                self.assertIn(
-                    "not included in published beta.3", source_section, relative
-                )
-
-        self.assertFalse(
-            (ROOT / "docs/adr/0003-explainable-classification-and-runtime-modes.md").exists()
-        )
-        self.assertTrue(
-            (ROOT / "docs/adr/0003-deterministic-support-consent-state-machine.md").is_file()
-        )
-        plan = (
-            ROOT / "docs/superpowers/plans/2026-07-21-router-v2-intelligence-to-ga.md"
-        ).read_text("utf-8")
-        self.assertIn("**Step 2: Write ADR 0004**", plan)
-        self.assertNotIn("**Step 2: Write ADR 0003**", plan)
-        self.assertIn("0004-explainable-classification-and-runtime-modes.md", plan)
-        self.assertNotIn("0003-explainable-classification-and-runtime-modes.md", plan)
+                self.assertIn("published-v2.0.2", text)
+                self.assertIn("development-main", text)
+                source = text.split("development-main", 1)[1]
+                for availability, expected in groups.items():
+                    rows = [line for line in source.splitlines() if line.startswith("|") and f"`{availability}`" in line]
+                    self.assertEqual(1, len(rows), (relative, availability))
+                    self.assertEqual(expected, set(re.findall(r"`([^`]+)`", rows[0].split("|")[2])))
+                self.assertIn("authority_mode=router-local", source)
+                self.assertIn("host_transition_authorized=false", source)
+        for relative in documents[2:]:
+            text = (ROOT / relative).read_text("utf-8")
+            self.assertIn("deterministic-objective-v2", text)
+            self.assertIn("classification_source", text)
+            self.assertIn("classification_reason_codes", text)
+        historical = (ROOT / "docs/adr/0004-explainable-classification-and-runtime-modes.md").read_text("utf-8")
+        self.assertIn("Historical decision", historical)
+        self.assertIn("deterministic-objective-v1", historical)
+        self.assertIn("published-beta.3", historical)
+        self.assertFalse((ROOT / "docs/adr/0003-explainable-classification-and-runtime-modes.md").exists())
+        self.assertTrue((ROOT / "docs/adr/0003-deterministic-support-consent-state-machine.md").is_file())
 
     def test_required_claim_boundaries_exist(self):
         for relative in DOCS:
@@ -183,7 +120,7 @@ class V2DocumentationTests(unittest.TestCase):
         for relative in pages:
             text = (ROOT / relative).read_text("utf-8")
             with self.subTest(relative=relative):
-                self.assertIn("2.3.0", text)
+                self.assertIn("2.3.1", text)
                 self.assertIn("reference-driver", text)
                 if "/zh-tw/" in relative:
                     self.assertNotIn("it does not prove real-model behavior", text)

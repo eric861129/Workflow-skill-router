@@ -57,7 +57,7 @@ Reference-driver 只驗證離線合約；它無法證明真實模型的行為。
 - [ ] 在執行新的 36 attempts／42 model turns behavior-model run 前取得明確授權
 - [ ] 審查 sanitized evidence、attest exact frozen candidate SHA，並完成 immutable GA release qualification
 
-prepared GA candidate 尚未發布。只有在 evidence 與 review 完成後，後續受信任的 metadata-only promotion commit 才能重綁它的 `release_source_revision`。
+上列清單記錄當時的 GA 準備工作。`v2.0.2` 後續已依發布 attestation 中的有限證據完成發布；真實本機／Host Pilot 與新版模型資格驗證仍是獨立待辦，主分支 Memory 不會自動取得新驗證。未來發布仍須經審查並綁定來源。
 
 ## 剩餘正式 qualification
 

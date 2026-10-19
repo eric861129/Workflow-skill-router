@@ -57,7 +57,7 @@ The reference-driver validates the offline contract but does not prove real-mode
 - [ ] Obtain explicit authorization before a fresh 36-attempt / 42-turn behavior-model run
 - [ ] Review sanitized evidence, attest the exact frozen candidate SHA, and qualify the immutable GA release
 
-The prepared GA candidate is not released. Its `release_source_revision` is rebound only by the later trusted metadata-only promotion commit after evidence and review.
+This checklist records the earlier GA preparation. `v2.0.2` has since been published with the bounded evidence in its release attestation. The real local/Host Pilots and newer-model qualification remain separate outstanding work; development-main Memory does not inherit a new qualification. Future publication still needs reviewed source binding.
 
 ## Remaining formal qualification
 

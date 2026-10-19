@@ -68,36 +68,23 @@ class ReleaseCopyTests(unittest.TestCase):
         self.assertIn("immutable release installs", unreleased)
         self.assertIn("canonical documentation URL", unreleased)
 
-    def test_homepage_proof_stats_match_the_runtime_and_beta_profile(self) -> None:
+    def test_homepage_separates_exploratory_findings_from_published_release(self) -> None:
         homepage = (ROOT / "site/src/components/HomeLanding.astro").read_text(
             encoding="utf-8"
         )
-
-        for required in (
-            "['12', 'typed MCP tools']",
-            "['4', 'local-ready tools']",
-            "['36', 'beta.1 attempts · 42 model turns']",
-            "['12', '個型別化 MCP 工具']",
-            "['4', '個本機可用工具']",
-            "['36', '次 beta.1 嘗試 · 42 次模型呼叫']",
-        ):
-            with self.subTest(required=required):
-                self.assertIn(required, homepage)
-
-        for stale in (
-            "['10', 'typed MCP tools']",
-            "['2', 'local-ready tools']",
-            "['72', 'GA behavior attempts']",
-        ):
-            with self.subTest(stale=stale):
-                self.assertNotIn(stale, homepage)
-
-        self.assertIn(
-            "plan_work, propose_support_consent, transition_support_consent, get_router_status",
-            homepage,
-        )
-        self.assertIn("historical beta.1 evidence", homepage)
-        self.assertIn("Personal Routing Profiles and beta.2", homepage)
+        copy = json.loads(homepage.split("const text = ", 1)[1].split("[locale];", 1)[0])
+        for locale in ("en", "zh-tw"):
+            with self.subTest(locale=locale):
+                self.assertEqual(["6", "1", "26–28%"], [row[0] for row in copy[locale]["proofStats"]])
+                self.assertIn("2026-10-19", copy[locale]["validatorCopy"])
+                self.assertIn("v2.0.2", copy[locale]["releaseCopy"])
+                self.assertIn("Workflow Memory", copy[locale]["releaseCopy"])
+        self.assertIn("only Sol was retested", copy["en"]["validatorEvidenceNote"])
+        self.assertIn("僅對 Sol 重新測試", copy["zh-tw"]["validatorEvidenceNote"])
+        self.assertIn("have not been demonstrated", copy["en"]["validatorEvidenceNote"])
+        self.assertIn("尚未證明", copy["zh-tw"]["validatorEvidenceNote"])
+        self.assertIn("does not qualify v2.0.2", copy["en"]["releaseCopy"])
+        self.assertIn("不能作為 v2.0.2 的資格證明", copy["zh-tw"]["releaseCopy"])
 
     def test_public_guides_list_all_four_local_ready_tools(self) -> None:
         pages = (
@@ -219,8 +206,8 @@ class ReleaseCopyTests(unittest.TestCase):
             )[1].split(contributor_marker, 1)[0]
             with self.subTest(relative=relative):
                 self.assertIn("4 always local-ready", quickstart)
-                self.assertIn("5 verified-Host-required", quickstart)
-                self.assertNotIn("3 Router-owned conditional-local", quickstart)
+                self.assertRegex(quickstart, r"2 (?:個 )?verified-Host-required")
+                self.assertIn("3 Router-owned conditional-local", quickstart)
                 self.assertIn(INSTALL_VERSION, text)
                 self.assertNotIn("prepared beta.5 candidate", text)
 
@@ -297,7 +284,7 @@ class ReleaseCopyTests(unittest.TestCase):
         for relative, binding_phrase in pages:
             text = (ROOT / relative).read_text(encoding="utf-8")
             with self.subTest(relative=relative):
-                self.assertIn("Evaluation contract `2.3.0`", text)
+                self.assertIn("Evaluation contract `2.3.1`", text)
                 self.assertIn(binding_phrase, text)
                 self.assertNotIn("Before a fresh authorized `2.2.0` run", text)
 
@@ -429,7 +416,7 @@ class ReleaseCopyTests(unittest.TestCase):
         for relative in pages:
             text = (ROOT / relative).read_text(encoding="utf-8")
             with self.subTest(relative=relative):
-                self.assertNotIn("agents/", text)
+                self.assertNotIn("workflow-skill-router/agents/", text)
                 self.assertNotIn("agent metadata", text.lower())
                 for packaged_file in allowlist:
                     self.assertIn(packaged_file, text)
@@ -547,11 +534,11 @@ class ReleaseCopyTests(unittest.TestCase):
             ROOT / "site/src/content/docs/zh-tw/guides/install-skill.md"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("開始工作前先判斷任務大小", readme)
+        self.assertIn("為目前任務選擇 Skills", readme)
         self.assertIn("一般使用者若要完整功能，直接選 Plugin + MCP", downloads)
         self.assertIn("只想讓 Codex 在工作前選擇合適的 SKILL", skill_only)
         self.assertLess(
-            readme.index("開始工作前先判斷任務大小"),
+            readme.index("為目前任務選擇 Skills"),
             readme.index("runtime-aware"),
         )
         self.assertLess(

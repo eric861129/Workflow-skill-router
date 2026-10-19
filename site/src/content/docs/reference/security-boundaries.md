@@ -30,9 +30,9 @@ R0 local planning may run in the bundled control plane. R1 requires stronger run
 ## Dependency decisions
 
 The Plugin lockfile excludes known High and Critical dependency findings before a
-release candidate is accepted. A current upstream-tracked Moderate exception in
-the MCP SDK's transitive HTTP adapter is documented with its exposure boundary
-and removal criterion in the [Plugin dependency security decision](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md).
+release candidate is accepted. The development lockfile resolved the previous
+Moderate exception and reported zero production audit findings on 2026-10-19.
+The dated result and regression gate are recorded in the [Plugin dependency security decision](https://github.com/eric861129/Workflow-skill-router/blob/main/docs/governance/plugin-dependency-risk.md).
 The Plugin itself starts an MCP stdio transport, not an HTTP listener.
 
 ## Report a vulnerability

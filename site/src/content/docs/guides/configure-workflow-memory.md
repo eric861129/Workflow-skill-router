@@ -12,7 +12,7 @@ workflow-skill-router memory policy explain
 
 ## Data root and fixed sources
 
-The Plugin keeps durable state outside its installation cache. Typical data roots are `%LOCALAPPDATA%\workflow-skill-router` on Windows, `~/Library/Application Support/workflow-skill-router` on macOS, and `${XDG_DATA_HOME:-~/.local/share}/workflow-skill-router` on Linux. The configured data-root environment override takes precedence. Public-safe status output reports source state and Digests, not an absolute local path.
+The Plugin keeps durable state outside its installation cache. Typical data roots are `%LOCALAPPDATA%\Codex\workflow-skill-router` on Windows, `~/Library/Application Support/Codex/workflow-skill-router` on macOS, and `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router` on Linux. The configured data-root environment override takes precedence. Public-safe status output reports source state and Digests, not an absolute local path.
 
 Personal policy is read from the fixed supported Memory Policy filenames under the data root. Workspace policy is read only from the fixed `.codex` location under an MCP Client-advertised or operator-trusted Workspace root. Two supported formats at the same scope are ambiguous and fail closed; a Workspace symlink cannot redirect discovery.
 
