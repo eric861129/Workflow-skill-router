@@ -51,6 +51,7 @@ export default defineConfig({
       },
       components: {
         Head: './src/components/Head.astro',
+        MobileMenuToggle: './src/components/MobileMenuToggle.astro',
         PageSidebar: './src/components/DocsPageSidebar.astro',
         PageTitle: './src/components/PageTitle.astro',
       },

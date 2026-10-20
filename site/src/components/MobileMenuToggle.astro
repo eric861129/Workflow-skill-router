@@ -1,0 +1,28 @@
+---
+import MobileMenuToggle from '@astrojs/starlight/components/MobileMenuToggle.astro';
+---
+
+<MobileMenuToggle />
+
+<script>
+  const sidebar = document.getElementById('starlight__sidebar');
+
+  if (sidebar) {
+    // Firefox 移除 popover 屬性時可能不送出關閉事件，導致內容持續無法互動。
+    // 依實際開啟狀態同步焦點限制，並在上游事件處理完成後再核對一次。
+    const syncFocusTrap = () => {
+      const isOpen = sidebar.matches(':popover-open');
+      document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link').forEach((element) => {
+        element.toggleAttribute('inert', isOpen);
+      });
+    };
+    const scheduleSync = () => queueMicrotask(syncFocusTrap);
+
+    sidebar.addEventListener('toggle', scheduleSync);
+    new MutationObserver(scheduleSync).observe(sidebar, {
+      attributes: true,
+      attributeFilter: ['popover'],
+    });
+    syncFocusTrap();
+  }
+</script>
