@@ -40,9 +40,9 @@ Native Goal boundaries remain tool-specific: `verified-host-scheduler` for next 
       <li><strong>Fallback:</strong> {tool.fallback_action}</li>
     </ul>
     <h3>Input schema</h3>
-    <pre><code>{JSON.stringify(tool.inputSchema, null, 2)}</code></pre>
+    <pre tabIndex={0} role="region" aria-label={`${tool.name} input schema`}><code>{JSON.stringify(tool.inputSchema, null, 2)}</code></pre>
     <h3>Output schema</h3>
-    <pre><code>{JSON.stringify(tool.outputSchema, null, 2)}</code></pre>
+    <pre tabIndex={0} role="region" aria-label={`${tool.name} output schema`}><code>{JSON.stringify(tool.outputSchema, null, 2)}</code></pre>
   </details>
 ))}
 
