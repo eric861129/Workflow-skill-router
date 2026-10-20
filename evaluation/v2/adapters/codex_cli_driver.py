@@ -152,7 +152,7 @@ class CodexCliDriver:
             except EvidenceProtectionError as error:
                 raise EvaluationIntegrityError("codex_attempt_directory_unprotected") from error
         transcript = directory / "transcript.json"
-        for name in ("workspace", "runtime-home", "codex-home"):
+        for name in ("workspace", "runtime-home", "runtime-tmp", "codex-home"):
             private_directory = directory / name
             private_directory.mkdir()
             try:
@@ -238,6 +238,10 @@ class CodexCliDriver:
             "CODEX_HOME": str(directory / "codex-home"),
             "HOME": str(directory / "runtime-home"),
             "USERPROFILE": str(directory / "runtime-home"),
+            # 每次執行使用獨立暫存目錄，避免 Windows 沙箱初始化整棵共用暫存樹的 ACL。
+            "TEMP": str(directory / "runtime-tmp"),
+            "TMP": str(directory / "runtime-tmp"),
+            "TMPDIR": str(directory / "runtime-tmp"),
         })
         isolated_auth = directory / "codex-home" / "auth.json"
         try:

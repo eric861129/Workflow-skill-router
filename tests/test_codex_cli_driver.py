@@ -167,6 +167,25 @@ class CodexCliDriverTests(unittest.TestCase):
             ["activation_status"]["enum"],
         )
 
+    def test_each_attempt_uses_private_temp_for_sandbox_initialization(self):
+        contexts = [self.start("nonce-1"), self.start("nonce-2")]
+        environments = []
+        with patch.dict(os.environ, {"TEMP": "shared-temp", "TMP": "shared-temp", "TMPDIR": "shared-temp"}):
+            for index, context in enumerate(contexts, 1):
+                with patch.object(DRIVER_MODULE.subprocess, "run", return_value=completed()) as run:
+                    self.driver.handle({
+                        "type": "execute_turn", "context_id": context["context_id"],
+                        "attempt_nonce": f"nonce-{index}", "turn_index": 0,
+                        "prompt": "Route", "allowed_tools": [],
+                    })
+                environment = run.call_args.kwargs["env"]
+                expected = self.root / "attempts" / context["context_id"] / "runtime-tmp"
+                for name in ("TEMP", "TMP", "TMPDIR"):
+                    self.assertEqual(str(expected), environment[name])
+                self.assertTrue(LocalEvidenceProtector().verify_directory(expected))
+                environments.append(environment)
+        self.assertNotEqual(environments[0]["TEMP"], environments[1]["TEMP"])
+
     def test_creates_fresh_restricted_attempt_directories(self):
         first = self.start("nonce-1")
         second = self.start("nonce-2")

@@ -219,6 +219,257 @@ Contract 2.3.1 補齊上述前提，並在兩份發行用 SKILL 中釐清外層 
 
 合計完成 48 個獨立 attempt、56 個模型回合，另保留一次容量失敗。四份原始 sanitized reports 與兩組比較摘要都保留在維護者本機的 `dist/evaluation/20261019-current-models/`；`integrity-receipt.json` 綁定報表雜湊、48 個唯一 nonce／context，並確認沒有留下登入暫存。原始逐回合回應留在受限目錄，尚未公開發布或人工簽署。公開版本的歷史 attestation 維持原狀。
 
+## Instruction-loading screening
+
+The benchmark keeps `--instruction-loading full` as its default. The opt-in
+`--instruction-loading core` ablation loads the unchanged standalone SKILL and
+the public reason-code vocabulary, without preloading the four reference
+documents. Its separate manifest seals both paths and content hashes. The Skill
+catalog, task inputs, output schema, execution mode, and scoring contract stay
+the same.
+
+Core loading requires `--screening`, so it cannot qualify a release or be used
+for Delta Qualification. Reports record the loading mode and instruction digest.
+An offline check that does not invoke a model is:
+
+```powershell
+$evaluationPython = (Get-Command python).Source
+python scripts/run-v2-benchmark.py `
+  --suite beta-smoke --screening --repeats 1 `
+  --instruction-loading core --evidence-class reference-driver `
+  --adapter-executable $evaluationPython `
+  --adapter-arg evaluation/v2/reference_driver.py `
+  --output-dir dist/evaluation/core-reference
+```
+
+Live runs still require explicit model/quota authorization, a fixed budget,
+`--confirm-live-run`, and the source/adapter integrity checks.
+
+### 2026-10-20 exploratory comparison
+
+One paired run used the same six Contract 2.3.1 cases, GPT-6.1 Sol at `medium`,
+and Codex CLI `0.163.0-alpha.10.2`. Consent continuations used the existing local
+deterministic transition. Each case ran once per arm: 12 attempts and 14 CLI
+turns. The configured model identifier is not a provider-attested snapshot.
+
+| Observation | Full package | Core-only package |
+| --- | ---: | ---: |
+| Instruction bytes, UTF-8 | 18,712 | 8,150 |
+| Final routing fields match | 6 / 6 | 6 / 6 |
+| Full evidence contract match | 1 / 6 | 1 / 6 |
+| Hard violations | 0 | 0 |
+| Input tokens, including cached input | 132,349 | 115,993 |
+| Output tokens | 1,382 | 1,474 |
+
+Core-only input was 12.36% lower than the full-package arm. No regression in
+final routing fields was observed in this single run; both arms still failed
+the full evidence contract on five cases. This does not establish repeatability,
+lower monetary cost, faster completed development, or release qualification.
+
+The installed Plugin already supports reading references as needed. This
+closed routing test omits references entirely; it does not simulate on-demand
+retrieval and cannot establish installed Plugin token savings. The tested
+instruction bodies and Plugin runtime remain unchanged. Local manifests and
+restricted transcripts are retained under
+`dist/evaluation/next-round/run-03/`; evidence remains review-required.
+
+繁中說明：這次量到的是評測指令包的輸入減量，完整與精簡組的最終路由都是
+6/6，但完整契約都只有 1/6。尚不能宣稱正式 Plugin 已節省 Token、提高程式品質，
+或通過新版模型資格驗證。
+
+### Historical development replay: blocked before usable outcomes
+
+Two replay tasks were bound to actual Router Core repair commits:
+`86f139f8946afa2578c0ba3be915097be15eefbf` for explicitly selected Skills in
+Single work/replay, and `30a9d4cf84c4e14faa688f0a39c86086da37c464` for bilingual
+classification and negated long-running intent. Inputs used each repair's
+parent source snapshot. Held-out regression checks failed before each repair
+and passed at its known fix. The first task's checks cover explicit selection,
+replay, and unchanged generic automatic work; they do not qualify the entire
+historical integration suite.
+
+The first Codex CLI `0.163.0-alpha.10.2` baseline attempt timed out after
+300 seconds. A second baseline attempt, using the `:workspace` permission
+profile and an outside-repository workspace, was stopped after about 125
+seconds without a completed shell command or a source repair. Independent
+non-model sandbox commands succeeded, but model-driven shell execution did not.
+The cause was unresolved at that point. The later execution recovery below
+isolated fresh sandbox initialization against the shared temporary directory;
+the earlier failed attempts remain failed and are not rescored.
+
+One diagnostic disabled the code-mode host and received an explicit
+host-disabled error; that diagnostic cannot establish a normal-client failure.
+A subsequent diagnostic restored the normal execution features and still
+failed to create the marker file within its 75-second bound. The installed
+`0.145.0` client was also checked without changing the requested model; it
+returned HTTP 400 saying that `gpt-6.1-sol` was unsupported with ChatGPT account
+authentication. This older-client rejection is not a claim that the newer
+client or the account generally lacks the model: the routing run above used it
+successfully.
+
+The alternative local gRPC transport was also checked with the same workspace
+permissions and failed its bounded marker check. Full-agent development
+comparisons were stopped. **Usable completed full-agent workflows in that
+round: zero.** The
+bounded patch-generation fallback below is a separate experiment and does not
+establish agent-run testing, installed Plugin/MCP integration, or verified-Host
+conformance. All these replays add zero tasks to the formal twenty-task Pilot.
+
+The exploratory run retained 12 completed routing attempts, two incomplete
+development attempts, four compatibility diagnostics, and six bounded patch
+attempts: 24 execution attempts in total. Incomplete turns have unavailable
+usage, not zero usage. Protected local artifacts remain under
+`dist/evaluation/next-round/`; temporary authentication files were removed.
+
+### Bounded patch-generation fallback
+
+The fallback used the same GPT-6.1 Sol, `medium` reasoning, and
+`0.163.0-alpha.10.2` client in fresh contexts, without model tool execution.
+Each of the two historical tasks ran once in each of three arms. All arms
+received the same complete source files and task brief. The host accepted only
+unique exact replacements in the task's source-file allowlist, applied edits
+transactionally to isolated snapshots, and ran held-out tests afterward.
+Scope escape, missing-match, and transactional-failure checks passed before the
+first model run. No golden repair or held-out test body was sent to the model.
+
+| Observation | Model only | Full Router instructions | Core Router instructions |
+| --- | ---: | ---: | ---: |
+| Patches applied | 2 / 2 | 2 / 2 | 2 / 2 |
+| Cases passing all held-out checks | 1 / 2 | 1 / 2 | 1 / 2 |
+| Input tokens, including cached input | 51,101 | 60,763 | 55,327 |
+| Output tokens | 2,390 | 3,127 | 3,214 |
+
+All three arms repaired the explicitly selected Skill/replay defect and passed
+its two focused checks. All three passed 28 of 29 bilingual-classification
+checks and missed the same remaining case: recognizing resumable intent in
+`跨專案分里程碑執行，保留進度以便恢復`. These generated repairs were tested only in
+isolated historical snapshots; the already-fixed current source was not
+replaced.
+
+Core input was 8.95% below the full arm but 8.27% above model-only input. This
+small experiment does not demonstrate better repair correctness from Router
+instructions or token savings over the model-only arm. The task briefs were
+reconstructed from repair scope, rather than untouched original issue reports;
+they did not enumerate every lexical alias, which limits interpretation of
+the shared classification miss. There was no repeat per task/arm and no
+generalization or code-quality claim. The host ran the tests; the model did not.
+
+The frozen manifest, script binding, six patches, and test output remain local
+under `dist/evaluation/next-round/patch-repair-01/`. They are exploratory and
+await human review. This fallback did not establish CLI tool-execution
+recovery or qualify the formal real-work Pilot.
+
+繁中說明：受限修補比較已完成，三組都是 1/2 案例完全通過，沒有證明 Router
+能提高這兩個問題的修補正確率。精簡組比完整組少用約 8.9% 輸入 Token，
+但仍比原生組多約 8.3%。這個受限修補實驗本身沒有驗證完整代理流程或正式
+Plugin 效能；後續完整代理結果見下節。
+
+### Full-agent execution recovery and one paired repair
+
+The 2026-10-20 follow-up used the same `0.163.0-alpha.10.2` client and
+GPT-6.1 Sol with `medium` reasoning. A no-model crossover isolated the startup
+stall to fresh Windows sandbox state interacting with the shared temporary
+directory. Giving each attempt its own `TEMP`, `TMP`, and `TMPDIR` restored
+command execution without disabling the sandbox or code-mode host. The
+evaluation CLI driver now creates and protects that directory per attempt.
+A fresh live-model smoke wrote and read a real file and ran unittest in
+19.48 seconds.
+
+Python's private temporary directories exposed a second compatibility issue
+in the legacy `unelevated` sandbox. The three installed Python runtimes
+reproduced access-denied errors. The existing, already-provisioned `elevated`
+sandbox passed the same file lifecycle check, so the complete repair runs used
+that sandbox with workspace permissions. No sandbox accounts were provisioned
+and no full-access workaround was used. See the official
+[Windows sandbox guidance](https://learn.chatgpt.com/docs/windows/windows-sandbox).
+The normal evaluation driver still isolates its Codex home; the complete-agent
+replays reused the existing sandbox home, disabled user configuration, rules,
+plugins, Memory, project instructions and the discovered standalone Skills,
+then supplied the same two small test Skills in each fresh source snapshot.
+This is fresh-thread evidence, not a claim of a fully hermetic host.
+
+One bilingual-classification repair ran once per arm against the same
+historical source, brief, and held-out checks. Unlike the earlier patch-only
+fallback, both agents inspected and edited real files and ran their own tests.
+The brief now explicitly included `跨專案分里程碑執行，保留進度以便恢復` as an
+acceptance example; this is a new experiment, not a retrospective improvement
+of the earlier score.
+
+| Observation | Model only | Router Skill + bundled MCP |
+| --- | ---: | ---: |
+| Held-out regression checks | 29 / 29 | 29 / 29 |
+| Completed shell commands | 7 | 14 |
+| Elapsed seconds | 158.875 | 335.372 |
+| Input tokens, including cached input | 213,137 | 702,659 |
+| Cached input tokens | 164,608 | 644,096 |
+| Output tokens | 4,141 | 6,935 |
+
+This pair shows **no repair-correctness gain**. Router input and latency were
+higher. Neither token savings nor a general speed or quality improvement is
+supported by this single pair. The Router arm also ran a much broader
+historical suite: its first broad run had 43 errors, five revision-expectation
+failures and 13 skips among 566 tests. Its focused routing and integration
+checks subsequently passed, but the whole historical suite did not. The
+held-out result above covers only the 29 task-specific checks.
+The different amount of work and provider caching also prevent interpreting
+these figures as an isolated Router-overhead estimate or a billing comparison.
+
+The Router arm made real MCP calls. Its Profile-less Phased plan returned
+`decomposition-required`, with no executable item. The model nevertheless
+tried invented boundary IDs in `record_work_event` and `evaluate_gate`; both
+failed closed. That is an integration/usability defect, not a completed local
+workflow or evidence of Host authority. A separate earlier repair completed
+through direct Python imports instead of MCP and is excluded from this pair's
+Plugin-integration claim. Another configuration diagnostic was stopped before
+source edits. Neither is silently counted as an MCP success.
+
+The resulting development changes expose the six actual observation shapes
+in the MCP input schema, reject mixed or unknown payloads before bridge
+dispatch, explain the local evidence digest, and make the decomposition
+boundary actionable. They also distinguish absent managed Profile directories
+from invalid existing Profiles: a new installation no longer receives a false
+`managed-profile-invalid` warning. The existing strict I/O and authority checks
+remain in force.
+
+The rebuilt development bundle then completed a separate Profile-backed
+integration replay of the explicit-Skill retention defect. A frozen workspace
+Profile supplied `repair` and `review` phases with separate Primary Skills and
+exit checks. The model edited the historical source, reproduced the regression
+before repair, and ran 42 focused integration tests afterward. Both held-out
+checks passed. All 11 actual MCP calls succeeded, including two
+`evaluate_gate` calls with `passed=true` and `host_transition_authorized=false`.
+Read-only SQLite verification confirmed both work items were `completed`,
+with two persisted `gate-pass` transitions and no Native Goal binding. The
+Profile and measured bundle hashes still matched the frozen inputs.
+
+That run took 198.273 seconds, with 526,135 input tokens including 477,824
+cached input tokens, and 3,752 output tokens. Its transcript and validation
+remain under `dist/evaluation/next-round/agent-profile-replay-01/`; a sanitized
+machine-checked readback is in
+`dist/evaluation/next-round/sanitized-agent-workflow.json`. This verifies a
+complete local workflow under the configured Profile. It is **not** a paired
+before/after optimization score: the task and Profile differ from the
+Profile-less bilingual repair above. It does not establish that schema changes
+alone caused better completion or that an unconfigured Phased plan now
+decomposes automatically.
+
+The paired manifest, transcripts, patches and held-out output are retained
+under `dist/evaluation/next-round/agent-replay-03/`. These runs used the
+canonical Skill and actual bundled MCP transport configured in the test
+environment. They do **not** verify marketplace installation, verified-Host
+activation, Native Goal transitions or a published Plugin upgrade. They remain
+exploratory, review-required, and contribute zero tasks to the formal Pilot.
+
+繁中說明：CLI 已能實際讀寫檔案、修改程式並自行跑測試。這一組對照兩邊都是
+29/29，Router 組花的時間與輸入 Token 較多，不能宣稱提高程式正確率、加速或
+省 Token。實測找到的是工作流程介面的缺口：未分解的 Phased 計畫不能當成可
+執行工作，也不能捏造工作 ID 通過 Gate。這輪優化針對輸入契約、失敗指引與
+首次使用的誤報；正式模型資格驗證與 marketplace 安裝驗證仍未完成。
+另外一個設定好 workspace Profile 的實測，已由模型實際完成修補、42 項測試、
+兩個階段與兩個本機 Gate；11 次 MCP 呼叫全部成功，資料庫也確認兩個工作項目
+完成。可證明的是設定後的流程能被持久保存與核對，不能把不同條件的案例當成
+優化前後的效能提升。
+
 ## Freshness and failure handling
 
 - Every repeat must create a distinct provider context; a driver must not reuse chat/session IDs.

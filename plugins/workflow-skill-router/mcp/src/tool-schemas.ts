@@ -20,6 +20,20 @@ const sha256Fingerprint = z.string().regex(
   "Must be a lowercase SHA-256 fingerprint.",
 );
 const control = { context };
+// 與 Core codec 的六種 observation 對齊，避免模型猜測欄位或混用本機與 Host 證據。
+const workObservation = z.union([
+  z.object({
+    work_item_id: z.string(),
+    transition: z.enum(["start", "submit", "pause", "resume", "fail"]),
+    check_ids: z.array(z.string()),
+    reported_outcome: z.string().nullable(),
+  }).strict().describe("Router-local progress only; check IDs report actual completed checks, never verified Host authority."),
+  z.object({ capability_id: z.string(), activation_receipt_ref: z.string() }).strict(),
+  z.object({ gate_id: z.string(), evidence_kind: z.string(), evidence_receipt_ref: z.string() }).strict(),
+  z.object({ action_digest: z.string(), intent_receipt_ref: z.string() }).strict(),
+  z.object({ intent_id: z.string(), action_digest: z.string(), outcome_receipt_ref: z.string() }).strict(),
+  z.object({ reason_code: z.string(), blocker_ref: z.string() }).strict(),
+]).describe("Exactly one Core observation shape. Native receipt-bearing shapes still require verified Host authority; a valid payload does not grant it.");
 const agentSnapshot = z.object({
   schema_id: z.string().describe("Registered schema identifier for the agent runtime snapshot."),
   schema_version: z.string().describe("Version of the registered runtime snapshot schema."),
@@ -112,7 +126,7 @@ export const TOOL_INPUT_SHAPES = {
     ...mutation,
     workflow_run_id: z.string().min(1).describe("Workflow run receiving the semantic observation."),
     phase_id: z.string().min(1).describe("Phase receiving the semantic observation."),
-    observation: z.record(z.string(), z.unknown()).describe("Versioned work observation validated by the core codec."),
+    observation: workObservation,
     activation_receipt_ref: z.string().nullable().describe("Single-use activation receipt when the observation reports execution."),
   }).strict().shape,
   evaluate_gate: z.object({
@@ -120,7 +134,7 @@ export const TOOL_INPUT_SHAPES = {
     workflow_run_id: z.string().min(1).describe("Workflow run whose phase gate is evaluated."),
     phase_id: z.string().min(1).describe("Phase whose exit gate is evaluated."),
     expected_plan_revision: z.number().int().nonnegative().describe("Plan revision bound to this gate decision."),
-    expected_evidence_digest: z.string().min(1).describe("Evidence digest expected before evaluating mandatory checks."),
+    expected_evidence_digest: z.string().min(1).describe("Evidence digest expected before evaluating mandatory checks. For router-local work, use sha256: plus the SHA-256 of compact UTF-8 JSON with sorted keys: {\"evidence_class\":\"user-or-agent-reported-local\",\"persisted_check_ids\":[...sorted persisted check IDs...]}. Check IDs come from the matched Profile phase exit_gate, or router-local-single-completed for profile-less Single work. Do not invent evidence or substitute a command-output hash."),
     evidence_refs: z.array(z.string()).describe("Content-addressed evidence references considered by the gate."),
   }).strict().shape,
   get_router_status: z.object({

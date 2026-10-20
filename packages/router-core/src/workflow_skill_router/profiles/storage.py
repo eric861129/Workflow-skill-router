@@ -180,7 +180,11 @@ class RoutingProfileRepository:
             if profile.profile_id != expected_profile_id:
                 return None, True
             return profile, False
-        except (ProfileIOError, RoutingProfileContractError, OSError, ValueError):
+        except ProfileIOError as error:
+            # 尚未啟用 Memory 時不會有 managed 目錄；缺少目錄不等於 Profile 損壞。
+            # 既有路徑的連結與其他 I/O 錯誤仍由 secure_read_json 拒絕。
+            return None, str(error) != "profile-directory-missing"
+        except (RoutingProfileContractError, OSError, ValueError):
             return None, True
 
     def load_ranked_layers(self, *, workspace_root: Path | None) -> LoadedProfileLayers:

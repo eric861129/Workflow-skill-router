@@ -25,6 +25,30 @@ else:
 
 
 class RoutingProfileStorageTests(unittest.TestCase):
+    def test_absent_managed_profiles_are_not_invalid_and_reads_create_no_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data_dir = root / "state"
+            workspace = root / "workspace"
+            data_dir.mkdir()
+            workspace.mkdir()
+            repository = RoutingProfileRepository(data_dir)
+
+            layers = repository.load_ranked_layers(workspace_root=workspace)
+
+            self.assertEqual((), layers.warnings)
+            self.assertEqual([], list(data_dir.iterdir()))
+            self.assertEqual([], list(workspace.iterdir()))
+
+            from workflow_skill_router.memory.managed_profiles import managed_personal_profile_path
+            malformed = managed_personal_profile_path(data_dir)
+            malformed.parent.mkdir(parents=True)
+            malformed.write_text("{}", encoding="utf-8")
+            self.assertIn(
+                "managed-profile-invalid",
+                repository.load_ranked_layers(workspace_root=workspace).warnings,
+            )
+
     @staticmethod
     def _create_directory_link(link: Path, target: Path) -> None:
         if os.name == "nt":
