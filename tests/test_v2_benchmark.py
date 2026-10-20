@@ -99,7 +99,7 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertEqual(0.0, metrics["route_contract_match_rate"])
         self.assertEqual(0.0, metrics["envelope_source_match_rate"])
 
-    def test_screening_report_is_locked_and_cannot_claim_repeat_consistency(self):
+    def test_core_screening_report_is_locked_and_cannot_claim_repeat_consistency(self):
         class FakeAdapter:
             def __init__(self, *args, **kwargs):
                 self.counter = 0
@@ -129,6 +129,7 @@ class V2BenchmarkTests(unittest.TestCase):
             ):
                 RUNNER.main([
                     "--suite", "beta-smoke", "--screening", "--repeats", "1",
+                    "--instruction-loading", "core",
                     "--evidence-class", "behavior", "--confirm-live-run",
                     "--adapter-executable", sys.executable,
                     "--adapter-arg", str(CANONICAL_BEHAVIOR_ADAPTER.resolve()),
@@ -141,10 +142,36 @@ class V2BenchmarkTests(unittest.TestCase):
         self.assertEqual("exploratory-model", report["evidence_class"])
         self.assertTrue(report["evidence_class_locked"])
         self.assertFalse(report["qualification_eligible"])
+        self.assertEqual("core", report["provenance"]["instruction_loading"])
+        self.assertEqual(
+            RUNNER.load_profiles("core")["candidate"]["instruction_package"]["digest"],
+            report["provenance"]["router_instruction_digest"],
+        )
         self.assertEqual(12, report["attempt_count"])
         self.assertEqual("medium", report["provenance"]["sampling_settings"]["reasoning_effort"])
         for arm in ("baseline", "candidate"):
             self.assertIsNone(report["comparison"][arm]["within_case_consistency_rate"])
+
+    def test_core_loading_preserves_routing_inputs_and_checks_its_own_digest(self):
+        full = RUNNER.load_profiles()
+        core = RUNNER.load_profiles("core")
+        self.assertEqual(full["baseline"], core["baseline"])
+        full_candidate = copy.deepcopy(full["candidate"])
+        core_candidate = copy.deepcopy(core["candidate"])
+        full_package = full_candidate.pop("instruction_package")
+        core_package = core_candidate.pop("instruction_package")
+        self.assertEqual(full_candidate, core_candidate)
+        self.assertNotEqual(full_package["digest"], core_package["digest"])
+        self.assertLess(
+            len(RUNNER.instruction_text(core["candidate"]).encode("utf-8")),
+            len(RUNNER.instruction_text(full["candidate"]).encode("utf-8")),
+        )
+        corrupted = copy.deepcopy(core["candidate"])
+        corrupted["instruction_package"]["digest"] = full_package["digest"]
+        with self.assertRaisesRegex(EvaluationIntegrityError, "instruction_package_digest_mismatch"):
+            RUNNER.validate_instruction_package(corrupted)
+        with self.assertRaisesRegex(EvaluationIntegrityError, "instruction_loading_invalid"):
+            RUNNER.load_profiles("unknown")
 
     def test_reasoning_changes_cannot_resume_a_previous_attempt(self):
         args = ("beta-smoke", "baseline", "small-auto", 0, "Route", [])
@@ -186,6 +213,8 @@ class V2BenchmarkTests(unittest.TestCase):
         base = ["--evidence-class", "behavior", "--adapter-executable", sys.executable,
                 "--output-dir", "unused-screening-output"]
         for options, message in (
+            (["--suite", "full", "--instruction-loading", "core"], "Core-only instruction loading requires"),
+            (["--suite", "beta-smoke", "--instruction-loading", "core", "--delta-qualification", "activation-claim-v1"], "Core-only instruction loading requires"),
             (["--suite", "beta-smoke", "--repeats", "1"], "at least three repeats"),
             (["--suite", "full", "--repeats", "1", "--screening"], "Screening requires"),
             (["--suite", "beta-smoke", "--repeats", "3", "--screening"], "Screening requires"),

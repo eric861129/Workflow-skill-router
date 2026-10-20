@@ -349,12 +349,21 @@ def load_cases(suite: str) -> list[dict[str, Any]]:
     return [by_id[case_id] for case_id in selected["case_ids"]]
 
 
-def load_profiles() -> dict[str, dict[str, Any]]:
+def load_profiles(instruction_loading: str = "full") -> dict[str, dict[str, Any]]:
+    """載入相同評測設定，僅允許以封存套件比較指令載入範圍。"""
+
+    if instruction_loading not in {"full", "core"}:
+        raise EvaluationIntegrityError("instruction_loading_invalid")
     profiles = {
         "baseline": json.loads((V2 / "baselines" / "no-router.json").read_text(encoding="utf-8")),
         "candidate": json.loads((V2 / "profiles" / "router-v2.json").read_text(encoding="utf-8")),
     }
     validate_instruction_package(profiles["candidate"])
+    if instruction_loading == "core":
+        profiles["candidate"]["instruction_package"] = json.loads(
+            (V2 / "profiles" / "core-instruction-package.json").read_text(encoding="utf-8")
+        )
+        validate_instruction_package(profiles["candidate"])
     if profiles["baseline"].get("execution", {}).get("mode") != "model-only":
         raise EvaluationIntegrityError("baseline_execution_mode_invalid")
     if profiles["candidate"].get("execution", {}).get("mode") != "hybrid-router":
@@ -1471,6 +1480,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--adapter-arg", action="append", default=[])
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--screening", action="store_true", help="Exploratory beta smoke only; never formal Behavior qualification")
+    parser.add_argument(
+        "--instruction-loading", choices=("full", "core"), default="full",
+        help="Core-only instruction ablation requires screening; formal qualification keeps the full package",
+    )
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--confirm-live-run", action="store_true")
@@ -1490,6 +1503,8 @@ def main(argv: list[str] | None = None) -> int:
         print(behavior_adapter_closure_revision())
         return 0
     args = build_parser().parse_args(effective_argv)
+    if args.instruction_loading == "core" and not args.screening:
+        raise SystemExit("Core-only instruction loading requires --screening; it cannot qualify a release.")
     if args.screening and (args.suite != "beta-smoke" or args.repeats != 1 or args.delta_qualification):
         raise SystemExit("Screening requires beta-smoke, one repeat, and no delta qualification.")
     if args.repeats < 3 and not args.screening:
@@ -1544,7 +1559,7 @@ def main(argv: list[str] | None = None) -> int:
             raise EvaluationIntegrityError("delta_parent_report_without_qualification")
         cases = load_cases(args.suite)
         selected_arms = ("baseline", "candidate")
-    profiles = load_profiles()
+    profiles = load_profiles(args.instruction_loading)
     configured_model = adapter_option(args.adapter_arg, "--model")
     model_version = (
         configured_model
@@ -1956,6 +1971,7 @@ def main(argv: list[str] | None = None) -> int:
                 adapter_option(args.adapter_arg, "--timeout-seconds") or args.timeout_seconds
             ),
             "repeats": args.repeats,
+            "instruction_loading": args.instruction_loading,
             "router_instruction_digest": profiles["candidate"]["instruction_package"]["digest"],
             "scoring_spec_set_digest": digest({
                 case["id"]: scoring_spec_digest(case) for case in cases
@@ -1988,6 +2004,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         } for record in records],
         "limitations": [
+            *(
+                ["Core-only instruction ablation omits reference documents; it does not simulate on-demand retrieval or establish installed Plugin token savings."]
+                if args.instruction_loading == "core" else []
+            ),
             (
                 "The reference driver does not execute the hybrid consent state machine, so hybrid transition metrics are unavailable."
                 if args.evidence_class == "reference-driver"
