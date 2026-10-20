@@ -526,9 +526,10 @@ class GitHubWorkflowTests(unittest.TestCase):
 
         self.assertIn("permissions:\n      contents: read", release_job)
         self.assertNotIn("permissions:\n      contents: write", release_job)
-        self.assertIn(
-            "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
+        self.assertRegex(
             release_job,
+            r"(?m)^[ \t]+uses: actions/create-github-app-token@[0-9a-f]{40}"
+            r"(?:[ \t]+#[^\r\n]*)?[ \t]*$",
         )
         self.assertIn("client-id: ${{ vars.WSR_RELEASE_APP_CLIENT_ID }}", release_job)
         self.assertIn(
