@@ -18,6 +18,14 @@ def version_tuple(value: str) -> tuple[int, int, int]:
 
 
 class SiteDependencySecurityTests(unittest.TestCase):
+    def test_locked_selector_parsers_include_cpu_exhaustion_fix(self) -> None:
+        lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
+        for path, package in lock["packages"].items():
+            if path.endswith("node_modules/postcss-selector-parser"):
+                with self.subTest(path=path):
+                    # GHSA-rj75-hqrm-r3gf：所有層級的相依套件都必須包含修補。
+                    self.assertGreaterEqual(version_tuple(package["version"]), (7, 1, 6))
+
     def test_locked_image_pipeline_includes_reviewed_security_fixes(self) -> None:
         lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
         for name, minimum in (("astro", (7, 2, 8)), ("sharp", (0, 35, 5))):

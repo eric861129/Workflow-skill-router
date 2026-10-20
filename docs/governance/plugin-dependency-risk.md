@@ -1,7 +1,7 @@
 # Plugin Dependency Security Decision
 
-**Reviewed:** 2026-10-19
-**Scope:** `plugins/workflow-skill-router` production dependency graph
+**Reviewed:** 2026-10-20
+**Scope:** Plugin production dependencies and documentation site build dependencies
 
 ## Resolved findings
 
@@ -42,7 +42,7 @@ ranges on 2026-10-19: Astro **7.4.0**, Starlight **0.41.11**, and Sharp
 The site audit fell from 20 affected entries (including 8 High and 1 Critical)
 to **10 Moderate, zero High, zero Critical**.
 
-The remaining entries are one transitive advisory propagated through
+Those ten entries were one transitive advisory propagated through
 Starlight / Expressive Code / `postcss-nested` 6.2.0 /
 `postcss-selector-parser` 6.1.4:
 [GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf).
@@ -50,9 +50,22 @@ It concerns CPU exhaustion during CSS selector parsing. This is part of the
 documentation build dependency graph; the count does not mean ten distinct
 reachable runtime flaws in the static site.
 
-The current upstream Expressive Code package still requires `postcss-nested`
-6.x. npm's proposed Starlight downgrade to 0.21.5 is not a compatible repair;
-no forced downgrade or unverified cross-major parser override is applied.
-Recheck on every site dependency change. Exit criterion: the supported
-upstream chain resolves the parser to **7.1.6** or newer, then rebuild the site,
-run browser smoke tests, and confirm the advisory is absent from `npm audit`.
+On **2026-10-20**, the parser was updated to **7.1.6** with an npm override
+scoped to `postcss-nested`. Expressive Code still requires `postcss-nested`
+6.x, whose parser range excludes the fix. Dependabot PR #107's Starlight
+0.42.6 update also retained parser 6.1.4 and the same ten audit entries, so
+that upgrade alone did not resolve the advisory. The targeted repair keeps
+Starlight 0.41.11 and all other locked package versions unchanged.
+
+The parser override crosses a major version and was checked with a clean
+`npm ci`, a 68-page production build, and **34 passing browser smoke and
+visual tests**. All seven generated CSS files retained identical paths and
+SHA-256 hashes compared with the previous lockfile. A full `npm audit`
+reported **zero findings**. The lockfile regression test rejects parser
+versions below 7.1.6 at every installation depth; the dated site exception
+is now resolved.
+
+Recheck on every site dependency change. Keep the override until the upstream
+dependency chain accepts a fixed parser without it; remove it only after a
+fresh install, audit, build, and browser tests pass. A future advisory still
+requires a new assessment.
