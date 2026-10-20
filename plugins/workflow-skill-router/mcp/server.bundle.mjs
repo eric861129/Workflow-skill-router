@@ -24094,6 +24094,19 @@ var sha256Fingerprint = external_exports3.string().regex(
   "Must be a lowercase SHA-256 fingerprint."
 );
 var control2 = { context: context2 };
+var workObservation = external_exports3.union([
+  external_exports3.object({
+    work_item_id: external_exports3.string(),
+    transition: external_exports3.enum(["start", "submit", "pause", "resume", "fail"]),
+    check_ids: external_exports3.array(external_exports3.string()),
+    reported_outcome: external_exports3.string().nullable()
+  }).strict().describe("Router-local progress only; check IDs report actual completed checks, never verified Host authority."),
+  external_exports3.object({ capability_id: external_exports3.string(), activation_receipt_ref: external_exports3.string() }).strict(),
+  external_exports3.object({ gate_id: external_exports3.string(), evidence_kind: external_exports3.string(), evidence_receipt_ref: external_exports3.string() }).strict(),
+  external_exports3.object({ action_digest: external_exports3.string(), intent_receipt_ref: external_exports3.string() }).strict(),
+  external_exports3.object({ intent_id: external_exports3.string(), action_digest: external_exports3.string(), outcome_receipt_ref: external_exports3.string() }).strict(),
+  external_exports3.object({ reason_code: external_exports3.string(), blocker_ref: external_exports3.string() }).strict()
+]).describe("Exactly one Core observation shape. Native receipt-bearing shapes still require verified Host authority; a valid payload does not grant it.");
 var agentSnapshot = external_exports3.object({
   schema_id: external_exports3.string().describe("Registered schema identifier for the agent runtime snapshot."),
   schema_version: external_exports3.string().describe("Version of the registered runtime snapshot schema."),
@@ -24184,7 +24197,7 @@ var TOOL_INPUT_SHAPES = {
     ...mutation2,
     workflow_run_id: external_exports3.string().min(1).describe("Workflow run receiving the semantic observation."),
     phase_id: external_exports3.string().min(1).describe("Phase receiving the semantic observation."),
-    observation: external_exports3.record(external_exports3.string(), external_exports3.unknown()).describe("Versioned work observation validated by the core codec."),
+    observation: workObservation,
     activation_receipt_ref: external_exports3.string().nullable().describe("Single-use activation receipt when the observation reports execution.")
   }).strict().shape,
   evaluate_gate: external_exports3.object({
@@ -24192,7 +24205,7 @@ var TOOL_INPUT_SHAPES = {
     workflow_run_id: external_exports3.string().min(1).describe("Workflow run whose phase gate is evaluated."),
     phase_id: external_exports3.string().min(1).describe("Phase whose exit gate is evaluated."),
     expected_plan_revision: external_exports3.number().int().nonnegative().describe("Plan revision bound to this gate decision."),
-    expected_evidence_digest: external_exports3.string().min(1).describe("Evidence digest expected before evaluating mandatory checks."),
+    expected_evidence_digest: external_exports3.string().min(1).describe('Evidence digest expected before evaluating mandatory checks. For router-local work, use sha256: plus the SHA-256 of compact UTF-8 JSON with sorted keys: {"evidence_class":"user-or-agent-reported-local","persisted_check_ids":[...sorted persisted check IDs...]}. Check IDs come from the matched Profile phase exit_gate, or router-local-single-completed for profile-less Single work. Do not invent evidence or substitute a command-output hash.'),
     evidence_refs: external_exports3.array(external_exports3.string()).describe("Content-addressed evidence references considered by the gate.")
   }).strict().shape,
   get_router_status: external_exports3.object({
@@ -24548,7 +24561,7 @@ var DESCRIPTIONS = {
   plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
-  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. Native Goal scheduling requires verified-host-scheduler. A missing graph requests Router-owned graph creation or replay; a corrupt graph returns only a sanitized internal-error correlation. All unavailable or unsafe branches fail closed.",
+  get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. If status is decomposition-required and work_item is null, no executable item exists: do not invent work_item_id or phase_id, or call record_work_event/evaluate_gate for that boundary. Phased or Managed Goal local execution needs a matched user-owned Profile Skill Tree; load it with plan_work.routing_context and a trusted workspace root. Otherwise report the durable-work limitation and continue only advisory work within Host permissions. Native Goal scheduling requires verified-host-scheduler; unsafe branches fail closed.",
   validate_route: "Validate a concrete route and any proposed support capability against current policy, consent, risk, and runtime evidence. This mutation requires verified-host snapshots and activation authority.",
   record_work_event: "For a validated Router-owned work graph with no Native Goal authority, append only user-or-agent-reported-local progress and return host_transition_authorized=false. Native Goal work requires verified-event-store and activation-receipt-verifier. A missing graph requests local graph creation or replay; a corrupt graph returns a sanitized internal-error. All unavailable or unsafe branches fail closed.",
   evaluate_gate: "For a validated Router-owned work graph with no Native Goal authority, evaluate only persisted local check IDs as a router-local advisory gate with host_transition_authorized=false. A local pass is not Skill activation, Native Goal completion, deployment, or production approval. Native Goal gates require verified-evidence-store and gate-authority; missing graphs request local creation or replay, while corrupt graphs return a sanitized internal-error. All unavailable or unsafe branches fail closed.",

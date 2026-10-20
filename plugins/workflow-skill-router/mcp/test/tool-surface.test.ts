@@ -4,6 +4,35 @@ import { z } from "zod";
 import { PUBLIC_TOOL_NAMES } from "../src/tool-definitions.js";
 import { PLAN_WORK_INPUT_SCHEMA, TOOL_INPUT_SHAPES } from "../src/tool-schemas.js";
 
+test("work observations expose valid payloads and reject mixed authority before bridge dispatch", () => {
+  const schema = TOOL_INPUT_SHAPES.record_work_event.observation;
+  const local = {
+    work_item_id: "work-item:repair",
+    transition: "submit",
+    check_ids: ["repair-verified"],
+    reported_outcome: "Regression checks passed; agent-reported local evidence only.",
+  };
+  assert.equal(schema.safeParse(local).success, true);
+  for (const invalid of [
+    { ...local, transition: "completed" },
+    { ...local, check_ids: "repair-verified" },
+    { ...local, host_transition_authorized: true },
+    { ...local, activation_receipt_ref: "invented-receipt" },
+    { work_item_id: "work-item:repair", transition: "submit" },
+  ]) {
+    assert.equal(schema.safeParse(invalid).success, false);
+  }
+  for (const native of [
+    { capability_id: "skill:diagnosing-bugs", activation_receipt_ref: "host-receipt" },
+    { gate_id: "gate:repair", evidence_kind: "test", evidence_receipt_ref: "host-evidence" },
+    { action_digest: "action-digest", intent_receipt_ref: "host-intent" },
+    { intent_id: "intent:one", action_digest: "action-digest", outcome_receipt_ref: "host-outcome" },
+    { reason_code: "user-request", blocker_ref: "blocker:one" },
+  ]) {
+    assert.equal(schema.safeParse(native).success, true);
+  }
+});
+
 test("只公開核准的二十個工具", () => {
   assert.equal(PUBLIC_TOOL_NAMES.length, 20); assert.equal(new Set(PUBLIC_TOOL_NAMES).size, 20);
   assert.ok(PUBLIC_TOOL_NAMES.includes("propose_support_consent"));
