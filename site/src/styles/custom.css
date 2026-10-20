@@ -1909,6 +1909,12 @@ body:has(.wsr-landing) .pagination-links {
   overflow-x: auto;
 }
 
+/* MCP 契約的長 JSON 應在程式碼區塊內捲動，避免被頁面外層裁切。 */
+.sl-markdown-content > details > pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .wsr-table-scroll table {
   min-width: 56rem;
 }

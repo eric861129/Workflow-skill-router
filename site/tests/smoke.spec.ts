@@ -110,6 +110,25 @@ for (const pageCase of pages) {
   });
 }
 
+for (const locale of ['', 'zh-tw/']) {
+  for (const width of [390, 1280]) {
+    test(`MCP schemas remain keyboard-scrollable at ${width}px in ${locale || 'en'}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${locale}reference/mcp-tools/`);
+      const contract = page.locator('details').filter({
+        has: page.locator('summary code', { hasText: /^evaluate_gate$/ }),
+      });
+      await contract.locator('summary').click();
+      const schema = contract.locator('pre').first();
+      await expect(schema).toBeVisible();
+      await schema.focus();
+      await expect(schema).toBeFocused();
+      await schema.press('ArrowRight');
+      await expect.poll(() => schema.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+    });
+  }
+}
+
 test('explicit skill rejection keeps support inactive', async ({ page }) => {
   await page.goto('zh-tw/');
   await page.getByTestId('demo-preset-small-explicit-reject-support').click();
