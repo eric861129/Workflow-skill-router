@@ -183,6 +183,55 @@ Skill activation, token savings, or completed-task quality. Those require
 separate observable receipts and an outcome protocol. No live run is authorized
 by this preparation note.
 
+## Running the Behavior gate with Claude Code
+
+`adapters/claude_code_driver.py` runs the same paired protocol through Claude
+Code. It subclasses the Codex driver, so route validation, the public evidence
+vocabulary, the consent state machine, protected transcripts, and failure
+diagnostics are shared byte for byte. The runner treats both drivers as
+canonical Behavior entrypoints; the Claude driver's adapter revision binds its
+own bytes and the Codex driver it loads.
+
+Each turn starts a fresh `claude --print --output-format json` process with the
+route or consent schema passed through `--json-schema`, `--tools ""`,
+`--strict-mcp-config`, `--disable-slash-commands`, and
+`--no-session-persistence`. The process gets a new `CLAUDE_CONFIG_DIR`, home,
+temporary directory, and empty workspace, so no user settings, Plugins, Skills,
+`CLAUDE.md`, or MCP servers load. Telemetry, error reporting, and nonessential
+traffic are disabled. Host session variables, including `ANTHROPIC_BASE_URL`,
+are not forwarded.
+
+Authentication is explicit. The driver accepts only `CLAUDE_CODE_OAUTH_TOKEN`
+(created with `claude setup-token`, which uses a Claude subscription) or
+`ANTHROPIC_API_KEY` from the environment, and refuses to start without one. It
+never reads the desktop app's login or the user's Claude configuration.
+
+Usage follows the Codex fields: `input_tokens` is input plus cache creation plus
+cache reads, and `cached_input_tokens` is cache reads. Record the Claude Code
+version (`claude_code_version` in the report provenance) and the exact model.
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path "packages/router-core/src").Path
+$Python = (Get-Command python).Source
+$Driver = (Resolve-Path "evaluation/v2/adapters/claude_code_driver.py").Path
+$Claude = "<absolute path to claude.exe>"
+$Source = git rev-parse HEAD
+$Adapter = python -c "import runpy,sys; m=runpy.run_path('scripts/run-v2-benchmark.py', run_name='adapter_revision'); print(m['adapter_source_revision'](sys.executable, [sys.argv[1]]))" $Driver
+python scripts/run-v2-benchmark.py --suite beta-smoke --evidence-class behavior `
+  --adapter-executable $Python --adapter-arg $Driver `
+  --adapter-arg --claude-executable --adapter-arg $Claude `
+  --adapter-arg --model --adapter-arg claude-sonnet-5-5 `
+  --adapter-arg --timeout-seconds --adapter-arg 180 --timeout-seconds 240 `
+  --repeats 3 --confirm-live-run `
+  --authorized-source-revision $Source --authorized-adapter-revision $Adapter `
+  --output-dir dist/evaluation/claude-behavior
+```
+
+The tree must be clean and `$Source` must be the frozen candidate. The paired
+beta smoke is 36 attempts and 42 model turns and consumes Claude quota. Its
+sanitized report stays `review-required` until a maintainer reviews and attests
+it.
+
 ### 2026-10-19 本機探索性比較（待人工審查）
 
 使用隔離的 Codex CLI `0.163.0`、固定 `medium` 推理設定，以及相同的六個案例與 Skill catalog。每個模型、每個 arm、每個案例只執行一次；這不是模型能力排名，也不是三次重複的正式資格測試。模型識別來自 CLI 設定，供應端沒有另外提供模型 snapshot 證明。兩組都不執行實際開發工作；candidate 的同意續接使用本機確定性狀態機，沒有證明完整 MCP／Host 整合或真實 Skill 啟用。
