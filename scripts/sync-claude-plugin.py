@@ -20,6 +20,7 @@ HOST_FILES = (
     ".claude-plugin/plugin.json",
     ".mcp.json",
     "README.md",
+    "assets/icon.png",
     "skills/workflow-skill-router/SKILL.md",
 )
 SKILL_SUPPORT_FILES = (

@@ -59,4 +59,4 @@ The default data directory is outside the Plugin cache, so uninstalling or updat
 
 ## Source of truth
 
-This directory is generated in part. `.claude-plugin/plugin.json`, `.mcp.json`, `README.md`, and `skills/workflow-skill-router/SKILL.md` are maintained by hand. Everything else is copied byte-for-byte from the Codex Plugin and the canonical Skill by `python scripts/sync-claude-plugin.py`. CI runs it with `--check`.
+This directory is generated in part. `.claude-plugin/plugin.json`, `.mcp.json`, `README.md`, `assets/icon.png`, and `skills/workflow-skill-router/SKILL.md` are maintained by hand. Everything else is copied byte-for-byte from the Codex Plugin and the canonical Skill by `python scripts/sync-claude-plugin.py`. CI runs it with `--check`.

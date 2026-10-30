@@ -7,7 +7,7 @@ const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 
 const pages = [
   { path: './', text: 'Workflow Skill Router' },
-  { path: 'zh-tw/', text: '讓 Codex 按照你的工作流程做事' },
+  { path: 'zh-tw/', text: '每個階段一個主導 Skill' },
   { path: 'guides/quickstart/', text: 'V2 Quickstart' },
   { path: 'guides/downloads/', text: 'Choose your V2 install mode' },
   { path: 'guides/install-plugin/', text: 'Install the Plugin + MCP runtime' },
@@ -22,8 +22,9 @@ const pages = [
 test('homepage presents the V2 product and install choices first', async ({ page }) => {
   await page.goto('./');
   const hero = page.locator('.wsr-hero');
-  await expect(hero.getByRole('heading', { name: /make your codex workflow repeatable/i })).toBeVisible();
-  await expect(hero.getByRole('link', { name: /install plugin \+ mcp/i })).toBeVisible();
+  await expect(hero.getByRole('heading', { level: 1, name: /workflow skill router/i })).toBeVisible();
+  await expect(hero.getByText(/one lead skill per phase, for claude code and codex/i)).toBeVisible();
+  await expect(hero.getByRole('link', { name: /install the plugin/i })).toBeVisible();
   await expect(hero.getByRole('link', { name: /use skill only/i })).toBeVisible();
   await expect(page.getByText('Download Blank Router')).toHaveCount(0);
 });
@@ -38,7 +39,7 @@ test('mobile navigation exposes the full brand and named theme control', async (
 test('homepage keyboard focus and heading hierarchy stay accessible', async ({ page }) => {
   await page.goto('./');
 
-  const primaryAction = page.locator('.wsr-hero').getByRole('link', { name: /install plugin \+ mcp/i });
+  const primaryAction = page.locator('.wsr-hero').getByRole('link', { name: /install the plugin/i });
   await primaryAction.focus();
   await expect(primaryAction).toBeFocused();
   const focusStyle = await primaryAction.evaluate((element) => {

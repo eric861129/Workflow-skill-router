@@ -33,7 +33,7 @@ export default defineConfig({
     starlight({
       title: 'Workflow Skill Router',
       description:
-        'Repeatable Codex workflows with explicit Skill choices, focused phases, and inspectable routing plans.',
+        'Repeatable Claude Code and Codex workflows with explicit Skill choices, focused phases, and inspectable routing plans.',
       defaultLocale: 'root',
       locales: {
         root: {
@@ -66,18 +66,33 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       head: [
         {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        },
+        {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@400;700&display=swap',
+          },
+        },
+        {
           tag: 'meta',
           attrs: {
             name: 'keywords',
             content:
-              'AI agent skill routing pattern, agent sprawl, skill selection sprawl, workflow router, Codex skills, multi-skill agents, agent governance, developer tools',
+              'AI agent skill routing, Claude Code plugin, Codex plugin, Claude Code skills, Codex skills, workflow router, MCP server, agent governance, developer tools',
           },
         },
         {
           tag: 'meta',
           attrs: {
             name: 'theme-color',
-            content: '#08111f',
+            content: '#2b2622',
           },
         },
         {
