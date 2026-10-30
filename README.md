@@ -62,6 +62,17 @@ Choose this mode for routing instructions without the local MCP runtime. Downloa
 
 The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. Neither installation includes every specialist Skill your workflow may reference.
 
+### Claude Code (development main)
+
+Claude Code support is new on the development branch and is not part of `v2.0.2`. The Claude Code Plugin runs the same MCP server and Python runtime as the Codex Plugin, with a Claude Code version of the Router SKILL. **Node.js 24+ and Python 3.11+ are required.**
+
+```text
+/plugin marketplace add eric861129/Workflow-skill-router
+/plugin install workflow-skill-router@workflow-skill-router
+```
+
+Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json` first and falls back to `.codex/workflow-skill-router.json`. Personal Profiles and local state are shared with the Codex Plugin. See the [Claude Code installation guide](site/src/content/docs/guides/install-claude-code.md).
+
 ## Evidence and limits
 
 The 2026-10-19 exploration compared model-only routing with Router-assisted routing on six cases, using GPT-6.1 Sol, GPT-6 Astra, and GPT-6 Luna at `medium` reasoning. Each case ran once per arm. It tested routing decisions, not completed software development.

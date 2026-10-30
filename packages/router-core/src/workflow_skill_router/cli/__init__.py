@@ -44,6 +44,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
+    if args.command in {"serve-jsonl", "doctor"}:
+        from workflow_skill_router.hosts import HostProfileError, current_host
+
+        try:
+            host = current_host()
+        except HostProfileError as error:
+            # 在 bridge 收任何工具呼叫前 fail closed，避免以錯誤 Host 路徑讀取 workspace 設定。
+            print(str(error), file=sys.stderr)
+            return 78
     if args.command == "serve-jsonl":
         from workflow_skill_router.bridge import serve
         from workflow_skill_router.local_control import LocalControlPlaneService
@@ -61,6 +70,7 @@ def main(argv: list[str] | None = None) -> int:
             "conformance_profile": None,
             "fallback_mode": "skill-only-fallback",
             "content_preflight": "unobservable",
+            "host": host.host_id,
             "telemetry_enabled": False,
             "tools": readiness_document(),
         }, ensure_ascii=False, sort_keys=True))

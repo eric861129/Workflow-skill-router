@@ -1,0 +1,17 @@
+{
+  "name": "workflow-skill-router",
+  "owner": {
+    "name": "ChiYu"
+  },
+  "metadata": {
+    "description": "Workflow Skill Router for Claude Code: route each task, Phase, or Work Item through the smallest verifiable Skill set."
+  },
+  "plugins": [
+    {
+      "name": "workflow-skill-router",
+      "source": "./plugins/claude-code/workflow-skill-router",
+      "description": "Route Claude Code work through the smallest verifiable Skill set, honor user-selected Skills, and report planned and actual Skill usage.",
+      "category": "productivity"
+    }
+  ]
+}

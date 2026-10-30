@@ -1,0 +1,8 @@
+# Built-in behavior is already disabled when no policy file exists.
+# Create this explicit file when you want the choice to be visible and versioned.
+schema_id: workflow-skill-router/memory-policy
+schema_version: 1.0.0
+artifact_kind: memory-policy
+policy_id: personal:default
+scope: personal
+mode: disabled

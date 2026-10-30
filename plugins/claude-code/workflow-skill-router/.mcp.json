@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "workflow-skill-router": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.bundle.mjs"],
+      "env": {
+        "WORKFLOW_SKILL_ROUTER_HOST": "claude-code"
+      }
+    }
+  }
+}

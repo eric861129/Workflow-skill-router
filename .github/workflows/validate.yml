@@ -90,6 +90,8 @@ jobs:
         run: python scripts/build-v2-demo-data.py --check
       - name: Check generated MCP reference data
         run: node scripts/build-mcp-reference-data.mjs --check
+      - name: Check Claude Code plugin sync
+        run: python scripts/sync-claude-plugin.py --check
       - name: Build documentation site
         working-directory: site
         run: |

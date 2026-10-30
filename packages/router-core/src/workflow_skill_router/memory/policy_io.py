@@ -8,6 +8,8 @@ import stat
 import sys
 from typing import Literal
 
+from workflow_skill_router.hosts import HostProfile, current_host
+
 from .models import MemoryPolicy, MemoryPolicyError, MemoryScope
 from .policy import decode_policy_text
 
@@ -176,8 +178,9 @@ def _load_policy_file(path: Path, expected_scope: MemoryScope) -> tuple[MemoryPo
 class MemoryPolicyRepository:
     """Read strict Memory Policies from fixed, non-creating locations."""
 
-    def __init__(self, data_dir: Path | None = None) -> None:
+    def __init__(self, data_dir: Path | None = None, *, host: HostProfile | None = None) -> None:
         self.data_dir = default_router_data_dir() if data_dir is None else Path(data_dir)
+        self.host = current_host() if host is None else host
 
     def inspect_personal(self) -> PolicyLoadResult:
         return self._inspect(
@@ -190,13 +193,19 @@ class MemoryPolicyRepository:
 
     def inspect_workspace(self, workspace_root: Path) -> PolicyLoadResult:
         root = Path(workspace_root)
-        return self._inspect(
-            root=root,
-            parent=root / ".codex",
-            expected_scope=MemoryScope.WORKSPACE,
-            source_class="workspace-policy",
-            missing_code="workspace-policy-missing",
-        )
+        # 依 Host 目錄順序取第一個非 missing 結果；同一目錄內的多格式衝突仍回報 ambiguous。
+        result = PolicyLoadResult("missing", None, ("workspace-policy-missing",))
+        for directory in self.host.workspace_config_dirs:
+            result = self._inspect(
+                root=root,
+                parent=root / directory,
+                expected_scope=MemoryScope.WORKSPACE,
+                source_class="workspace-policy",
+                missing_code="workspace-policy-missing",
+            )
+            if result.status != "missing":
+                return result
+        return result
 
     def validate_explicit_file(
         self,
