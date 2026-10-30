@@ -1,70 +1,33 @@
-# Workflow Skill Router V2
+# Workflow Skill Router
 
-**讓 Codex 按照你的工作流程做事。**
+**讓 Claude Code 與 Codex 按照你的工作流程做事。**
 
-[English](README.md) · [繁體中文文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [開始使用](#開始使用) · [實測結果與限制](#實測結果與限制)
+每個階段一個主導 Skill，只帶這個階段需要的支援，工作流程存成設定檔重複使用。
 
-Workflow Skill Router 協助 Codex 為目前任務選擇 Skills、聚焦當下階段，並遵循你設定的工作流程。你可以安裝獨立 Skill，提供路由指引；也可以使用 Plugin 與 MCP 工具，在本機保存計畫、狀態與同意紀錄。
+[![Validate](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml/badge.svg)](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/eric861129/Workflow-skill-router)](https://github.com/eric861129/Workflow-skill-router/releases)
+[![License: MIT](https://img.shields.io/github/license/eric861129/Workflow-skill-router)](LICENSE)
 
-Skill 是針對特定工作整理的可重用指令。Router 協調何時使用哪些 Skills，實際工作仍由 Codex 與選定的 Skills 執行。
+[English](README.md) · [繁體中文文件](https://huangchiyu.com/Workflow-skill-router/zh-tw/) · [安裝](#安裝) · [路由範例](#路由範例) · [實測結果與限制](#實測結果與限制)
 
-## 為什麼需要這個專案
+[![實際記錄的路由：使用者指定 api-designer，並要求加入支援前先詢問；Router 保留 api-designer 為主要 Skill，並記錄被拒絕的支援。](site/public/assets/workflow-skill-router-demo-poster.png)](https://huangchiyu.com/Workflow-skill-router/zh-tw/showcase/)
 
-當 Skills 越裝越多，工作流程也多了幾個決定：誰負責主導、何時需要其他 Skill 協助、哪些事情應該留到下一階段？模型可以自行判斷，但你習慣的流程也需要明確定義，才能在不同任務中重複使用。
+Workflow Skill Router 是給 Claude Code 與 Codex 使用的開源 Plugin，會在 AI agent 開始工作前為目前任務選擇 Skills：選出主導目前階段的 Skill，只加入這個階段需要的支援，並把計畫攤開給你看。工作流程只要定義一次，之後每個任務都會套用。
 
-Workflow Skill Router 讓這套流程可以被檢查與設定，設計上處理三種需求：
+## 你會得到什麼
 
-- **聚焦目前階段。** 規劃 API 變更時，不需要提早帶入實作與部署的 Skills。
-- **保留你的選擇。** 當你指定 Skill，就以它為主；加入指定範圍外的支援前，先取得你的同意。
-- **分清楚計畫與可用能力。** 計畫中提到的 Skill，不一定能在目前環境使用；Router 會揭露這個差異。
+- **每個階段都有聚焦的路由。** 規劃 API 變更時，不會提早帶入實作與部署的 Skills。
+- **你的選擇優先。** 你指定的 Skill 就是主導者；要加入指定範圍外的支援，會先取得你的同意。
+- **工作流程就是設定檔。** 個人或 workspace 的 Skill Tree 把任務對應到 Skills 與完成條件，同一份 Profile 在 Claude Code 與 Codex 都能用。
+- **清楚知道實際用了什麼。** 計畫中的 Skill 不會被當成環境裡可用的 Skill。工作結束時，計畫與實際使用的 Skills 會並列回報。
 
-開放原始碼讓使用者可以檢查路由規則、調整個人或團隊流程，並驗證它對自己的任務是否有幫助。
+## 安裝
 
-## 適合哪些情境
+兩種 Plugin 都需要 **Node.js 24+ 與 Python 3.11+**。Plugin 已包含編譯好的 MCP bundle 與 Python runtime，不需要 npm。
 
-| 你的情況 | Router 提供的幫助 |
-| --- | --- |
-| Skills 職責重疊，經常需要重複交代由誰主導 | 可重用的個人或工作區路由設定 |
-| 工作需要經過規劃、實作與驗證 | 每個階段分別選擇 Skills，並設定完成條件 |
-| 跨專案工作有相依關係，需要保留進度後續作 | 本機工作圖與明確的下一步；整合 Codex 原生 Goal 仍需要執行環境支援 |
-| 只有一件小任務，也已知道該用哪個 Skill | 維持小範圍路由；額外設定可能沒有太多幫助 |
+### Claude Code
 
-## 如何運作
-
-1. **讀取任務與你的明確指定。** 判斷是單一任務、多階段流程，還是需要管理相依關係的工作圖。
-2. **套用你的工作流程。** Personal Routing Profiles 將任務對應到主要 Skill，以及目前階段需要的支援。
-3. **確認能力是否可用。** Runtime Capability Discovery 區分預計選用的能力，以及目前環境確實能使用的能力。
-4. **讓計畫可以被檢查。** 在 Codex 繼續前，顯示路由、缺少的能力，以及需要確認的支援項目。
-
-例如，你可以把 API 變更設定為先釐清需求，再實作，最後驗證。每個階段分別選擇 Skills。這是在說明可設定的行為，並非已量測的開發成果。
-
-本機執行程式以固定規則分類工作、比對路由設定。它不會安裝或啟用 Skills、選擇底層模型，也不會授予部署權限。[閱讀架構總覽](docs/architecture/v2-overview.md)。
-
-## 開始使用
-
-已發布版本為 **v2.0.2**。目前分支也包含尚未發布的開發內容，例如需自行啟用的 Adaptive Workflow Memory。一般安裝請固定使用發布版本。
-
-### Plugin + MCP
-
-Codex 環境支援 Plugin 與 MCP 時，可以選擇這個模式。除了路由指引，它也會在本機保存計畫與同意紀錄。**需要 Node.js 24+ 與 Python 3.11+。** 發布套件已包含建置產物，只有從原始碼重新建置時需要 npm。
-
-```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
-codex plugin add workflow-skill-router@workflow-skill-router
-codex plugin list
-```
-
-開啟新的 Codex 任務，輸入：**「顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。」** 接著依照 [Plugin 安裝指南](site/src/content/docs/zh-tw/guides/install-plugin.md) 確認結果。
-
-### 獨立 Skill
-
-只需要路由指引、不使用本機 MCP 執行程式時，可以選擇這個模式。下載 [v2.0.2 Skill 套件](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，將內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
-
-[Skill-only 安裝指南](site/src/content/docs/zh-tw/guides/install-skill.md) 提供路徑與設定說明。這個模式引導模型行為，無法保存或強制執行 Plugin 的同意狀態機。兩種安裝都不會附帶工作流程可能引用的所有專業 Skills。
-
-### Claude Code（開發中主分支）
-
-Claude Code 支援是開發中主分支新增的內容，不包含在 `v2.0.2`。Claude Code Plugin 使用和 Codex Plugin 相同的 MCP server 與 Python runtime，另外搭配 Claude Code 版本的 Router SKILL。**需要 Node.js 24+ 與 Python 3.11+。**
+Claude Code 支援目前在開發中主分支，不包含在已發布的 `v2.0.2`。
 
 ```text
 /plugin marketplace add eric861129/Workflow-skill-router
@@ -72,6 +35,60 @@ Claude Code 支援是開發中主分支新增的內容，不包含在 `v2.0.2`�
 ```
 
 Claude Code 會先讀 `.claude/workflow-skill-router.json`，沒有時才讀 `.codex/workflow-skill-router.json`。個人 Profile 與本機狀態和 Codex Plugin 共用。詳見 [Claude Code 安裝指南](site/src/content/docs/zh-tw/guides/install-claude-code.md)。
+
+### Codex Plugin + MCP
+
+已發布版本為 **v2.0.2**。一般的 Codex 安裝請固定使用這個版本。除了路由指引，它也會在本機保存計畫與同意紀錄。
+
+```sh
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+```
+
+開發中主分支另有尚未發布的內容，例如需自行啟用的 Adaptive Workflow Memory。[Plugin 安裝指南](site/src/content/docs/zh-tw/guides/install-plugin.md)說明如何確認安裝結果。
+
+### 獨立 Skill
+
+只需要路由指引、不使用本機 MCP 執行程式時，可以選擇這個模式。下載 [v2.0.2 Skill 套件](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，將內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+
+[Skill-only 安裝指南](site/src/content/docs/zh-tw/guides/install-skill.md) 提供路徑與設定說明。這個模式引導模型行為，無法保存或強制執行 Plugin 的同意狀態機。任何安裝方式都不會附帶工作流程可能引用的所有專業 Skills。
+
+### 確認可以使用
+
+開啟新的 Claude Code 對話或新的 Codex 任務，輸入：**「顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。」** 回應應顯示 `bundled-local-r0` runtime，並列出目前環境可用的能力。
+
+## 路由範例
+
+內附的 [workspace Profile 範例](starter/v2/workflow-skill-router/assets/workspace-routing-profile.example.json)定義了一套 API 交付流程。套用這份 Profile 後，像 *「Deliver the api contract, implementation, and tests」* 這樣屬於 `api` domain 的請求，會產生如下的分階段計畫：
+
+| 階段 | 主導 Skill | 該階段的支援 | 完成條件 |
+| --- | --- | --- | --- |
+| contract | `api-designer` | `api-guidelines-skill` | `contract-reviewed` |
+| implementation | `csharp-developer` | 無 | `implementation-complete` |
+| verification | `qa-test-planner` | `playwright` | `tests-passed` |
+
+只有目前階段的 Skills 會成為生效中的路由，下一個階段開始時會重新路由。每個計畫中的 Skill 都維持 `intended-unverified`，直到執行環境確認它已安裝且可用。這是在說明可設定的行為，並非已量測的開發成果。
+
+## 適合哪些情境
+
+| 你的情況 | Router 提供的幫助 |
+| --- | --- |
+| Skills 職責重疊，經常需要重複交代由誰主導 | 可重用的個人或工作區路由設定 |
+| 工作需要經過規劃、實作與驗證 | 每個階段分別選擇 Skills，並設定完成條件 |
+| 跨專案工作有相依關係，需要保留進度後續作 | 本機工作圖與明確的下一步；整合原生 Goal 仍需要執行環境支援 |
+| 只有一件小任務，也已知道該用哪個 Skill | 維持小範圍路由；額外設定可能沒有太多幫助 |
+
+## 如何運作
+
+1. **讀取任務與你的明確指定。** 判斷是單一任務、多階段流程，還是需要管理相依關係的工作圖。
+2. **套用你的工作流程。** Personal Routing Profiles 將任務對應到主要 Skill，以及目前階段需要的支援。
+3. **確認能力是否可用。** Runtime Capability Discovery 區分預計選用的能力，以及目前環境確實能使用的能力。
+4. **讓計畫可以被檢查。** 在 AI agent 繼續前，顯示路由、缺少的能力，以及需要確認的支援項目。
+
+本機執行程式以固定規則分類工作、比對路由設定。它不會安裝或啟用 Skills、選擇底層模型，也不會授予部署權限。Skill 是針對特定工作整理的可重用指令；Router 協調何時使用哪些 Skills，實際工作仍由 AI agent 與選定的 Skills 執行。[閱讀架構總覽](docs/architecture/v2-overview.md)。
+
+開放原始碼讓使用者可以檢查路由規則、調整個人或團隊流程，並驗證它對自己的任務是否有幫助。
 
 ## 實測結果與限制
 
@@ -84,11 +101,13 @@ Claude Code 會先讀 `.claude/workflow-skill-router.json`，沒有時才讀 `.c
 - 部分簡單案例中，模型原本就能選對 Skills。Router 是否有額外價值，取決於你需要遵循哪些流程規則。
 - 測試完整載入指令套件，輸入 Token 增加約 26–28%；尚未證明能降低成本、加快交付或提升程式品質。
 - 單次執行無法證明穩定性，也不代表正式模型資格通過。這次比較沒有驗證完整 Plugin／執行環境整合或真實開發成果。
+- 這次比較只使用上述模型；Claude Code 支援尚未以 Claude 模型評測。
 
 詳細範圍與結果見[評測方法及實測紀錄](evaluation/v2/README.md)。評測方法以英文撰寫，這次的詳細結果以繁體中文記錄。結果仍屬探索性、待審查，不能作為已發布 v2.0.2 的資格證明，也不能用來替模型排名。
 
 ## 延伸閱讀
 
+- [Claude Code 安裝指南](site/src/content/docs/zh-tw/guides/install-claude-code.md)：安裝、驗證，並與 Codex 共用 Profile。
 - [Personal Routing Profiles](site/src/content/docs/zh-tw/concepts/personal-routing-profiles.md)：定義自己的流程，並檢查規則為什麼命中。
 - [執行環境的可用能力](site/src/content/docs/zh-tw/concepts/runtime-capability-discovery.md)：理解已安裝、可使用與已授權的差異。
 - [安全邊界](site/src/content/docs/zh-tw/reference/security-boundaries.md)：了解哪些決定仍由使用者與執行環境掌握。
