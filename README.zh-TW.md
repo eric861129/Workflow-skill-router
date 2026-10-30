@@ -27,7 +27,7 @@ Workflow Skill Router 是給 Claude Code 與 Codex 使用的開源 Plugin，會�
 
 ### Claude Code
 
-Claude Code 支援目前在開發中主分支，不包含在已發布的 `v2.0.2`。
+Claude Code 支援隨準備中的 2.1.0 候選版本提供，不包含在已發布的 `v2.0.2`。
 
 ```text
 /plugin marketplace add eric861129/Workflow-skill-router
@@ -38,10 +38,10 @@ Claude Code 會先讀 `.claude/workflow-skill-router.json`，沒有時才讀 `.c
 
 ### Codex Plugin + MCP
 
-已發布版本為 **v2.0.2**。一般的 Codex 安裝請固定使用這個版本。除了路由指引，它也會在本機保存計畫與同意紀錄。
+目前已發布的 V2 正式版：`2.0.2`。一般的 Codex 安裝請固定使用這個版本。2.1.0 新增 Claude Code Plugin 與需自行啟用的 Workflow Memory，目前是尚未發布的候選版本。除了路由指引，它也會在本機保存計畫與同意紀錄。
 
 ```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -50,7 +50,7 @@ codex plugin list
 
 ### 獨立 Skill
 
-只需要路由指引、不使用本機 MCP 執行程式時，可以選擇這個模式。下載 [v2.0.2 Skill 套件](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，將內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
+只需要路由指引、不使用本機 MCP 執行程式時，可以選擇這個模式。下載 [v2.1.0 Skill 套件](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip)，將內層 `workflow-skill-router/` 資料夾解壓縮到 Codex Skills 目錄。
 
 [Skill-only 安裝指南](site/src/content/docs/zh-tw/guides/install-skill.md) 提供路徑與設定說明。這個模式引導模型行為，無法保存或強制執行 Plugin 的同意狀態機。任何安裝方式都不會附帶工作流程可能引用的所有專業 Skills。
 

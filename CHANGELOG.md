@@ -4,6 +4,8 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.1.0 (prepared candidate)
+
 ### Added
 
 - Added a Claude Code Plugin in `plugins/claude-code/workflow-skill-router/`

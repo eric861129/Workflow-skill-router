@@ -55,13 +55,14 @@ class ClaudeCodePluginLayoutTests(unittest.TestCase):
     def test_generated_files_match_their_canonical_sources(self) -> None:
         self.assertEqual([], load_sync_module().problems())
 
-    def test_manifest_uses_an_allowed_name_and_tracks_commits(self) -> None:
+    def test_manifest_uses_an_allowed_name_and_the_release_version(self) -> None:
         manifest = read_json(PLUGIN / ".claude-plugin" / "plugin.json")
         self.assertEqual(PLUGIN.name, manifest["name"])
         self.assertFalse(manifest["name"].startswith(RESERVED_NAME_PREFIXES))
         self.assertRegex(manifest["name"], r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-        # 尚未進入 release 管線前不宣告版本，避免讓人以為它屬於已發布的 v2.0.2。
-        self.assertNotIn("version", manifest)
+        # Claude Code 依 manifest 版本判斷是否更新，必須與 release metadata 的產品版本一致。
+        release = read_json(ROOT / "release" / "version.json")
+        self.assertEqual(release["v2_version"], manifest["version"])
         self.assertTrue(manifest["homepage"].startswith("https://"))
         self.assertEqual(
             [".claude-plugin/plugin.json"],

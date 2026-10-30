@@ -27,7 +27,7 @@ Both Plugins need **Node.js 24+ and Python 3.11+**. They include the compiled MC
 
 ### Claude Code
 
-Claude Code support is on the development branch and is not part of the published `v2.0.2` release.
+Claude Code support ships with the prepared 2.1.0 candidate and is not part of the published `v2.0.2` release.
 
 ```text
 /plugin marketplace add eric861129/Workflow-skill-router
@@ -38,10 +38,10 @@ Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json
 
 ### Codex Plugin + MCP
 
-The published release is **v2.0.2**. Use this pinned release for a normal Codex installation. It adds persistent local plans and consent records to the routing instructions.
+Current published V2 release: `2.0.2`. Use this pinned release for a normal Codex installation. Version 2.1.0, which adds the Claude Code Plugin and opt-in Workflow Memory, is a prepared candidate that has not been published. It adds persistent local plans and consent records to the routing instructions.
 
 ```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -50,7 +50,7 @@ Development main also contains work that is not in `v2.0.2`, including opt-in Ad
 
 ### Standalone Skill
 
-Choose this mode for routing instructions without the local MCP runtime. Download [the v2.0.2 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
+Choose this mode for routing instructions without the local MCP runtime. Download [the v2.1.0 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
 
 The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. No installation includes every specialist Skill your workflow may reference.
 

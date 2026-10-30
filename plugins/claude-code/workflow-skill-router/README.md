@@ -1,8 +1,10 @@
 # Workflow Skill Router V2 for Claude Code
 
-Runtime-aware routing for Single, Phased, and Managed Goal work in Claude Code. This Plugin packages a Claude Code version of the Router SKILL, the same deterministic MCP server used by the Codex Plugin, and the local R0 Python control plane. Capabilities that require a verified host or configured model adapter fail closed instead of pretending to be locally available.
+Workflow Skill Router picks the Skill that should lead the current phase of a task, adds only the support that phase needs, and shows the route before Claude continues. You save your workflow once as a Profile (a lead Skill, up to three support Skills, and an exit gate per phase), and the same Profile works in Claude Code and Codex. When you name a Skill, it leads, and support outside your choice waits for your consent. A local MCP server keeps plans, consent records, and Router-owned work graphs on your machine.
 
-Claude Code support is development-main content. It is not part of the published `v2.0.2` release.
+This Plugin packages a Claude Code version of the Router SKILL, the same deterministic MCP server used by the Codex Plugin, and the local R0 Python control plane. Capabilities that require a verified host or configured model adapter fail closed instead of pretending to be locally available.
+
+Claude Code support ships with the prepared 2.1.0 candidate. It is not part of the published `v2.0.2` release.
 
 ## Requirements
 
@@ -10,7 +12,13 @@ Claude Code support is development-main content. It is not part of the published
 - Node.js 24 or newer on the `PATH` that launches Claude Code
 - Python 3.11 or newer (`py -3.11` or `python` on Windows, `python3` or `python` elsewhere)
 
-The Plugin already contains the MCP bundle and Python runtime archive. It ships no `package.json`, so Claude Code installs no npm dependencies.
+The Plugin already contains the MCP bundle and Python runtime archive. It ships no `package.json`, so Claude Code installs no npm dependencies, and it does not install, activate, or download other Skills or packages.
+
+The Plugin starts a local stdio MCP server, `node ${CLAUDE_PLUGIN_ROOT}/mcp/server.bundle.mjs`, which runs the bundled Python runtime `runtime/workflow_skill_router.pyz`. It works fully in Claude Code (terminal, IDE, and the desktop Code tab). Where local MCP servers are not loaded, such as claude.ai chat, only the Skill loads and runs as `skill-only-fallback`: routing instructions without durable state.
+
+## Privacy
+
+The Plugin stores plans, consent records, Profiles, and work-graph events in a local data directory outside the Plugin cache (`%LOCALAPPDATA%\Codex\workflow-skill-router` on Windows, `~/Library/Application Support/Codex/workflow-skill-router` on macOS, `${XDG_STATE_HOME:-~/.local/state}/codex/workflow-skill-router` on Linux). Plans store a digest of the objective, not the plaintext. The Plugin makes no network calls and has no telemetry. Workflow Memory is off by default.
 
 ## Install
 
@@ -28,7 +36,7 @@ claude plugin marketplace add eric861129/Workflow-skill-router
 claude plugin install workflow-skill-router@workflow-skill-router
 ```
 
-The Plugin manifest has no `version`, so Claude Code tracks the marketplace commit. Run `claude plugin update workflow-skill-router@workflow-skill-router` to pick up newer commits.
+The Plugin manifest carries the product version, so Claude Code offers an update when that version changes. Run `claude plugin update workflow-skill-router@workflow-skill-router` to pick it up.
 
 To load a contributor checkout without installing it, run Claude Code with `claude --plugin-dir plugins/claude-code/workflow-skill-router` from the repository root.
 

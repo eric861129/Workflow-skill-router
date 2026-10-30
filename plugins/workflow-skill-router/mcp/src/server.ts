@@ -16,7 +16,7 @@ import {
   collectTrustedWorkspaceRoots,
 } from "./workspace-roots.js";
 
-export const MCP_SERVER_VERSION = "2.0.2";
+export const MCP_SERVER_VERSION = "2.1.0";
 
 const core = new CoreClient();
 // Host 設定錯誤時在啟動 Python bridge 前 fail closed；Python core 也會再驗證一次。
