@@ -204,7 +204,9 @@ are not forwarded.
 Authentication is explicit. The driver accepts only `CLAUDE_CODE_OAUTH_TOKEN`
 (created with `claude setup-token`, which uses a Claude subscription) or
 `ANTHROPIC_API_KEY` from the environment, and refuses to start without one. It
-never reads the desktop app's login or the user's Claude configuration.
+never reads the desktop app's login or the user's Claude configuration. When
+both are set, Claude Code prefers `ANTHROPIC_API_KEY`, which bills the API
+account; unset it to keep the run on the subscription.
 
 Usage follows the Codex fields: `input_tokens` is input plus cache creation plus
 cache reads, and `cached_input_tokens` is cache reads. Record the Claude Code
@@ -219,9 +221,9 @@ $Source = git rev-parse HEAD
 $Adapter = python -c "import runpy,sys; m=runpy.run_path('scripts/run-v2-benchmark.py', run_name='adapter_revision'); print(m['adapter_source_revision'](sys.executable, [sys.argv[1]]))" $Driver
 python scripts/run-v2-benchmark.py --suite beta-smoke --evidence-class behavior `
   --adapter-executable $Python --adapter-arg $Driver `
-  --adapter-arg --claude-executable --adapter-arg $Claude `
-  --adapter-arg --model --adapter-arg claude-sonnet-5-5 `
-  --adapter-arg --timeout-seconds --adapter-arg 180 --timeout-seconds 240 `
+  --adapter-arg=--claude-executable --adapter-arg $Claude `
+  --adapter-arg=--model --adapter-arg claude-sonnet-5-5 `
+  --adapter-arg=--timeout-seconds --adapter-arg 180 --timeout-seconds 240 `
   --repeats 3 --confirm-live-run `
   --authorized-source-revision $Source --authorized-adapter-revision $Adapter `
   --output-dir dist/evaluation/claude-behavior
