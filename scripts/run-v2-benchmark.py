@@ -36,11 +36,16 @@ DELTA_QUALIFICATIONS = {
     "activation-claim-v1": V2 / "qualifications" / "activation-claim-v1.json",
 }
 CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
+CLAUDE_BEHAVIOR_ADAPTER = V2 / "adapters" / "claude_code_driver.py"
+# Claude Code driver 繼承 Codex driver 的驗證邏輯，因此兩者都是可產生 Behavior 證據的標準入口。
+CANONICAL_BEHAVIOR_ADAPTERS = (CANONICAL_BEHAVIOR_ADAPTER, CLAUDE_BEHAVIOR_ADAPTER)
 CANONICAL_BEHAVIOR_SCHEMA = V2 / "schemas" / "codex-route-output.schema.json"
 CANONICAL_CONSENT_SCHEMA = V2 / "schemas" / "codex-consent-intent.schema.json"
 BEHAVIOR_PYTHON_FLAGS = ("-I", "-S", "-B")
 BEHAVIOR_PROVIDER_ENV_ALLOWLIST = (
+    "ANTHROPIC_API_KEY",
     "APPDATA",
+    "CLAUDE_CODE_OAUTH_TOKEN",
     "ComSpec",
     "HOME",
     "HTTP_PROXY",
@@ -1002,9 +1007,17 @@ def case_diagnostics(
 
 
 def codex_version(adapter_arguments: list[str]) -> str | None:
-    if "--codex-executable" not in adapter_arguments:
+    return cli_version(adapter_arguments, "--codex-executable")
+
+
+def claude_code_version(adapter_arguments: list[str]) -> str | None:
+    return cli_version(adapter_arguments, "--claude-executable")
+
+
+def cli_version(adapter_arguments: list[str], option: str) -> str | None:
+    if option not in adapter_arguments:
         return None
-    index = adapter_arguments.index("--codex-executable") + 1
+    index = adapter_arguments.index(option) + 1
     if index >= len(adapter_arguments):
         return None
     try:
@@ -1122,23 +1135,23 @@ def _path_is_alias(path: Path) -> bool:
 
 
 def _canonical_behavior_entrypoint(entrypoint_argument: str) -> Path | None:
-    """Accept only the canonical repository-relative Behavior adapter identity."""
+    """Accept only a canonical repository-relative Behavior adapter identity."""
 
     try:
         candidate = Path(entrypoint_argument)
         if not candidate.is_absolute() or _path_is_alias(candidate):
             return None
-        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve(strict=True)
         lexical_candidate = os.path.normcase(os.path.abspath(str(candidate)))
-        lexical_canonical = os.path.normcase(str(canonical))
         resolved_candidate = candidate.resolve(strict=True)
-        if (
-            lexical_candidate != lexical_canonical
-            or resolved_candidate != canonical
-            or not canonical.is_file()
-        ):
-            return None
-        return canonical
+        for adapter in CANONICAL_BEHAVIOR_ADAPTERS:
+            canonical = adapter.resolve(strict=True)
+            if (
+                lexical_candidate == os.path.normcase(str(canonical))
+                and resolved_candidate == canonical
+                and canonical.is_file()
+            ):
+                return canonical
+        return None
     except (OSError, RuntimeError):
         return None
 
@@ -1148,12 +1161,16 @@ def _closure_relative_path_sort_key(path: Path, root: Path) -> tuple[str, str]:
     return relative.casefold(), relative
 
 
-def behavior_adapter_closure_paths() -> tuple[Path, ...]:
-    """Return the deterministic local code/data closure for the canonical driver."""
+def behavior_adapter_closure_paths(
+    adapter: Path = CANONICAL_BEHAVIOR_ADAPTER,
+) -> tuple[Path, ...]:
+    """Return the deterministic local code/data closure for a canonical driver."""
 
     router_package = CORE_SOURCE / "workflow_skill_router"
     try:
         candidates = {
+            adapter,
+            # Claude Code driver 在執行時載入 Codex driver，兩者都屬於同一個封閉集合。
             CANONICAL_BEHAVIOR_ADAPTER,
             REASON_VOCABULARY_PATH,
             CANONICAL_BEHAVIOR_SCHEMA,
@@ -1186,7 +1203,9 @@ def behavior_adapter_closure_paths() -> tuple[Path, ...]:
         ) from error
 
 
-def behavior_adapter_closure_revision() -> str:
+def behavior_adapter_closure_revision(
+    adapter: Path = CANONICAL_BEHAVIOR_ADAPTER,
+) -> str:
     """Digest canonical paths and bytes for every local driver dependency."""
 
     try:
@@ -1194,7 +1213,7 @@ def behavior_adapter_closure_revision() -> str:
         records = [{
             "path": path.relative_to(root).as_posix(),
             "sha256": sha256(path.read_bytes()).hexdigest(),
-        } for path in behavior_adapter_closure_paths()]
+        } for path in behavior_adapter_closure_paths(adapter)]
     except (OSError, RuntimeError, ValueError) as error:
         raise EvaluationIntegrityError(
             "behavior_adapter_revision_unavailable"
@@ -1294,9 +1313,9 @@ def adapter_source_revision(
     if entrypoint is None:
         return None
     try:
-        canonical = CANONICAL_BEHAVIOR_ADAPTER.resolve(strict=True)
-        if entrypoint == canonical:
-            return behavior_adapter_closure_revision()
+        for adapter in CANONICAL_BEHAVIOR_ADAPTERS:
+            if entrypoint == adapter.resolve(strict=True):
+                return behavior_adapter_closure_revision(adapter)
         return "sha256:" + sha256(entrypoint.read_bytes()).hexdigest()
     except (EvaluationIntegrityError, OSError, RuntimeError):
         return None
@@ -1953,6 +1972,7 @@ def main(argv: list[str] | None = None) -> int:
             "source_revision": source_revision,
             "adapter_revision": adapter_revision,
             "codex_cli_version": codex_version(args.adapter_arg),
+            "claude_code_version": claude_code_version(args.adapter_arg),
             "model_identifier": adapter_option(args.adapter_arg, "--model"),
             "sealed_model_version": model_version,
             "model_identity_status": (

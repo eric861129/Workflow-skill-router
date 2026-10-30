@@ -17,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER_PATH = ROOT / "scripts" / "build-plugin-distribution-repo.py"
 SYNCHRONIZER_PATH = ROOT / "scripts" / "sync-plugin-distribution-repo.py"
-VERSION = "2.0.2"
+VERSION = "2.1.0"
 SOURCE_REVISION = "a" * 40
 TARGET_REPOSITORY = "https://github.com/eric861129/workflow-skill-router-plugin"
 EXPECTED_REMOTE = "eric861129/workflow-skill-router-plugin"
@@ -291,7 +291,7 @@ class PluginDistributionRepoTests(unittest.TestCase):
         readme = tree.files[PurePosixPath("README.md")].decode("utf-8")
         self.assertIn(
             "codex plugin marketplace add "
-            "eric861129/workflow-skill-router-plugin --ref v2.0.2",
+            f"eric861129/workflow-skill-router-plugin --ref v{VERSION}",
             readme,
         )
         self.assertIn(

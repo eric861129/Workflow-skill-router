@@ -13,10 +13,10 @@ The released archive includes the MCP bundle and Python runtime. npm is required
 
 ## Tagged marketplace snapshot
 
-Use the immutable `v2.0.2` snapshot for normal installations:
+Use the immutable `v2.1.0` snapshot for normal installations:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```

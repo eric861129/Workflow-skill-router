@@ -1,7 +1,8 @@
 {
   "name": "workflow-skill-router",
+  "version": "2.1.0",
   "displayName": "Workflow Skill Router",
-  "description": "Runtime-aware Skill routing for Single, Phased, and Managed Goal work in Claude Code.",
+  "description": "Routes Claude Code work through one lead Skill per phase, asks before adding support, and shows every route.",
   "author": {
     "name": "ChiYu",
     "url": "https://github.com/eric861129"
@@ -9,5 +10,5 @@
   "homepage": "https://huangchiyu.com/Workflow-skill-router/",
   "repository": "https://github.com/eric861129/Workflow-skill-router",
   "license": "MIT",
-  "keywords": ["skill-router", "workflow", "mcp", "routing-profile"]
+  "keywords": ["skill-router", "workflow", "skills", "routing-profile", "mcp", "codex"]
 }

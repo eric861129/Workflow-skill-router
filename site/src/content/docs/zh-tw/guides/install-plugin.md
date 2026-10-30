@@ -13,10 +13,10 @@ description: 安裝、驗證與移除 Workflow Skill Router V2 Plugin，同時�
 
 ## 從已標記的 marketplace snapshot 安裝
 
-一般安裝請使用不可變的 `v2.0.2` snapshot：
+一般安裝請使用不可變的 `v2.1.0` snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```

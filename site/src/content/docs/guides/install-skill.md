@@ -9,7 +9,7 @@ Use the standalone SKILL when the Host cannot load Plugins/MCP or when you need 
 
 ## Install a release asset
 
-Download [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) from the GitHub Release. Extract the inner `workflow-skill-router/` folder into the Codex Skills directory.
+Download [`workflow-skill-router-skill-v2.1.0.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip) from the GitHub Release. Extract the inner `workflow-skill-router/` folder into the Codex Skills directory.
 
 Exact archive paths:
 
@@ -48,7 +48,7 @@ sed -n '1,8p' "$HOME/.agents/skills/workflow-skill-router/SKILL.md"
 
 ## Verify behavior
 
-Development main adds Memory examples; `v2.0.2` does not contain these three Policy files. The current source includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, `assets/memory-policy.automatic.example.yaml`, `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. The Policy files are examples only: Memory remains disabled unless the user deliberately chooses and installs a non-disabled policy. Put the workspace Profile example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile or Policy content in the conversation and treat the result as advisory.
+From `v2.1.0`, the package includes the three Memory Policy examples; `v2.0.2` does not contain them. The package includes `assets/memory-policy.disabled.example.yaml`, `assets/memory-policy.reviewed.example.yaml`, `assets/memory-policy.automatic.example.yaml`, `assets/personal-routing-profile.example.json`, `assets/workspace-routing-profile.example.json`, and `references/personal-routing-profiles.md`. The Policy files are examples only: Memory remains disabled unless the user deliberately chooses and installs a non-disabled policy. Put the workspace Profile example at `.codex/workflow-skill-router.json`; do not copy the personal example there unchanged. Skill-only reads fixed local files only when the Host grants filesystem access. Without it, provide the Profile or Policy content in the conversation and treat the result as advisory.
 
 Skill-only interprets the tree as `skill-only-fallback`. It must preserve workspace-over-personal precedence, explicit user SKILL priority, and the `intended-unverified` Runtime Capability Discovery boundary, but it cannot claim deterministic loading or durable enforcement. The `profile preview` CLI belongs to Plugin/Core mode.
 
