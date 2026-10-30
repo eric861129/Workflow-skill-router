@@ -23,6 +23,7 @@ const testSources = [
   ["bundled-runtime", "ts"],
   ["memory-runtime", "ts"],
   ["core-client", "ts"],
+  ["host", "ts"],
   ["python-discovery", "ts"],
   ["runtime-readiness", "ts"],
   ["runtime-output-validation", "ts"],

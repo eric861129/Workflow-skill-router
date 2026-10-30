@@ -4,6 +4,24 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+### Added
+
+- Added a Claude Code Plugin in `plugins/claude-code/workflow-skill-router/`
+  and a repository marketplace in `.claude-plugin/marketplace.json`. It runs
+  the same MCP server and Python runtime as the Codex Plugin with a Claude Code
+  version of the Router SKILL. `scripts/sync-claude-plugin.py --check` keeps
+  its copied files byte-identical to the canonical sources.
+- Added the `WORKFLOW_SKILL_ROUTER_HOST` host setting (`codex` by default, or
+  `claude-code`). The Claude Code host reads workspace Profiles and Memory
+  policies from `.claude/` before `.codex/`. Unknown values stop the MCP server
+  and the Python bridge before any workspace file is read.
+
+### Changed
+
+- MCP tool and schema descriptions now describe the host generically instead
+  of naming only Codex. Codex keeps its existing paths, data directory, and
+  routing behavior.
+
 ## 2.0.2
 
 ### Added

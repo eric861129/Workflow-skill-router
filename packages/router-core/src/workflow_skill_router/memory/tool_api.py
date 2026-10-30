@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 import sqlite3
 
+from workflow_skill_router.hosts import workspace_profile_path
 from workflow_skill_router.profiles.atomic_io import ProfileIOError, secure_read_json
 from workflow_skill_router.profiles.contract import decode_routing_profile
 from workflow_skill_router.runtime_readiness import CapabilityUnavailable
@@ -207,7 +208,7 @@ class MemoryToolAdapter:
             # the caller never supplies a filename or Profile ID.
             path, fixed = self.data_dir / "profiles/personal/adaptive-memory.json", self.data_dir
         elif target == "workspace-file" and root is not None:
-            path, fixed = root / ".codex/workflow-skill-router.json", root
+            path, fixed = workspace_profile_path(root), root
         else:
             raise MemoryStoreError("profile-target-not-allowed")
         try:

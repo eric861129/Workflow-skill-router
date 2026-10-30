@@ -23596,10 +23596,30 @@ var CoreClient = class {
   }
 };
 
+// mcp/src/host.ts
+var HOST_ENVIRONMENT_VARIABLE = "WORKFLOW_SKILL_ROUTER_HOST";
+var HOST_IDS = ["codex", "claude-code"];
+var HostConfigurationError = class extends Error {
+  constructor(value) {
+    super("host-unsupported");
+    this.value = value;
+    this.name = "HostConfigurationError";
+  }
+  value;
+};
+function resolveHost(env = process.env) {
+  const raw = (env[HOST_ENVIRONMENT_VARIABLE] ?? "").trim();
+  if (!raw) return "codex";
+  if (HOST_IDS.includes(raw)) return raw;
+  throw new HostConfigurationError(raw);
+}
+
 // mcp/src/startup-diagnostics.ts
 var PYTHON_STARTUP_FAILURE = "Workflow Skill Router\uFF1APython runtime \u4E0D\u53EF\u7528\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u6539\u7528\u7368\u7ACB\u5B89\u88DD\u7684 Skill-only \u6A21\u5F0F\u3002\n";
+var HOST_STARTUP_FAILURE = "Workflow Skill Router\uFF1AWORKFLOW_SKILL_ROUTER_HOST \u4E0D\u53D7\u652F\u63F4\uFF1BMCP server \u7121\u6CD5\u555F\u52D5\u3002\u8ACB\u8A2D\u5B9A\u70BA codex \u6216 claude-code\uFF0C\u6216\u79FB\u9664\u9019\u500B\u8B8A\u6578\u3002\n";
 var GENERIC_STARTUP_FAILURE = "Workflow Skill Router\uFF1AMCP \u555F\u52D5\u5931\u6557\u3002\u8ACB\u78BA\u8A8D\u672C\u6A5F\u72C0\u614B\u76EE\u9304\u3001\u6A94\u6848\u7CFB\u7D71\u6B0A\u9650\u8207 Plugin \u5B89\u88DD\u8A2D\u5B9A\u5F8C\u518D\u8A66\u3002\n";
 function startupFailureMessage(error46) {
+  if (error46 instanceof HostConfigurationError) return HOST_STARTUP_FAILURE;
   return error46 instanceof PythonDiscoveryError ? PYTHON_STARTUP_FAILURE : GENERIC_STARTUP_FAILURE;
 }
 
@@ -24082,7 +24102,7 @@ var context2 = external_exports3.object({
   session_id: external_exports3.string().min(1).describe("Stable session identifier used to isolate Router state and idempotency."),
   actor: external_exports3.string().min(1).describe("Verified user or host actor responsible for this request."),
   runtime_policy_snapshot_id: external_exports3.string().min(1).describe("Host policy snapshot governing authority and runtime behavior.")
-}).strict().describe("Authority context supplied by the Codex host.");
+}).strict().describe("Authority context supplied by the host runtime, such as Codex or Claude Code.");
 var mutation2 = {
   context: context2,
   expected_state_version: external_exports3.number().int().nonnegative().describe("Expected aggregate state version for compare-and-swap protection."),
@@ -24124,7 +24144,7 @@ var routingIdentifier = external_exports3.string().regex(/^[a-z0-9][a-z0-9._-]{0
 var routingIdentifiers = external_exports3.array(routingIdentifier).max(32).refine((values) => new Set(values).size === values.length, "Routing identifiers must be unique.");
 var routingContext = external_exports3.object({
   workspace_root: external_exports3.string().min(1).nullable().describe(
-    "Workspace root whose fixed .codex/workflow-skill-router.json may be loaded after MCP Client-root or operator-root authorization."
+    "Workspace root whose fixed host profile may be loaded after MCP Client-root or operator-root authorization: .codex/workflow-skill-router.json for Codex, or .claude/ before .codex/ for Claude Code."
   ),
   domains: routingIdentifiers.describe("Deterministic domain identifiers used by profile matchers."),
   tags: routingIdentifiers.describe("Deterministic task tags used by profile matchers."),
@@ -24558,7 +24578,7 @@ var DESCRIPTIONS = {
   rollback_profile_revision: "Create a new reviewable rollback Proposal from a validated Revision and current Profile Digest. This conditional-local mutation does not silently write a Profile; the new Proposal requires transition approval. Workspace file writes still require verified Host authority.",
   purge_workflow_memory: "Purge an explicitly confirmed local Memory scope bound to the current global summary Digest, including after capture is disabled. This destructive R1 operation never deletes User-owned Profiles; unsupported scopes return scope-not-available without claiming deletion.",
   sync_runtime_context: "Synchronize a verified host capability snapshot before routing or resuming work. This mutation requires verified-host authority and fails closed in the bundled local R0 runtime.",
-  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native Codex Goal, and grants no deployment or production authority.",
+  plan_work: "Create or replay a durable Single, Phased, or Managed Goal plan using deterministic automatic classification plus an optional deterministic Profile from user-owned configuration. The result exposes both sources and planned Skill intent; activation remains unverified until Runtime Discovery supplies evidence. Explicit Skill Lock and scoped consent still apply. This local planner is not a semantic model, does not activate Skills or mutate a native host Goal such as a Codex Goal, and grants no deployment or production authority.",
   propose_support_consent: "Persist one concrete Phase-scoped support SKILL set for an explicit-locked plan before asking the user. The bundled local R0 runtime binds the route, scope, revisions, and material context.",
   transition_support_consent: "Apply an approve or reject intent to a persisted support proposal. The bundled local R0 runtime preserves the bound route, rejects stale scope or revisions, and fails closed on conflicting replays.",
   get_next_work: "For a validated Router-owned work graph with no Native Goal authority, return the next local item with authority_mode=router-local and host_goal_mutated=false. If status is decomposition-required and work_item is null, no executable item exists: do not invent work_item_id or phase_id, or call record_work_event/evaluate_gate for that boundary. Phased or Managed Goal local execution needs a matched user-owned Profile Skill Tree; load it with plan_work.routing_context and a trusted workspace root. Otherwise report the durable-work limitation and continue only advisory work within Host permissions. Native Goal scheduling requires verified-host-scheduler; unsafe branches fail closed.",
@@ -24712,6 +24732,7 @@ function bindMemoryWorkspaceRoot(name, arguments_, trustedRoots) {
 var MCP_SERVER_VERSION = "2.0.2";
 var core = new CoreClient();
 try {
+  resolveHost();
   await core.start();
 } catch (error46) {
   process.stderr.write(startupFailureMessage(error46));

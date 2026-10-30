@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { HostConfigurationError } from "../src/host.js";
 import { PythonDiscoveryError } from "../src/python-discovery.js";
 import {
   GENERIC_STARTUP_FAILURE,
+  HOST_STARTUP_FAILURE,
   PYTHON_STARTUP_FAILURE,
   startupFailureMessage,
 } from "../src/startup-diagnostics.js";
@@ -19,4 +21,8 @@ test("spawn OS errors receive generic startup remediation", () => {
     });
     assert.equal(startupFailureMessage(error), GENERIC_STARTUP_FAILURE);
   }
+});
+
+test("an unsupported host receives host configuration guidance", () => {
+  assert.equal(startupFailureMessage(new HostConfigurationError("claude")), HOST_STARTUP_FAILURE);
 });

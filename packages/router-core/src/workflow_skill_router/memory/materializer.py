@@ -8,6 +8,7 @@ import sqlite3
 import stat
 from typing import Mapping
 
+from workflow_skill_router.hosts import workspace_profile_path
 from workflow_skill_router.profiles.atomic_io import (
     ProfileIOError,
     atomic_write_canonical_json,
@@ -114,7 +115,7 @@ class ProfileMaterializer:
                 raise ProfileMaterializationError("workspace-authority-root-invalid")
             if profile.scope != "workspace" or proposal.workspace_identity_digest is None:
                 raise ProfileMaterializationError("profile-target-scope-mismatch")
-            return root / ".codex" / "workflow-skill-router.json", root
+            return workspace_profile_path(root), root
         raise ProfileMaterializationError("profile-target-unsupported")
 
     def _load_receipt(self, idempotency_key: str, command_digest: str) -> ProfileRevision | None:

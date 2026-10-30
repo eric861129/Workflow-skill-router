@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import path from "node:path";
 import { CfWorkerJsonSchemaValidator } from "./cfworker-json-schema-provider.js";
 import { CoreBridgeError, CoreClient } from "./core-client.js";
+import { resolveHost } from "./host.js";
 import { startupFailureMessage } from "./startup-diagnostics.js";
 import { TOOL_DEFINITIONS } from "./tool-definitions.js";
 import { TOOL_OUTPUT_SCHEMAS } from "./tool-output-schemas.js";
@@ -18,7 +19,8 @@ import {
 export const MCP_SERVER_VERSION = "2.0.2";
 
 const core = new CoreClient();
-try { await core.start(); } catch (error) {
+// Host 設定錯誤時在啟動 Python bridge 前 fail closed；Python core 也會再驗證一次。
+try { resolveHost(); await core.start(); } catch (error) {
   process.stderr.write(startupFailureMessage(error));
   process.exit(78);
 }

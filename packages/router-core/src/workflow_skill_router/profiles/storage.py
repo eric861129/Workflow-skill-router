@@ -8,6 +8,7 @@ import stat
 import sys
 from typing import Any
 
+from workflow_skill_router.hosts import HostProfile, current_host, workspace_profile_path
 from workflow_skill_router.schemas.artifacts import canonical_json
 
 from .atomic_io import (
@@ -26,6 +27,7 @@ from .layers import LayeredRoutingProfile, LoadedProfileLayers, ProfileSourceCla
 
 MAX_PROFILE_BYTES = 256 * 1024
 MAX_PERSONAL_PROFILE_FILES = 32
+# Codex 的固定位置；實際讀取依 Host profile 決定，見 workflow_skill_router.hosts。
 WORKSPACE_PROFILE_PATH = Path(".codex/workflow-skill-router.json")
 
 
@@ -81,7 +83,8 @@ def load_profile_file(path: Path, *, expected_scope: str | None = None) -> Routi
 class RoutingProfileRepository:
     """Load user-owned and Router-managed Profiles without executing content."""
 
-    def __init__(self, data_dir: Path | None = None) -> None:
+    def __init__(self, data_dir: Path | None = None, *, host: HostProfile | None = None) -> None:
+        self.host = current_host() if host is None else host
         candidate = Path(data_dir or default_router_data_dir()).expanduser()
         lexical_data_dir = Path(os.path.abspath(candidate))
         if _is_reparse_or_symlink(lexical_data_dir):
@@ -214,7 +217,7 @@ class RoutingProfileRepository:
                 workspace_identity = verify_workspace_root(workspace_root)
             except ManagedProfilePathError as error:
                 raise RoutingProfileContractError(str(error)) from error
-            profile_path = workspace_identity.root / WORKSPACE_PROFILE_PATH
+            profile_path = workspace_profile_path(workspace_identity.root, self.host)
             if _is_reparse_or_symlink(profile_path):
                 raise RoutingProfileContractError(
                     "workspace profile cannot be a link or reparse point"
@@ -285,7 +288,7 @@ class RoutingProfileRepository:
             identity = verify_workspace_root(workspace_root)
         except ManagedProfilePathError as error:
             raise RoutingProfileContractError(str(error)) from error
-        profile_path = identity.root / WORKSPACE_PROFILE_PATH
+        profile_path = workspace_profile_path(identity.root, self.host)
         if _is_reparse_or_symlink(profile_path):
             raise RoutingProfileContractError("workspace profile cannot be a link or reparse point")
         if not profile_path.exists():

@@ -7,7 +7,7 @@ const context = z.object({
   session_id: z.string().min(1).describe("Stable session identifier used to isolate Router state and idempotency."),
   actor: z.string().min(1).describe("Verified user or host actor responsible for this request."),
   runtime_policy_snapshot_id: z.string().min(1).describe("Host policy snapshot governing authority and runtime behavior."),
-}).strict().describe("Authority context supplied by the Codex host.");
+}).strict().describe("Authority context supplied by the host runtime, such as Codex or Claude Code.");
 
 const mutation = {
   context,
@@ -52,7 +52,7 @@ const routingIdentifiers = z.array(routingIdentifier).max(32)
   .refine((values) => new Set(values).size === values.length, "Routing identifiers must be unique.");
 const routingContext = z.object({
   workspace_root: z.string().min(1).nullable().describe(
-    "Workspace root whose fixed .codex/workflow-skill-router.json may be loaded after MCP Client-root or operator-root authorization.",
+    "Workspace root whose fixed host profile may be loaded after MCP Client-root or operator-root authorization: .codex/workflow-skill-router.json for Codex, or .claude/ before .codex/ for Claude Code.",
   ),
   domains: routingIdentifiers.describe("Deterministic domain identifiers used by profile matchers."),
   tags: routingIdentifiers.describe("Deterministic task tags used by profile matchers."),

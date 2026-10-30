@@ -165,6 +165,7 @@ export default defineConfig({
           items: [
             { slug: 'guides/install-plugin' },
             { slug: 'guides/install-skill' },
+            { slug: 'guides/install-claude-code' },
             { slug: 'guides/adoption' },
             { slug: 'guides/configure-workflow-memory' },
             { slug: 'guides/migrate-to-workflow-memory' },

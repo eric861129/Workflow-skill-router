@@ -62,6 +62,17 @@ codex plugin list
 
 [Skill-only 安裝指南](site/src/content/docs/zh-tw/guides/install-skill.md) 提供路徑與設定說明。這個模式引導模型行為，無法保存或強制執行 Plugin 的同意狀態機。兩種安裝都不會附帶工作流程可能引用的所有專業 Skills。
 
+### Claude Code（開發中主分支）
+
+Claude Code 支援是開發中主分支新增的內容，不包含在 `v2.0.2`。Claude Code Plugin 使用和 Codex Plugin 相同的 MCP server 與 Python runtime，另外搭配 Claude Code 版本的 Router SKILL。**需要 Node.js 24+ 與 Python 3.11+。**
+
+```text
+/plugin marketplace add eric861129/Workflow-skill-router
+/plugin install workflow-skill-router@workflow-skill-router
+```
+
+Claude Code 會先讀 `.claude/workflow-skill-router.json`，沒有時才讀 `.codex/workflow-skill-router.json`。個人 Profile 與本機狀態和 Codex Plugin 共用。詳見 [Claude Code 安裝指南](site/src/content/docs/zh-tw/guides/install-claude-code.md)。
+
 ## 實測結果與限制
 
 2026-10-19 的探索性測試使用六個案例，比較模型自行路由與加入 Router 後的決策。測試模型包含 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，推理設定固定為 `medium`，每組每個案例只執行一次。測量範圍是路由決策，沒有執行完整軟體開發。
