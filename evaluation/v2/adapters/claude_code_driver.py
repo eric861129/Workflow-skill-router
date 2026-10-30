@@ -86,13 +86,15 @@ class ClaudeCodeDriver(CodexCliDriver):
     ) -> tuple[subprocess.CompletedProcess[str], float]:
         """Run one isolated Claude Code print-mode turn without tools or user state."""
         try:
-            schema = json.dumps(
-                json.loads(output_schema.read_text(encoding="utf-8")),
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
+            loaded = json.loads(output_schema.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             raise EvaluationIntegrityError("claude_output_schema_unreadable") from error
+        if not isinstance(loaded, dict):
+            raise EvaluationIntegrityError("claude_output_schema_unreadable")
+        # Claude CLI 的 --json-schema 驗證器不認得 draft 2020-12 的 $schema 宣告；
+        # 共用的 schema 只用到 draft-07 也有的關鍵字，拿掉宣告不改變驗證內容。
+        loaded.pop("$schema", None)
+        schema = json.dumps(loaded, ensure_ascii=False, separators=(",", ":"))
         command = [
             str(self._claude_executable),
             "--print",

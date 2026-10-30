@@ -126,10 +126,10 @@ class ClaudeCodeDriverTests(unittest.TestCase):
         self.assertEqual("json", argv[argv.index("--output-format") + 1])
         self.assertEqual("", argv[argv.index("--tools") + 1])
         self.assertEqual("claude-sonnet-5-5", argv[argv.index("--model") + 1])
-        self.assertEqual(
-            json.loads(self.schema.read_text(encoding="utf-8")),
-            json.loads(argv[argv.index("--json-schema") + 1]),
-        )
+        expected_schema = json.loads(self.schema.read_text(encoding="utf-8"))
+        self.assertIn("$schema", expected_schema)
+        del expected_schema["$schema"]
+        self.assertEqual(expected_schema, json.loads(argv[argv.index("--json-schema") + 1]))
         self.assertFalse(run.call_args.kwargs["shell"])
         self.assertEqual(17, run.call_args.kwargs["timeout"])
         workspace = Path(run.call_args.kwargs["cwd"])
