@@ -1,70 +1,33 @@
-# Workflow Skill Router V2
+# Workflow Skill Router
 
-**Make your Codex workflow repeatable.**
+**Make your Claude Code and Codex workflow repeatable.**
 
-[繁體中文](README.zh-TW.md) · [Documentation](https://huangchiyu.com/Workflow-skill-router/) · [Install](#get-started) · [Evidence and limits](#evidence-and-limits)
+One lead Skill per phase, only the support that phase needs, and your workflow saved as config you can reuse.
 
-Workflow Skill Router helps Codex choose Skills for the task at hand, keep each phase focused, and respect the workflow you define. Use it as a standalone Skill for routing instructions, or as a Plugin with MCP tools for local plans, state, and consent records.
+[![Validate](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml/badge.svg)](https://github.com/eric861129/Workflow-skill-router/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/eric861129/Workflow-skill-router)](https://github.com/eric861129/Workflow-skill-router/releases)
+[![License: MIT](https://img.shields.io/github/license/eric861129/Workflow-skill-router)](LICENSE)
 
-A Skill is a reusable set of instructions for a particular kind of work. The Router coordinates which Skills to use and when; Codex and the selected Skills still perform the work.
+[繁體中文](README.zh-TW.md) · [Documentation](https://huangchiyu.com/Workflow-skill-router/) · [Install](#install) · [See a route](#see-a-route) · [Evidence and limits](#evidence-and-limits)
 
-## Why this project exists
+[![A recorded route: the user names api-designer and asks before adding support; the Router keeps api-designer as primary and records the rejected support.](site/public/assets/workflow-skill-router-demo-poster.png)](https://huangchiyu.com/Workflow-skill-router/showcase/)
 
-As your Skill library grows, so do the workflow decisions: which Skill should lead, when should another one help, and which work belongs in a later phase? A capable model can make those decisions, but your preferred process should be explicit and reusable across tasks.
+Workflow Skill Router is an open-source Plugin for Claude Code and Codex. Before your agent starts work, it picks the Skill that should lead the current phase, adds only the support that phase needs, and shows you the plan. You define the workflow once, and the Router applies it to every task.
 
-Workflow Skill Router makes that process something you can inspect and configure. Its design addresses three recurring needs:
+## What you get
 
-- **Keep the current phase focused.** Planning an API change should not pull in implementation and deployment Skills before they are needed.
-- **Keep your choices in charge.** When you name a Skill, keep it as the primary choice and ask before adding support outside that choice.
-- **Separate a plan from an available capability.** A Skill mentioned in a plan may still be unavailable in the current environment. The Router makes that boundary visible.
+- **A focused route for each phase.** Planning an API change does not pull in implementation or deployment Skills before they are needed.
+- **Your choices stay in charge.** When you name a Skill, it leads. Support outside your choice needs your consent first.
+- **Your workflow as config.** A personal or workspace Skill Tree maps tasks to Skills and completion checks. The same Profile works in Claude Code and Codex.
+- **A clear record of what ran.** A Skill in the plan is not treated as a Skill the environment can use. When the work ends, you see planned and actual Skill usage side by side.
 
-The project is open source so you can inspect the routing rules, adapt a personal or team workflow, and test whether it helps your own tasks.
+## Install
 
-## When it helps
+Both Plugins need **Node.js 24+ and Python 3.11+**. They include the compiled MCP bundle and Python runtime, so you do not need npm.
 
-| Your situation | What the Router adds |
-| --- | --- |
-| You have overlapping Skills and keep explaining which one should lead | A reusable personal or workspace routing profile |
-| Your work moves through planning, implementation, and verification | A separate Skill selection and completion check for each phase |
-| You need to resume work with dependencies across projects | A local work graph with explicit next steps; native Codex Goal integration requires host support |
-| You have one small task and a clear Skill choice | A small route; additional configuration may add little value |
+### Claude Code
 
-## How it works
-
-1. **Read the task and your explicit choices.** Choose a single task, a phased workflow, or a managed work graph.
-2. **Apply your workflow.** Personal Routing Profiles map tasks to a primary Skill and only the support needed in the current phase.
-3. **Check what is available.** Runtime Capability Discovery distinguishes an intended selection from a capability the current environment can actually use.
-4. **Make the plan inspectable.** Expose the route, missing capabilities, and any required support consent before Codex continues.
-
-For an API change, you could define a workflow that clarifies requirements first, implements second, and verifies last. Each stage gets its own Skill selection. This is an example of configurable behavior, not a measured development outcome.
-
-The local runtime uses deterministic rules for work classification and profile matching. It does not install or activate Skills, select the underlying model, or grant deployment permission. [Read the architecture](docs/architecture/v2-overview.md).
-
-## Get started
-
-The published release is **v2.0.2**. This branch also contains development work that is not in that release, including opt-in Adaptive Workflow Memory. Use the pinned release for a normal installation.
-
-### Plugin + MCP
-
-Choose this mode when your Codex environment supports Plugins and MCP. It adds persistent local plans and consent records to the routing instructions. **Node.js 24+ and Python 3.11+ are required.** The release includes its compiled bundles; npm is only needed to rebuild from source.
-
-```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
-codex plugin add workflow-skill-router@workflow-skill-router
-codex plugin list
-```
-
-Open a new Codex task and ask: **“Show the Workflow Skill Router status and explain which capabilities are available in this environment.”** Then use the [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) to verify the result.
-
-### Standalone Skill
-
-Choose this mode for routing instructions without the local MCP runtime. Download [the v2.0.2 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
-
-The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. Neither installation includes every specialist Skill your workflow may reference.
-
-### Claude Code (development main)
-
-Claude Code support is new on the development branch and is not part of `v2.0.2`. The Claude Code Plugin runs the same MCP server and Python runtime as the Codex Plugin, with a Claude Code version of the Router SKILL. **Node.js 24+ and Python 3.11+ are required.**
+Claude Code support is on the development branch and is not part of the published `v2.0.2` release.
 
 ```text
 /plugin marketplace add eric861129/Workflow-skill-router
@@ -72,6 +35,60 @@ Claude Code support is new on the development branch and is not part of `v2.0.2`
 ```
 
 Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json` first and falls back to `.codex/workflow-skill-router.json`. Personal Profiles and local state are shared with the Codex Plugin. See the [Claude Code installation guide](site/src/content/docs/guides/install-claude-code.md).
+
+### Codex Plugin + MCP
+
+The published release is **v2.0.2**. Use this pinned release for a normal Codex installation. It adds persistent local plans and consent records to the routing instructions.
+
+```sh
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin add workflow-skill-router@workflow-skill-router
+codex plugin list
+```
+
+Development main also contains work that is not in `v2.0.2`, including opt-in Adaptive Workflow Memory. The [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) explains how to verify the result.
+
+### Standalone Skill
+
+Choose this mode for routing instructions without the local MCP runtime. Download [the v2.0.2 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
+
+The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. No installation includes every specialist Skill your workflow may reference.
+
+### Check that it works
+
+In a new Claude Code session or a new Codex task, ask: **“Show the Workflow Skill Router status and explain which capabilities are available in this environment.”** The answer should report the `bundled-local-r0` runtime and list what is available here.
+
+## See a route
+
+The bundled [workspace Profile example](starter/v2/workflow-skill-router/assets/workspace-routing-profile.example.json) defines an API delivery workflow. With that Profile in place, a request in the `api` domain such as *“Deliver the api contract, implementation, and tests”* produces a phased plan like this:
+
+| Phase | Primary Skill | Support in that phase | Exit gate |
+| --- | --- | --- | --- |
+| contract | `api-designer` | `api-guidelines-skill` | `contract-reviewed` |
+| implementation | `csharp-developer` | none | `implementation-complete` |
+| verification | `qa-test-planner` | `playwright` | `tests-passed` |
+
+Only the current phase's Skills become the active route. The next phase is routed again when it starts. Every planned Skill stays `intended-unverified` until the runtime confirms it is installed and available. This shows configurable behavior, not a measured development outcome.
+
+## When it helps
+
+| Your situation | What the Router adds |
+| --- | --- |
+| You have overlapping Skills and keep explaining which one should lead | A reusable personal or workspace routing profile |
+| Your work moves through planning, implementation, and verification | A separate Skill selection and completion check for each phase |
+| You need to resume work with dependencies across projects | A local work graph with explicit next steps; native Goal integration requires host support |
+| You have one small task and a clear Skill choice | A small route; additional configuration may add little value |
+
+## How it works
+
+1. **Read the task and your explicit choices.** Choose a single task, a phased workflow, or a managed work graph.
+2. **Apply your workflow.** Personal Routing Profiles map tasks to a primary Skill and only the support needed in the current phase.
+3. **Check what is available.** Runtime Capability Discovery distinguishes an intended selection from a capability the current environment can actually use.
+4. **Make the plan inspectable.** Expose the route, missing capabilities, and any required support consent before your agent continues.
+
+The local runtime uses deterministic rules for work classification and profile matching. It does not install or activate Skills, select the underlying model, or grant deployment permission. A Skill is a reusable set of instructions for a particular kind of work. The Router coordinates which Skills to use and when; your agent and the selected Skills still do the work. [Read the architecture](docs/architecture/v2-overview.md).
+
+The project is open source so you can inspect the routing rules, adapt a personal or team workflow, and test whether it helps your own tasks.
 
 ## Evidence and limits
 
@@ -84,11 +101,13 @@ These observations suggest a role in **workflow consistency**, with important li
 - The models already selected suitable Skills in several simple cases. The Router's added value depends on the workflow rules you need.
 - The full instruction package increased input tokens by about 26–28% in this setup. Lower cost, faster delivery, and better code quality have not been demonstrated.
 - Single runs do not establish repeatability or formal model qualification. Full Plugin/host integration and real development outcomes were outside this comparison.
+- The comparison used only the models listed above. Claude Code support has not yet been evaluated with Claude models.
 
 Read the [evaluation methodology and detailed findings](evaluation/v2/README.md). The dated findings are currently in Traditional Chinese; the methodology is in English. Findings are exploratory, await review, and do not qualify the published v2.0.2 release or rank the models.
 
 ## Explore further
 
+- [Claude Code installation](site/src/content/docs/guides/install-claude-code.md): install, verify, and share Profiles with Codex.
 - [Personal Routing Profiles](site/src/content/docs/concepts/personal-routing-profiles.md): define your workflow and inspect why a rule matched.
 - [Runtime capabilities](site/src/content/docs/concepts/runtime-capability-discovery.md): understand the difference between installed, available, and authorized.
 - [Security boundaries](site/src/content/docs/reference/security-boundaries.md): learn what remains under user and host control.
