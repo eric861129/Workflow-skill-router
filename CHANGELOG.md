@@ -18,6 +18,13 @@ All notable changes to Workflow Skill Router are documented here.
 
 ### Changed
 
+- Redesigned the documentation site around a tiled board: a rose-grey palette,
+  Libre Franklin and Source Serif 4 type, a name-band hero, the nine recorded
+  routes set as a departure board with the full MCP trace below, a four-field
+  "how a route forms" strip, a tabbed install section for Claude Code, Codex,
+  and Skill only, and refreshed docs theme, logo, favicon, and social preview.
+  Every flight-recorder test hook and evidence label is unchanged.
+- Added a 1024px icon to the Claude Code Plugin for directory listings.
 - MCP tool and schema descriptions now describe the host generically instead
   of naming only Codex. Codex keeps its existing paths, data directory, and
   routing behavior.

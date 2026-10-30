@@ -636,7 +636,7 @@ class ReleaseCopyTests(unittest.TestCase):
         self.assertIn("const branchRouting = branch.routing_evidence", source)
         self.assertIn('data-testid="demo-planned-skills"', source)
         self.assertIn("branchRouting.planned_skill_ids", source)
-        self.assertIn("PLANNED NON-SKILL SELECTIONS", source)
+        self.assertIn("Planned non-Skill selections", source)
         self.assertIn('data-testid="demo-planned-non-skill-selections"', source)
         self.assertIn("branchRouting.planned_non_skill_selection_ids", source)
         self.assertIn('data-testid="demo-explicit-lock"', source)

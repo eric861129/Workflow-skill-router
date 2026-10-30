@@ -7,115 +7,130 @@ interface Props { locale: 'en' | 'zh-TW'; initialPreset?: string }
 const { locale, initialPreset = 'small-auto' } = Astro.props;
 const copy = locale === 'zh-TW'
   ? {
-      eyebrow: 'V2 ROUTING FLIGHT RECORDER',
-      title: '逐步檢查 Router 的每個決策',
-      signal: 'CORE 產生 · UI 唯讀',
-      scenario: '情境',
+      title: '九條真實錄下的路由',
+      lede: '每一列都是 Router core 實際產生的追蹤紀錄。選一列查看它的路由；遇到使用者指定 SKILL 的請求，可以試著同意或拒絕輔助能力。',
+      boardLabel: '路由情境',
+      envelope: '工作包絡',
+      lead: '主導',
+      support: '輔助',
+      none: '無',
       request: '請求',
-      mcp: 'MCP 呼叫',
       decision: '決策',
+      mcp: 'MCP 呼叫',
       graph: '工作圖',
       audit: '稽核軌跡',
       evidence: '證據邊界',
       approve: '同意輔助',
       reject: '拒絕輔助',
+      source: '畫面由 core 產生的資料繪製，唯讀。',
     }
   : {
-      eyebrow: 'V2 ROUTING FLIGHT RECORDER',
-      title: 'Inspect every routing decision',
-      signal: 'CORE-DERIVED · READ-ONLY UI',
-      scenario: 'Scenario',
+      title: 'Nine recorded routes',
+      lede: 'Each row is a trace produced by the Router core. Open one to see its route. Where the request locked a Skill, try approving or rejecting the support.',
+      boardLabel: 'Routing scenarios',
+      envelope: 'Envelope',
+      lead: 'Lead',
+      support: 'Support',
+      none: 'none',
       request: 'Request',
-      mcp: 'MCP calls',
       decision: 'Decision',
+      mcp: 'MCP calls',
       graph: 'Work graph',
       audit: 'Audit trail',
       evidence: 'Evidence boundary',
       approve: 'Approve support',
       reject: 'Reject support',
+      source: 'Drawn from core-derived data. Read-only.',
     };
+const shortId = (value: string) => value.replace(/^skill:/, '');
 ---
 
 <section
-  id="router-demo"
+  id="routes"
   class="adaptive-router-demo"
   data-router-demo
   data-locale={locale}
   data-initial={initialPreset}
   aria-labelledby="router-demo-title"
 >
-  <header class="router-demo-header">
-    <span>{copy.eyebrow}</span>
+  <header class="router-demo-header" data-reveal>
     <h2 id="router-demo-title">{copy.title}</h2>
-    <div class="router-demo-signal"><i aria-hidden="true"></i>{copy.signal}</div>
+    <p>{copy.lede}</p>
   </header>
 
-  <div class="router-demo-section-index" aria-hidden="true">
-    <span>01 {copy.scenario}</span>
-    <span>02 {copy.request}</span>
-    <span>03 {copy.mcp}</span>
-    <span>04 {copy.decision}</span>
-    <span>05 {copy.graph}</span>
-    <span>06 {copy.audit}</span>
-    <span>07 {copy.evidence}</span>
-  </div>
+  <div class="router-demo-board">
+    <div
+      class="router-demo-tabs"
+      data-ui
+      role="tablist"
+      aria-orientation="vertical"
+      aria-label={copy.boardLabel}
+    >
+      {demo.presets.map((preset) => {
+        const branch = preset.branches[0];
+        return (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={preset.id === initialPreset ? 'true' : 'false'}
+            tabindex={preset.id === initialPreset ? 0 : -1}
+            data-testid={`demo-preset-${preset.id}`}
+            data-preset={preset.id}
+          >
+            <span class="router-demo-row-name">{preset.title[locale]}</span>
+            <span class="router-demo-row-fact">{preset.decision.envelope}</span>
+            <span class="router-demo-row-fact">{shortId(branch.route.primary_selection)}</span>
+            <span class="router-demo-row-fact">
+              {branch.route.support_selections.length
+                ? branch.route.support_selections.map(shortId).join(', ')
+                : copy.none}
+            </span>
+            <span class="router-demo-row-status">{branch.status[locale]}</span>
+          </button>
+        );
+      })}
+    </div>
 
-  <div
-    class="router-demo-tabs"
-    role="tablist"
-    aria-label={locale === 'zh-TW' ? '路由情境' : 'Routing scenarios'}
-  >
-    {demo.presets.map((preset, index) => (
-      <button
-        type="button"
-        role="tab"
-        aria-selected={preset.id === initialPreset ? 'true' : 'false'}
-        tabindex={preset.id === initialPreset ? 0 : -1}
-        data-testid={`demo-preset-${preset.id}`}
-        data-preset={preset.id}
-      >
-        <span>{String(index + 1).padStart(2, '0')}</span>
-        {preset.title[locale]}
-      </button>
-    ))}
+    <div class="router-demo-open">
+      <article class="router-demo-request">
+        <h3>{copy.request}</h3>
+        <p data-demo-request></p>
+        <div class="router-demo-actions" data-demo-consent hidden>
+          <button type="button" data-testid="demo-consent-approve" data-branch="support-approved">{copy.approve}</button>
+          <button type="button" data-testid="demo-consent-reject" data-branch="support-rejected">{copy.reject}</button>
+        </div>
+      </article>
+
+      <article class="router-demo-decision">
+        <h3>{copy.decision}</h3>
+        <div class="router-demo-envelope"><span>{copy.envelope}</span><strong data-demo-envelope></strong></div>
+        <div class="router-demo-route" data-demo-route></div>
+        <div class="router-demo-status" data-testid="demo-status" aria-live="polite"></div>
+      </article>
+    </div>
   </div>
 
   <div class="router-demo-console">
-    <article class="router-demo-request router-demo-panel">
-      <header><span>02</span><h3>{copy.request}</h3></header>
-      <p data-demo-request></p>
-      <div class="router-demo-actions" data-demo-consent hidden>
-        <button type="button" data-testid="demo-consent-approve" data-branch="support-approved">{copy.approve}</button>
-        <button type="button" data-testid="demo-consent-reject" data-branch="support-rejected">{copy.reject}</button>
-      </div>
-    </article>
-
-    <article class="router-demo-mcp router-demo-panel">
-      <header><span>03</span><h3>{copy.mcp}</h3></header>
+    <article class="router-demo-mcp router-demo-panel" data-reveal>
+      <h3>{copy.mcp}</h3>
       <div class="router-demo-mcp-list" data-demo-mcp></div>
     </article>
 
-    <article class="router-demo-decision router-demo-panel">
-      <header><span>04</span><h3>{copy.decision}</h3></header>
-      <div class="router-demo-envelope"><span>ENVELOPE</span><strong data-demo-envelope></strong></div>
-      <div class="router-demo-route" data-demo-route></div>
-      <div class="router-demo-status" data-testid="demo-status" aria-live="polite"></div>
-    </article>
-
-    <article class="router-demo-graph router-demo-panel">
-      <header><span>05</span><h3>{copy.graph}</h3></header>
+    <article class="router-demo-graph router-demo-panel" data-reveal>
+      <h3>{copy.graph}</h3>
       <div data-demo-graph></div>
     </article>
 
-    <article class="router-demo-audit router-demo-panel">
-      <header><span>06</span><h3>{copy.audit}</h3></header>
+    <article class="router-demo-audit router-demo-panel" data-reveal>
+      <h3>{copy.audit}</h3>
       <ol data-demo-events></ol>
     </article>
 
-    <article class="router-demo-evidence router-demo-panel">
-      <header><span>07</span><h3>{copy.evidence}</h3></header>
+    <article class="router-demo-evidence router-demo-panel" data-reveal>
+      <h3>{copy.evidence}</h3>
       <div data-demo-evidence></div>
       <div data-demo-evaluation></div>
+      <p class="router-demo-source">{copy.source}</p>
     </article>
   </div>
 

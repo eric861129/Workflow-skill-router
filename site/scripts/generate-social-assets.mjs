@@ -17,60 +17,77 @@ function socialHtml() {
 <html>
   <head>
     <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
     <style>
-      html, body { margin: 0; width: 1200px; height: 630px; background: #07111f; }
-      .card {
+      * { box-sizing: border-box; margin: 0; }
+      html, body { width: 1200px; height: 630px; background: #ebe5e3; }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-template-rows: 170px 1fr 64px;
+        gap: 8px;
         width: 1200px;
         height: 630px;
-        box-sizing: border-box;
-        padding: 54px 62px;
-        color: #eef6ff;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background:
-          radial-gradient(circle at 12% 0%, rgba(14, 165, 233, .28), transparent 31%),
-          linear-gradient(135deg, #07111f 0%, #13233e 54%, #0d1b2f 100%);
+        padding: 8px;
+        color: #2b2622;
+        font-family: 'Libre Franklin', 'Segoe UI', sans-serif;
       }
-      .topline { color: #7dd3fc; font-size: 25px; font-weight: 760; letter-spacing: 0; }
-      h1 { margin: 16px 0 14px; max-width: 980px; font-size: 76px; line-height: 1; letter-spacing: 0; }
-      .sub { max-width: 870px; color: #c5d6ea; font-size: 28px; line-height: 1.3; }
-      .flow { display: grid; grid-template-columns: 1fr 92px 1fr; gap: 20px; align-items: center; margin-top: 38px; }
-      .box {
-        height: 188px;
-        box-sizing: border-box;
-        border: 1px solid rgba(199, 221, 255, .22);
-        border-radius: 8px;
-        background: rgba(5, 13, 26, .76);
-        padding: 24px;
+      .name {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #2b2622;
+        color: #f1eeed;
+        font-size: 86px;
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
-      .box h2 { margin: 0 0 16px; font-size: 24px; }
-      .bad { color: #fecaca; }
-      .good { color: #bbf7d0; }
-      .mono { color: #d9e7f8; font: 21px/1.45 Consolas, ui-monospace, monospace; }
-      .arrow { color: #7dd3fc; text-align: center; font-size: 66px; font-weight: 760; }
-      .footer { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; color: #9eb2cc; font-size: 21px; }
-      .badge { color: #dbeafe; border: 1px solid rgba(125, 211, 252, .36); border-radius: 999px; padding: 9px 14px; background: rgba(125, 211, 252, .11); }
+      .statement {
+        grid-column: 1 / 7;
+        display: flex;
+        align-items: flex-end;
+        padding: 28px;
+        background: #f4f0ee;
+        font-size: 44px;
+        font-weight: 700;
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+      }
+      .rows { grid-column: 7 / -1; display: grid; gap: 6px; }
+      .row {
+        display: grid;
+        grid-template-columns: 1.2fr 1.5fr 1fr;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        background: #e1dad7;
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .row b { font-weight: 700; }
+      .row span:last-child { justify-self: end; padding: 6px 10px; background: #f4f0ee; font-size: 17px; }
+      .row.is-lead { background: #0f7d45; color: #ffffff; }
+      .row.is-lead span:last-child { background: #ffffff; color: #0f7d45; }
+      .foot { grid-column: 1 / 10; display: flex; align-items: center; padding: 0 20px; background: #cfc6c2; font-family: 'Source Serif 4', Georgia, serif; font-size: 22px; }
+      .action { grid-column: 10 / -1; display: flex; align-items: center; padding: 0 20px; background: #0f7d45; color: #ffffff; font-size: 22px; font-weight: 700; }
     </style>
   </head>
   <body>
-    <main class="card">
-      <div class="topline">Codex Plugin / MCP + SKILL fallback</div>
-      <h1>Workflow Skill Router V2</h1>
-      <div class="sub">Deterministic routing, scoped consent, durable state, and inspectable evidence for real developer workflows.</div>
-      <section class="flow">
-        <div class="box">
-          <h2 class="bad">Before</h2>
-          <div class="mono">skill sprawl<br />generic consent<br />no runtime proof</div>
-        </div>
-        <div class="arrow">→</div>
-        <div class="box">
-          <h2 class="good">After</h2>
-          <div class="mono">Single · Phased · Managed Goal<br />scoped consent<br />inspectable evidence</div>
-        </div>
-      </section>
-      <div class="footer">
-        <span class="badge">Runtime Capability Discovery</span>
-        <span>github.com/eric861129/Workflow-skill-router</span>
+    <main class="board">
+      <div class="name">Workflow Skill Router</div>
+      <div class="statement">One lead Skill per phase, for Claude Code and Codex.</div>
+      <div class="rows">
+        <div class="row is-lead"><b>contract</b><span>api-designer</span><span>leads now</span></div>
+        <div class="row"><b>implementation</b><span>csharp-developer</span><span>next</span></div>
+        <div class="row"><b>verification</b><span>qa-test-planner</span><span>later</span></div>
       </div>
+      <div class="foot">Open source, MIT. Your workflow as config, every route inspectable.</div>
+      <div class="action">github.com/eric861129</div>
     </main>
   </body>
 </html>`;
@@ -97,7 +114,8 @@ async function generateAssets() {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
-    await page.setContent(socialHtml());
+    await page.setContent(socialHtml(), { waitUntil: 'networkidle' });
+    await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: outputs.siteOg, clip: { x: 0, y: 0, width: 1200, height: 630 } });
   } finally {
     await browser.close();

@@ -1,10 +1,15 @@
 ---
 import AdaptiveRouterDemo from './AdaptiveRouterDemo.astro';
+import '../styles/home.css';
 type Locale = 'en' | 'zh-tw';
 
 const locale = (Astro.props.locale ?? 'en') as Locale;
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
+const discussionsUrl = `${repoUrl}/discussions`;
+const changelogUrl = `${repoUrl}/blob/main/CHANGELOG.md`;
+const skillZipUrl = `${repoUrl}/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip`;
 const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
+const assetPath = '/Workflow-skill-router/assets';
 const isZh = locale === 'zh-tw';
 const alternateLocalePath = isZh ? '/Workflow-skill-router/' : '/Workflow-skill-router/zh-tw/';
 const alternateLocaleLabel = isZh ? 'EN' : '繁中';
@@ -16,485 +21,503 @@ const themeLabels = isZh
 
 const text = {
   "en": {
-    "nav": [
-      "Why use it",
-      "How it works",
-      "Evidence"
+    "navLabel": "Home navigation",
+    "nav": [["How it works", "#how-it-works"], ["Routes", "#routes"], ["Install", "#install"], ["Evidence", "#evidence"]],
+    "statement": "One lead Skill per phase, for Claude Code and Codex.",
+    "libraryTitle": "Your Skill library in the contract phase",
+    "library": [
+      ["api-designer", "leads now", "lead"],
+      ["api-guidelines-skill", "supports now", "support"],
+      ["csharp-developer", "next phase", "next"],
+      ["qa-test-planner", "later", "idle"],
+      ["playwright", "later", "idle"],
+      ["systematic-debugging", "not needed", "idle"]
     ],
-    "navLinks": [
-      "#why-it-works",
-      "#examples",
-      "#validator"
+    "facts": ["Routes each phase on its own", "Keeps the Skill you name in charge", "Asks before adding support", "One Profile for both hosts", "Local state, no telemetry"],
+    "terminalLabel": "A route as plan_work returns it",
+    "terminalRequest": "Deliver the api contract, implementation, and tests.",
+    "rail": ["Claude Code and Codex", "v2.0.2 published"],
+    "railRepo": "MIT licence on GitHub",
+    "railSkill": "Instructions only? Use Skill only",
+    "action": "Install the Plugin",
+    "slogan": ["One lead", "per phase"],
+    "figure": "1+3",
+    "figureNote": "One lead Skill and up to three support Skills in each phase.",
+    "videoLabel": "Recorded run of the Router flight recorder, drawn from core-derived data",
+    "introCopy": "As your Skill library grows, every task starts with the same questions: which Skill should lead, when should another one help, and what belongs in the next phase? Claude Code and Codex can answer them on their own, but the answers drift from task to task. Workflow Skill Router writes your answers down. A Profile maps kinds of work to a lead Skill, up to three support Skills, and an exit gate for each phase. The Router reads the request, applies the Profile, checks which Skills this environment can really use, and shows the route before your agent continues. Your agent and your Skills still do the work.",
+    "howTitle": "How a route forms",
+    "howClauses": ["First it reads the request.", "Then it picks the shape of the work.", "Then one Skill leads the phase.", "At each gate, it routes again."],
+    "howCard": [
+      ["domain", "api", 1],
+      ["profile", "workspace · api-delivery", 2],
+      ["envelope", "phased, 3 phases", 2],
+      ["lead", "api-designer", 3],
+      ["support", "api-guidelines-skill", 3],
+      ["activation", "intended-unverified", 3],
+      ["gate", "contract-reviewed passed", 4],
+      ["next lead", "csharp-developer", 4]
     ],
-    "star": "View on GitHub",
-    "download": "Get started",
-    "showcase": "Inspect recorded routes",
-    "introTitle": "Your Skills need a workflow you can reuse",
-    "introCopy": "As your Skill library grows, you keep deciding which Skill should lead, when another should help, and what belongs in the next phase. Codex can make these choices. The Router lets you make your preferred process explicit, inspect it, and reuse it across tasks.",
-    "introLink": "Define your own routing profile",
-    "processLabel": "Why the Router is designed this way",
-    "processSteps": [
-      [
-        "Focus",
-        "Give each phase one primary Skill",
-        "Select only the support needed now. Keep implementation and deployment out of a phase that is still about planning."
-      ],
-      [
-        "Your workflow",
-        "Make repeated choices reusable",
-        "Personal and workspace profiles map tasks to the Skills and completion checks you prefer."
-      ],
-      [
-        "Your choices",
-        "Respect the Skill you name",
-        "Keep an explicitly named Skill in charge. Adding support outside that choice requires your consent."
-      ],
-      [
-        "Available capabilities",
-        "Distinguish a plan from execution",
-        "Show missing capabilities and runtime limits. A planned Skill is not proof that it was activated."
-      ]
+    "featuresTitle": "What stays in your hands",
+    "features": {
+      "consent": ["Scoped consent", "Support outside the Skill you named waits for your answer. A rejected Skill never becomes active.", "Approve", "Reject"],
+      "lock": ["Explicit Skill Lock", "The Skill you name leads the route.", "locked"],
+      "memory": ["Workflow Memory", "Off until you turn it on. No background learning.", "Off"],
+      "runtime": ["Runtime check", "A planned Skill that is not installed is reported, never swapped.", "unavailable"],
+      "hosts": ["Two hosts, one Profile", "Claude Code and Codex read the same personal Profile."],
+      "usage": ["Usage report", "Planned and actual Skills, side by side when the work ends.", "planned", "used"],
+      "path": ["Workspace Profile", "Claude Code reads .claude/ first, then .codex/."]
+    },
+    "memoryTitle": "Memory Flight Recorder",
+    "installTitle": ["Two commands,", "then one question."],
+    "installGuide": "Read the install guides",
+    "installTabsLabel": "Install target",
+    "installTabs": [
+      {
+        "id": "claude-code",
+        "label": "Claude Code",
+        "note": "Development main, not part of v2.0.2",
+        "guide": "guides/install-claude-code",
+        "guideLabel": "Claude Code guide",
+        "rows": [
+          ["Add", "/plugin marketplace add eric861129/Workflow-skill-router", "code", "Adds this repository as a plugin marketplace."],
+          ["Install", "/plugin install workflow-skill-router@workflow-skill-router", "code", "Installs the Plugin with its MCP server and Skill."],
+          ["Check", "Show the Workflow Skill Router status and explain which capabilities are available in this environment.", "prompt", "Expect the bundled-local-r0 runtime."],
+          ["Needs", "Node.js 24+ and Python 3.11+", "text", "No npm install. State stays outside the Plugin cache."]
+        ]
+      },
+      {
+        "id": "codex",
+        "label": "Codex",
+        "note": "Published v2.0.2",
+        "guide": "guides/install-plugin",
+        "guideLabel": "Codex guide",
+        "rows": [
+          ["Add", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2", "code", "Pins the published v2.0.2 release."],
+          ["Install", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "Then run codex plugin list to confirm it."],
+          ["Check", "Show the Workflow Skill Router status and explain which capabilities are available in this environment.", "prompt", "Ask in a new Codex task."],
+          ["Needs", "Node.js 24+ and Python 3.11+", "text", "The release already includes the MCP bundle and runtime."]
+        ]
+      },
+      {
+        "id": "skill",
+        "label": "Skill only",
+        "note": "Instructions without the MCP runtime",
+        "guide": "guides/install-skill",
+        "guideLabel": "Skill-only guide",
+        "rows": [
+          ["Download", "workflow-skill-router-skill-v2.0.2.zip", "download", "From the v2.0.2 GitHub Release."],
+          ["Extract", "The inner workflow-skill-router/ folder", "text", "Into your Codex Skills directory."],
+          ["Limits", "Instructions only", "text", "No durable state, no consent records, no MCP tools."]
+        ]
+      }
     ],
-    "processNoteTitle": "A useful fit when process matters",
-    "processNote": "Use it for overlapping Skills, repeated team workflows, or work that crosses phases and projects. For a small task with a clear Skill choice, extra configuration may add little value.",
-    "contractLink": "Read the routing rules",
-    "templateLink": "Explore the three work modes",
-    "examplesTitle": "Start small. Add structure when the work needs it.",
-    "examplesCopy": "The Router reads the task, applies your workflow preferences, and reports the plan and its limits. Codex and the selected Skills still do the work.",
-    "templateCode": "Your request + workflow preferences\n→ Current phase and intended Skills\n→ Available capabilities, limits, and next step",
-    "templateHighlights": [
-      [
-        "Single",
-        "One bounded task, such as diagnosing a bug, with only the Skills needed for that task."
-      ],
-      [
-        "Phased",
-        "Plan, implement, and verify separately. Reconsider the Skill selection at each phase."
-      ],
-      [
-        "Managed Goal",
-        "Keep a local work graph for dependencies and resuming work. Native Codex Goal integration still needs host support."
-      ]
-    ],
-    "outcomesTitle": "Choose the level you need",
-    "outcomes": [
-      [
-        "Standalone Skill",
-        "Routing instructions for Codex. No local MCP state machine or persistent consent records."
-      ],
-      [
-        "Plugin + MCP",
-        "Routing instructions plus local plans, state, and consent records. Requires Node.js 24+ and Python 3.11+."
-      ],
-      [
-        "Host integration",
-        "Native Goal scheduling and verified execution depend on additional host capabilities. Installing the Plugin alone does not provide them."
-      ],
-      [
-        "Your specialist Skills",
-        "Install the Skills your workflow references separately. The Router does not bundle every specialist or switch your model."
-      ]
-    ],
+    "proofTitle": "What we measured",
+    "proofStats": [["6", "routing cases"], ["1", "run per case and arm"], ["26–28%", "more input tokens in this setup"]],
+    "proofExtra": [["3/6 → 6/6", "final route fields, Sol retest"], ["0/6 → 3/6", "stricter full contract, Sol retest"], ["Not yet", "evaluated with Claude models"]],
     "validatorTitle": "What the tests show so far",
     "validatorCopy": "On 2026-10-19, we compared routing with and without the Router using GPT-6.1 Sol, GPT-6 Astra, and GPT-6 Luna at medium reasoning. The six-case exploration showed some more consistent workflow decisions. It did not execute development tasks or measure code quality.",
     "validatorEvidenceNote": "After clarifying ambiguous case assumptions and updating the instructions, only Sol was retested. These single-run observations do not establish repeatability, formal model qualification, or full Plugin/host integration. The complete instruction package increased input tokens; lower cost and faster delivery have not been demonstrated.",
-    "proofStats": [
-      [
-        "6",
-        "routing cases"
-      ],
-      [
-        "1",
-        "run per case and arm"
-      ],
-      [
-        "26–28%",
-        "more input tokens in this setup"
-      ]
-    ],
-    "validatorCommand": "# Published release: v2.0.2\ncodex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2\ncodex plugin add workflow-skill-router@workflow-skill-router\ncodex plugin list",
     "releaseTitle": "Start with the published release",
     "releaseCopy": "v2.0.2 contains the routing instructions and local MCP runtime. Development main includes additional work, such as opt-in Workflow Memory, that is not in this release. The current exploration does not qualify v2.0.2.",
     "evidenceLink": "Read the evaluation method and limits",
+    "faqTitle": "Questions",
+    "faq": [
+      ["Does it install or run my Skills?", "No. The Router plans which Skill leads and which support each phase needs. Installing Skills, activating them, and granting permissions stay with you and with Claude Code or Codex."],
+      ["Which model does it use?", "None of its own. The local runtime classifies work and matches Profiles with deterministic rules, and your agent keeps the model you chose."],
+      ["Does it send data anywhere?", "No. Plans, consent records, and Profiles live in a local data directory outside the Plugin cache, and telemetry is off."],
+      ["What if Python is missing?", "The MCP server cannot start, so the Skill runs as skill-only-fallback: routing instructions without durable state. It says so instead of claiming the full mode."],
+      ["Can Claude Code and Codex share my setup?", "Yes. Both read the same personal Profiles and local state. A repository can keep one .codex/workflow-skill-router.json, or add .claude/workflow-skill-router.json when Claude Code needs a different Skill Tree."],
+      ["Is it ready for my team?", "The Codex Plugin v2.0.2 is published, and Claude Code support is on the development branch. The evaluation so far is exploratory, so try it on your own workflow first."]
+    ],
+    "marquee": "One lead Skill per phase. Your workflow as config. Claude Code and Codex.",
     "finalTitle": "Bring your workflow. Inspect the route.",
-    "finalCopy": "Start with the published package, check the available capabilities, and decide whether the routing fits your work. The code and routing rules are open source under the MIT License."
+    "finalCopy": "Start with the published package, check the available capabilities, and decide whether the routing fits your work. The code and routing rules are open source under the MIT License.",
+    "footerNavTitle": "Read on",
+    "footerNav": [["Quickstart", "guides/quickstart"], ["Claude Code install", "guides/install-claude-code"], ["Personal Routing Profiles", "concepts/personal-routing-profiles"], ["MCP tools", "reference/mcp-tools"], ["Security boundaries", "reference/security-boundaries"]],
+    "status": ["v2.0.2 is the published release.", "Claude Code support is on main."],
+    "changelog": "Read the changelog",
+    "contactTitle": "Questions and ideas",
+    "contact": "GitHub Discussions",
+    "legal": "MIT License. Workflow Skill Router contributors.",
+    "star": "Star it on GitHub"
   },
   "zh-tw": {
-    "nav": [
-      "為何使用",
-      "如何運作",
-      "實測證據"
+    "navLabel": "首頁導覽",
+    "nav": [["運作方式", "#how-it-works"], ["路由紀錄", "#routes"], ["安裝", "#install"], ["實測", "#evidence"]],
+    "statement": "每個階段一個主導 Skill，Claude Code 與 Codex 都能用。",
+    "libraryTitle": "你的 Skill 庫，正在 contract 階段",
+    "library": [
+      ["api-designer", "主導中", "lead"],
+      ["api-guidelines-skill", "輔助中", "support"],
+      ["csharp-developer", "下一階段", "next"],
+      ["qa-test-planner", "稍後", "idle"],
+      ["playwright", "稍後", "idle"],
+      ["systematic-debugging", "這次不需要", "idle"]
     ],
-    "navLinks": [
-      "#why-it-works",
-      "#examples",
-      "#validator"
+    "facts": ["每個階段各自路由", "你指定的 Skill 優先", "加入輔助前先問你", "兩個 host 共用 Profile", "狀態存在本機，不送遙測"],
+    "terminalLabel": "plan_work 回傳的一條路由",
+    "terminalRequest": "交付 api 合約、實作與測試。",
+    "rail": ["Claude Code 與 Codex", "v2.0.2 已發布"],
+    "railRepo": "MIT 授權，原始碼在 GitHub",
+    "railSkill": "只要路由指引？只使用 Skill",
+    "action": "安裝 Plugin",
+    "slogan": ["一個階段", "一個主導"],
+    "figure": "1+3",
+    "figureNote": "每個階段一個主導 Skill，最多三個輔助 Skills。",
+    "videoLabel": "Router 路由紀錄器的錄影，畫面由 core 產生的資料繪製",
+    "introCopy": "Skills 越裝越多，每個任務開頭都是同樣的問題：該由哪個 Skill 主導？什麼時候需要別的 Skill 幫忙？哪些事該留到下一階段？Claude Code 和 Codex 都能自己判斷，但每次的答案都不太一樣。Workflow Skill Router 把你的答案寫下來：Profile 把不同類型的工作對應到一個主導 Skill、最多三個輔助 Skills，以及每個階段的完成條件。Router 讀取請求、套用 Profile、確認這個環境實際能用哪些 Skills，並在 AI agent 繼續之前把路由攤開給你看。實際工作仍由 AI agent 與你的 Skills 完成。",
+    "howTitle": "路由怎麼形成",
+    "howClauses": ["先讀懂請求。", "再決定工作的形狀。", "接著由一個 Skill 主導。", "每過一道關卡，就重新路由。"],
+    "howCard": [
+      ["domain", "api", 1],
+      ["profile", "workspace · api-delivery", 2],
+      ["envelope", "phased，3 個階段", 2],
+      ["主導", "api-designer", 3],
+      ["輔助", "api-guidelines-skill", 3],
+      ["activation", "intended-unverified", 3],
+      ["關卡", "contract-reviewed 通過", 4],
+      ["下一個主導", "csharp-developer", 4]
     ],
-    "star": "查看 GitHub",
-    "download": "開始使用",
-    "showcase": "查看既有路由紀錄",
-    "introTitle": "讓常用的 Skills 有一套可重用的工作流程",
-    "introCopy": "Skills 越裝越多，你也需要反覆決定由誰主導、何時需要支援，以及哪些工作留到下一階段。Codex 可以自行判斷；Router 讓你把偏好的流程明確定義、檢查後，在不同任務中重複使用。",
-    "introLink": "設定自己的路由規則",
-    "processLabel": "為什麼這樣設計",
-    "processSteps": [
-      [
-        "聚焦當下",
-        "每個階段由一個主要 Skill 負責",
-        "只選擇目前需要的支援。還在規劃時，就先聚焦規劃，將實作與部署留到對應階段。"
-      ],
-      [
-        "你的流程",
-        "讓重複的選擇變成可重用設定",
-        "個人與工作區設定將任務對應到你偏好的 Skills 與完成條件。"
-      ],
-      [
-        "你的選擇",
-        "尊重你明確指定的 Skill",
-        "指定的 Skill 維持主導地位。加入指定範圍外的支援前，需要取得你的同意。"
-      ],
-      [
-        "可用能力",
-        "分清楚計畫與實際執行",
-        "顯示缺少的能力與執行環境限制。計畫選用某個 Skill，不代表它已經啟用。"
-      ]
+    "featuresTitle": "留在你手上的決定",
+    "features": {
+      "consent": ["限定範圍的同意", "你指定的 Skill 以外的輔助，會等你回答。被拒絕的 Skill 絕不會啟用。", "同意", "拒絕"],
+      "lock": ["Explicit Skill Lock", "你指定的 Skill 主導整條路由。", "locked"],
+      "memory": ["Workflow Memory", "你開啟之前都是關閉的，不會在背景學習。", "關"],
+      "runtime": ["執行環境檢查", "計畫中的 Skill 沒有安裝時會如實回報，不會偷偷換掉。", "unavailable"],
+      "hosts": ["兩個 host，一份 Profile", "Claude Code 與 Codex 讀同一份個人 Profile。"],
+      "usage": ["使用回報", "工作結束時，計畫與實際使用的 Skills 並列呈現。", "計畫", "實際"],
+      "path": ["Workspace Profile", "Claude Code 先讀 .claude/，沒有時才讀 .codex/。"]
+    },
+    "memoryTitle": "Memory Flight Recorder",
+    "installTitle": ["兩行指令，", "再問一句。"],
+    "installGuide": "閱讀安裝指南",
+    "installTabsLabel": "安裝目標",
+    "installTabs": [
+      {
+        "id": "claude-code",
+        "label": "Claude Code",
+        "note": "開發中主分支，不包含在 v2.0.2",
+        "guide": "guides/install-claude-code",
+        "guideLabel": "Claude Code 安裝指南",
+        "rows": [
+          ["加入", "/plugin marketplace add eric861129/Workflow-skill-router", "code", "把這個 repository 加入為 plugin marketplace。"],
+          ["安裝", "/plugin install workflow-skill-router@workflow-skill-router", "code", "安裝 Plugin，包含 MCP server 與 Skill。"],
+          ["確認", "顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。", "prompt", "回應應顯示 bundled-local-r0 runtime。"],
+          ["需要", "Node.js 24+ 與 Python 3.11+", "text", "不需要 npm install；狀態存放在 Plugin cache 之外。"]
+        ]
+      },
+      {
+        "id": "codex",
+        "label": "Codex",
+        "note": "已發布的 v2.0.2",
+        "guide": "guides/install-plugin",
+        "guideLabel": "Codex 安裝指南",
+        "rows": [
+          ["加入", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2", "code", "固定使用已發布的 v2.0.2。"],
+          ["安裝", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "再執行 codex plugin list 確認。"],
+          ["確認", "顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。", "prompt", "請在新的 Codex 任務中詢問。"],
+          ["需要", "Node.js 24+ 與 Python 3.11+", "text", "發布套件已包含 MCP bundle 與 runtime。"]
+        ]
+      },
+      {
+        "id": "skill",
+        "label": "只使用 Skill",
+        "note": "只有路由指引，不含 MCP runtime",
+        "guide": "guides/install-skill",
+        "guideLabel": "純 Skill 安裝指南",
+        "rows": [
+          ["下載", "workflow-skill-router-skill-v2.0.2.zip", "download", "來自 v2.0.2 的 GitHub Release。"],
+          ["解壓縮", "內層的 workflow-skill-router/ 資料夾", "text", "放進 Codex Skills 目錄。"],
+          ["限制", "只有指引", "text", "沒有持久狀態、同意紀錄或 MCP 工具。"]
+        ]
+      }
     ],
-    "processNoteTitle": "適合需要固定流程的工作",
-    "processNote": "當 Skills 職責重疊、團隊反覆使用相同流程，或工作跨越階段與專案時，可以考慮使用。若只是小任務，也已知道要用哪個 Skill，額外設定可能沒有太多幫助。",
-    "contractLink": "閱讀路由規則",
-    "templateLink": "了解三種工作模式",
-    "examplesTitle": "從小任務開始，依工作需要加入流程",
-    "examplesCopy": "Router 讀取任務、套用你的流程偏好，並回報計畫與限制。實際工作仍由 Codex 與選定的 Skills 執行。",
-    "templateCode": "你的需求與流程偏好\n→ 目前階段與預計使用的 Skills\n→ 可用能力、限制與下一步",
-    "templateHighlights": [
-      [
-        "單一任務 Single",
-        "處理一件範圍明確的工作，例如釐清錯誤原因，只選擇這件事需要的 Skills。"
-      ],
-      [
-        "多階段 Phased",
-        "分開規劃、實作與驗證，在每個階段重新判斷需要哪些 Skills。"
-      ],
-      [
-        "工作圖 Managed Goal",
-        "在本機保留相依關係與續作進度。整合 Codex 原生 Goal 仍需要執行環境支援。"
-      ]
-    ],
-    "outcomesTitle": "選擇需要的使用方式",
-    "outcomes": [
-      [
-        "獨立 Skill",
-        "提供 Codex 路由指引，沒有本機 MCP 狀態機，也不會持久保存同意紀錄。"
-      ],
-      [
-        "Plugin + MCP",
-        "除了路由指引，也在本機保存計畫、狀態與同意紀錄。需要 Node.js 24+ 與 Python 3.11+。"
-      ],
-      [
-        "執行環境整合",
-        "原生 Goal 排程與經驗證的執行需要額外能力，安裝 Plugin 本身不會提供這些整合。"
-      ],
-      [
-        "你使用的專業 Skills",
-        "工作流程引用的 Skills 需要另外安裝。Router 不會附帶所有專業 Skills，也不會替你切換模型。"
-      ]
-    ],
+    "proofTitle": "我們量到了什麼",
+    "proofStats": [["6", "個路由案例"], ["1", "次執行，每組每個案例"], ["26–28%", "本次測試增加的輸入 Token"]],
+    "proofExtra": [["3/6 → 6/6", "最終路由欄位，Sol 重測"], ["0/6 → 3/6", "較嚴格的完整契約，Sol 重測"], ["尚未", "以 Claude 模型評測"]],
     "validatorTitle": "目前實測能說明什麼",
     "validatorCopy": "2026-10-19 使用 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，在 medium 推理設定下比較有無 Router 的路由決策。六個案例的探索性測試觀察到部分流程決策更一致，但沒有執行開發任務或量測程式品質。",
     "validatorEvidenceNote": "釐清案例前提的歧義並更新指引後，僅對 Sol 重新測試。這些單次觀測尚未證明穩定性、正式模型資格或完整 Plugin／執行環境整合。完整載入指令套件會增加輸入 Token；尚未證明能降低成本或加快交付。",
-    "proofStats": [
-      [
-        "6",
-        "個路由案例"
-      ],
-      [
-        "1",
-        "次執行，每組每個案例"
-      ],
-      [
-        "26–28%",
-        "本次測試增加的輸入 Token"
-      ]
-    ],
-    "validatorCommand": "# 已發布版本：v2.0.2\ncodex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2\ncodex plugin add workflow-skill-router@workflow-skill-router\ncodex plugin list",
     "releaseTitle": "從已發布的版本開始",
     "releaseCopy": "v2.0.2 包含路由指引與本機 MCP 執行程式。開發中主分支另有尚未納入此版本的內容，例如需自行啟用的 Workflow Memory。目前的探索性測試不能作為 v2.0.2 的資格證明。",
     "evidenceLink": "閱讀評測方法與限制",
+    "faqTitle": "常見問題",
+    "faq": [
+      ["它會安裝或執行我的 Skills 嗎？", "不會。Router 只規劃每個階段由哪個 Skill 主導、需要哪些輔助。安裝、啟用 Skills 與授予權限，仍由你和 Claude Code 或 Codex 決定。"],
+      ["它用哪個模型？", "它沒有自己的模型。本機 runtime 以固定規則分類工作、比對 Profile，AI agent 仍使用你選的模型。"],
+      ["它會把資料送到別處嗎？", "不會。計畫、同意紀錄與 Profile 都存在 Plugin cache 之外的本機資料目錄，也不送遙測。"],
+      ["沒有安裝 Python 會怎樣？", "MCP server 無法啟動，Skill 會以 skill-only-fallback 運作：只有路由指引，沒有持久狀態。它會如實說明，不會宣稱完整模式。"],
+      ["Claude Code 和 Codex 能共用設定嗎？", "可以。兩者讀同一份個人 Profile 與本機狀態。repository 可以只放一份 .codex/workflow-skill-router.json；只有 Claude Code 需要不同的 Skill Tree 時，才另外加 .claude/workflow-skill-router.json。"],
+      ["團隊可以直接用嗎？", "Codex Plugin v2.0.2 已發布，Claude Code 支援在開發中主分支。目前的評測仍屬探索性，建議先拿自己的工作流程試試看。"]
+    ],
+    "marquee": "每個階段一個主導 Skill。工作流程就是設定檔。Claude Code 與 Codex 都能用。",
     "finalTitle": "帶入你的流程，檢查每次路由",
-    "finalCopy": "從發布套件開始，確認可用能力，再判斷路由是否符合你的工作方式。程式碼與路由規則以 MIT 授權開放使用。"
-  }
-}[locale];
-
-const heroText = {
-  "en": {
-    "eyebrow": "Open-source workflow routing for Codex",
-    "title": "Make your Codex workflow repeatable.",
-    "body": "Choose Skills for the task at hand, keep each phase focused, and respect the workflow you define. Use routing instructions on their own, or add the Plugin for local plans and consent records.",
-    "primary": "Install Plugin + MCP",
-    "secondary": "Use Skill only",
-    "tertiary": "Why use a Router?",
-    "explainerLabel": "Illustrative workflow",
-    "explainerTitle": "One phase at a time."
-  },
-  "zh-tw": {
-    "eyebrow": "開放原始碼的 Codex 工作流程路由工具",
-    "title": "讓 Codex 按照你的工作流程做事",
-    "body": "為目前任務選擇 Skills、聚焦當下階段，並遵循你設定的工作流程。可以單獨使用路由指引，或安裝 Plugin，在本機保存計畫與同意紀錄。",
-    "primary": "安裝 Plugin + MCP",
-    "secondary": "只使用 Skill",
-    "tertiary": "為什麼需要 Router？",
-    "explainerLabel": "流程示意",
-    "explainerTitle": "每次聚焦一個階段"
-  }
-}[locale];
-
-const heroPreview = {
-  "en": {
-    "requestLabel": "Example request",
-    "request": "Plan an API change with my planning Skill. Implement later.",
-    "routeLabel": "Example plan · activation unverified",
-    "route": [
-      [
-        "Now",
-        "Named planning Skill."
-      ],
-      [
-        "Later",
-        "Build → verify."
-      ],
-      [
-        "Boundary",
-        "Extra support needs consent. Check availability."
-      ]
-    ]
-  },
-  "zh-tw": {
-    "requestLabel": "需求範例",
-    "request": "使用我指定的規劃 Skill，先規劃 API 變更，之後再實作。",
-    "routeLabel": "流程示意，尚未驗證啟用",
-    "route": [
-      [
-        "現在",
-        "指定的規劃 Skill。"
-      ],
-      [
-        "之後",
-        "實作 → 驗證。"
-      ],
-      [
-        "邊界",
-        "額外支援需同意，能力須確認可用。"
-      ]
-    ]
+    "finalCopy": "從發布套件開始，確認可用能力，再判斷路由是否符合你的工作方式。程式碼與路由規則以 MIT 授權開放使用。",
+    "footerNavTitle": "延伸閱讀",
+    "footerNav": [["快速開始", "guides/quickstart"], ["Claude Code 安裝", "guides/install-claude-code"], ["Personal Routing Profiles", "concepts/personal-routing-profiles"], ["MCP 工具", "reference/mcp-tools"], ["安全邊界", "reference/security-boundaries"]],
+    "status": ["v2.0.2 是已發布的版本。", "Claude Code 支援在主分支。"],
+    "changelog": "查看變更紀錄",
+    "contactTitle": "問題與想法",
+    "contact": "GitHub Discussions",
+    "legal": "MIT 授權。Workflow Skill Router 貢獻者。",
+    "star": "到 GitHub 給顆星"
   }
 }[locale];
 import memoryFlightRecorder from '../data/memory-flight-recorder.generated.json';
 const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
+const features = text.features;
 ---
 
-<main class="wsr-landing" data-wsr-home data-locale={locale}>
-  <nav class="wsr-floating-nav" aria-label={isZh ? '首頁導覽' : 'Home navigation'}>
-    <a class="wsr-wordmark" href={rootPath + '/'}>
-      <span class="wsr-wordmark-mark" aria-hidden="true"></span>
-      <span>Workflow Skill Router</span>
-    </a>
-    <div class="wsr-nav-links">
-      {text.nav.map((item, index) => (
-        <a href={text.navLinks[index]}>{item}</a>
-      ))}
+<div class="wsr-landing not-content" data-wsr-home data-locale={locale}>
+  <section class="wsr-hero" aria-labelledby="_top">
+    <div class="wsr-name-band">
+      <h1 id="_top" class="wsr-name"><a href={rootPath + '/'}>Workflow Skill Router</a></h1>
     </div>
-    <div class="wsr-nav-actions">
-      <a class="wsr-locale-switch" href={alternateLocalePath} aria-label={localeSwitchLabel}>
-        {alternateLocaleLabel}
-      </a>
+
+    <nav class="wsr-hero-links" aria-label={text.navLabel}>
+      {text.nav.map(([label, href]) => (
+        <a class="wsr-link-tile" href={href}>{label}</a>
+      ))}
+      <a class="wsr-link-tile wsr-link-tile-small" href={alternateLocalePath} aria-label={localeSwitchLabel}>{alternateLocaleLabel}</a>
       <button
-        class="wsr-theme-toggle"
+        class="wsr-link-tile wsr-link-tile-small wsr-theme-toggle"
         type="button"
         data-wsr-theme-toggle
         data-light-label={themeLabels.light}
         data-dark-label={themeLabels.dark}
         aria-label={themeToggleLabel}
       >
-        <span class="wsr-theme-dot" aria-hidden="true"></span>
         <span data-wsr-theme-label>{themeLabels.dark}</span>
       </button>
-      <a class="wsr-nav-star" href={repoUrl} target="_blank" rel="noreferrer" aria-label={text.star} data-analytics-event="site_nav_github">
-        <span class="wsr-star-full">{text.star}</span>
-        <span class="wsr-star-short">GitHub</span>
-      </a>
-    </div>
-  </nav>
+    </nav>
 
-  <section class="wsr-hero" aria-labelledby="_top">
-    <div class="wsr-shell wsr-hero-inner">
-      <div class="wsr-hero-copy-block">
-        <span class="wsr-hero-eyebrow">{heroText.eyebrow}</span>
-        <h1 id="_top" class="wsr-hero-title">{heroText.title}</h1>
-        <p class="wsr-hero-copy">{heroText.body}</p>
-        <div class="wsr-hero-actions">
-          <a class="wsr-button wsr-button-primary" href={`${rootPath}/guides/install-plugin/`} data-analytics-event="site_hero_install_plugin">{heroText.primary}</a>
-          <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/install-skill/`}>{heroText.secondary}</a>
-          <a class="wsr-hero-tertiary" href="#why-it-works">{heroText.tertiary}</a>
-        </div>
-      </div>
-
-      <div id="route-demo" class="wsr-hero-explainer wsr-hero-preview" aria-label={heroText.explainerLabel}>
-        <div class="wsr-hero-explainer-header">
-          <span>{heroText.explainerLabel}</span>
-          <h2>{heroText.explainerTitle}</h2>
-        </div>
-        <div class="wsr-hero-preview-flow">
-          <div class="wsr-hero-request">
-            <span>{heroPreview.requestLabel}</span>
-            <p>{heroPreview.request}</p>
-          </div>
-          <div class="wsr-hero-flow-rail" aria-hidden="true">
-            <span></span>
-          </div>
-          <div class="wsr-hero-route-card">
-            <span>{heroPreview.routeLabel}</span>
-            <div class="wsr-hero-route-list">
-              {heroPreview.route.map(([label, value]) => (
-                <div>
-                  <span>{label}</span>
-                  <p>{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-  <section id="why-it-works" class="wsr-section wsr-section-light">
-    <div class="wsr-shell wsr-section-grid">
-      <div>
-        <h2>{text.introTitle}</h2>
-        <p>{text.introCopy}</p>
-        <a class="wsr-text-link" href={`${rootPath}/concepts/personal-routing-profiles/`}>{text.introLink}</a>
-      </div>
-      <div class="wsr-process-panel" aria-label={text.processLabel}>
-        <span class="wsr-process-kicker">{text.processLabel}</span>
-        <div class="wsr-process-list">
-          {text.processSteps.map(([label, title, body], index) => (
-            <article class="wsr-process-step">
-              <span class="wsr-process-number">{String(index + 1).padStart(2, '0')}</span>
-              <div>
-                <span class="wsr-process-label">{label}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </div>
-            </article>
+    <div class="wsr-hero-left">
+      <div class="wsr-library" data-ui>
+        <p class="wsr-library-title">{text.libraryTitle}</p>
+        <ul>
+          {text.library.map(([name, state, kind], index) => (
+            <li class={`is-${kind}`} style={`--i:${index}`}>
+              <span class="wsr-library-name">{name}</span>
+              <span class="wsr-library-state">{state}</span>
+            </li>
           ))}
-        </div>
-        <div class="wsr-process-note">
-          <h3>{text.processNoteTitle}</h3>
-          <p>{text.processNote}</p>
-          <div class="wsr-process-links">
-            <a class="wsr-text-link" href={`${rootPath}/reference/routing-contract/`}>{text.contractLink}</a>
-            <a class="wsr-text-link" href={`${rootPath}/concepts/personal-routing-profiles/`}>{isZh ? '自訂 Skill Tree' : 'Own your Skill Tree'}</a>
-            <a class="wsr-text-link" href={`${rootPath}/showcase/`}>{text.showcase}</a>
-            <a class="wsr-text-link" href={`${rootPath}/concepts/routing-envelopes/`}>{text.templateLink}</a>
-          </div>
-        </div>
+        </ul>
       </div>
+      <ul class="wsr-facts">
+        {text.facts.map((fact) => <li>{fact}</li>)}
+      </ul>
+    </div>
+
+    <div class="wsr-hero-center">
+      <figure class="wsr-terminal" data-ui aria-label={text.terminalLabel}>
+        <pre><code><span class="t-prompt">&gt;</span> /plugin install workflow-skill-router@workflow-skill-router
+<span class="t-prompt">&gt;</span> {text.terminalRequest}
+
+<span class="t-tool">workflow-skill-router · plan_work</span>
+  route_source        <span class="t-value">workspace-profile</span>
+  routing_envelope    <span class="t-value">phased</span>
+  current phase       <span class="t-value">contract</span>
+  lead                <span class="t-lead">api-designer</span>
+  support             <span class="t-value">api-guidelines-skill</span>
+  later phases        <span class="t-dim">csharp-developer, qa-test-planner</span>
+  activation_status   <span class="t-value">intended-unverified</span></code></pre>
+      </figure>
+      <p class="wsr-statement">{text.statement}</p>
+    </div>
+
+    <div class="wsr-hero-rail">
+      {text.rail.map((fact) => <p class="wsr-rail-tile">{fact}</p>)}
+      <a class="wsr-rail-tile wsr-rail-link" href={repoUrl} target="_blank" rel="noreferrer" data-analytics-event="site_nav_github">{text.railRepo}</a>
+      <a class="wsr-rail-tile wsr-rail-link wsr-rail-dark" href={`${rootPath}/guides/install-skill/`}>{text.railSkill}</a>
+      <a class="wsr-rail-tile wsr-rail-action" href="#install" data-analytics-event="site_hero_install_plugin">{text.action}</a>
     </div>
   </section>
 
-  <section id="examples" class="wsr-section wsr-section-dark wsr-proof" data-wsr-pin>
-    <div class="wsr-shell wsr-proof-grid">
-      <div class="wsr-proof-pin">
-        <h2>{text.examplesTitle}</h2>
-        <p>{text.examplesCopy}</p>
-        <a class="wsr-button wsr-button-secondary-dark" href={`${rootPath}/concepts/routing-envelopes/`}>{text.templateLink}</a>
-      </div>
-      <div class="wsr-proof-stack">
-        <div class="wsr-template-showcase wsr-motion-image">
-          <div>
-            <span class="wsr-template-kicker">Single / Phased / Managed Goal</span>
-            <h3>{isZh ? '配合任務的範圍安排流程' : 'Match the structure to the task'}</h3>
-            <p>{isZh ? '本機執行程式使用固定規則分類工作與比對設定。計畫、相依關係與完成條件都可以檢查；實際執行仍受使用者授權與環境能力限制。' : 'The local runtime uses deterministic rules to classify work and match profiles. Plans, dependencies, and completion checks stay inspectable; execution still depends on user authorization and available capabilities.'}</p>
-          </div>
-          <pre><code>{text.templateCode}</code></pre>
-          <div class="wsr-template-grid">
-            {text.templateHighlights.map(([title, body]) => (
-              <a class="wsr-template-pill" href={`${rootPath}/concepts/routing-envelopes/`}>
-                <span>{title}</span>
-                <p>{body}</p>
-              </a>
-            ))}
-          </div>
-          <div class="wsr-template-actions">
-            <a class="wsr-text-link" href={`${rootPath}/guides/install-plugin/`}>{isZh ? '安裝 Plugin + MCP' : 'Install Plugin + MCP'}</a>
-            <a class="wsr-text-link" href={`${rootPath}/guides/install-skill/`}>{isZh ? '安裝純 SKILL' : 'Install Skill-only'}</a>
-          </div>
-        </div>
-        <div class="wsr-outcome-carousel" data-wsr-carousel>
-          <div class="wsr-carousel-controls">
-            <button type="button" data-wsr-prev aria-label={isZh ? '上一個成果' : 'Previous outcome'}>
-              <span aria-hidden="true">←</span>
-              <span>{isZh ? '上一則' : 'Previous'}</span>
-            </button>
-            <h3>{text.outcomesTitle}</h3>
-            <button type="button" data-wsr-next aria-label={isZh ? '下一個成果' : 'Next outcome'}>
-              <span>{isZh ? '下一則' : 'Next'}</span>
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
-          <div class="wsr-carousel-track" data-wsr-track>
-            {text.outcomes.map(([title, body]) => (
-              <article class="wsr-outcome-card wsr-motion-image">
-                <h4>{title}</h4>
-                <p>{body}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
+  <section class="wsr-intro" aria-labelledby="wsr-intro-title">
+    <div class="wsr-intro-slogan" data-reveal>
+      <h2 id="wsr-intro-title">{text.slogan[0]}<br />{text.slogan[1]}</h2>
     </div>
-  </section>
-
-  <section id="validator" class="wsr-section wsr-section-light">
-    <div class="wsr-shell wsr-validator">
-      <div>
-        <h2>{text.validatorTitle}</h2>
-        <p>{text.validatorCopy}</p>
-        <p>{text.validatorEvidenceNote}</p>
-        <div class="wsr-proof-stats" aria-label={isZh ? '探索性測試範圍與成本' : 'Exploratory test scope and cost'}>
-          {text.proofStats.map(([value, label]) => (
-            <span>
-              <strong>{value}</strong>
-              {label}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div class="wsr-command-card">
-        <h3>{text.releaseTitle}</h3>
-        <p>{text.releaseCopy}</p>
-        <pre><code>{text.validatorCommand}</code></pre>
-        <a class="wsr-text-link" href={`${rootPath}/reference/model-evaluation/`}>{text.evidenceLink}</a>
-      </div>
+    <div class="wsr-intro-figure" data-reveal>
+      <p class="wsr-figure">{text.figure}</p>
+      <p>{text.figureNote}</p>
+    </div>
+    <div class="wsr-intro-video" data-reveal>
+      <video
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        poster={`${assetPath}/workflow-skill-router-demo-poster.webp`}
+        aria-label={text.videoLabel}
+        width="1280"
+        height="720"
+      >
+        <source src={`${assetPath}/workflow-skill-router-demo.webm`} type="video/webm" />
+        <source src={`${assetPath}/workflow-skill-router-demo.mp4`} type="video/mp4" />
+      </video>
+    </div>
+    <div class="wsr-intro-text" data-reveal>
+      <p>{text.introCopy}</p>
     </div>
   </section>
 
   <AdaptiveRouterDemo locale={isZh ? 'zh-TW' : 'en'} initialPreset="personal-skill-tree" />
 
-  <section class="wsr-final-cta">
-    <div class="wsr-shell">
-      <h2>{text.finalTitle}</h2>
-      <p>{text.finalCopy}</p>
-      <div class="wsr-hero-actions">
-        <a class="wsr-button wsr-button-primary" href={repoUrl} target="_blank" rel="noreferrer">{text.star}</a>
-        <a class="wsr-button wsr-button-secondary" href={`${rootPath}/guides/quickstart/`}>{text.download}</a>
+  <section id="how-it-works" class="wsr-how" aria-labelledby="wsr-how-title">
+    {text.howClauses.map((clause, stage) => (
+      <div class={`wsr-how-field wsr-how-field-${stage + 1}`} data-reveal>
+        {stage === 0 && <h2 id="wsr-how-title">{text.howTitle}</h2>}
+        <div class="wsr-route-card" data-ui>
+          <p class="wsr-route-card-request">{text.terminalRequest}</p>
+          <dl>
+            {text.howCard.filter((row) => row[2] <= stage + 1).map(([label, value, rowStage]) => (
+              <div class={rowStage === stage + 1 && stage > 0 ? 'is-new' : undefined}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <p class="wsr-how-clause">{clause}</p>
+      </div>
+    ))}
+  </section>
+
+  <section class="wsr-features" aria-labelledby="wsr-features-title">
+    <div class="wsr-feature wsr-feature-heading" data-reveal>
+      <h2 id="wsr-features-title">{text.featuresTitle}</h2>
+    </div>
+    <div class="wsr-feature wsr-feature-consent" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true">
+        <span class="wsr-key">{features.consent[2]}</span>
+        <span class="wsr-key is-pressed">{features.consent[3]}</span>
+      </div>
+      <h3>{features.consent[0]}</h3>
+      <p>{features.consent[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-lock" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true"><span class="wsr-status-block">{features.lock[2]}</span></div>
+      <h3>{features.lock[0]}</h3>
+      <p>{features.lock[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-memory" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true">
+        <span class="wsr-toggle"><span class="wsr-toggle-thumb"></span></span>
+        <span class="wsr-toggle-label">{features.memory[2]}</span>
+      </div>
+      <h3>{features.memory[0]}</h3>
+      <p>{features.memory[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-runtime" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true"><span class="wsr-status-block is-warn">{features.runtime[2]}</span></div>
+      <h3>{features.runtime[0]}</h3>
+      <p>{features.runtime[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-hosts" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true">
+        <span class="wsr-key">/plugin</span>
+        <span class="wsr-key">codex</span>
+      </div>
+      <h3>{features.hosts[0]}</h3>
+      <p>{features.hosts[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-usage" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true">
+        <span class="wsr-readout"><b>2</b><small>{features.usage[2]}</small></span>
+        <span class="wsr-readout"><b>2</b><small>{features.usage[3]}</small></span>
+      </div>
+      <h3>{features.usage[0]}</h3>
+      <p>{features.usage[1]}</p>
+    </div>
+    <div class="wsr-feature wsr-feature-path" data-reveal>
+      <div class="wsr-closeup" data-ui aria-hidden="true">
+        <span class="wsr-path is-first">.claude/</span>
+        <span class="wsr-path">.codex/</span>
+      </div>
+      <h3>{features.path[0]}</h3>
+      <p>{features.path[1]}</p>
+    </div>
+  </section>
+
+  <section id="install" class="wsr-install" aria-labelledby="wsr-install-title" data-wsr-install>
+    <div class="wsr-install-head" data-reveal>
+      <h2 id="wsr-install-title"><span>{text.installTitle[0]}</span> {text.installTitle[1]}</h2>
+      <a class="wsr-button" href={`${rootPath}/guides/quickstart/`}>{text.installGuide}</a>
+    </div>
+    <div class="wsr-install-body">
+      <div class="wsr-install-tabs" role="tablist" aria-label={text.installTabsLabel} aria-orientation="vertical">
+        {text.installTabs.map((tab, index) => (
+          <button
+            type="button"
+            role="tab"
+            id={`wsr-install-tab-${tab.id}`}
+            aria-controls={`wsr-install-panel-${tab.id}`}
+            aria-selected={index === 0 ? 'true' : 'false'}
+            tabindex={index === 0 ? 0 : -1}
+            data-install-tab={tab.id}
+          >
+            <span class="wsr-install-tab-label">{tab.label}</span>
+            <span class="wsr-install-tab-note">{tab.note}</span>
+          </button>
+        ))}
+      </div>
+      <div class="wsr-install-panels">
+        {text.installTabs.map((tab) => (
+          <div
+            class="wsr-install-panel"
+            id={`wsr-install-panel-${tab.id}`}
+            role="tabpanel"
+            aria-labelledby={`wsr-install-tab-${tab.id}`}
+            data-install-panel={tab.id}
+          >
+            <h3 class="wsr-install-panel-title">{tab.label}</h3>
+            <ul>
+              {tab.rows.map(([label, value, kind, note]) => (
+                <li>
+                  <span class="wsr-install-label">{label}</span>
+                  <span class="wsr-install-value">
+                    {kind === 'code' && <code>{value}</code>}
+                    {kind === 'prompt' && <q>{value}</q>}
+                    {kind === 'download' && <a href={skillZipUrl}>{value}</a>}
+                    {kind === 'text' && <span>{value}</span>}
+                    <small>{note}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <a class="wsr-install-guide" href={`${rootPath}/${tab.guide}/`}>{tab.guideLabel}</a>
+          </div>
+        ))}
       </div>
     </div>
   </section>
+
+  <section id="evidence" class="wsr-proof" aria-labelledby="wsr-proof-title">
+    <div class="wsr-proof-tile wsr-proof-heading" data-reveal>
+      <h2 id="wsr-proof-title">{text.proofTitle}</h2>
+    </div>
+    {[...text.proofStats, ...text.proofExtra].map(([figure, label]) => (
+      <div class="wsr-proof-tile" data-reveal>
+        <p class="wsr-proof-figure">{figure}</p>
+        <p>{label}</p>
+      </div>
+    ))}
+    <div class="wsr-proof-text wsr-proof-text-wide" data-reveal>
+      <h3>{text.validatorTitle}</h3>
+      <p>{text.validatorCopy}</p>
+      <p>{text.validatorEvidenceNote}</p>
+    </div>
+    <div class="wsr-proof-text" data-reveal>
+      <h3>{text.releaseTitle}</h3>
+      <p>{text.releaseCopy}</p>
+      <a href={`${rootPath}/reference/model-evaluation/`}>{text.evidenceLink}</a>
+    </div>
+  </section>
+
 <!-- M4-B memory-flight-recorder:start -->
 <section class="memory-flight-recorder" data-memory-flight-recorder aria-labelledby="memory-flight-recorder-title">
-  <div class="memory-flight-recorder__intro">
+  <div class="memory-flight-recorder__intro" data-reveal>
     <h2 id="memory-flight-recorder-title">
       {m4bIsZh ? 'Memory Flight Recorder' : 'Memory Flight Recorder'}
     </h2>
@@ -510,7 +533,7 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
   </div>
 
   <div class="memory-flight-recorder__workspace">
-    <div class="memory-flight-recorder__tabs" role="tablist" aria-label="Memory scenarios">
+    <div class="memory-flight-recorder__tabs" data-ui role="tablist" aria-label="Memory scenarios">
       {memoryFlightRecorder.scenarios.map((scenario, index) => (
         <button
           type="button"
@@ -542,11 +565,8 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
           <ol>
             {scenario.events.map((event) => (
               <li>
-                <span>{String(event.seq).padStart(2, '0')}</span>
-                <div>
-                  <strong>{event.event}</strong>
-                  <small>{event.state} · {event.reason}</small>
-                </div>
+                <strong>{event.event}</strong>
+                <small>{event.state} · {event.reason}</small>
               </li>
             ))}
           </ol>
@@ -579,55 +599,58 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
     });
   });
 </script>
-
-<style>
-  .memory-flight-recorder {
-    width: min(1120px, calc(100% - 2rem));
-    margin: clamp(4rem, 9vw, 8rem) auto;
-    padding: clamp(1.25rem, 3vw, 2.5rem);
-    border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-    border-radius: 1.25rem;
-    background: color-mix(in srgb, var(--sl-color-bg, #08111f) 94%, white 6%);
-  }
-  .memory-flight-recorder__intro { max-width: 48rem; }
-  .memory-flight-recorder__intro h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.8rem); line-height: .98; }
-  .memory-flight-recorder__intro > p { max-width: 42rem; line-height: 1.7; }
-  .memory-flight-recorder__boundary { display: flex; gap: .75rem; flex-wrap: wrap; align-items: baseline; }
-  .memory-flight-recorder__boundary span { opacity: .72; }
-  .memory-flight-recorder__workspace { display: grid; grid-template-columns: minmax(13rem, .72fr) minmax(0, 1.7fr); gap: 1rem; margin-top: 2rem; }
-  .memory-flight-recorder__tabs { display: flex; flex-direction: column; gap: .5rem; }
-  .memory-flight-recorder__tabs button {
-    appearance: none; width: 100%; padding: .8rem .9rem; border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-    border-radius: .7rem; background: transparent; color: inherit; text-align: left; font: inherit; font-size: .9rem; line-height: 1.3; cursor: pointer;
-  }
-  .memory-flight-recorder__tabs button[aria-selected='true'] { background: color-mix(in srgb, currentColor 10%, transparent); border-color: color-mix(in srgb, currentColor 38%, transparent); }
-  .memory-flight-recorder__tabs button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-  .memory-flight-recorder__panels article { min-height: 21rem; padding: clamp(1rem, 2.5vw, 1.6rem); border-radius: .9rem; background: color-mix(in srgb, currentColor 6%, transparent); }
-  .memory-flight-recorder__panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
-  .memory-flight-recorder__panel-heading h3 { margin: 0; font-size: 1.25rem; }
-  .memory-flight-recorder__panel-heading code { font-size: .72rem; }
-  .memory-flight-recorder__panels ol { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: .65rem; }
-  .memory-flight-recorder__panels li { display: grid; grid-template-columns: 2.25rem 1fr; gap: .7rem; align-items: start; padding: .75rem 0; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
-  .memory-flight-recorder__panels li > span { font-family: ui-monospace, monospace; opacity: .75; }
-  .memory-flight-recorder__panels li strong, .memory-flight-recorder__panels li small { display: block; }
-  .memory-flight-recorder__panels li small { margin-top: .2rem; opacity: .68; }
-  .memory-flight-recorder__pilot { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0 0; }
-  .memory-flight-recorder__pilot div { padding: .9rem; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
-  .memory-flight-recorder__pilot dt { font-size: .75rem; opacity: .66; }
-  .memory-flight-recorder__pilot dd { margin: .25rem 0 0; font-size: 1.35rem; font-weight: 700; }
-  @media (max-width: 760px) {
-    .memory-flight-recorder__workspace { grid-template-columns: 1fr; }
-    .memory-flight-recorder__tabs { flex-direction: row; overflow-x: auto; padding-bottom: .35rem; }
-    .memory-flight-recorder__tabs button { min-width: 10rem; }
-    .memory-flight-recorder__pilot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-</style>
 <!-- M4-B memory-flight-recorder:end -->
 
-</main>
+  <section class="wsr-faq" aria-labelledby="wsr-faq-title">
+    <div class="wsr-faq-band wsr-faq-heading">
+      <h2 id="wsr-faq-title">{text.faqTitle}</h2>
+    </div>
+    {text.faq.map(([question, answer]) => (
+      <div class="wsr-faq-band" data-reveal>
+        <h3>{question}</h3>
+        <p>{answer}</p>
+      </div>
+    ))}
+  </section>
+
+  <div class="wsr-marquee" aria-hidden="true">
+    <div class="wsr-marquee-track">
+      <span>{text.marquee}</span>
+      <span>{text.marquee}</span>
+    </div>
+  </div>
+
+  <footer class="wsr-footer" aria-label={text.finalTitle}>
+    <div class="wsr-footer-tile wsr-footer-statement">
+      <h2>{text.finalTitle}</h2>
+      <p>{text.finalCopy}</p>
+      <p class="wsr-footer-legal">{text.legal}</p>
+    </div>
+    <nav class="wsr-footer-tile wsr-footer-nav" aria-label={text.footerNavTitle}>
+      <h3>{text.footerNavTitle}</h3>
+      <ul>
+        {text.footerNav.map(([label, route]) => (
+          <li><a href={`${rootPath}/${route}/`}>{label}</a></li>
+        ))}
+      </ul>
+    </nav>
+    <div class="wsr-footer-tile wsr-footer-status">
+      {text.status.map((line) => <p>{line}</p>)}
+      <a href={changelogUrl} target="_blank" rel="noreferrer">{text.changelog}</a>
+    </div>
+    <div class="wsr-footer-tile wsr-footer-contact">
+      <h3>{text.contactTitle}</h3>
+      <a href={discussionsUrl} target="_blank" rel="noreferrer">{text.contact}</a>
+    </div>
+    <p class="wsr-footer-tile wsr-footer-wordmark" aria-hidden="true">Workflow Skill Router</p>
+    <a class="wsr-footer-tile wsr-footer-star" href={repoUrl} target="_blank" rel="noreferrer" data-analytics-event="site_footer_github">
+      <span>{text.star}</span>
+      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><path d="M10 38 38 10M16 10h22v22" fill="none" stroke="currentColor" stroke-width="4" /></svg>
+    </a>
+  </footer>
+</div>
 
 <script>
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const themeKey = 'starlight-theme';
   const themeQuery = window.matchMedia('(prefers-color-scheme: light)');
   const normalizeTheme = (theme) => (theme === 'light' || theme === 'dark' ? theme : null);
@@ -673,25 +696,55 @@ const m4bIsZh = Astro.currentLocale?.toLowerCase() === 'zh-tw';
 
   document.querySelectorAll('[data-wsr-theme-toggle]').forEach((button) => {
     button.addEventListener('click', () => {
-      const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
-      applyTheme(nextTheme);
+      applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     });
   });
 
-  document.querySelectorAll('[data-wsr-carousel]').forEach((carousel) => {
-    const track = carousel.querySelector('[data-wsr-track]');
-    const prev = carousel.querySelector('[data-wsr-prev]');
-    const next = carousel.querySelector('[data-wsr-next]');
-
-    const scrollByCard = (direction) => {
-      if (!track) return;
-      const card = track.querySelector('.wsr-outcome-card');
-      const distance = card ? card.getBoundingClientRect().width + 16 : 280;
-      track.scrollBy({ left: direction * distance, behavior: reduceMotion ? 'auto' : 'smooth' });
+  // 安裝分頁：沒有 JavaScript 時三個面板全部顯示；有 JavaScript 才切換。
+  document.querySelectorAll('[data-wsr-install]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll('[data-install-tab]'));
+    const panels = Array.from(root.querySelectorAll('[data-install-panel]'));
+    const select = (id) => {
+      tabs.forEach((tab) => {
+        const selected = tab.getAttribute('data-install-tab') === id;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.setAttribute('tabindex', selected ? '0' : '-1');
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.getAttribute('data-install-panel') !== id;
+      });
     };
-
-    prev?.addEventListener('click', () => scrollByCard(-1));
-    next?.addEventListener('click', () => scrollByCard(1));
+    root.classList.add('is-tabbed');
+    select(tabs[0]?.getAttribute('data-install-tab'));
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(tab.getAttribute('data-install-tab')));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(index + step + tabs.length) % tabs.length];
+        select(next.getAttribute('data-install-tab'));
+        next.focus();
+      });
+    });
   });
 
+  // 進場動畫只在支援且未要求減少動態時啟用；內容預設可見。
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const landing = document.querySelector('[data-wsr-home]');
+  if (landing && !reduceMotion && 'IntersectionObserver' in window) {
+    landing.classList.add('wsr-motion');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-in');
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    landing.querySelectorAll('[data-reveal]').forEach((element) => {
+      const siblings = Array.from(element.parentElement?.querySelectorAll(':scope > [data-reveal]') ?? []);
+      element.style.setProperty('--d', `${Math.min(siblings.indexOf(element), 6) * 70}ms`);
+      observer.observe(element);
+    });
+  }
 </script>
