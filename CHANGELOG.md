@@ -4,7 +4,7 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-## 2.1.0 (prepared candidate)
+## 2.1.0
 
 ### Added
 
@@ -34,6 +34,9 @@ All notable changes to Workflow Skill Router are documented here.
 - MCP tool and schema descriptions now describe the host generically instead
   of naming only Codex. Codex keeps its existing paths, data directory, and
   routing behavior.
+- Promoted reviewed, source-bound `2.1.0` metadata for trusted workflow
+  publication. Its Behavior gate ran through the Claude Code driver; the
+  maintainer attestation records the model, results, and limits.
 
 ## 2.0.2
 
