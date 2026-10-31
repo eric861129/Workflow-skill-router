@@ -5,7 +5,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GA_VERSION = "2.0.2"
+GA_VERSION = "2.1.0"
+PREVIOUS_PUBLISHED_VERSION = "2.0.2"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):
@@ -38,7 +39,7 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         expected_published_version = (
             GA_VERSION
             if version["release_lifecycle"] == "reviewed-attested-publishable"
-            else "2.0.1"
+            else PREVIOUS_PUBLISHED_VERSION
         )
         self.assertEqual(expected_published_version, version["published_v2_version"])
         self.assertEqual("latest", version["stable_channel"])
@@ -86,14 +87,14 @@ class V2ReleaseCandidateTests(unittest.TestCase):
         if version["release_lifecycle"] == "reviewed-attested-publishable":
             self.assertIn(f"The published release is **v{GA_VERSION}**", english)
             self.assertIn(f"已發布版本為 **v{GA_VERSION}**", traditional_chinese)
-            self.assertIn("## 2.0.2", changelog)
-            self.assertNotIn("## 2.0.2 (prepared", changelog)
+            self.assertIn(f"## {GA_VERSION}", changelog)
+            self.assertNotIn(f"## {GA_VERSION} (prepared", changelog)
             return
 
         self.assertEqual("prepared-local-candidate", version["release_lifecycle"])
-        self.assertIn("Current published V2 release: `2.0.1`", english)
-        self.assertIn("目前已發布的 V2 正式版：`2.0.1`", traditional_chinese)
-        self.assertIn("## 2.0.2 (prepared", changelog)
+        self.assertIn(f"Current published V2 release: `{PREVIOUS_PUBLISHED_VERSION}`", english)
+        self.assertIn(f"目前已發布的 V2 正式版：`{PREVIOUS_PUBLISHED_VERSION}`", traditional_chinese)
+        self.assertIn(f"## {GA_VERSION} (prepared", changelog)
 
     def test_release_version_does_not_silently_migrate_persisted_schema(self) -> None:
         codecs = (

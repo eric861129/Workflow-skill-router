@@ -1,0 +1,80 @@
+{
+  "schema_version": "workflow-skill-router/release-evidence-attestation/1.0",
+  "record_type": "maintainer-release-evidence-review",
+  "attestation_status": "reviewed",
+  "reviewed_at": "2026-10-31T17:21:26Z",
+  "reviewer": "claude-under-maintainer-authorization",
+  "release_version": "2.1.0",
+  "release_source_revision": "a347482b3b53011b79eaf8b71071b79f9ea564a6",
+  "deterministic_evidence": {
+    "status": "passed",
+    "scope": "Multi-host Router Core, Claude Code and Codex Plugin distribution, MCP bundle, release artifacts, documentation, site visual, Windows, macOS, and Linux contracts",
+    "source_ci": {
+      "validate_v2_contracts_run": "41222781788",
+      "codeql_run": "41222781801"
+    },
+    "local_test_counts": {
+      "router_core": 582,
+      "repository": 391
+    },
+    "source_governance": {
+      "repository": "eric861129/Workflow-skill-router",
+      "status": "passed",
+      "verified_before_attestation": true
+    },
+    "target_governance": {
+      "repository": "eric861129/workflow-skill-router-plugin",
+      "status": "passed",
+      "verified_before_attestation": true
+    }
+  },
+  "behavior_evidence": {
+    "evidence_class": "behavior",
+    "evaluation_contract": "workflow-skill-router.behavior-routing@2.3.1",
+    "model_identifier": "claude-sonnet-5-5",
+    "reasoning_effort": "not set (Claude Code default)",
+    "adapter": "claude_code_driver.py",
+    "claude_code_version": "2.1.309",
+    "basis": "V2.1.0 changes routing (bilingual deterministic-objective-v2 classifier, Memory, Claude Code SKILL), so it does not inherit earlier evidence. A fresh paired beta-smoke run on the frozen source used an isolated Claude Code print-mode process per turn, with no tools, MCP servers, user configuration, or session state.",
+    "full_run": {
+      "sanitized_report_sha256": "sha256:a00f8afc29f0116640031ef97e76407684edeb27f9e474904c5a3114b713834f",
+      "source_revision": "a347482b3b53011b79eaf8b71071b79f9ea564a6",
+      "adapter_revision": "sha256:2472996dbabe5ca98e4a30bb6d0466296453aa4508f18e35982743e1154e81fc",
+      "attempt_count": 36,
+      "turn_count": 42,
+      "repeats": 3,
+      "hard_violation_count": 0,
+      "final_route_field_match_rate": {"baseline": 0.6667, "candidate": 1.0},
+      "within_case_consistency_rate": {"baseline": 0.6667, "candidate": 1.0},
+      "hybrid_consent_transition": 1.0,
+      "attempt_pass_rate": {"baseline": 0.0, "candidate": 0.0},
+      "turn_contract_match_rate": {"baseline": 0.0, "candidate": 0.1429},
+      "classification_reason_match_rate": {"baseline": 0.3889, "candidate": 0.5},
+      "envelope_source_match_rate": {"baseline": 0.3333, "candidate": 0.3333}
+    },
+    "prior_run_on_parent_revision": {
+      "note": "Not release evidence. The same configuration ran on the parent revision, which differs only in release copy; it also reported zero hard violations and the same evidence-code misses.",
+      "source_revision": "9b7289ddde0fdda033af1ee561b64db1bd73a831",
+      "sanitized_report_sha256": "sha256:c102e342249e91f376cc91f74a84bfe04270edd0b8d695645ff98323715e2594",
+      "hard_violation_count": 0
+    }
+  },
+  "known_limitations": [
+    "No attempt in either arm passed the full turn contract. The candidate passed 3 of 21 turns, all in phased-explicit-consent-approve; the baseline passed none. Every remaining candidate miss is in evaluation evidence codes, not in the six final route fields.",
+    "classification_reason_match was 0.0 in both arms for phased-explicit-consent-approve, phased-current-boundary, and managed-goal, and envelope_source_match was 0.0 in both arms for small-auto, phased-explicit-consent-approve, capability-unavailable, and profile-explain-miss. The misses match across arms and repeat the parent-revision run, so they are not attributed to the Router; they are a non-hard limitation of the model's self-reported evidence vocabulary.",
+    "Only claude-sonnet-5-5 at the Claude Code default reasoning effort was run; Codex models were not re-qualified on this source.",
+    "Real Skill activation, token reduction, and task outcome remain not observable. The run used 350,589 input tokens (77,381 cached) and 20,617 output tokens across 42 turns, read from the per-turn transcripts; the report leaves model_usage unavailable by design."
+  ],
+  "release_decision": {
+    "status": "publishable-with-bounded-behavior-evidence",
+    "basis": "The fresh paired run on the frozen source has zero hard violations, and the candidate arm matched all six final route fields in every attempt with full within-case consistency.",
+    "forbidden_claims": [
+      "full-contract qualification pass",
+      "hybrid-full conformance",
+      "verified Skill activation",
+      "measured token reduction",
+      "measured task outcome improvement",
+      "Codex model re-qualification"
+    ]
+  }
+}

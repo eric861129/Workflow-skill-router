@@ -7,7 +7,7 @@ const locale = (Astro.props.locale ?? 'en') as Locale;
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 const discussionsUrl = `${repoUrl}/discussions`;
 const changelogUrl = `${repoUrl}/blob/main/CHANGELOG.md`;
-const skillZipUrl = `${repoUrl}/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip`;
+const skillZipUrl = `${repoUrl}/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip`;
 const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
 const assetPath = '/Workflow-skill-router/assets';
 const isZh = locale === 'zh-tw';
@@ -75,7 +75,7 @@ const text = {
       {
         "id": "claude-code",
         "label": "Claude Code",
-        "note": "Development main, not part of v2.0.2",
+        "note": "New in v2.1.0",
         "guide": "guides/install-claude-code",
         "guideLabel": "Claude Code guide",
         "rows": [
@@ -88,11 +88,11 @@ const text = {
       {
         "id": "codex",
         "label": "Codex",
-        "note": "Published v2.0.2",
+        "note": "Release v2.1.0",
         "guide": "guides/install-plugin",
         "guideLabel": "Codex guide",
         "rows": [
-          ["Add", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2", "code", "Pins the published v2.0.2 release."],
+          ["Add", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0", "code", "Pins the v2.1.0 release."],
           ["Install", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "Then run codex plugin list to confirm it."],
           ["Check", "Show the Workflow Skill Router status and explain which capabilities are available in this environment.", "prompt", "Ask in a new Codex task."],
           ["Needs", "Node.js 24+ and Python 3.11+", "text", "The release already includes the MCP bundle and runtime."]
@@ -105,7 +105,7 @@ const text = {
         "guide": "guides/install-skill",
         "guideLabel": "Skill-only guide",
         "rows": [
-          ["Download", "workflow-skill-router-skill-v2.0.2.zip", "download", "From the v2.0.2 GitHub Release."],
+          ["Download", "workflow-skill-router-skill-v2.1.0.zip", "download", "From the v2.1.0 GitHub Release."],
           ["Extract", "The inner workflow-skill-router/ folder", "text", "Into your Codex Skills directory."],
           ["Limits", "Instructions only", "text", "No durable state, no consent records, no MCP tools."]
         ]
@@ -113,7 +113,7 @@ const text = {
     ],
     "proofTitle": "What we measured",
     "proofStats": [["6", "routing cases"], ["1", "run per case and arm"], ["26–28%", "more input tokens in this setup"]],
-    "proofExtra": [["3/6 → 6/6", "final route fields, Sol retest"], ["0/6 → 3/6", "stricter full contract, Sol retest"], ["Not yet", "evaluated with Claude models"]],
+    "proofExtra": [["3/6 → 6/6", "final route fields, Sol retest"], ["0/6 → 3/6", "stricter full contract, Sol retest"], ["v2.1.0", "release gate run with a Claude model"]],
     "validatorTitle": "What the tests show so far",
     "validatorCopy": "On 2026-10-19, we compared routing with and without the Router using GPT-6.1 Sol, GPT-6 Astra, and GPT-6 Luna at medium reasoning. The six-case exploration showed some more consistent workflow decisions. It did not execute development tasks or measure code quality.",
     "validatorEvidenceNote": "After clarifying ambiguous case assumptions and updating the instructions, only Sol was retested. These single-run observations do not establish repeatability, formal model qualification, or full Plugin/host integration. The complete instruction package increased input tokens; lower cost and faster delivery have not been demonstrated.",
@@ -196,7 +196,7 @@ const text = {
       {
         "id": "claude-code",
         "label": "Claude Code",
-        "note": "開發中主分支，不包含在 v2.0.2",
+        "note": "v2.1.0 新增",
         "guide": "guides/install-claude-code",
         "guideLabel": "Claude Code 安裝指南",
         "rows": [
@@ -209,11 +209,11 @@ const text = {
       {
         "id": "codex",
         "label": "Codex",
-        "note": "已發布的 v2.0.2",
+        "note": "v2.1.0 發布版本",
         "guide": "guides/install-plugin",
         "guideLabel": "Codex 安裝指南",
         "rows": [
-          ["加入", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2", "code", "固定使用已發布的 v2.0.2。"],
+          ["加入", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0", "code", "固定使用 v2.1.0 發布版本。"],
           ["安裝", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "再執行 codex plugin list 確認。"],
           ["確認", "顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。", "prompt", "請在新的 Codex 任務中詢問。"],
           ["需要", "Node.js 24+ 與 Python 3.11+", "text", "發布套件已包含 MCP bundle 與 runtime。"]
@@ -226,7 +226,7 @@ const text = {
         "guide": "guides/install-skill",
         "guideLabel": "純 Skill 安裝指南",
         "rows": [
-          ["下載", "workflow-skill-router-skill-v2.0.2.zip", "download", "來自 v2.0.2 的 GitHub Release。"],
+          ["下載", "workflow-skill-router-skill-v2.1.0.zip", "download", "來自 v2.1.0 的 GitHub Release。"],
           ["解壓縮", "內層的 workflow-skill-router/ 資料夾", "text", "放進 Codex Skills 目錄。"],
           ["限制", "只有指引", "text", "沒有持久狀態、同意紀錄或 MCP 工具。"]
         ]
@@ -234,7 +234,7 @@ const text = {
     ],
     "proofTitle": "我們量到了什麼",
     "proofStats": [["6", "個路由案例"], ["1", "次執行，每組每個案例"], ["26–28%", "本次測試增加的輸入 Token"]],
-    "proofExtra": [["3/6 → 6/6", "最終路由欄位，Sol 重測"], ["0/6 → 3/6", "較嚴格的完整契約，Sol 重測"], ["尚未", "以 Claude 模型評測"]],
+    "proofExtra": [["3/6 → 6/6", "最終路由欄位，Sol 重測"], ["0/6 → 3/6", "較嚴格的完整契約，Sol 重測"], ["v2.1.0", "發布評測以 Claude 模型執行"]],
     "validatorTitle": "目前實測能說明什麼",
     "validatorCopy": "2026-10-19 使用 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，在 medium 推理設定下比較有無 Router 的路由決策。六個案例的探索性測試觀察到部分流程決策更一致，但沒有執行開發任務或量測程式品質。",
     "validatorEvidenceNote": "釐清案例前提的歧義並更新指引後，僅對 Sol 重新測試。這些單次觀測尚未證明穩定性、正式模型資格或完整 Plugin／執行環境整合。完整載入指令套件會增加輸入 Token；尚未證明能降低成本或加快交付。",

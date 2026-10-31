@@ -28,6 +28,7 @@ from workflow_skill_router.evaluation.local_evidence import (
 
 V2 = ROOT / "evaluation" / "v2"
 CANONICAL_BEHAVIOR_ADAPTER = V2 / "adapters" / "codex_cli_driver.py"
+CLAUDE_BEHAVIOR_ADAPTER = V2 / "adapters" / "claude_code_driver.py"
 EXPECTED_CASES = {
     "small-auto",
     "small-explicit-lock",
@@ -601,6 +602,59 @@ class V2BenchmarkTests(unittest.TestCase):
                     sys.executable,
                     [str(copied.resolve()), "--model", "gpt-test"],
                     canonical_revision,
+                )
+
+    def test_claude_behavior_adapter_is_canonical_and_binds_its_codex_dependency(self):
+        claude = CLAUDE_BEHAVIOR_ADAPTER.resolve()
+        codex = CANONICAL_BEHAVIOR_ADAPTER.resolve()
+        self.assertEqual(claude, RUNNER._canonical_behavior_entrypoint(str(claude)))
+        closure = RUNNER.behavior_adapter_closure_paths(CLAUDE_BEHAVIOR_ADAPTER)
+        self.assertIn(claude, closure)
+        self.assertIn(codex, closure)
+        claude_revision = RUNNER.adapter_source_revision(sys.executable, [str(claude)])
+        codex_revision = RUNNER.adapter_source_revision(sys.executable, [str(codex)])
+        self.assertRegex(claude_revision, r"^sha256:[0-9a-f]{64}$")
+        self.assertNotEqual(codex_revision, claude_revision)
+        self.assertEqual(
+            claude_revision,
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(claude), "--model", "claude-test"],
+                claude_revision,
+            ),
+        )
+        with self.assertRaisesRegex(
+            EvaluationIntegrityError,
+            "behavior_adapter_revision_mismatch",
+        ):
+            RUNNER.verify_behavior_adapter_revision(
+                sys.executable,
+                [str(claude), "--model", "claude-test"],
+                codex_revision,
+            )
+
+    def test_claude_auth_reaches_the_adapter_only_through_the_allowlist(self):
+        for name in ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"):
+            self.assertIn(name, RUNNER.BEHAVIOR_PROVIDER_ENV_ALLOWLIST)
+        for name in ("ANTHROPIC_BASE_URL", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CONFIG_DIR"):
+            self.assertNotIn(name, RUNNER.BEHAVIOR_PROVIDER_ENV_ALLOWLIST)
+
+    def test_claude_behavior_adapter_rejects_external_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "claude_code_driver.py"
+            copied.write_bytes(CLAUDE_BEHAVIOR_ADAPTER.read_bytes())
+            claude_revision = RUNNER.adapter_source_revision(
+                sys.executable,
+                [str(CLAUDE_BEHAVIOR_ADAPTER.resolve())],
+            )
+            with self.assertRaisesRegex(
+                EvaluationIntegrityError,
+                "behavior_adapter_entrypoint_untrusted",
+            ):
+                RUNNER.verify_behavior_adapter_revision(
+                    sys.executable,
+                    [str(copied.resolve()), "--model", "claude-test"],
+                    claude_revision,
                 )
 
     def test_behavior_adapter_rejects_renamed_copy_under_repository(self):

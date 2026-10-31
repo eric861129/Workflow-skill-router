@@ -4,6 +4,8 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.1.0
+
 ### Added
 
 - Added a Claude Code Plugin in `plugins/claude-code/workflow-skill-router/`
@@ -25,9 +27,16 @@ All notable changes to Workflow Skill Router are documented here.
   and Skill only, and refreshed docs theme, logo, favicon, and social preview.
   Every flight-recorder test hook and evidence label is unchanged.
 - Added a 1024px icon to the Claude Code Plugin for directory listings.
+- Added a Claude Code Behavior evaluation driver. It reuses the Codex driver's
+  route validation and consent state machine, runs each turn in an isolated
+  `claude --print` process without tools, MCP, Skills, or user settings, and
+  accepts only explicit `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` auth.
 - MCP tool and schema descriptions now describe the host generically instead
   of naming only Codex. Codex keeps its existing paths, data directory, and
   routing behavior.
+- Promoted reviewed, source-bound `2.1.0` metadata for trusted workflow
+  publication. Its Behavior gate ran through the Claude Code driver; the
+  maintainer attestation records the model, results, and limits.
 
 ## 2.0.2
 

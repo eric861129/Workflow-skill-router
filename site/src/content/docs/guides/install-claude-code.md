@@ -3,7 +3,7 @@ title: Install for Claude Code
 description: Install, verify, and remove the Workflow Skill Router Plugin in Claude Code while sharing Profiles with Codex.
 ---
 
-Claude Code support is development-main content. It is not part of the published `v2.0.2` release, so install it from the repository's default branch.
+Claude Code support ships with the prepared 2.1.0 candidate. It is not part of the published `v2.0.2` release, so install it from the repository's default branch.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ claude plugin marketplace add eric861129/Workflow-skill-router
 claude plugin install workflow-skill-router@workflow-skill-router
 ```
 
-The Plugin manifest has no `version`, so Claude Code tracks the marketplace commit. Update with `claude plugin update workflow-skill-router@workflow-skill-router`.
+The Plugin manifest carries the product version, so Claude Code offers an update when that version changes. Update with `claude plugin update workflow-skill-router@workflow-skill-router`.
 
 ## Load a development checkout
 

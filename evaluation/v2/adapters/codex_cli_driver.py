@@ -90,6 +90,10 @@ _PROFILE_REASON_CODES = frozenset(_VOCABULARY["profile_reason_codes"])
 class CodexCliDriver:
     """Execute each turn in a fresh, user-config-free Codex CLI process."""
 
+    # 每個 attempt 的私有目錄；子類別可改用自己 CLI 的設定目錄名稱。
+    _PRIVATE_DIRECTORIES = ("workspace", "runtime-home", "runtime-tmp", "codex-home")
+    _CONSENT_SCHEMA = ROOT / "evaluation" / "v2" / "schemas" / "codex-consent-intent.schema.json"
+
     def __init__(
         self,
         codex_executable: Path,
@@ -152,7 +156,7 @@ class CodexCliDriver:
             except EvidenceProtectionError as error:
                 raise EvaluationIntegrityError("codex_attempt_directory_unprotected") from error
         transcript = directory / "transcript.json"
-        for name in ("workspace", "runtime-home", "runtime-tmp", "codex-home"):
+        for name in self._PRIVATE_DIRECTORIES:
             private_directory = directory / name
             private_directory.mkdir()
             try:
@@ -199,80 +203,8 @@ class CodexCliDriver:
             if consent_turn
             else self._render_prompt(turns, request)
         )
-        output_schema = (
-            ROOT / "evaluation" / "v2" / "schemas" / "codex-consent-intent.schema.json"
-            if consent_turn
-            else self._output_schema
-        )
-        command = [
-            str(self._codex_executable),
-            "exec",
-            "--ephemeral",
-            "--ignore-user-config",
-            "--ignore-rules",
-            "--strict-config",
-            "--disable",
-            "plugins",
-            "-c",
-            "skills.bundled.enabled=false",
-            "--sandbox",
-            "read-only",
-            "--skip-git-repo-check",
-            "--cd",
-            str(directory / "workspace"),
-            "--output-schema",
-            str(output_schema),
-            "--json",
-            "-",
-        ]
-        if self._model:
-            command[command.index("--output-schema"):command.index("--output-schema")] = [
-                "--model", self._model,
-            ]
-        if self._reasoning_effort:
-            command[command.index("--output-schema"):command.index("--output-schema")] = [
-                "-c", f'model_reasoning_effort="{self._reasoning_effort}"',
-            ]
-        environment = {name: os.environ[name] for name in _ENV_ALLOWLIST if name in os.environ}
-        environment.update({
-            "CODEX_HOME": str(directory / "codex-home"),
-            "HOME": str(directory / "runtime-home"),
-            "USERPROFILE": str(directory / "runtime-home"),
-            # 每次執行使用獨立暫存目錄，避免 Windows 沙箱初始化整棵共用暫存樹的 ACL。
-            "TEMP": str(directory / "runtime-tmp"),
-            "TMP": str(directory / "runtime-tmp"),
-            "TMPDIR": str(directory / "runtime-tmp"),
-        })
-        isolated_auth = directory / "codex-home" / "auth.json"
-        try:
-            try:
-                shutil.copyfile(self._auth_source, isolated_auth)
-                self._evidence_protector.protect_file(isolated_auth)
-                started = time.perf_counter()
-                completed = subprocess.run(
-                    command,
-                    shell=False,
-                    cwd=directory / "workspace",
-                    input=prompt,
-                    text=True,
-                    encoding="utf-8",
-                    capture_output=True,
-                    timeout=self._timeout_seconds,
-                    check=False,
-                    env=environment,
-                )
-                elapsed_ms = (time.perf_counter() - started) * 1000
-            finally:
-                isolated_auth.unlink(missing_ok=True)
-        except subprocess.TimeoutExpired as error:
-            raise EvaluationIntegrityError("codex_cli_timeout") from error
-        except EvidenceProtectionError as error:
-            raise EvaluationIntegrityError("codex_auth_unprotected") from error
-        except OSError as error:
-            raise EvaluationIntegrityError("codex_cli_start_failed") from error
-        if completed.returncode != 0:
-            self._write_failure_diagnostic(directory / "failure.json", completed)
-            raise EvaluationIntegrityError("codex_cli_failed")
+        output_schema = self._CONSENT_SCHEMA if consent_turn else self._output_schema
+        completed, elapsed_ms = self._invoke(directory, prompt, output_schema)
         model_consent_intent = None
         if consent_turn:
             intent = self._extract_object(completed.stdout, _CONSENT_INTENT_KEYS)
@@ -351,6 +283,84 @@ class CodexCliDriver:
                 else {}
             ),
         }
+
+    def _invoke(
+        self,
+        directory: Path,
+        prompt: str,
+        output_schema: Path,
+    ) -> tuple[subprocess.CompletedProcess[str], float]:
+        """Run one isolated Codex CLI turn and return its completed process."""
+        command = [
+            str(self._codex_executable),
+            "exec",
+            "--ephemeral",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "--strict-config",
+            "--disable",
+            "plugins",
+            "-c",
+            "skills.bundled.enabled=false",
+            "--sandbox",
+            "read-only",
+            "--skip-git-repo-check",
+            "--cd",
+            str(directory / "workspace"),
+            "--output-schema",
+            str(output_schema),
+            "--json",
+            "-",
+        ]
+        if self._model:
+            command[command.index("--output-schema"):command.index("--output-schema")] = [
+                "--model", self._model,
+            ]
+        if self._reasoning_effort:
+            command[command.index("--output-schema"):command.index("--output-schema")] = [
+                "-c", f'model_reasoning_effort="{self._reasoning_effort}"',
+            ]
+        environment = {name: os.environ[name] for name in _ENV_ALLOWLIST if name in os.environ}
+        environment.update({
+            "CODEX_HOME": str(directory / "codex-home"),
+            "HOME": str(directory / "runtime-home"),
+            "USERPROFILE": str(directory / "runtime-home"),
+            # 每次執行使用獨立暫存目錄，避免 Windows 沙箱初始化整棵共用暫存樹的 ACL。
+            "TEMP": str(directory / "runtime-tmp"),
+            "TMP": str(directory / "runtime-tmp"),
+            "TMPDIR": str(directory / "runtime-tmp"),
+        })
+        isolated_auth = directory / "codex-home" / "auth.json"
+        try:
+            try:
+                shutil.copyfile(self._auth_source, isolated_auth)
+                self._evidence_protector.protect_file(isolated_auth)
+                started = time.perf_counter()
+                completed = subprocess.run(
+                    command,
+                    shell=False,
+                    cwd=directory / "workspace",
+                    input=prompt,
+                    text=True,
+                    encoding="utf-8",
+                    capture_output=True,
+                    timeout=self._timeout_seconds,
+                    check=False,
+                    env=environment,
+                )
+                elapsed_ms = (time.perf_counter() - started) * 1000
+            finally:
+                isolated_auth.unlink(missing_ok=True)
+        except subprocess.TimeoutExpired as error:
+            raise EvaluationIntegrityError("codex_cli_timeout") from error
+        except EvidenceProtectionError as error:
+            raise EvaluationIntegrityError("codex_auth_unprotected") from error
+        except OSError as error:
+            raise EvaluationIntegrityError("codex_cli_start_failed") from error
+        if completed.returncode != 0:
+            self._write_failure_diagnostic(directory / "failure.json", completed)
+            raise EvaluationIntegrityError("codex_cli_failed")
+        return completed, elapsed_ms
 
     @staticmethod
     def _extract_usage(stdout: str) -> dict[str, int] | None:

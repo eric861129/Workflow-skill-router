@@ -11,7 +11,7 @@ description: 只安裝 routing instructions，不啟用 Plugin 或 MCP。
 
 ## 從 release asset 安裝
 
-從 GitHub Release 下載 [`workflow-skill-router-skill-v2.0.2.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip)，再把內層 `workflow-skill-router/` 解壓縮到 Codex Skills 目錄。
+從 GitHub Release 下載 [`workflow-skill-router-skill-v2.1.0.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip)，再把內層 `workflow-skill-router/` 解壓縮到 Codex Skills 目錄。
 
 壓縮檔的完整路徑如下：
 
@@ -50,7 +50,7 @@ sed -n '1,8p' "$HOME/.agents/skills/workflow-skill-router/SKILL.md"
 
 ## 驗證行為
 
-開發中主分支額外包含 Memory 範例；`v2.0.2` 不包含這三個 Policy 檔案。主分支內含 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml`、`assets/memory-policy.automatic.example.yaml`、`assets/personal-routing-profile.example.json`、`assets/workspace-routing-profile.example.json` 與 `references/personal-routing-profiles.md`。Policy 檔案只提供範例；除非使用者主動選擇並安裝非 disabled 的 Policy，Memory 仍維持停用。`.codex/workflow-skill-router.json` 請使用 workspace Profile 範例，不要原樣複製 personal 範例。Skill-only 只有在 Host 授權 filesystem access 時才能讀取固定本機檔案；否則必須在對話中提供 Profile 或 Policy 內容，並把結果視為 advisory。
+從 `v2.1.0` 起，套件包含三個 Memory Policy 範例；`v2.0.2` 不包含這些檔案。套件內含 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml`、`assets/memory-policy.automatic.example.yaml`、`assets/personal-routing-profile.example.json`、`assets/workspace-routing-profile.example.json` 與 `references/personal-routing-profiles.md`。Policy 檔案只提供範例；除非使用者主動選擇並安裝非 disabled 的 Policy，Memory 仍維持停用。`.codex/workflow-skill-router.json` 請使用 workspace Profile 範例，不要原樣複製 personal 範例。Skill-only 只有在 Host 授權 filesystem access 時才能讀取固定本機檔案；否則必須在對話中提供 Profile 或 Policy 內容，並把結果視為 advisory。
 
 Skill-only 會以 `skill-only-fallback` 解讀 Skill Tree。它必須保留 workspace 高於 personal、使用者明確指定 SKILL 優先，以及 `intended-unverified` 的 Runtime Capability Discovery 邊界，但不能宣稱 deterministic loading 或 durable enforcement。`profile preview` CLI 屬於 Plugin/Core 模式。
 

@@ -27,7 +27,7 @@ Both Plugins need **Node.js 24+ and Python 3.11+**. They include the compiled MC
 
 ### Claude Code
 
-Claude Code support is on the development branch and is not part of the published `v2.0.2` release.
+Claude Code support starts with `v2.1.0`.
 
 ```text
 /plugin marketplace add eric861129/Workflow-skill-router
@@ -38,19 +38,19 @@ Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json
 
 ### Codex Plugin + MCP
 
-The published release is **v2.0.2**. Use this pinned release for a normal Codex installation. It adds persistent local plans and consent records to the routing instructions.
+The published release is **v2.1.0**. Use this pinned release for a normal Codex installation. It adds the Claude Code Plugin and opt-in Workflow Memory, which keeps persistent local plans and consent records alongside the routing instructions.
 
 ```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.0.2
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Development main also contains work that is not in `v2.0.2`, including opt-in Adaptive Workflow Memory. The [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) explains how to verify the result.
+Development main may contain later work that is not in `v2.1.0`. The [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) explains how to verify the result.
 
 ### Standalone Skill
 
-Choose this mode for routing instructions without the local MCP runtime. Download [the v2.0.2 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.0.2/workflow-skill-router-skill-v2.0.2.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
+Choose this mode for routing instructions without the local MCP runtime. Download [the v2.1.0 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
 
 The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. No installation includes every specialist Skill your workflow may reference.
 
@@ -101,9 +101,9 @@ These observations suggest a role in **workflow consistency**, with important li
 - The models already selected suitable Skills in several simple cases. The Router's added value depends on the workflow rules you need.
 - The full instruction package increased input tokens by about 26–28% in this setup. Lower cost, faster delivery, and better code quality have not been demonstrated.
 - Single runs do not establish repeatability or formal model qualification. Full Plugin/host integration and real development outcomes were outside this comparison.
-- The comparison used only the models listed above. Claude Code support has not yet been evaluated with Claude models.
+- The comparison used only the models listed above. The v2.1.0 release gate is a separate paired run through Claude Code with a Claude model; its maintainer attestation records the model, results, and limits.
 
-Read the [evaluation methodology and detailed findings](evaluation/v2/README.md). The dated findings are currently in Traditional Chinese; the methodology is in English. Findings are exploratory, await review, and do not qualify the published v2.0.2 release or rank the models.
+Read the [evaluation methodology and detailed findings](evaluation/v2/README.md). The dated findings are currently in Traditional Chinese; the methodology is in English. Findings are exploratory, await review, and do not qualify a release or rank the models.
 
 ## Explore further
 
@@ -180,7 +180,7 @@ The generated Plugin runtime supports `profile preview --explain` and `profile l
 
 ## MCP tool surface
 
-The published `v2.0.2` Plugin exposes these twelve typed tools; development main adds eight Memory tools, for 20 total:
+The `v2.0.2` Plugin exposed these twelve typed tools; `v2.1.0` adds eight Memory tools, for 20 total:
 
 ```text
 sync_runtime_context       plan_work                  propose_support_consent
@@ -193,13 +193,13 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 
 ## Runtime readiness matrix
 
-### Published release (`published-v2.0.2`)
+### Previous release (`published-v2.0.2`)
 
 `v2.0.2` has 12 tools: **4 always local-ready + 3 Router-owned conditional-local**, 2 verified-Host-required, and 3 configured-adapter-required. The release includes the local work loop, but not the later Adaptive Workflow Memory implementation.
 
-### Development branch (`development-main`)
+### v2.1.0 and development branch (`development-main`)
 
-The current source adds 8 Memory tools, for 20 total; Memory is default-off. This table describes the checkout, not an installed release.
+`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.0` and the current checkout.
 
 | Availability | Tools | Conditions |
 | --- | --- | --- |
