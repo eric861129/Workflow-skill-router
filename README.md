@@ -101,7 +101,7 @@ These observations suggest a role in **workflow consistency**, with important li
 - The models already selected suitable Skills in several simple cases. The Router's added value depends on the workflow rules you need.
 - The full instruction package increased input tokens by about 26–28% in this setup. Lower cost, faster delivery, and better code quality have not been demonstrated.
 - Single runs do not establish repeatability or formal model qualification. Full Plugin/host integration and real development outcomes were outside this comparison.
-- The comparison used only the models listed above. Claude Code support has not yet been evaluated with Claude models.
+- The comparison used only the models listed above. The v2.1.0 release gate is a separate paired run through Claude Code with a Claude model; its maintainer attestation records the model, results, and limits.
 
 Read the [evaluation methodology and detailed findings](evaluation/v2/README.md). The dated findings are currently in Traditional Chinese; the methodology is in English. Findings are exploratory, await review, and do not qualify the published v2.0.2 release or rank the models.
 
