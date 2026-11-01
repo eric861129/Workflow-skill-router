@@ -13,7 +13,7 @@ import toolData from '../../../../data/mcp-tools.generated.json';
 
 目前產生的 profile：**{toolData.runtime_profile}**
 
-此 generated profile 描述 **`v2.1.0`** 與目前原始碼。前一版 `v2.0.2` 只有原有十二個工具，沒有 Memory 工具。兩個版本的原有十二個工具都清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
+此 generated profile 描述 **`v2.1.1`** 與目前原始碼；`v2.1.0` 的工具相同。更早的 `v2.0.2` 只有原有十二個工具，沒有 Memory 工具。兩個版本的原有十二個工具都清楚區分 **4 always local-ready + 3 Router-owned conditional-local**，不能寫成 `7/12 local-ready`。Conditional-local 僅適用於已驗證的 Router-owned work graph，且不能帶有 Native Goal authority。Explicit Skill Lock 與 consent 不受影響；Local gate 只是 advisory，不代表 Skill activation、deployment、production approval 或 Host evidence。
 
 `v2.1.0` 增加八個須主動啟用的 Memory tools，合計 **20** 個工具：**10 local-ready**、**5 conditional-local**、2 個 verified-Host-required，以及 3 個 configured-adapter-required。新增的兩個 conditional tools 是 Profile transition 與 rollback，條件是有效 Memory policy、精確綁定的已審核提案與允許的本機 Target，而不是 Router-owned work graph。記憶仍預設關閉；Status、Candidate list 與 Profile preview 都是唯讀，R1 purge 必須明確確認，尚未支援的 Scope 不會宣稱刪除成功。`v2.0.2` 套件不包含這些工具。
 
