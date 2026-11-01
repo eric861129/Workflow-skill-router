@@ -13,10 +13,10 @@ description: 安裝、驗證與移除 Workflow Skill Router V2 Plugin，同時�
 
 ## 從已標記的 marketplace snapshot 安裝
 
-一般安裝請使用不可變的 `v2.1.0` snapshot：
+一般安裝請使用不可變的 `v2.1.1` snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -44,11 +44,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、套件版本對應的 tool 名稱（`v2.0.2` 為 12 個，`v2.1.0` 與開發中主分支為 20 個）、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
+`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、套件版本對應的 tool 名稱（`v2.0.2` 為 12 個，`v2.1.0`、`v2.1.1` 與開發中主分支為 20 個）、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
 
 ## 本機可用範圍
 
-`v2.1.0` 的 bundled local R0 支援 Personal Routing Profile 的 validate、install、list 與 preview。Contributor checkout 可直接安裝套件內的 personal 範例並執行 preview：
+`v2.1.1` 的 bundled local R0 支援 Personal Routing Profile 的 validate、install、list 與 preview。Contributor checkout 可直接安裝套件內的 personal 範例並執行 preview：
 
 ```powershell
 Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json

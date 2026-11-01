@@ -19,7 +19,8 @@ On 2026-11-01, three more advisories were closed in the same lockfile:
   [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
   (High): memory exhaustion while validating oversized constrained collections.
   `zod` is bundled into `mcp/server.bundle.mjs` and validates MCP tool input,
-  so the published `v2.1.0` bundle (`zod` 4.1.12) is affected. That input
+  so the `v2.1.0` bundle (`zod` 4.1.12) is affected; `v2.1.1` ships the
+  fix. That input
   comes from the local Host over stdio, not from a network listener.
 - `body-parser` below 2.4.0,
   [GHSA-27r3-jxmh-p828](https://github.com/advisories/GHSA-27r3-jxmh-p828)

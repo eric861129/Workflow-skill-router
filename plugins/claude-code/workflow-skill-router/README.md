@@ -4,7 +4,7 @@ Workflow Skill Router picks the Skill that should lead the current phase of a ta
 
 This Plugin packages a Claude Code version of the Router SKILL, the same deterministic MCP server used by the Codex Plugin, and the local R0 Python control plane. Capabilities that require a verified host or configured model adapter fail closed instead of pretending to be locally available.
 
-Claude Code support starts with `v2.1.0`, the published release.
+Claude Code support starts with `v2.1.0`; the published release is `v2.1.1`.
 
 ## Requirements
 

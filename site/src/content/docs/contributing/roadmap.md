@@ -57,7 +57,7 @@ The reference-driver validates the offline contract but does not prove real-mode
 - [ ] Obtain explicit authorization before a fresh 36-attempt / 42-turn behavior-model run
 - [ ] Review sanitized evidence, attest the exact frozen candidate SHA, and qualify the immutable GA release
 
-This checklist records the earlier GA preparation. `v2.0.2` was published with the bounded evidence in its release attestation. `v2.1.0` has since been published with the Claude Code Plugin and opt-in Workflow Memory. Its release gate was a fresh six-case paired run through Claude Code with a Claude model, not the 13-case suite below, and Codex models were not re-qualified. The real local/Host Pilots and newer-model qualification remain separate outstanding work. Future publication still needs reviewed source binding.
+This checklist records the earlier GA preparation. `v2.0.2` was published with the bounded evidence in its release attestation. `v2.1.0` has since been published with the Claude Code Plugin and opt-in Workflow Memory. Its release gate was a fresh six-case paired run through Claude Code with a Claude model, not the 13-case suite below, and Codex models were not re-qualified. `v2.1.1` is a dependency security patch that inherits that evidence because routing is unchanged. The real local/Host Pilots and newer-model qualification remain separate outstanding work. Future publication still needs reviewed source binding.
 
 ## Remaining formal qualification
 

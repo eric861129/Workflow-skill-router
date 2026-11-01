@@ -1,6 +1,6 @@
 {
   "name": "workflow-skill-router",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "displayName": "Workflow Skill Router",
   "description": "Routes Claude Code work through one lead Skill per phase, asks before adding support, and shows every route.",
   "author": {
