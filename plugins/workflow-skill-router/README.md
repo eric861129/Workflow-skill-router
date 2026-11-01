@@ -20,7 +20,7 @@ codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Restart Codex or open a new Codex task, then ask Codex to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label. The published `v2.0.2` snapshot has 12 tools (4 local-ready, 3 conditional-local, 2 verified-host-required, 3 configured-adapter-required). Development main adds opt-in Memory, for 20 tools (10 local-ready, 5 conditional-local, 2 verified-host-required, 3 configured-adapter-required); inspect `doctor` for the installed surface.
+Restart Codex or open a new Codex task, then ask Codex to show the Workflow Skill Router status. Expect the `bundled-local-r0` runtime label. The `v2.1.0` snapshot has 20 tools (10 local-ready, 5 conditional-local, 2 verified-host-required, 3 configured-adapter-required), including eight opt-in Memory tools; Memory is default-off. The previous `v2.0.2` release has 12 tools (4 local-ready, 3 conditional-local, 2 verified-host-required, 3 configured-adapter-required). Inspect `doctor` for the installed surface.
 
 For a contributor checkout, run this from the repository root:
 

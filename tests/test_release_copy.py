@@ -77,14 +77,18 @@ class ReleaseCopyTests(unittest.TestCase):
             with self.subTest(locale=locale):
                 self.assertEqual(["6", "1", "26–28%"], [row[0] for row in copy[locale]["proofStats"]])
                 self.assertIn("2026-10-19", copy[locale]["validatorCopy"])
-                self.assertIn("v2.0.2", copy[locale]["releaseCopy"])
+                self.assertIn(f"v{PUBLISHED_VERSION}", copy[locale]["releaseCopy"])
                 self.assertIn("Workflow Memory", copy[locale]["releaseCopy"])
+                self.assertIn(f"v{PUBLISHED_VERSION}", copy[locale]["rail"][1])
+                self.assertIn(f"v{PUBLISHED_VERSION}", copy[locale]["status"][0])
         self.assertIn("only Sol was retested", copy["en"]["validatorEvidenceNote"])
         self.assertIn("僅對 Sol 重新測試", copy["zh-tw"]["validatorEvidenceNote"])
         self.assertIn("have not been demonstrated", copy["en"]["validatorEvidenceNote"])
         self.assertIn("尚未證明", copy["zh-tw"]["validatorEvidenceNote"])
-        self.assertIn("does not qualify v2.0.2", copy["en"]["releaseCopy"])
-        self.assertIn("不能作為 v2.0.2 的資格證明", copy["zh-tw"]["releaseCopy"])
+        self.assertIn(f"does not qualify v{PUBLISHED_VERSION}", copy["en"]["releaseCopy"])
+        self.assertIn(f"不能作為 v{PUBLISHED_VERSION} 的資格證明", copy["zh-tw"]["releaseCopy"])
+        self.assertIn("off by default", copy["en"]["releaseCopy"])
+        self.assertIn("預設關閉", copy["zh-tw"]["releaseCopy"])
 
     def test_public_guides_list_all_four_local_ready_tools(self) -> None:
         pages = (

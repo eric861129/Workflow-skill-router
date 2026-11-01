@@ -17,6 +17,9 @@ description: 只安裝 routing instructions，不啟用 Plugin 或 MCP。
 
 ```text
 workflow-skill-router/SKILL.md
+workflow-skill-router/assets/memory-policy.automatic.example.yaml
+workflow-skill-router/assets/memory-policy.disabled.example.yaml
+workflow-skill-router/assets/memory-policy.reviewed.example.yaml
 workflow-skill-router/assets/personal-routing-profile.example.json
 workflow-skill-router/assets/workspace-routing-profile.example.json
 workflow-skill-router/references/evaluation-boundary.md

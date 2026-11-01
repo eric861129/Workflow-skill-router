@@ -3,7 +3,7 @@ title: Install for Claude Code
 description: Install, verify, and remove the Workflow Skill Router Plugin in Claude Code while sharing Profiles with Codex.
 ---
 
-Claude Code support ships with the prepared 2.1.0 candidate. It is not part of the published `v2.0.2` release, so install it from the repository's default branch.
+Claude Code support starts with `v2.1.0`, the published release. The marketplace commands below install the Plugin from the repository's default branch.
 
 ## Requirements
 

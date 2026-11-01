@@ -45,13 +45,13 @@ The structural analyzer records `classifier_revision: deterministic-objective-v2
 <a id="runtime-readiness"></a>
 ## Runtime readiness
 
-### Published release (`published-v2.0.2`)
+### Previous release (`published-v2.0.2`)
 
 `v2.0.2` has 12 tools: **4 always local-ready + 3 Router-owned conditional-local**, 2 verified-Host-required, and 3 configured-adapter-required. The release includes the local work loop, but not the later Adaptive Workflow Memory implementation.
 
-### Development branch (`development-main`)
+### v2.1.0 and development branch (`development-main`)
 
-The current source adds 8 Memory tools, for 20 total; Memory is default-off. This table describes the checkout, not an installed release.
+`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.0` and the current checkout.
 
 | Availability | Tools | Conditions |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ The current source adds 8 Memory tools, for 20 total; Memory is default-off. Thi
 - A large request forced into `single` loses phase-specific capability and evidence checks.
 - A copy edit forced into `managed-goal` creates needless state and consent overhead.
 - Reusing one route across phases keeps stale capabilities active after the work changes.
-- In both `v2.0.2` and development main, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
+- In `v2.0.2`, `v2.1.0`, and development main, Native Goal work uses each tool's verified Host capability and does not mutate native Codex Goal.
 - A missing Router-owned graph requests local graph creation or replay; it does not switch to an invented Host path.
 - A corrupt graph returns a sanitized `internal-error`; corruption details stay in internal diagnostics.
 - A passing Router-local gate is only advisory. It does not activate a Skill, authorize a native Goal transition, or grant deployment or production permission.
