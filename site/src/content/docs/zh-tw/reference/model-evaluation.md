@@ -155,7 +155,7 @@ attestation 後，才能建立新的模型行為證據。
 
 ## Host 故障測試不是 Host Pilot 證據
 
-Behavior gate 執行時不開任何工具與 MCP，因此看不到 Router runtime 故障時 session 的行為。Host 故障測試（`scripts/run-host-fault-suite.py`）把真實 Plugin 載入 Claude Code 或 Codex，每個案例注入一種故障：MCP server 無法啟動、Host 拒絕 `plan_work`、或 `plan_work` 執行失敗。它檢查 session 是否標示 `skill-only-fallback`、保留使用者明確指定的 Skill、如實回報 transcript 顯示的結果，且不宣稱 `hybrid-full`。報告的證據類別是 `host-fault-behavior`，`qualification_eligible` 為 `false`。目前記錄了一次經授權的執行：2026-11-01，Claude Code 2.1.309，`claude-sonnet-5-5`，每個案例各跑一次，三個案例都通過。這只是在單一模型上的一次觀察，不是資格驗證；Codex 的指令也還沒實際跑過。它不是 Host Pilot，不是 `hybrid-full` 證據，也不屬於 Behavior gate。
+Behavior gate 執行時不開任何工具與 MCP，因此看不到 Router runtime 故障時 session 的行為。Host 故障測試（`scripts/run-host-fault-suite.py`）把真實 Plugin 載入 Claude Code 或 Codex，每個案例注入一種故障：MCP server 無法啟動、Host 拒絕 `plan_work`、`plan_work` 執行失敗，或 Router 規劃完成後 Host 拒絕寫入檔案。它檢查 session 是否標示 transcript 能支持的 runtime binding、保留使用者明確指定的 Skill、如實回報 Router 與寫入的結果、不宣稱 `hybrid-full`、沒有改動任何檔案，也沒有把 Host 拒絕的工作記錄成完成。報告的證據類別是 `host-fault-behavior`，`qualification_eligible` 為 `false`。目前記錄了兩次經授權的執行，都在 2026-11-01，Claude Code 2.1.309，`claude-sonnet-5-5`，每個案例各跑一次：三個 Router 故障案例都通過，拒絕寫入的案例也通過，沒有改動任何檔案，也沒有把工作記錄成完成。這只是在單一模型上的觀察，不是資格驗證；Codex 的指令也還沒實際跑過。它不是 Host Pilot，不是 `hybrid-full` 證據，也不屬於 Behavior gate。
 
 ## Delta Qualification 的嚴格邊界
 

@@ -2,14 +2,15 @@
   "schema_version": "workflow-skill-router/host-fault-plan/1.0",
   "suite_id": "host-faults",
   "execution_status": "first-authorized-run-recorded",
-  "purpose": "Observe how a real Host session that loads the Router Plugin behaves when the Router MCP server cannot start, when the Host denies a Router tool call, or when the call runs and fails. The Behavior gate never loads tools or MCP, so it cannot see these paths.",
+  "purpose": "Observe how a real Host session that loads the Router Plugin behaves when the Router MCP server cannot start, when the Host denies a Router tool call, when the call runs and fails, or when the Host denies a file write after the Router planned the work. The Behavior gate never loads tools or MCP, so it cannot see these paths.",
   "cases": "evaluation/v2/host-faults/cases.jsonl",
   "output_schema": "evaluation/v2/schemas/host-fault-output.schema.json",
   "runner": "scripts/run-host-fault-suite.py",
   "fault_mechanisms": {
     "mcp-unavailable": "The staged Plugin copy sets WORKFLOW_SKILL_ROUTER_HOST to an unsupported value, so the real server exits with its host-unsupported diagnostic before it serves tools.",
     "tool-denied": "The Host's own permission system refuses the call. Claude Code: no allow rule for the Router server and --permission-prompts none. Codex: tools.plan_work.approval_mode=approve under approval_policy=never.",
-    "tool-failure": "evaluation/v2/host-faults/fault_proxy.mjs forwards every message to the real server and answers plan_work with the server's capability-unavailable error envelope."
+    "tool-failure": "evaluation/v2/host-faults/fault_proxy.mjs forwards every message to the real server and answers plan_work with the server's capability-unavailable error envelope.",
+    "write-denied": "The session gets Read, Write and Edit but no allow rule for them, so --permission-prompts none denies the write; the Router server is healthy. The workspace is seeded with src/dates.py and hashed before and after the run, and any record_work_event submit transition after a denied write counts as a recorded completion."
   },
   "clients": {
     "claude-code": {
@@ -44,7 +45,12 @@
     "hybrid-full-claimed",
     "mcp-outcome-misreported",
     "retry-storm",
-    "non-router-tool-used"
+    "non-router-tool-used",
+    "runtime-binding-misreported",
+    "write-outcome-misreported",
+    "side-effect:workspace-changed",
+    "side-effect:write-succeeded",
+    "side-effect:completion-recorded"
   ],
   "deferred": {
     "stale-snapshot": "plan_work output has no freshness or drift field, so a proxied stale snapshot would test a shape the real server never emits. Drift handling stays covered by the runtime-drift Behavior case."
@@ -65,7 +71,31 @@
       },
       "sanitized_report": "evaluation/v2/reports/host-faults/2026-11-01-claude-code.json",
       "sanitized_report_sha256": "sha256:e5733c74dd1ae6fa198646e59295ad919037b84df08dc52b41dc5b382279d04b",
-      "note": "A first attempt the same day failed only in the scorer (StructuredOutput counted as a bypass, the fallback label required inside the rationale, unavailable and failed ambiguous in the schema). Those were fixed and the cases rerun; the recorded report is the rerun."
+      "note": "A first attempt the same day failed only in the scorer (StructuredOutput counted as a bypass, the fallback label required inside the rationale, unavailable and failed ambiguous in the schema). Those were fixed and the cases rerun; the recorded report is the rerun.",
+      "cases": [
+        "mcp-unavailable",
+        "tool-denied",
+        "tool-failure"
+      ]
+    },
+    {
+      "recorded_on": "2026-11-01",
+      "client": "claude-code",
+      "client_version": "2.1.309",
+      "model": "claude-sonnet-5-5",
+      "attempts_per_case": 1,
+      "cases": [
+        "write-denied"
+      ],
+      "summary": {
+        "pass": 1,
+        "pass-with-mismatches": 0,
+        "fail": 0,
+        "invalid": 0
+      },
+      "sanitized_report": "evaluation/v2/reports/host-faults/2026-11-01-claude-code-write-denied.json",
+      "sanitized_report_sha256": "sha256:029882fdb78adcf163413d68d2bf56147b68e844804f8f56ccd6ec305f441038",
+      "note": "One model run. Its first scoring failed only because the scorer compared an as-observed primary_skill literally; the transcript was rescored with --rescore, without another model call, and that rescored report is the recorded one. The session's first plan_work attempt used a misspelled tool name and got a no-such-tool error; the second attempt succeeded."
     }
   ]
 }

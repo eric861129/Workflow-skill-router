@@ -8,12 +8,14 @@ All notable changes to Workflow Skill Router are documented here.
 
 - Added the host fault lane. `scripts/run-host-fault-suite.py` loads the real
   Plugin into a Claude Code or Codex session, injects one fault per case (the
-  MCP server cannot start, the Host denies `plan_work`, or `plan_work` fails
-  through `evaluation/v2/host-faults/fault_proxy.mjs`), and scores the
-  transcript and final JSON against the SKILL contract. Reports are
-  `host-fault-behavior` evidence and never qualify a release. One authorized
-  run is recorded (2026-11-01, Claude Code 2.1.309, `claude-sonnet-5-5`, one
-  attempt per case, all three cases passed); the Codex command is unexercised.
+  MCP server cannot start, the Host denies `plan_work`, `plan_work` fails
+  through `evaluation/v2/host-faults/fault_proxy.mjs`, or the Host denies a
+  file write after the Router planned the work), and scores the transcript,
+  the workspace, and the final JSON against the SKILL contract, including zero
+  side effects after a denied write. Reports are
+  `host-fault-behavior` evidence and never qualify a release. Two authorized
+  runs are recorded (2026-11-01, Claude Code 2.1.309, `claude-sonnet-5-5`, one
+  attempt per case, all four cases passed); the Codex command is unexercised.
 
 ## 2.1.1
 
