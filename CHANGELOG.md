@@ -4,6 +4,18 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- `plan_work` now canonicalizes a bare explicit Skill name (`python-test-writer`)
+  to `skill:python-test-writer` at the input boundary and rejects any other
+  form as a public `invalid-arguments` error with the reason
+  `explicit-skill-id-not-canonical`. Before, the bare id was accepted,
+  planned, and then rejected on read-back as `LocalWorkGraphCorruption`, so a
+  Host session that named a Skill the way the Host lists it got
+  `internal-error`. The bridge now maps every `DirectiveAmbiguityError` to
+  `invalid-arguments` with its reason code, and the MCP server returns that
+  payload as a tool error instead of rethrowing it.
+
 ### Added
 
 - Added the host fault lane. `scripts/run-host-fault-suite.py` loads the real
