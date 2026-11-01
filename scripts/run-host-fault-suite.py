@@ -34,6 +34,8 @@ SERVER_NAME = "workflow-skill-router"
 CLAUDE_SERVER_RULE = "mcp__plugin_workflow-skill-router_workflow-skill-router"
 CLAUDE_TOOL_PREFIX = CLAUDE_SERVER_RULE + "__"
 ROUTER_TOOL_MARKER = "workflow-skill-router__"
+# StructuredOutput is how Claude Code delivers --json-schema output; Skill loads a SKILL. Neither is a bypass.
+HOST_MECHANISM_TOOLS = frozenset({"StructuredOutput", "Skill"})
 FAULTS = ("mcp-unavailable", "tool-denied", "tool-failure")
 CLIENTS = ("claude-code", "codex")
 UNSUPPORTED_HOST = "host-fault-lane-unsupported"
@@ -380,7 +382,7 @@ def parse_claude_transcript(stdout: str, exit_code: int | None) -> Observation:
                         observation.mcp_attempts += 1
                         if name.endswith("plan_work"):
                             observation.plan_work_attempts += 1
-                    else:
+                    elif name not in HOST_MECHANISM_TOOLS:
                         observation.non_router_tool_uses += 1
                 elif block.get("type") == "text" and block.get("text"):
                     observation.assistant_text.append(block["text"])
@@ -502,10 +504,6 @@ def score_case(case: dict, observation: Observation, schema: dict, *, client: st
         if output.get("mcp_outcome") != observation.observed_outcome():
             hard.append("mcp-outcome-misreported")
         rationale = str(output.get("rationale") or "")
-        for phrase in case["rationale"].get("required_phrases", []):
-            if phrase not in rationale:
-                hard.append("fallback-label-missing")
-                break
         spoken = rationale + "\n" + "\n".join(observation.assistant_text)
         for phrase in case["rationale"].get("forbidden_phrases", []):
             if phrase in spoken:

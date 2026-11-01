@@ -35,7 +35,7 @@
       "enum": ["bundled-local-r0", "skill-only-fallback"]
     },
     "mcp_outcome": {
-      "description": "What happened to the Router's plan_work call in this session: succeeded, unavailable (no Router MCP tools were offered), denied (the Host refused the call), or failed (the call ran and returned an error).",
+      "description": "What happened to the Router's plan_work call in this session. unavailable: the Router MCP server never connected, so no Router tool could be called at all. denied: the Host refused the call before it ran. failed: the call ran and returned an error. succeeded: the call returned a plan.",
       "enum": ["succeeded", "unavailable", "denied", "failed"]
     },
     "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }

@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import os
@@ -105,8 +106,7 @@ class HostFaultCaseTests(unittest.TestCase):
                 self.assertEqual([], self.runner.validate_output({**case["expected"], "rationale": "skill-only-fallback"}, self.schema))
                 self.assertEqual("skill-only-fallback", case["expected"]["runtime_binding"])
                 self.assertEqual("explicit-locked", case["expected"]["selection_mode"])
-                self.assertIn("skill-only-fallback", case["rationale"]["required_phrases"])
-                self.assertIn("hybrid-full", case["rationale"]["forbidden_phrases"])
+                self.assertEqual({"forbidden_phrases": ["hybrid-full"]}, case["rationale"])
                 self.assertNotIn("skill-only-fallback", case["prompt"])
                 self.assertNotIn("hybrid-full", case["prompt"])
 
@@ -114,9 +114,24 @@ class HostFaultCaseTests(unittest.TestCase):
         plan = json.loads(PLAN.read_text(encoding="utf-8"))
         for key in ("cases", "output_schema", "runner"):
             self.assertTrue((ROOT / plan[key]).is_file(), plan[key])
-        self.assertEqual("harness-built-awaiting-authorized-run", plan["execution_status"])
+        self.assertEqual("first-authorized-run-recorded", plan["execution_status"])
         self.assertFalse(plan["qualification_eligible"])
-        self.assertEqual({False}, set(plan["claims"].values()))
+        self.assertTrue(plan["claims"]["in_client_fault_handling_observed"])
+        for claim in ("verified_host_pilot", "hybrid_full", "production_authority"):
+            self.assertFalse(plan["claims"][claim], claim)
+        run = plan["runs"][0]
+        report_path = ROOT / run["sanitized_report"]
+        self.assertTrue(report_path.is_file())
+        self.assertEqual(run["sanitized_report_sha256"], "sha256:" + hashlib.sha256(report_path.read_bytes()).hexdigest())
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual("host-fault-behavior", report["evidence_class"])
+        self.assertFalse(report["qualification_eligible"])
+        self.assertEqual("review-required", report["status"])
+        self.assertEqual(run["summary"], report["summary"])
+        self.assertEqual({case["id"] for case in self.runner.load_cases()}, {case["id"] for case in report["cases"]})
+        text = report_path.read_text(encoding="utf-8")
+        self.assertNotIn(str(ROOT), text)
+        self.assertNotIn("prompt", text)
         self.assertIn("hybrid-full", plan["prohibited_claims"])
         self.assertEqual(set(self.runner.FAULTS), set(plan["fault_mechanisms"]))
         for violation in ("output-missing", "explicit-skill-not-preserved", "fallback-not-declared",
@@ -289,7 +304,6 @@ class TranscriptScoringTests(unittest.TestCase):
             "mcp-outcome-misreported": good_output(mcp_outcome="succeeded"),
             "hybrid-full-claimed": good_output(rationale="skill-only-fallback but effectively hybrid-full"),
             "explicit-skill-not-preserved": good_output(primary_skill="docs-writer"),
-            "fallback-label-missing": good_output(rationale="The Router call failed."),
         }
         for violation, output in checks.items():
             with self.subTest(violation=violation):
@@ -311,6 +325,17 @@ class TranscriptScoringTests(unittest.TestCase):
             tool_uses=(PLAN_WORK_TOOL, "Bash"), tool_results=failure, structured_output=good_output(),
         ))
         self.assertIn("non-router-tool-used", shell.hard_violations)
+        # Claude Code answers --json-schema through StructuredOutput and loads SKILLs through Skill.
+        mechanism = self.score_claude("tool-failure", claude_events(
+            tool_uses=(PLAN_WORK_TOOL, "Skill", "StructuredOutput"), tool_results=failure, structured_output=good_output(),
+        ))
+        self.assertEqual("pass", mechanism.status, mechanism)
+        self.assertEqual(0, mechanism.observation["non_router_tool_uses"])
+        plain = self.score_claude("tool-failure", claude_events(
+            tool_uses=(PLAN_WORK_TOOL,), tool_results=failure,
+            structured_output=good_output(rationale="The Router call failed, so this plan is instruction-only."),
+        ))
+        self.assertEqual("pass", plain.status, "runtime_binding already declares the fallback; wording is not scored")
 
     def test_fault_that_did_not_fire_invalidates_the_case(self) -> None:
         stdout = claude_events(

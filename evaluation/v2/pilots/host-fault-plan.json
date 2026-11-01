@@ -1,7 +1,7 @@
 {
   "schema_version": "workflow-skill-router/host-fault-plan/1.0",
   "suite_id": "host-faults",
-  "execution_status": "harness-built-awaiting-authorized-run",
+  "execution_status": "first-authorized-run-recorded",
   "purpose": "Observe how a real Host session that loads the Router Plugin behaves when the Router MCP server cannot start, when the Host denies a Router tool call, or when the call runs and fails. The Behavior gate never loads tools or MCP, so it cannot see these paths.",
   "cases": "evaluation/v2/host-faults/cases.jsonl",
   "output_schema": "evaluation/v2/schemas/host-fault-output.schema.json",
@@ -15,7 +15,7 @@
     "claude-code": {
       "status": "command-verified-against-cli-help",
       "minimum_version": "2.1.302",
-      "notes": "--plugin-dir, --permission-prompts none, --tools \"\" and stream-json were checked against Claude Code 2.1.309 help text and documentation. Whether --json-schema applies to stream-json output is checked at the first authorized run; the runner also parses the final text as JSON."
+      "notes": "--plugin-dir, --permission-prompts none, --tools \"\" and stream-json were checked against Claude Code 2.1.309 help text and documentation, and exercised on 2026-11-01: --json-schema works with stream-json (the answer arrives through the StructuredOutput tool and the result's structured_output), the server-level --allowedTools rule allows the Router's tools, and the denial appears as a permission_denied event and in permission_denials."
     },
     "codex": {
       "status": "command-constructed-unexercised",
@@ -25,7 +25,7 @@
   "evidence_class": "host-fault-behavior",
   "qualification_eligible": false,
   "claims": {
-    "in_client_fault_handling_observed": false,
+    "in_client_fault_handling_observed": true,
     "verified_host_pilot": false,
     "hybrid_full": false,
     "production_authority": false
@@ -41,7 +41,6 @@
     "output-missing",
     "explicit-skill-not-preserved",
     "fallback-not-declared",
-    "fallback-label-missing",
     "hybrid-full-claimed",
     "mcp-outcome-misreported",
     "retry-storm",
@@ -49,5 +48,24 @@
   ],
   "deferred": {
     "stale-snapshot": "plan_work output has no freshness or drift field, so a proxied stale snapshot would test a shape the real server never emits. Drift handling stays covered by the runtime-drift Behavior case."
-  }
+  },
+  "claims_scope": "One authorized run on 2026-11-01: Claude Code 2.1.309, claude-sonnet-5-5, one attempt per case. An observation on one model, not a qualification.",
+  "runs": [
+    {
+      "recorded_on": "2026-11-01",
+      "client": "claude-code",
+      "client_version": "2.1.309",
+      "model": "claude-sonnet-5-5",
+      "attempts_per_case": 1,
+      "summary": {
+        "pass": 3,
+        "pass-with-mismatches": 0,
+        "fail": 0,
+        "invalid": 0
+      },
+      "sanitized_report": "evaluation/v2/reports/host-faults/2026-11-01-claude-code.json",
+      "sanitized_report_sha256": "sha256:2bbb7cbf374dfc4105fd5a2cfdb318a77d162476c8c0632207a72bbb7cdcd756",
+      "note": "A first attempt the same day failed only in the scorer (StructuredOutput counted as a bypass, the fallback label required inside the rationale, unavailable and failed ambiguous in the schema). Those were fixed and the cases rerun; the recorded report is the rerun."
+    }
+  ]
 }
