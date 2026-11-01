@@ -100,6 +100,10 @@ The contract scores public-safe classification source/reason codes, local author
 
 The deterministic reference-driver validates the protocol and scoring pipeline; it does not prove real-model behavior. The GA candidate has no fresh final model qualification until an explicitly authorized 36-attempt / 42-turn run is reviewed and attested.
 
+## The host fault lane is not Host pilot evidence
+
+The Behavior gate runs with no tools and no MCP, so it cannot see what a session does when the Router runtime breaks. The host fault lane (`scripts/run-host-fault-suite.py`) loads the real Plugin into Claude Code or Codex and injects one fault per case: the MCP server cannot start, the Host denies `plan_work`, or `plan_work` fails. It checks that the session declares `skill-only-fallback`, keeps the explicitly named Skill, reports the outcome its transcript shows, and never claims `hybrid-full`. Its reports are `host-fault-behavior` evidence with `qualification_eligible: false`. The lane is built and fixture-tested; no authorized run has been recorded, and the Codex command is unexercised. It is not a Host pilot, not `hybrid-full` evidence, and not part of the Behavior gate.
+
 ## Delta Qualification is deliberately narrow
 
 The full paired smoke remains the normal final Behavior qualification: 36

@@ -1,0 +1,53 @@
+{
+  "schema_version": "workflow-skill-router/host-fault-plan/1.0",
+  "suite_id": "host-faults",
+  "execution_status": "harness-built-awaiting-authorized-run",
+  "purpose": "Observe how a real Host session that loads the Router Plugin behaves when the Router MCP server cannot start, when the Host denies a Router tool call, or when the call runs and fails. The Behavior gate never loads tools or MCP, so it cannot see these paths.",
+  "cases": "evaluation/v2/host-faults/cases.jsonl",
+  "output_schema": "evaluation/v2/schemas/host-fault-output.schema.json",
+  "runner": "scripts/run-host-fault-suite.py",
+  "fault_mechanisms": {
+    "mcp-unavailable": "The staged Plugin copy sets WORKFLOW_SKILL_ROUTER_HOST to an unsupported value, so the real server exits with its host-unsupported diagnostic before it serves tools.",
+    "tool-denied": "The Host's own permission system refuses the call. Claude Code: no allow rule for the Router server and --permission-prompts none. Codex: tools.plan_work.approval_mode=approve under approval_policy=never.",
+    "tool-failure": "evaluation/v2/host-faults/fault_proxy.mjs forwards every message to the real server and answers plan_work with the server's capability-unavailable error envelope."
+  },
+  "clients": {
+    "claude-code": {
+      "status": "command-verified-against-cli-help",
+      "minimum_version": "2.1.302",
+      "notes": "--plugin-dir, --permission-prompts none, --tools \"\" and stream-json were checked against Claude Code 2.1.309 help text and documentation. Whether --json-schema applies to stream-json output is checked at the first authorized run; the runner also parses the final text as JSON."
+    },
+    "codex": {
+      "status": "command-constructed-unexercised",
+      "notes": "codex exec --json with -c mcp_servers.* overrides and a SKILL copy in CODEX_HOME/skills. Approval-mode denial under approval_policy=never and skill loading with --ignore-user-config have not been exercised."
+    }
+  },
+  "evidence_class": "host-fault-behavior",
+  "qualification_eligible": false,
+  "claims": {
+    "in_client_fault_handling_observed": false,
+    "verified_host_pilot": false,
+    "hybrid_full": false,
+    "production_authority": false
+  },
+  "prohibited_claims": [
+    "verified-host-pilot",
+    "hybrid-full",
+    "production-authority",
+    "Behavior gate pass",
+    "Codex model re-qualification"
+  ],
+  "hard_violations": [
+    "output-missing",
+    "explicit-skill-not-preserved",
+    "fallback-not-declared",
+    "fallback-label-missing",
+    "hybrid-full-claimed",
+    "mcp-outcome-misreported",
+    "retry-storm",
+    "non-router-tool-used"
+  ],
+  "deferred": {
+    "stale-snapshot": "plan_work output has no freshness or drift field, so a proxied stale snapshot would test a shape the real server never emits. Drift handling stays covered by the runtime-drift Behavior case."
+  }
+}

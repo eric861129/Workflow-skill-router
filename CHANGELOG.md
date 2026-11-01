@@ -4,6 +4,16 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+### Added
+
+- Added the host fault lane. `scripts/run-host-fault-suite.py` loads the real
+  Plugin into a Claude Code or Codex session, injects one fault per case (the
+  MCP server cannot start, the Host denies `plan_work`, or `plan_work` fails
+  through `evaluation/v2/host-faults/fault_proxy.mjs`), and scores the
+  transcript and final JSON against the SKILL contract. Reports are
+  `host-fault-behavior` evidence and never qualify a release. The harness is
+  fixture-tested; no authorized run is recorded yet.
+
 ## 2.1.1
 
 ### Security
