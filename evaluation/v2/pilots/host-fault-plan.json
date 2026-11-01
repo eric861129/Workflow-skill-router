@@ -64,7 +64,7 @@
         "invalid": 0
       },
       "sanitized_report": "evaluation/v2/reports/host-faults/2026-11-01-claude-code.json",
-      "sanitized_report_sha256": "sha256:2bbb7cbf374dfc4105fd5a2cfdb318a77d162476c8c0632207a72bbb7cdcd756",
+      "sanitized_report_sha256": "sha256:e5733c74dd1ae6fa198646e59295ad919037b84df08dc52b41dc5b382279d04b",
       "note": "A first attempt the same day failed only in the scorer (StructuredOutput counted as a bypass, the fallback label required inside the rationale, unavailable and failed ambiguous in the schema). Those were fixed and the cases rerun; the recorded report is the rerun."
     }
   ]

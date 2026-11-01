@@ -636,7 +636,8 @@ def write_report(args: argparse.Namespace, results: list[CaseResult], output_dir
         "prohibited_claims": ["verified-host-pilot", "hybrid-full", "production-authority", "Behavior gate pass"],
     }
     path = output_dir / "sanitized-report.json"
-    path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # LF only, so the recorded digest is the same on every platform.
+    path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     return path
 
 
