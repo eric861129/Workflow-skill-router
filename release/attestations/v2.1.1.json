@@ -1,0 +1,83 @@
+{
+  "schema_version": "workflow-skill-router/release-evidence-attestation/1.0",
+  "record_type": "maintainer-release-evidence-review",
+  "attestation_status": "reviewed",
+  "reviewed_at": "2026-11-01T11:34:09Z",
+  "reviewer": "claude-under-maintainer-authorization",
+  "release_version": "2.1.1",
+  "release_source_revision": "f4d7eb53f9da1e346a8d257e7ac5dfbc5e7d3147",
+  "deterministic_evidence": {
+    "status": "passed",
+    "scope": "Dependency security patch: rebuilt MCP bundle for the Claude Code and Codex Plugins, Router Core, release artifacts, generated Plugin distribution, documentation, site visual, Windows, macOS, and Linux contracts",
+    "source_ci": {
+      "validate_v2_contracts_run": "41301962179",
+      "codeql_run": "41301962134"
+    },
+    "local_test_counts": {
+      "router_core": 582,
+      "repository": 397,
+      "plugin_mcp": 72
+    },
+    "dependency_audit": {
+      "reviewed_on": "2026-11-01",
+      "plugin_npm_audit_findings": 0,
+      "site_npm_audit_findings": 0,
+      "closed_advisories": [
+        "GHSA-mrhx-c7xc-m3w5",
+        "GHSA-27r3-jxmh-p828",
+        "GHSA-w74x-v6f9-j3xg",
+        "GHSA-xhq7-xmqj-769h",
+        "GHSA-wjr9-j795-jxcr",
+        "GHSA-333x-w4r6-6crp"
+      ],
+      "bundled_runtime_versions": {
+        "@modelcontextprotocol/sdk": "1.32.2",
+        "zod": "4.6.7"
+      }
+    },
+    "source_governance": {
+      "repository": "eric861129/Workflow-skill-router",
+      "status": "passed",
+      "verified_before_attestation": true
+    },
+    "target_governance": {
+      "repository": "eric861129/workflow-skill-router-plugin",
+      "status": "passed",
+      "verified_before_attestation": true
+    }
+  },
+  "behavior_evidence": {
+    "evidence_class": "unchanged-routing-behavior",
+    "evaluation_contract": "workflow-skill-router.behavior-routing@2.3.1",
+    "basis": "The frozen source updates bundled and lockfile dependencies, rebuilds the MCP bundle and runtime, and changes release metadata, release workflow governance, and documentation. Between v2.1.0's frozen source and this one, the Router Core source and MCP server source differ only in their version strings, both Router SKILLs are byte-identical, and the 20 MCP tool names and readiness classes are unchanged. zod 4.6 changes how two schema shapes are emitted: nullable strings use a type array, and Memory date-time output fields require seconds, which the runtime already writes. Routing instructions, classification, MCP tool semantics, persisted schemas, and evaluation scoring are unchanged, so the reviewed v2.1.0 Behavior evidence remains the bounded reference rather than being relabeled as a new run.",
+    "inherited_evidence": {
+      "release_version": "2.1.0",
+      "release_source_revision": "a347482b3b53011b79eaf8b71071b79f9ea564a6",
+      "model_identifier": "claude-sonnet-5-5",
+      "adapter": "claude_code_driver.py",
+      "attempt_count": 36,
+      "turn_count": 42,
+      "hard_violation_count": 0,
+      "sanitized_report_sha256": "sha256:a00f8afc29f0116640031ef97e76407684edeb27f9e474904c5a3114b713834f"
+    }
+  },
+  "known_limitations": [
+    "No new model run was made on this source. The inherited v2.1.0 run passed no attempt on the full turn contract, and its other limits carry over unchanged.",
+    "Only claude-sonnet-5-5 at the Claude Code default reasoning effort qualified v2.1.0; Codex models were not re-qualified.",
+    "CodeQL reports four existing js/redos alerts in the bundled @cfworker/json-schema URL format regex and two js/bad-code-sanitization alerts in zod's validator code generation. The generated code is derived from the static tool schemas, not from tool input. The alerts remain open.",
+    "Real Skill activation, token reduction, and task outcome remain not observable."
+  ],
+  "release_decision": {
+    "status": "publishable-dependency-security-patch",
+    "basis": "The frozen source passed deterministic local and GitHub Windows, macOS, and Linux gates, both live governance contracts were verified, npm audit reports zero findings, and the patch does not modify routing behavior.",
+    "forbidden_claims": [
+      "a new real-model qualification",
+      "full-contract qualification pass",
+      "hybrid-full conformance",
+      "verified Skill activation",
+      "measured token reduction",
+      "measured task outcome improvement",
+      "Codex model re-qualification"
+    ]
+  }
+}

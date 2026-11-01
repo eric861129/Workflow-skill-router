@@ -38,7 +38,7 @@ Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json
 
 ### Codex Plugin + MCP
 
-Current published V2 release: `2.1.0`. Version 2.1.1, a dependency security patch, is a prepared candidate that has not been published. Use the pinned release for a normal Codex installation; `v2.1.0` added the Claude Code Plugin and opt-in Workflow Memory, which keeps persistent local plans and consent records alongside the routing instructions.
+The published release is **v2.1.1**. Use this pinned release for a normal Codex installation. It is a dependency security patch for `v2.1.0`, which added the Claude Code Plugin and opt-in Workflow Memory; Memory keeps persistent local plans and consent records alongside the routing instructions.
 
 ```sh
 codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1

@@ -4,7 +4,7 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-## 2.1.1 (prepared candidate)
+## 2.1.1
 
 ### Security
 
@@ -23,6 +23,9 @@ All notable changes to Workflow Skill Router are documented here.
   seconds; the runtime already writes millisecond UTC timestamps.
 - The generated Plugin repository's HOL Plugin Scanner workflow now pins
   `actions/checkout` v7.0.1 and `ai-plugin-scanner-action` v1.2.811.
+- Promoted reviewed, source-bound `2.1.1` metadata for trusted workflow
+  publication. The maintainer attestation records the inherited `v2.1.0`
+  Behavior evidence and the deterministic gates for this revision.
 
 ### Fixed
 

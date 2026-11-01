@@ -79,7 +79,7 @@ the fix in the canonical repository, review a new candidate, and rerun only
 through an authorized dispatch. Never bypass the Scanner or manually repair,
 push, delete, or retag the generated target.
 
-`v2.1.0` is the published GA snapshot; earlier releases and historical prereleases retain their own evidence. Resolve `latest` and `latest-v2` from reviewed channel metadata rather than treating a development checkout as a release. Tag creation, non-prerelease GitHub Release publication, channel promotion, Pages deployment, and push are separate authorized actions; local validation does none of them automatically.
+`v2.1.1` is the published GA snapshot; earlier releases and historical prereleases retain their own evidence. Resolve `latest` and `latest-v2` from reviewed channel metadata rather than treating a development checkout as a release. Tag creation, non-prerelease GitHub Release publication, channel promotion, Pages deployment, and push are separate authorized actions; local validation does none of them automatically.
 
 ## 5. Preserve V1 recovery
 

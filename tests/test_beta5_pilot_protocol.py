@@ -510,7 +510,7 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "profile preview --explain",
             "server-configured advisory-only adapter",
             "No Pilot data means the gate is unmet",
-            "The published release is `v2.1.0`",
+            "The published release is `v2.1.1`",
             "not a full-contract qualification pass",
             "Codex models were not re-qualified",
             "it is not `v2.1.0` evidence",
