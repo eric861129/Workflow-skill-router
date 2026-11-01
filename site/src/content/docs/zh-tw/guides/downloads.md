@@ -81,14 +81,14 @@ description: 比較 Plugin + MCP 與純 SKILL，選擇適合目前 Codex 環境�
   </article>
 </div>
 
-`v2.1.0` 的 Plugin 與純 SKILL 套件都包含 strict Personal 與 Workspace Routing Profile 範例，以及 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml` 與 `assets/memory-policy.automatic.example.yaml`；單純安裝範例不會啟用 Memory。Skill-only 只有在 Host 授權 filesystem access 時，才能讀取固定的本機 Profile 或 Policy 路徑。
+`v2.1.1` 的 Plugin 與純 SKILL 套件都包含 strict Personal 與 Workspace Routing Profile 範例，以及 `assets/memory-policy.disabled.example.yaml`、`assets/memory-policy.reviewed.example.yaml` 與 `assets/memory-policy.automatic.example.yaml`；單純安裝範例不會啟用 Memory。Skill-only 只有在 Host 授權 filesystem access 時，才能讀取固定的本機 Profile 或 Policy 路徑。
 
 ## Marketplace 安裝
 
 一般使用者請固定安裝已發布且不可變的 marketplace snapshot：
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.0
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -104,10 +104,10 @@ codex plugin add workflow-skill-router@workflow-skill-router
 
 ## 離線檢查 assets
 
-請使用不可變的 `v2.1.0` GitHub Release assets，不要從可變動的 `raw/main/downloads` 檔案安裝。
+請使用不可變的 `v2.1.1` GitHub Release assets，不要從可變動的 `raw/main/downloads` 檔案安裝。
 
-- [Plugin ZIP：`workflow-skill-router-plugin-v2.1.0.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-plugin-v2.1.0.zip)
-- [純 SKILL ZIP：`workflow-skill-router-skill-v2.1.0.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.0/workflow-skill-router-skill-v2.1.0.zip)
+- [Plugin ZIP：`workflow-skill-router-plugin-v2.1.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.1/workflow-skill-router-plugin-v2.1.1.zip)
+- [純 SKILL ZIP：`workflow-skill-router-skill-v2.1.1.zip`](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.1/workflow-skill-router-skill-v2.1.1.zip)
 - [所有 Releases](https://github.com/eric861129/Workflow-skill-router/releases)
 
 ZIP 用於離線檢查與 fallback installation。使用前必須驗證發布的 checksums、SBOM 與 provenance；不可把本機 prerelease build 當成已發布 asset。

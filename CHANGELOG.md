@@ -4,6 +4,38 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
+## 2.1.1 (prepared candidate)
+
+### Security
+
+- Updated `zod` to 4.6.7 in the bundled MCP server, closing
+  GHSA-mrhx-c7xc-m3w5 (High): memory exhaustion while validating oversized
+  constrained collections. The `v2.1.0` bundle ships `zod` 4.1.12.
+- Updated `body-parser` to 2.4.0 and `fast-uri` to 3.1.9 in the Plugin
+  lockfile, and `fast-uri` to 3.1.9 in the site lockfile. Neither package is in
+  the shipped bundle.
+
+### Changed
+
+- Updated `@modelcontextprotocol/sdk` to 1.32.2 and rebuilt the MCP bundle for
+  both Plugins. With `zod` 4.6, nullable strings in tool schemas are emitted
+  as `"type": ["string", "null"]`, and Memory `date-time` output fields require
+  seconds; the runtime already writes millisecond UTC timestamps.
+- The generated Plugin repository's HOL Plugin Scanner workflow now pins
+  `actions/checkout` v7.0.1 and `ai-plugin-scanner-action` v1.2.811.
+
+### Fixed
+
+- The trusted Plugin distribution job now runs the target governance verifier
+  from the dispatch revision with `--as-release-app`, so it no longer fails
+  when GitHub hides ruleset bypass actors from the Release App token.
+- Windows MCP test cleanup retries a directory removal that briefly fails with
+  `EBUSY` while the Python bridge exits.
+
+Routing instructions, classification, MCP tool semantics, and persisted schemas
+are unchanged from `v2.1.0`, so this patch inherits the `v2.1.0` Behavior
+evidence instead of claiming a new model run.
+
 ## 2.1.0
 
 ### Added
