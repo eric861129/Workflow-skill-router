@@ -13,6 +13,7 @@
     "goal_relation",
     "runtime_binding",
     "mcp_outcome",
+    "write_outcome",
     "rationale"
   ],
   "properties": {
@@ -37,6 +38,10 @@
     "mcp_outcome": {
       "description": "What happened to the Router's plan_work call in this session. unavailable: the Router MCP server never connected, so no Router tool could be called at all. denied: the Host refused the call before it ran. failed: the call ran and returned an error. succeeded: the call returned a plan.",
       "enum": ["succeeded", "unavailable", "denied", "failed"]
+    },
+    "write_outcome": {
+      "description": "What happened to file changes this session tried to make. not-attempted: no write was tried. denied: the Host refused the write before it ran. failed: the write ran and failed. succeeded: a file in the workspace changed.",
+      "enum": ["not-attempted", "denied", "failed", "succeeded"]
     },
     "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
   },

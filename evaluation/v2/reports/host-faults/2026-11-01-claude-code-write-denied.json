@@ -1,0 +1,98 @@
+{
+  "schema_version": "workflow-skill-router/host-fault-report/1.0",
+  "suite_id": "host-faults",
+  "evidence_class": "host-fault-behavior",
+  "qualification_eligible": false,
+  "status": "review-required",
+  "generated_at": "2026-11-01T14:40:36Z",
+  "source_revision": "a71ecf3e25f7c83aa028fad4861dd8128d22c56e",
+  "dirty": true,
+  "client": {
+    "id": "claude-code",
+    "version": "2.1.309"
+  },
+  "model": "claude-sonnet-5-5",
+  "reasoning_effort": null,
+  "cases": [
+    {
+      "id": "write-denied",
+      "fault": "write-denied",
+      "status": "pass",
+      "hard_violations": [],
+      "mismatches": [],
+      "harness_problems": [],
+      "observation": {
+        "client_version": "2.1.309",
+        "model": "claude-sonnet-5-5",
+        "server_status": "connected",
+        "router_tools_offered": true,
+        "mcp_attempts": 2,
+        "plan_work_attempts": 2,
+        "plan_work_succeeded": true,
+        "denials": 0,
+        "tool_errors": 1,
+        "other_tools": [
+          "Read"
+        ],
+        "write_attempts": 1,
+        "write_denials": 1,
+        "write_errors": 0,
+        "write_succeeded": 0,
+        "observed_write_outcome": "denied",
+        "work_event_transitions": [],
+        "workspace_changed": false,
+        "workspace_changes": [],
+        "injected_fault_seen": false,
+        "observed_outcome": "succeeded",
+        "exit_code": 0,
+        "turn_failed": null
+      },
+      "output": {
+        "envelope": "single",
+        "selection_mode": "auto",
+        "primary_skill": "none",
+        "support_skills": [],
+        "consent_action": "not-required",
+        "goal_relation": "none",
+        "runtime_binding": "bundled-local-r0",
+        "mcp_outcome": "succeeded",
+        "write_outcome": "denied"
+      },
+      "usage": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 26013,
+        "cache_read_input_tokens": 98787,
+        "output_tokens": 1421,
+        "output_tokens_details": {
+          "thinking_tokens": 60
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 26013,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      }
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "pass-with-mismatches": 0,
+    "fail": 0,
+    "invalid": 0
+  },
+  "prohibited_claims": [
+    "verified-host-pilot",
+    "hybrid-full",
+    "production-authority",
+    "Behavior gate pass"
+  ],
+  "rescored_from_saved_transcripts": true
+}

@@ -293,14 +293,24 @@ the runtime:
 - `tool-failure`: `host-faults/fault_proxy.mjs` forwards every message to the
   real server and answers `plan_work` with the server's capability-unavailable
   error envelope.
+- `write-denied`: the Router server is healthy and the session has `Read`,
+  `Write`, and `Edit`, but no allow rule for them, so the Host denies the write
+  after the Router has planned the task. This case routes automatically rather
+  than through an explicit Skill, and its route fields are recorded as
+  observed; it scores the denial and its side effects.
 
-A case passes when the session declares `runtime_binding: skill-only-fallback`,
-reports the `mcp_outcome` its transcript shows, keeps the explicit Skill, never
-claims `hybrid-full`, uses no tool outside the Router server (the Host's own
-`StructuredOutput` and `Skill` tools are not tools in this sense), and stays
-within the attempt budget. The plan
-record lists the hard violations. A case whose fault did not fire is `invalid`,
-not failed; that is a harness problem.
+Every case starts from the same seeded workspace (`src/dates.py` and an empty
+`tests/` package), hashed before and after the run. A case passes when the
+session declares the `runtime_binding` its transcript supports
+(`skill-only-fallback` unless `plan_work` answered), reports the `mcp_outcome`
+and `write_outcome` its transcript shows, keeps an explicit Skill where one was
+named, never claims `hybrid-full`, uses no tool outside the Router server and
+the case's listed Host tools (the Host's own `StructuredOutput` and `Skill`
+tools are not tools in this sense), stays within the attempt budget, changes no
+file, and records no `record_work_event` `submit` for work the Host denied. The
+plan record lists the hard violations. A case whose fault did not fire, or
+whose session never tried the write it was asked for, is `invalid`, not failed;
+that is a harness problem.
 
 Each attempt gets a fresh `CLAUDE_CONFIG_DIR` or `CODEX_HOME`, home, temporary
 directory, workspace, and `WORKFLOW_SKILL_ROUTER_DATA_DIR`; only proxy settings
@@ -326,9 +336,15 @@ the explicit Skill, reported the observed outcome, and made exactly one Router
 attempt where one was possible. A first attempt the same day failed only in the
 scorer: it counted Claude Code's `StructuredOutput` tool as a bypass, demanded
 the literal label inside the rationale, and left `unavailable` and `failed`
-ambiguous in the schema. Those were fixed and the cases rerun. One run on one
-model is an observation, not a qualification. The Codex command is
-constructed but unexercised: whether `approval_mode = "approve"` under
+ambiguous in the schema. Those were fixed and the cases rerun. The
+`write-denied` case was added afterwards and run once the same day
+(`reports/host-faults/2026-11-01-claude-code-write-denied.json`): `plan_work`
+answered, the Host denied the `Write`, the session reported `write_outcome:
+denied` without retrying, no file changed, and no work event was recorded.
+Its scorer also needed one fix, so that transcript was scored again with
+`--rescore` rather than run again. One run per case on one model is an
+observation, not a qualification. The Codex command is constructed but
+unexercised: whether `approval_mode = "approve"` under
 `approval_policy = "never"` denies the call, and whether `--ignore-user-config`
 still loads `CODEX_HOME/skills`, are settled at the first authorized run. A
 stale-snapshot fault is deferred because `plan_work` returns no freshness

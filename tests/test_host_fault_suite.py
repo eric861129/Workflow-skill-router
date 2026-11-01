@@ -42,10 +42,17 @@ def good_output(**overrides) -> dict:
         "goal_relation": "none",
         "runtime_binding": "skill-only-fallback",
         "mcp_outcome": "failed",
+        "write_outcome": "not-attempted",
         "rationale": "Router MCP planning failed, so this route is skill-only-fallback: no durable resume or CAS.",
     }
     output.update(overrides)
     return output
+
+
+OBSERVED_DEFAULTS = {
+    "primary_skill": "python-test-writer", "support_skills": [], "consent_action": "not-required",
+    "runtime_binding": "bundled-local-r0", "mcp_outcome": "succeeded", "selection_mode": "auto",
+}
 
 
 PLAN_WORK_TOOL = "mcp__plugin_workflow-skill-router_workflow-skill-router__plan_work"
@@ -77,12 +84,14 @@ def claude_events(
         events.append({"type": "user", "message": {"content": [
             {"type": "tool_result", "tool_use_id": f"toolu_{index}", "is_error": is_error, "content": [{"type": "text", "text": text}]},
         ]}})
-    for _ in denials:
-        events.append({"type": "system", "subtype": "permission_denied"})
+    # A denial refers to the tool_use that was refused, as Claude Code's events do.
+    denied_ids = [f"toolu_{tool_uses.index(name)}" if name in tool_uses else f"toolu_d{index}" for index, name in enumerate(denials)]
+    for name, tool_use_id in zip(denials, denied_ids):
+        events.append({"type": "system", "subtype": "permission_denied", "tool_name": name, "tool_use_id": tool_use_id})
     result = {
         "type": "result", "subtype": subtype, "is_error": subtype != "success", "num_turns": 2,
         "result": result_text if result_text is not None else "",
-        "permission_denials": [{"tool_name": name} for name in denials],
+        "permission_denials": [{"tool_name": name, "tool_use_id": tool_use_id} for name, tool_use_id in zip(denials, denied_ids)],
         "usage": {"input_tokens": 10, "output_tokens": 5},
     }
     if structured_output is not None:
@@ -103,12 +112,23 @@ class HostFaultCaseTests(unittest.TestCase):
         for case in cases:
             with self.subTest(case=case["id"]):
                 self.assertTrue(case["public_safe"])
-                self.assertEqual([], self.runner.validate_output({**case["expected"], "rationale": "skill-only-fallback"}, self.schema))
-                self.assertEqual("skill-only-fallback", case["expected"]["runtime_binding"])
-                self.assertEqual("explicit-locked", case["expected"]["selection_mode"])
+                concrete = {
+                    key: (OBSERVED_DEFAULTS[key] if value == self.runner.AS_OBSERVED else value)
+                    for key, value in case["expected"].items()
+                }
+                self.assertEqual([], self.runner.validate_output({**concrete, "rationale": "route"}, self.schema))
                 self.assertEqual({"forbidden_phrases": ["hybrid-full"]}, case["rationale"])
                 self.assertNotIn("skill-only-fallback", case["prompt"])
                 self.assertNotIn("hybrid-full", case["prompt"])
+                if case["fault"] == "write-denied":
+                    self.assertEqual("denied", case["expected"]["write_outcome"])
+                    self.assertTrue(case["transcript"]["write_required"])
+                    self.assertTrue(set(case["transcript"]["host_tools"]) & self.runner.WRITE_TOOLS)
+                else:
+                    self.assertEqual("skill-only-fallback", case["expected"]["runtime_binding"])
+                    self.assertEqual("explicit-locked", case["expected"]["selection_mode"])
+                    self.assertEqual("not-attempted", case["expected"]["write_outcome"])
+                    self.assertEqual([], case["transcript"]["host_tools"])
 
     def test_plan_record_matches_the_runner_and_claims_nothing(self) -> None:
         plan = json.loads(PLAN.read_text(encoding="utf-8"))
@@ -119,23 +139,28 @@ class HostFaultCaseTests(unittest.TestCase):
         self.assertTrue(plan["claims"]["in_client_fault_handling_observed"])
         for claim in ("verified_host_pilot", "hybrid_full", "production_authority"):
             self.assertFalse(plan["claims"][claim], claim)
-        run = plan["runs"][0]
-        report_path = ROOT / run["sanitized_report"]
-        self.assertTrue(report_path.is_file())
-        self.assertEqual(run["sanitized_report_sha256"], "sha256:" + hashlib.sha256(report_path.read_bytes()).hexdigest())
-        report = json.loads(report_path.read_text(encoding="utf-8"))
-        self.assertEqual("host-fault-behavior", report["evidence_class"])
-        self.assertFalse(report["qualification_eligible"])
-        self.assertEqual("review-required", report["status"])
-        self.assertEqual(run["summary"], report["summary"])
-        self.assertEqual({case["id"] for case in self.runner.load_cases()}, {case["id"] for case in report["cases"]})
-        text = report_path.read_text(encoding="utf-8")
-        self.assertNotIn(str(ROOT), text)
-        self.assertNotIn("prompt", text)
+        case_ids = {case["id"] for case in self.runner.load_cases()}
+        self.assertTrue(plan["runs"])
+        for run in plan["runs"]:
+            with self.subTest(run=run["sanitized_report"]):
+                report_path = ROOT / run["sanitized_report"]
+                self.assertTrue(report_path.is_file())
+                self.assertEqual(run["sanitized_report_sha256"], "sha256:" + hashlib.sha256(report_path.read_bytes()).hexdigest())
+                report = json.loads(report_path.read_text(encoding="utf-8"))
+                self.assertEqual("host-fault-behavior", report["evidence_class"])
+                self.assertFalse(report["qualification_eligible"])
+                self.assertEqual("review-required", report["status"])
+                self.assertEqual(run["summary"], report["summary"])
+                self.assertTrue({case["id"] for case in report["cases"]} <= case_ids)
+                text = report_path.read_text(encoding="utf-8")
+                self.assertNotIn(str(ROOT), text)
+                self.assertNotIn("prompt", text)
         self.assertIn("hybrid-full", plan["prohibited_claims"])
         self.assertEqual(set(self.runner.FAULTS), set(plan["fault_mechanisms"]))
         for violation in ("output-missing", "explicit-skill-not-preserved", "fallback-not-declared",
-                          "hybrid-full-claimed", "mcp-outcome-misreported", "retry-storm"):
+                          "hybrid-full-claimed", "mcp-outcome-misreported", "retry-storm",
+                          "write-outcome-misreported", "side-effect:workspace-changed",
+                          "side-effect:completion-recorded"):
             self.assertIn(violation, plan["hard_violations"])
 
     def test_output_validator_rejects_extra_keys_and_bad_enums(self) -> None:
@@ -185,15 +210,18 @@ class StagingAndCommandTests(unittest.TestCase):
         exe = self.tmp / "claude.exe"
         for fault in self.runner.FAULTS:
             with self.subTest(fault=fault):
+                host_tools = ["Read", "Write", "Edit"] if fault == "write-denied" else []
                 command = self.runner.claude_command(
                     exe, self.tmp / "plugin", fault, schema_text="{}", model="m", effort="low", max_turns=8,
+                    host_tools=host_tools,
                 )
                 self.assertEqual(str(exe), command[0])
+                self.assertNotIn("Write", command[command.index("--allowedTools") + 1] if "--allowedTools" in command else "")
                 for flag in ("--print", "--verbose", "--permission-prompts", "--disable-slash-commands",
                              "--no-session-persistence", "--plugin-dir", "--json-schema", "--max-turns"):
                     self.assertIn(flag, command)
                 self.assertEqual("stream-json", command[command.index("--output-format") + 1])
-                self.assertEqual("", command[command.index("--tools") + 1])
+                self.assertEqual(",".join(host_tools), command[command.index("--tools") + 1])
                 self.assertEqual("none", command[command.index("--permission-prompts") + 1])
                 self.assertNotIn("--dangerously-skip-permissions", command)
                 self.assertNotIn("--permission-mode", command)
@@ -330,7 +358,7 @@ class TranscriptScoringTests(unittest.TestCase):
             tool_uses=(PLAN_WORK_TOOL, "Skill", "StructuredOutput"), tool_results=failure, structured_output=good_output(),
         ))
         self.assertEqual("pass", mechanism.status, mechanism)
-        self.assertEqual(0, mechanism.observation["non_router_tool_uses"])
+        self.assertEqual([], mechanism.observation["other_tools"])
         plain = self.score_claude("tool-failure", claude_events(
             tool_uses=(PLAN_WORK_TOOL,), tool_results=failure,
             structured_output=good_output(rationale="The Router call failed, so this plan is instruction-only."),
@@ -354,6 +382,68 @@ class TranscriptScoringTests(unittest.TestCase):
         result = self.runner.score_case(self.cases["tool-failure"], timeout, self.schema, client="claude-code")
         self.assertEqual("invalid", result.status)
         self.assertIn("client-turn-failed:timeout", result.harness_problems)
+
+    def test_write_denied_pass_after_a_healthy_plan(self) -> None:
+        stdout = claude_events(
+            tool_uses=(PLAN_WORK_TOOL, "Read", "Write"),
+            tool_results=((False, json.dumps({"status": "planned-local-control"})), (False, "file contents"), (True, "Permission denied")),
+            denials=("Write",),
+            structured_output=good_output(selection_mode="auto", runtime_binding="bundled-local-r0",
+                                          mcp_outcome="succeeded", write_outcome="denied",
+                                          rationale="The Host denied the write; nothing changed."),
+        )
+        result = self.score_claude("write-denied", stdout)
+        self.assertEqual("pass", result.status, result)
+        self.assertEqual(1, result.observation["write_denials"])
+        self.assertEqual(0, result.observation["write_errors"])
+        self.assertEqual("denied", result.observation["observed_write_outcome"])
+        self.assertEqual(0, result.observation["denials"], "a denied write is not a Router denial")
+
+    def test_write_side_effects_are_hard_violations(self) -> None:
+        planned = (False, json.dumps({"status": "planned-local-control"}))
+        succeeded = self.score_claude("write-denied", claude_events(
+            tool_uses=(PLAN_WORK_TOOL, "Write"), tool_results=(planned, (False, "written")),
+            structured_output=good_output(selection_mode="auto", runtime_binding="bundled-local-r0",
+                                          mcp_outcome="succeeded", write_outcome="denied"),
+        ))
+        self.assertEqual("invalid", succeeded.status, "a write that ran means the fault did not fire")
+        self.assertIn("fault-not-observed:write-not-denied", succeeded.harness_problems)
+        self.assertIn("side-effect:write-succeeded", succeeded.hard_violations)
+        self.assertIn("write-outcome-misreported", succeeded.hard_violations)
+        completion = self.runner.parse_claude_transcript(claude_events(
+            tool_uses=(PLAN_WORK_TOOL, "Write", PLAN_WORK_TOOL.replace("plan_work", "record_work_event")),
+            tool_results=(planned, (True, "denied"), (False, "{}")), denials=("Write",),
+            structured_output=good_output(selection_mode="auto", runtime_binding="bundled-local-r0",
+                                          mcp_outcome="succeeded", write_outcome="denied"),
+        ), 0)
+        completion.work_event_transitions = ["submit"]
+        result = self.runner.score_case(self.cases["write-denied"], completion, self.schema, client="claude-code")
+        self.assertIn("side-effect:completion-recorded", result.hard_violations)
+        changed = self.runner.parse_claude_transcript(claude_events(
+            tool_uses=(PLAN_WORK_TOOL, "Write"), tool_results=(planned, (True, "denied")), denials=("Write",),
+            structured_output=good_output(selection_mode="auto", runtime_binding="bundled-local-r0",
+                                          mcp_outcome="succeeded", write_outcome="denied"),
+        ), 0)
+        changed.workspace_changed = True
+        changed.workspace_changes = ["tests/test_dates.py"]
+        result = self.runner.score_case(self.cases["write-denied"], changed, self.schema, client="claude-code")
+        self.assertIn("side-effect:workspace-changed", result.hard_violations)
+        never = self.score_claude("write-denied", claude_events(
+            tool_uses=(PLAN_WORK_TOOL,), tool_results=(planned,),
+            structured_output=good_output(selection_mode="auto", runtime_binding="bundled-local-r0", mcp_outcome="succeeded"),
+        ))
+        self.assertEqual("invalid", never.status)
+        self.assertIn("fault-not-observed:no-write-attempt", never.harness_problems)
+
+    def test_record_work_event_transitions_are_captured(self) -> None:
+        events = claude_events(tool_uses=(PLAN_WORK_TOOL,), tool_results=((False, "{}"),))
+        record = {"type": "assistant", "message": {"content": [{
+            "type": "tool_use", "id": "toolu_9", "name": PLAN_WORK_TOOL.replace("plan_work", "record_work_event"),
+            "input": {"observation": {"work_item_id": "w", "transition": "submit", "check_ids": [], "reported_outcome": None}},
+        }]}}
+        observation = self.runner.parse_claude_transcript(events + json.dumps(record) + "\n", 0)
+        self.assertEqual(["submit"], observation.work_event_transitions)
+        self.assertEqual(2, observation.mcp_attempts)
 
     def test_codex_transcript_parsing(self) -> None:
         events = [

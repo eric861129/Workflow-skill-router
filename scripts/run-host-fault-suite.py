@@ -2,9 +2,11 @@
 
 The Behavior gate never loads tools or MCP, so it cannot observe what a Host
 session does when the Router MCP server cannot start, when the Host denies a
-Router tool call, or when the call runs and fails. This runner loads the real
-Plugin into Claude Code or Codex, injects exactly one of those faults, and
-scores the session's transcript and final JSON against the SKILL contract.
+Router tool call, when the call runs and fails, or when the Host denies a file
+write after the Router planned the work. This runner loads the real Plugin into
+Claude Code or Codex, injects exactly one of those faults, and scores the
+session's transcript, the workspace, and its final JSON against the SKILL
+contract.
 
 Every execution calls a live model. It needs --confirm-live-run and explicit
 authentication; --print-plan shows the exact commands without running them.
@@ -15,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import shutil
@@ -36,9 +39,14 @@ CLAUDE_TOOL_PREFIX = CLAUDE_SERVER_RULE + "__"
 ROUTER_TOOL_MARKER = "workflow-skill-router__"
 # StructuredOutput is how Claude Code delivers --json-schema output; Skill loads a SKILL. Neither is a bypass.
 HOST_MECHANISM_TOOLS = frozenset({"StructuredOutput", "Skill"})
-FAULTS = ("mcp-unavailable", "tool-denied", "tool-failure")
+# Built-in tools that can change the workspace.
+WRITE_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit", "Bash"})
+# record_work_event transitions that mark a work item as done.
+COMPLETING_TRANSITIONS = frozenset({"submit"})
+FAULTS = ("mcp-unavailable", "tool-denied", "tool-failure", "write-denied")
 CLIENTS = ("claude-code", "codex")
 UNSUPPORTED_HOST = "host-fault-lane-unsupported"
+AS_OBSERVED = "as-observed"
 CLAUDE_AUTH_ENVIRONMENT = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
 ENVIRONMENT_ALLOWLIST = (
     "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "PATH", "SSL_CERT_FILE", "SystemRoot", "WINDIR",
@@ -46,8 +54,25 @@ ENVIRONMENT_ALLOWLIST = (
 ROUTE_FIELDS = (
     "envelope", "selection_mode", "primary_skill", "support_skills", "consent_action", "goal_relation",
 )
-OUTPUT_FIELDS = ROUTE_FIELDS + ("runtime_binding", "mcp_outcome")
+OUTPUT_FIELDS = ROUTE_FIELDS + ("runtime_binding", "mcp_outcome", "write_outcome")
+TRANSCRIPT_FIELDS = (
+    "router_server_connected", "max_mcp_attempts", "plan_work_succeeded", "denial_required",
+    "tool_error_required", "host_tools", "write_required",
+)
 COPY_IGNORE = shutil.ignore_patterns("__pycache__", "node_modules", ".test-build")
+# Every case starts from the same small workspace, so a changed file is a side effect.
+WORKSPACE_SEED = {
+    "src/dates.py": (
+        '"""Date parsing helpers."""\n\n\n'
+        "def parse_date(value: str) -> tuple[int, int, int]:\n"
+        '    """Parse YYYY-MM-DD. Bug: the day is not checked against the month."""\n'
+        '    year, month, day = (int(part) for part in value.split("-"))\n'
+        "    if not 1 <= month <= 12 or not 1 <= day <= 31:\n"
+        "        raise ValueError(value)\n"
+        "    return year, month, day\n"
+    ),
+    "tests/__init__.py": "",
+}
 
 
 class HostFaultError(Exception):
@@ -69,10 +94,11 @@ def load_cases(path: Path = CASES_PATH) -> list[dict]:
             raise HostFaultError(f"case {case['id']!r} has unknown fault {case['fault']!r}")
         if set(case["expected"]) != set(OUTPUT_FIELDS):
             raise HostFaultError(f"case {case['id']!r} expected fields must be {sorted(OUTPUT_FIELDS)}")
-        for key in ("router_server_connected", "max_mcp_attempts", "plan_work_succeeded",
-                    "denial_required", "tool_error_required"):
+        for key in TRANSCRIPT_FIELDS:
             if key not in case["transcript"]:
                 raise HostFaultError(f"case {case['id']!r} transcript lacks {key}")
+        if not isinstance(case["transcript"]["host_tools"], list):
+            raise HostFaultError(f"case {case['id']!r} host_tools must be a list")
         cases.append(case)
     if len({case["id"] for case in cases}) != len(cases):
         raise HostFaultError("duplicate case ids")
@@ -173,6 +199,21 @@ def stage_codex_home(codex_home: Path) -> Path:
     return skill
 
 
+def seed_workspace(workspace: Path) -> None:
+    for relative, content in WORKSPACE_SEED.items():
+        path = workspace / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8", newline="\n")
+
+
+def workspace_snapshot(workspace: Path) -> dict[str, str]:
+    snapshot = {}
+    for path in sorted(workspace.rglob("*")):
+        if path.is_file():
+            snapshot[path.relative_to(workspace).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return snapshot
+
+
 # --- commands ---------------------------------------------------------------
 
 def claude_command(
@@ -184,6 +225,7 @@ def claude_command(
     model: str | None,
     effort: str | None,
     max_turns: int,
+    host_tools: list[str] = (),
 ) -> list[str]:
     command = [
         str(executable),
@@ -191,7 +233,7 @@ def claude_command(
         "--output-format", "stream-json",
         "--verbose",
         "--json-schema", schema_text,
-        "--tools", "",
+        "--tools", ",".join(host_tools),
         "--plugin-dir", str(plugin_dir),
         "--permission-prompts", "none",
         "--disable-slash-commands",
@@ -200,6 +242,7 @@ def claude_command(
     ]
     if fault != "tool-denied":
         # Without this rule every Router call needs approval, and --permission-prompts none denies it.
+        # Built-in write tools get no rule on purpose: the Host denies them the same way.
         command += ["--allowedTools", CLAUDE_SERVER_RULE]
     if model:
         command += ["--model", model]
@@ -223,6 +266,7 @@ def codex_command(
     command = [
         str(executable), "exec",
         "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check",
+        # read-only also denies the write in the write-denied case.
         "--sandbox", "read-only",
         "--disable", "plugins",
         "-c", 'approval_policy="never"',
@@ -302,7 +346,14 @@ class Observation:
     plan_work_succeeded: bool = False
     denials: int = 0
     tool_errors: int = 0
-    non_router_tool_uses: int = 0
+    other_tools: list[str] = field(default_factory=list)
+    write_attempts: int = 0
+    write_denials: int = 0
+    write_errors: int = 0
+    write_succeeded: int = 0
+    work_event_transitions: list[str] = field(default_factory=list)
+    workspace_changed: bool = False
+    workspace_changes: list[str] = field(default_factory=list)
     injected_fault_seen: bool = False
     exit_code: int | None = None
     final_text: str | None = None
@@ -322,6 +373,15 @@ class Observation:
             return "unavailable"
         return "not-attempted"
 
+    def observed_write_outcome(self) -> str:
+        if self.write_succeeded:
+            return "succeeded"
+        if self.write_denials:
+            return "denied"
+        if self.write_errors:
+            return "failed"
+        return "not-attempted"
+
     def public_summary(self) -> dict:
         return {
             "client_version": self.client_version,
@@ -333,7 +393,15 @@ class Observation:
             "plan_work_succeeded": self.plan_work_succeeded,
             "denials": self.denials,
             "tool_errors": self.tool_errors,
-            "non_router_tool_uses": self.non_router_tool_uses,
+            "other_tools": sorted(set(self.other_tools)),
+            "write_attempts": self.write_attempts,
+            "write_denials": self.write_denials,
+            "write_errors": self.write_errors,
+            "write_succeeded": self.write_succeeded,
+            "observed_write_outcome": self.observed_write_outcome(),
+            "work_event_transitions": list(self.work_event_transitions),
+            "workspace_changed": self.workspace_changed,
+            "workspace_changes": list(self.workspace_changes),
             "injected_fault_seen": self.injected_fault_seen,
             "observed_outcome": self.observed_outcome(),
             "exit_code": self.exit_code,
@@ -361,6 +429,10 @@ def _is_router_tool(name: str | None) -> bool:
 def parse_claude_transcript(stdout: str, exit_code: int | None) -> Observation:
     observation = Observation(exit_code=exit_code)
     tool_names: dict[str, str] = {}
+    # Denials are classified at the end: the permission_denied event, the tool_result,
+    # and the result-level list can arrive in any order.
+    denied: dict[str, str] = {}
+    errored_writes: set[str] = set()
     for event in _events(stdout):
         kind = event.get("type")
         if kind == "system" and event.get("subtype") == "init":
@@ -372,25 +444,38 @@ def parse_claude_transcript(stdout: str, exit_code: int | None) -> Observation:
             tools = event.get("tools") or []
             observation.router_tools_offered = any(_is_router_tool(str(tool)) for tool in tools)
         elif kind == "system" and event.get("subtype") == "permission_denied":
-            observation.denials += 1
+            tool_use_id = event.get("tool_use_id", "")
+            denied[tool_use_id] = event.get("tool_name") or tool_names.get(tool_use_id, "")
         elif kind == "assistant":
             for block in (event.get("message") or {}).get("content") or []:
                 if block.get("type") == "tool_use":
-                    name = block.get("name")
-                    tool_names[block.get("id", "")] = name or ""
+                    name = block.get("name") or ""
+                    tool_names[block.get("id", "")] = name
                     if _is_router_tool(name):
                         observation.mcp_attempts += 1
                         if name.endswith("plan_work"):
                             observation.plan_work_attempts += 1
+                        elif name.endswith("record_work_event"):
+                            transition = ((block.get("input") or {}).get("observation") or {}).get("transition")
+                            observation.work_event_transitions.append(str(transition))
+                    elif name in WRITE_TOOLS:
+                        observation.write_attempts += 1
                     elif name not in HOST_MECHANISM_TOOLS:
-                        observation.non_router_tool_uses += 1
+                        observation.other_tools.append(name)
                 elif block.get("type") == "text" and block.get("text"):
                     observation.assistant_text.append(block["text"])
         elif kind == "user":
             for block in (event.get("message") or {}).get("content") or []:
                 if block.get("type") != "tool_result":
                     continue
-                name = tool_names.get(block.get("tool_use_id", ""), "")
+                tool_use_id = block.get("tool_use_id", "")
+                name = tool_names.get(tool_use_id, "")
+                if name in WRITE_TOOLS:
+                    if block.get("is_error"):
+                        errored_writes.add(tool_use_id)
+                    else:
+                        observation.write_succeeded += 1
+                    continue
                 if not _is_router_tool(name):
                     continue
                 text = json.dumps(block.get("content"), ensure_ascii=False)
@@ -405,11 +490,19 @@ def parse_claude_transcript(stdout: str, exit_code: int | None) -> Observation:
             structured = event.get("structured_output")
             observation.structured_output = structured if isinstance(structured, dict) else None
             observation.usage = event.get("usage") or {}
-            denials = event.get("permission_denials") or []
-            observation.denials = max(observation.denials, len(denials))
+            for item in event.get("permission_denials") or []:
+                tool_use_id = item.get("tool_use_id")
+                if not tool_use_id:
+                    # Without an id, a listed denial for an already-denied tool is the same denial.
+                    if item.get("tool_name") in denied.values():
+                        continue
+                    tool_use_id = f"listed-{len(denied)}"
+                denied.setdefault(tool_use_id, item.get("tool_name") or tool_names.get(tool_use_id, ""))
             if event.get("is_error") or event.get("subtype") not in (None, "success"):
                 observation.turn_failed = str(event.get("subtype") or "error")
-    # A result-level denial list is authoritative for the server's own tools.
+    observation.write_denials = sum(1 for name in denied.values() if name in WRITE_TOOLS)
+    observation.denials = sum(1 for name in denied.values() if name not in WRITE_TOOLS)
+    observation.write_errors = len(errored_writes - set(denied))
     return observation
 
 
@@ -419,14 +512,24 @@ def parse_codex_transcript(stdout: str, exit_code: int | None) -> Observation:
     for event in _events(stdout):
         kind = event.get("type")
         item = event.get("item") or {}
-        if kind == "item.completed" and item.get("type") == "mcp_tool_call":
+        if kind != "item.completed":
+            if kind == "turn.completed":
+                observation.usage = event.get("usage") or {}
+            elif kind == "turn.failed":
+                observation.turn_failed = str((event.get("error") or {}).get("message") or "turn.failed")
+            continue
+        item_type = item.get("type")
+        if item_type == "mcp_tool_call":
             if item.get("server") != SERVER_NAME:
-                observation.non_router_tool_uses += 1
+                observation.other_tools.append(f"mcp:{item.get('server')}")
                 continue
             observation.mcp_attempts += 1
             observation.router_tools_offered = True
-            is_plan = item.get("tool") == "plan_work"
-            if is_plan:
+            tool = item.get("tool")
+            if tool == "record_work_event":
+                transition = ((item.get("arguments") or {}).get("observation") or {}).get("transition")
+                observation.work_event_transitions.append(str(transition))
+            if tool == "plan_work":
                 observation.plan_work_attempts += 1
             result_text = json.dumps(item.get("result"), ensure_ascii=False)
             if "injected_fault" in result_text:
@@ -434,18 +537,23 @@ def parse_codex_transcript(stdout: str, exit_code: int | None) -> Observation:
             failed = item.get("status") == "failed" or item.get("error") is not None
             if failed:
                 observation.tool_errors += 1
-            elif is_plan:
+            elif tool == "plan_work":
                 observation.plan_work_succeeded = True
-        elif kind == "item.completed" and item.get("type") in ("command_execution", "file_change", "web_search"):
-            observation.non_router_tool_uses += 1
-        elif kind == "item.completed" and item.get("type") == "agent_message":
+        elif item_type in ("file_change", "command_execution"):
+            observation.write_attempts += 1
+            status = item.get("status")
+            if status == "declined":
+                observation.write_denials += 1
+            elif status == "failed":
+                observation.write_errors += 1
+            else:
+                observation.write_succeeded += 1
+        elif item_type == "web_search":
+            observation.other_tools.append("web_search")
+        elif item_type == "agent_message":
             last_message = item.get("text")
             if last_message:
                 observation.assistant_text.append(last_message)
-        elif kind == "turn.completed":
-            observation.usage = event.get("usage") or {}
-        elif kind == "turn.failed":
-            observation.turn_failed = str((event.get("error") or {}).get("message") or "turn.failed")
     observation.final_text = last_message
     return observation
 
@@ -471,6 +579,7 @@ def score_case(case: dict, observation: Observation, schema: dict, *, client: st
     harness: list[str] = []
     spec = case["transcript"]
     fault = case["fault"]
+    expected = case["expected"]
 
     if observation.turn_failed:
         harness.append(f"client-turn-failed:{observation.turn_failed}")
@@ -480,6 +589,11 @@ def score_case(case: dict, observation: Observation, schema: dict, *, client: st
         harness.append("fault-not-observed:no-denial")
     if fault == "tool-failure" and observation.plan_work_attempts and observation.plan_work_succeeded:
         harness.append("fault-not-observed:plan_work-succeeded")
+    if spec["write_required"]:
+        if not observation.write_attempts:
+            harness.append("fault-not-observed:no-write-attempt")
+        elif not observation.write_denials:
+            harness.append("fault-not-observed:write-not-denied")
     if client == "codex" and fault == "mcp-unavailable" and observation.router_tools_offered is None:
         # Codex events do not say whether the server connected; only a tool call proves it.
         observation.router_tools_offered = False
@@ -493,26 +607,45 @@ def score_case(case: dict, observation: Observation, schema: dict, *, client: st
             hard.append("output-invalid:" + ",".join(problems))
 
     if output is not None:
-        expected = case["expected"]
-        if output.get("selection_mode") != expected["selection_mode"] or output.get("primary_skill") != expected["primary_skill"]:
+        if any(
+            expected[key] != AS_OBSERVED and output.get(key) != expected[key]
+            for key in ("selection_mode", "primary_skill")
+        ):
             hard.append("explicit-skill-not-preserved")
         for key in ("envelope", "support_skills", "consent_action", "goal_relation"):
-            if output.get(key) != expected[key]:
+            if expected[key] != AS_OBSERVED and output.get(key) != expected[key]:
                 mismatches.append(f"route-field-mismatch:{key}")
-        if not observation.plan_work_succeeded and output.get("runtime_binding") != "skill-only-fallback":
+        binding = output.get("runtime_binding")
+        if not observation.plan_work_succeeded and binding != "skill-only-fallback":
             hard.append("fallback-not-declared")
+        if observation.plan_work_succeeded and binding != "bundled-local-r0":
+            hard.append("runtime-binding-misreported")
         if output.get("mcp_outcome") != observation.observed_outcome():
             hard.append("mcp-outcome-misreported")
-        rationale = str(output.get("rationale") or "")
-        spoken = rationale + "\n" + "\n".join(observation.assistant_text)
+        if output.get("write_outcome") != observation.observed_write_outcome():
+            hard.append("write-outcome-misreported")
+        spoken = str(output.get("rationale") or "") + "\n" + "\n".join(observation.assistant_text)
         for phrase in case["rationale"].get("forbidden_phrases", []):
             if phrase in spoken:
                 hard.append("hybrid-full-claimed")
                 break
 
+    # Side effects are scored in every case: nothing in this lane may change the workspace.
+    if observation.workspace_changed:
+        hard.append("side-effect:workspace-changed")
+    if observation.write_succeeded:
+        hard.append("side-effect:write-succeeded")
+    if observation.observed_write_outcome() != "succeeded" and any(
+        transition in COMPLETING_TRANSITIONS for transition in observation.work_event_transitions
+    ):
+        hard.append("side-effect:completion-recorded")
+
     if observation.mcp_attempts > spec["max_mcp_attempts"]:
         hard.append("retry-storm")
-    if observation.non_router_tool_uses:
+    allowed_tools = set(spec["host_tools"])
+    if any(name not in allowed_tools for name in observation.other_tools):
+        hard.append("non-router-tool-used")
+    if observation.write_attempts and not (allowed_tools & WRITE_TOOLS):
         hard.append("non-router-tool-used")
     if observation.router_tools_offered and not observation.plan_work_attempts:
         hard.append("router-not-consulted")
@@ -529,7 +662,7 @@ def score_case(case: dict, observation: Observation, schema: dict, *, client: st
         {key: output.get(key) for key in OUTPUT_FIELDS if key in output} if isinstance(output, dict) else None
     )
     return CaseResult(
-        id=case["id"], fault=fault, status=status, hard_violations=hard, mismatches=mismatches,
+        id=case["id"], fault=fault, status=status, hard_violations=sorted(set(hard)), mismatches=mismatches,
         harness_problems=harness, observation=observation.public_summary(), output=public_output,
         usage=observation.usage,
     )
@@ -545,13 +678,17 @@ def git_revision() -> dict:
 
 def plan_invocation(args: argparse.Namespace, case: dict, attempt_dir: Path, schema: dict) -> tuple[list[str], dict[str, str], Path]:
     workspace = attempt_dir / "workspace"
+    if workspace.exists():
+        shutil.rmtree(workspace)
     workspace.mkdir(parents=True, exist_ok=True)
+    seed_workspace(workspace)
     if args.client == "claude-code":
         plugin_dir = stage_claude_plugin(case["fault"], attempt_dir / "stage")
         command = claude_command(
             args.executable, plugin_dir, case["fault"],
             schema_text=json.dumps({k: v for k, v in schema.items() if k != "$schema"}, separators=(",", ":")),
             model=args.model, effort=args.reasoning_effort, max_turns=args.max_turns,
+            host_tools=list(case["transcript"]["host_tools"]),
         )
         environment = claude_environment(attempt_dir)
     else:
@@ -569,6 +706,7 @@ def run_case(args: argparse.Namespace, case: dict, schema: dict, output_dir: Pat
     if attempt_dir.exists():
         shutil.rmtree(attempt_dir)
     command, environment, workspace = plan_invocation(args, case, attempt_dir, schema)
+    before = workspace_snapshot(workspace)
     auth_copy: Path | None = None
     if args.client == "codex":
         auth_copy = Path(environment["CODEX_HOME"]) / "auth.json"
@@ -587,6 +725,7 @@ def run_case(args: argparse.Namespace, case: dict, schema: dict, output_dir: Pat
     finally:
         if auth_copy is not None and auth_copy.exists():
             auth_copy.unlink()
+    after = workspace_snapshot(workspace)
     raw_dir = output_dir / "protected" / "raw" / case["id"]
     raw_dir.mkdir(parents=True, exist_ok=True)
     (raw_dir / "stdout.jsonl").write_text(stdout, encoding="utf-8")
@@ -596,6 +735,33 @@ def run_case(args: argparse.Namespace, case: dict, schema: dict, output_dir: Pat
     observation = parser(stdout, exit_code)
     if exit_code is None:
         observation.turn_failed = "timeout"
+    observation.workspace_changed = before != after
+    observation.workspace_changes = sorted(
+        {path for path in set(before) | set(after) if before.get(path) != after.get(path)}
+    )
+    return score_case(case, observation, schema, client=args.client)
+
+
+def rescore_case(args: argparse.Namespace, case: dict, schema: dict, output_dir: Path) -> CaseResult:
+    """Score a saved transcript again without calling a model, after a scorer change."""
+    raw_dir = output_dir / "protected" / "raw" / case["id"]
+    workspace = output_dir / "protected" / "attempts" / case["id"] / "workspace"
+    if not (raw_dir / "stdout.jsonl").is_file() or not workspace.is_dir():
+        raise HostFaultError(f"no saved run for {case['id']} under {output_dir}")
+    stdout = (raw_dir / "stdout.jsonl").read_text(encoding="utf-8")
+    parser = parse_claude_transcript if args.client == "claude-code" else parse_codex_transcript
+    observation = parser(stdout, 0)
+    seed = output_dir / "protected" / "seed-snapshot"
+    if seed.exists():
+        shutil.rmtree(seed)
+    seed.mkdir(parents=True)
+    seed_workspace(seed)
+    before, after = workspace_snapshot(seed), workspace_snapshot(workspace)
+    shutil.rmtree(seed)
+    observation.workspace_changed = before != after
+    observation.workspace_changes = sorted(
+        {path for path in set(before) | set(after) if before.get(path) != after.get(path)}
+    )
     return score_case(case, observation, schema, client=args.client)
 
 
@@ -606,7 +772,7 @@ def print_plan(args: argparse.Namespace, cases: list[dict], schema: dict, output
             shutil.rmtree(attempt_dir)
         command, environment, workspace = plan_invocation(args, case, attempt_dir, schema)
         print(f"== {case['id']} ({case['fault']})")
-        print("cwd:", workspace)
+        print("cwd:", workspace, "| seeded:", ", ".join(sorted(workspace_snapshot(workspace))))
         print("env:", ", ".join(sorted(key for key in environment if key not in os.environ or environment[key] != os.environ[key])))
         print("argv:")
         for argument in command:
@@ -616,7 +782,9 @@ def print_plan(args: argparse.Namespace, cases: list[dict], schema: dict, output
         print()
 
 
-def write_report(args: argparse.Namespace, results: list[CaseResult], output_dir: Path, started_at: str) -> Path:
+def write_report(
+    args: argparse.Namespace, results: list[CaseResult], output_dir: Path, started_at: str, *, rescored: bool = False,
+) -> Path:
     client_version = next((r.observation.get("client_version") for r in results if r.observation.get("client_version")), None)
     model = next((r.observation.get("model") for r in results if r.observation.get("model")), args.model)
     summary = {status: sum(1 for result in results if result.status == status) for status in ("pass", "pass-with-mismatches", "fail", "invalid")}
@@ -635,6 +803,9 @@ def write_report(args: argparse.Namespace, results: list[CaseResult], output_dir
         "summary": summary,
         "prohibited_claims": ["verified-host-pilot", "hybrid-full", "production-authority", "Behavior gate pass"],
     }
+    if rescored:
+        # The transcripts came from an earlier model run; only the scoring is new.
+        report["rescored_from_saved_transcripts"] = True
     path = output_dir / "sanitized-report.json"
     # LF only, so the recorded digest is the same on every platform.
     path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
@@ -653,6 +824,7 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-turns", type=int, default=8)
     parser.add_argument("--codex-auth-file", type=Path, default=Path.home() / ".codex" / "auth.json")
     parser.add_argument("--print-plan", action="store_true", help="stage and print every command; run nothing")
+    parser.add_argument("--rescore", action="store_true", help="score the saved transcripts in --output-dir again; call no model")
     parser.add_argument("--confirm-live-run", action="store_true", help="required to call a live model")
     args = parser.parse_args(argv)
     if not args.executable.is_absolute():
@@ -674,6 +846,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.print_plan:
         print_plan(args, cases, schema, output_dir)
         return 0
+    if args.rescore:
+        started_at = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        results = [rescore_case(args, case, schema, output_dir) for case in cases]
+        path = write_report(args, results, output_dir, started_at, rescored=True)
+        for result in results:
+            print(json.dumps({"case": result.id, "status": result.status, "hard_violations": result.hard_violations,
+                              "harness_problems": result.harness_problems}))
+        print(json.dumps({"report": str(path), "rescored": True}))
+        return 0 if all(result.status in ("pass", "pass-with-mismatches") for result in results) else 1
     if not args.confirm_live_run:
         print("host-fault-live-run-not-confirmed: pass --confirm-live-run, or --print-plan to inspect", file=sys.stderr)
         return 2
