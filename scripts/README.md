@@ -75,6 +75,11 @@ Release App bypass through explicit GitHub API `GET` requests.
 python scripts/verify-plugin-distribution-governance.py
 ```
 
+Run it with a maintainer admin token; it then requires the App to be the only
+bypass actor. The release workflow runs it with the App's own token and
+`--as-release-app`, which accepts `current_user_can_bypass: always` when GitHub
+hides `bypass_actors` from that token.
+
 The verifier never installs the App, writes rulesets, dispatches a release, or
 repairs the generated target. Those remain separately authorized external
 operations.

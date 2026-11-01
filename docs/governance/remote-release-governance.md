@@ -93,8 +93,18 @@ fix the canonical source or authorized live prerequisite, and rerun the
 canonical release flow. Never patch or retag the generated target manually.
 
 The trusted distribution publication job repeats this verifier before it writes
-the target branch. Its scoped Release App token therefore needs
-**Administration: read**, **Actions: read**, **Contents: write**, and
+the target branch. It reads the verifier and contract from the trusted dispatch
+revision on `main`, not from the frozen release source, because target
+governance is current policy. GitHub hides a ruleset's `bypass_actors` from
+tokens that cannot edit the ruleset, so the job passes `--as-release-app`: when
+`bypass_actors` is hidden, the verifier accepts the App's own
+`current_user_can_bypass: always` instead. That proves the App can bypass but not
+that it is the only actor that can, so a maintainer must run the verifier
+without the flag, with an admin token, before attesting a release; the
+attestation records that check as `target_governance`.
+
+The job's scoped Release App token needs **Administration: read**,
+**Actions: read**, **Contents: write**, and
 **Workflows: write**. Workflows write is necessary because the generated target
 includes the Scanner workflow itself; if that checked-in workflow changes, the
 publication must update it atomically with the rest of the generated target.

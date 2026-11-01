@@ -105,6 +105,17 @@ def tag_ruleset() -> dict[str, object]:
     }
 
 
+def hidden_bypass(
+    ruleset: dict[str, object],
+    current_user_can_bypass: object = "always",
+) -> dict[str, object]:
+    """Return a ruleset as a token without ruleset write access sees it."""
+    del ruleset["bypass_actors"]
+    if current_user_can_bypass is not None:
+        ruleset["current_user_can_bypass"] = current_user_can_bypass
+    return ruleset
+
+
 def ruleset_summary(ruleset: dict[str, object]) -> dict[str, object]:
     return {
         "id": ruleset["id"],
@@ -147,6 +158,7 @@ class PluginDistributionGovernanceTests(unittest.TestCase):
     def run_cli(
         self,
         responses: dict[str, object],
+        *extra_args: str,
     ) -> tuple[int, str, list[str]]:
         requested: list[str] = []
 
@@ -162,7 +174,7 @@ class PluginDistributionGovernanceTests(unittest.TestCase):
         with patch.object(self.verifier, "fetch_json", side_effect=fake_fetch):
             with redirect_stdout(output):
                 result = self.verifier.main(
-                    ["--contract", str(CONTRACT_PATH)]
+                    ["--contract", str(CONTRACT_PATH), *extra_args]
                 )
         return result, output.getvalue(), requested
 
@@ -306,6 +318,75 @@ class PluginDistributionGovernanceTests(unittest.TestCase):
 
                 self.assertEqual(1, result)
                 self.assertIn("release-app-bypass-missing", output)
+
+    def test_hidden_bypass_actors_fail_closed_without_release_app_mode(
+        self,
+    ) -> None:
+        result, output, _ = self.run_cli(
+            response_map(
+                branch_rule=hidden_bypass(branch_ruleset()),
+                tag_rule=hidden_bypass(tag_ruleset()),
+            )
+        )
+
+        self.assertEqual(1, result)
+        self.assertEqual("plugin-distribution-governance-unavailable\n", output)
+
+    def test_release_app_mode_accepts_its_own_bypass_when_actors_are_hidden(
+        self,
+    ) -> None:
+        result, output, _ = self.run_cli(
+            response_map(
+                branch_rule=hidden_bypass(branch_ruleset()),
+                tag_rule=hidden_bypass(tag_ruleset()),
+            ),
+            "--as-release-app",
+        )
+
+        self.assertEqual(0, result)
+        self.assertIn("PASS", output)
+
+    def test_release_app_mode_rejects_a_hidden_bypass_the_app_cannot_use(
+        self,
+    ) -> None:
+        for target in ("branch", "tag"):
+            for state in ("never", "pull_requests_only", "exempt", None):
+                with self.subTest(target=target, state=state):
+                    branch_rule = hidden_bypass(branch_ruleset())
+                    tag_rule = hidden_bypass(tag_ruleset())
+                    weakened = hidden_bypass(
+                        branch_ruleset() if target == "branch" else tag_ruleset(),
+                        state,
+                    )
+                    if target == "branch":
+                        branch_rule = weakened
+                    else:
+                        tag_rule = weakened
+
+                    result, output, _ = self.run_cli(
+                        response_map(branch_rule=branch_rule, tag_rule=tag_rule),
+                        "--as-release-app",
+                    )
+
+                    self.assertEqual(1, result)
+                    self.assertIn("release-app-bypass-missing", output)
+
+    def test_release_app_mode_still_checks_visible_bypass_actors_exactly(
+        self,
+    ) -> None:
+        branch_rule = branch_ruleset()
+        branch_rule["bypass_actors"].append(  # type: ignore[union-attr]
+            {"actor_id": 1, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+        )
+        branch_rule["current_user_can_bypass"] = "always"
+
+        result, output, _ = self.run_cli(
+            response_map(branch_rule=branch_rule),
+            "--as-release-app",
+        )
+
+        self.assertEqual(1, result)
+        self.assertIn("release-app-bypass-missing", output)
 
     def test_split_branch_rulesets_cannot_collectively_satisfy_contract(
         self,

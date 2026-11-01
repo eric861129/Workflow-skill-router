@@ -274,8 +274,14 @@ def _has_scanner(
 def _has_release_app_bypass(
     ruleset: dict[str, object],
     expected: dict[str, object],
+    *,
+    as_release_app: bool = False,
 ) -> bool:
     bypass_actors = ruleset.get("bypass_actors")
+    if bypass_actors is None and as_release_app:
+        # GitHub hides bypass_actors from tokens that cannot edit the ruleset.
+        # The Release App's own token still reports whether it may bypass.
+        return ruleset.get("current_user_can_bypass") == expected["bypass_mode"]
     if not isinstance(bypass_actors, list) or not all(
         isinstance(actor, dict) for actor in bypass_actors
     ):
@@ -289,6 +295,8 @@ def evaluate_governance(
     branch: dict[str, object],
     branch_rulesets: list[dict[str, object]],
     tag_rulesets: list[dict[str, object]],
+    *,
+    as_release_app: bool = False,
 ) -> list[str]:
     """Return deterministic violations for captured target-repository payloads."""
     if (
@@ -336,7 +344,7 @@ def evaluate_governance(
     if not branch_scanner_candidates:
         violations.append("scanner-requirement-missing")
     if not any(
-        _has_release_app_bypass(ruleset, bypass)
+        _has_release_app_bypass(ruleset, bypass, as_release_app=as_release_app)
         for ruleset in (
             branch_scanner_candidates
             or branch_rule_candidates
@@ -354,7 +362,7 @@ def evaluate_governance(
     if not tag_rule_candidates:
         violations.append("tag-protection-missing")
     if not any(
-        _has_release_app_bypass(ruleset, bypass)
+        _has_release_app_bypass(ruleset, bypass, as_release_app=as_release_app)
         for ruleset in tag_rule_candidates or matching_tags
     ) and "release-app-bypass-missing" not in violations:
         violations.append("release-app-bypass-missing")
@@ -372,6 +380,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path(".github/plugin-distribution-governance.json"),
     )
     parser.add_argument("--repo", metavar="OWNER/REPO")
+    parser.add_argument(
+        "--as-release-app",
+        action="store_true",
+        help=(
+            "The token belongs to the Release App. When a ruleset hides "
+            "bypass_actors, accept the App's own current_user_can_bypass "
+            "instead; exclusivity then rests on the maintainer check."
+        ),
+    )
     args = parser.parse_args(argv)
     try:
         contract = load_contract(args.contract)
@@ -414,6 +431,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             branch,
             branch_rulesets,
             tag_rulesets,
+            as_release_app=args.as_release_app,
         )
     except GovernanceUnavailableError as error:
         print(error)

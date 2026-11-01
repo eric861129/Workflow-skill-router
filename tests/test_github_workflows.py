@@ -1162,6 +1162,7 @@ class GitHubWorkflowTests(unittest.TestCase):
             'target-governance-read-{list_case}',
             'target-governance-read-{detail_case}',
             'target-governance-read-bypass-actors-{target}',
+            'target-governance-read-current-user-can-bypass-{target}',
             "plugin-distribution-governance-unavailable:",
         ):
             with self.subTest(required=required):
@@ -1172,6 +1173,34 @@ class GitHubWorkflowTests(unittest.TestCase):
         verifier_index = publication_job.index(verifier_marker)
         self.assertLess(mint_index, diagnostic_index)
         self.assertLess(diagnostic_index, verifier_index)
+
+    def test_plugin_publication_runs_the_trusted_governance_verifier_as_release_app(
+        self,
+    ) -> None:
+        publication_job = workflow_job_body(
+            "release-v2.yml", "publish-plugin-distribution"
+        )
+
+        for required in (
+            "TRUSTED_GOVERNANCE_REVISION: ${{ github.sha }}",
+            'git cat-file -e "$TRUSTED_GOVERNANCE_REVISION^{commit}"',
+            'git show "$TRUSTED_GOVERNANCE_REVISION:scripts/verify-plugin-distribution-governance.py"',
+            'git show "$TRUSTED_GOVERNANCE_REVISION:.github/plugin-distribution-governance.json"',
+            'python -I -S -B "$TRUSTED_GOVERNANCE/verify-plugin-distribution-governance.py"',
+            '--contract "$TRUSTED_GOVERNANCE/plugin-distribution-governance.json"',
+            "--as-release-app",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, publication_job)
+
+        self.assertNotIn(
+            "python -I -S -B scripts/verify-plugin-distribution-governance.py",
+            publication_job,
+        )
+        self.assertLess(
+            publication_job.index("--as-release-app"),
+            publication_job.index("git push origin HEAD:main"),
+        )
 
     def test_release_publishes_plugin_distribution_only_after_source_release(
         self,
