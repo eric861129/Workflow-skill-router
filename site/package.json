@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.7",
-    "astro": "^7.4.2"
+    "astro": "^7.4.4"
   },
   "overrides": {
     "esbuild": "^0.28.1",
@@ -33,6 +33,6 @@
     "@playwright/test": "^1.61.0",
     "chrome-launcher": "^1.2.1",
     "ffmpeg-static": "^5.2.0",
-    "lighthouse": "^13.4.0"
+    "lighthouse": "^13.6.0"
   }
 }
