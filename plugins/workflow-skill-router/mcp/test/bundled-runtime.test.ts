@@ -5,6 +5,22 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+// On Windows, child.kill() terminates the server without running its SIGTERM
+// handler, so the Python bridge it spawned may hold its working directory open
+// until it notices stdin closed. Retry only that EBUSY; a directory that is not
+// empty still fails, so cleanup keeps proving the test left nothing behind.
+async function removeReleasedDirectory(directory: string): Promise<void> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await rmdir(directory);
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EBUSY" || attempt === 50) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+}
+
 type JsonRpcResponse = { id?: number; result?: Record<string, unknown>; error?: unknown };
 
 test("bundled MCP server avoids dynamic schema compilation", async () => {
@@ -548,7 +564,7 @@ test("shipped MCP bundle advertises release metadata through MCP_SERVER_VERSION"
     });
     await rmdir(mcpDirectory);
     await rmdir(runtimeDirectory);
-    await rmdir(pluginRoot);
-    await rmdir(root);
+    await removeReleasedDirectory(pluginRoot);
+    await removeReleasedDirectory(root);
   }
 });
