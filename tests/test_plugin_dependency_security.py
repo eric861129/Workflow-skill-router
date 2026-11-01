@@ -25,11 +25,13 @@ class PluginDependencySecurityTests(unittest.TestCase):
         minimum_versions = {
             "@modelcontextprotocol/sdk": (1, 32, 1),
             "@hono/node-server": (2, 1, 5),
-            "fast-uri": (3, 1, 8),
+            "body-parser": (2, 4, 0),
+            "fast-uri": (3, 1, 9),
             "proxy-addr": (2, 0, 8),
             "hono": (4, 13, 13),
             "ip-address": (10, 7, 4),
             "qs": (6, 16, 1),
+            "zod": (4, 6, 6),
         }
         for name, minimum in minimum_versions.items():
             with self.subTest(package=name):

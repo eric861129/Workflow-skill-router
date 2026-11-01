@@ -1,22 +1,46 @@
 # Plugin Dependency Security Decision
 
-**Reviewed:** 2026-10-20
+**Reviewed:** 2026-11-01
 **Scope:** Plugin production dependencies and documentation site build dependencies
 
 ## Resolved findings
 
-The production lockfile now uses `@modelcontextprotocol/sdk` **1.32.1**,
-`@hono/node-server` **2.1.5**, `fast-uri` **3.1.8**, `proxy-addr` **2.0.8**,
-`hono` **4.13.13**, `ip-address` **10.7.4**, and `qs` **6.16.1**.
+The production lockfile now uses `@modelcontextprotocol/sdk` **1.32.2**,
+`@hono/node-server` **2.1.5**, `fast-uri` **3.1.9**, `proxy-addr` **2.0.8**,
+`hono` **4.13.13**, `ip-address` **10.7.4**, `qs` **6.16.1**,
+`body-parser` **2.4.0**, and `zod` **4.6.7**.
 The compatible SDK update and transitive dependency refresh resolve all seven
 affected package entries in the pre-update npm audit, including the previous
 Moderate Hono exception. No cross-major override or forced downgrade was used.
 
+On 2026-11-01, three more advisories were closed in the same lockfile:
+
+- `zod` below 4.6.6,
+  [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+  (High): memory exhaustion while validating oversized constrained collections.
+  `zod` is bundled into `mcp/server.bundle.mjs` and validates MCP tool input,
+  so the published `v2.1.0` bundle (`zod` 4.1.12) is affected. That input
+  comes from the local Host over stdio, not from a network listener.
+- `body-parser` below 2.4.0,
+  [GHSA-27r3-jxmh-p828](https://github.com/advisories/GHSA-27r3-jxmh-p828)
+  (High), and `fast-uri` below 3.1.9 (four Moderate/Low advisories, including
+  [GHSA-w74x-v6f9-j3xg](https://github.com/advisories/GHSA-w74x-v6f9-j3xg)).
+  Both reach the lockfile only through the SDK's HTTP and JSON Schema code;
+  neither is in the shipped bundle, which contains only the SDK, `zod`,
+  `zod-to-json-schema`, and `@cfworker/json-schema`.
+
+The `zod` update changes the published tool schemas in two ways. Nullable
+strings are emitted as `"type": ["string", "null"]` instead of an equivalent
+`anyOf`. Memory `date-time` fields now require seconds; the runtime already
+writes millisecond UTC timestamps, so valid output is unchanged.
+
 ## Current audit and exposure boundary
 
 `npm audit --omit=dev` reported **zero findings** on 2026-10-19 for this
-lockfile. This is a dated registry result, not a claim that future advisories
-cannot apply. There is no active dependency exception for this lockfile.
+lockfile, and a full `npm audit` reported zero findings again on 2026-11-01
+after the updates above. These are dated registry results, not a claim that
+future advisories cannot apply. There is no active dependency exception for
+this lockfile.
 
 The Plugin runtime uses the MCP stdio transport only. No HTTP listener or
 static-file middleware is started by the Plugin runtime. Dependency findings
@@ -64,6 +88,12 @@ SHA-256 hashes compared with the previous lockfile. A full `npm audit`
 reported **zero findings**. The lockfile regression test rejects parser
 versions below 7.1.6 at every installation depth; the dated site exception
 is now resolved.
+
+On **2026-11-01**, the site moved to Astro **7.4.2** and Starlight **0.42.7**,
+and `fast-uri` (a build-time dependency) moved to **3.1.9** for the same four
+advisories as the Plugin. The parser override still holds
+`postcss-selector-parser` at 7.1.6 under `postcss-nested` 6.2.0, and a full
+`npm audit` reported **zero findings**.
 
 Recheck on every site dependency change. Keep the override until the upstream
 dependency chain accepts a fixed parser without it; remove it only after a

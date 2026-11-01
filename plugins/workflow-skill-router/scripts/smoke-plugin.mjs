@@ -16,8 +16,8 @@ assert.equal(manifest.mcpServers, "./.mcp.json");
 assert.ok(readFileSync(path.join(root, "skills", "workflow-skill-router", "SKILL.md"), "utf8").includes("Workflow Skill Router V2"));
 
 const packageMetadata = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-assert.equal(packageMetadata.dependencies["@modelcontextprotocol/sdk"], "1.32.1");
-assert.equal(packageMetadata.dependencies.zod, "4.1.12");
+assert.equal(packageMetadata.dependencies["@modelcontextprotocol/sdk"], "1.32.2");
+assert.equal(packageMetadata.dependencies.zod, "4.6.7");
 const mcp = JSON.parse(readFileSync(path.join(root, ".mcp.json"), "utf8"));
 assert.deepEqual(mcp.mcpServers["workflow-skill-router"].args, ["./mcp/server.bundle.mjs"]);
 
