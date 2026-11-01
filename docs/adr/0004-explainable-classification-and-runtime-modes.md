@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-07-21
 
-> Historical decision recorded on 2026-07-21. `v2.0.2` has since shipped the local work loop; development main adds Memory and `deterministic-objective-v2`. Current capability matrices live in the [architecture overview](../architecture/v2-overview.md). The beta/candidate matrices below describe the original decision, not current release status.
+> Historical decision recorded on 2026-07-21. `v2.0.2` has since shipped the local work loop, and `v2.1.0` added opt-in Memory and `deterministic-objective-v2`. Current capability matrices live in the [architecture overview](../architecture/v2-overview.md). The beta/candidate matrices below describe the original decision, not current release status.
 
 ## Context
 

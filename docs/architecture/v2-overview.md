@@ -53,13 +53,13 @@ Support consent uses a narrower local state machine: `pending -> approved | reje
 
 Managed Goal orchestration maintains a dependency graph but never mutates the native Codex Goal directly. It produces host-safe status candidates backed by evidence. See the routing, phase, and Goal concepts in `site/src/content/docs/concepts/`.
 
-### Published release (`published-v2.0.2`)
+### Previous release (`published-v2.0.2`)
 
 `v2.0.2` has 12 tools: **4 always local-ready + 3 Router-owned conditional-local**, 2 verified-Host-required, and 3 configured-adapter-required. The release includes the local work loop, but not the later Adaptive Workflow Memory implementation.
 
-### Development branch (`development-main`)
+### v2.1.0 and development branch (`development-main`)
 
-The current source adds 8 Memory tools, for 20 total; Memory is default-off. This table describes the checkout, not an installed release.
+`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.0` and the current checkout.
 
 | Availability | Tools | Conditions |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ The current source adds 8 Memory tools, for 20 total; Memory is default-off. Thi
 
 Fail-closed examples:
 
-- In both `v2.0.2` and development main, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
+- In `v2.0.2`, `v2.1.0`, and development main, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
 - Missing graphs request local creation or replay; corrupt graphs return only a sanitized `internal-error` correlation.
 - A missing activation receipt prevents a Host transition even if a Router-local advisory gate passed.
 - A semantic route candidate remains advisory and cannot replace the persisted deterministic route.

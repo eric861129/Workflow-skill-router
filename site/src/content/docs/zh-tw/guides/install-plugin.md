@@ -44,11 +44,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、套件版本對應的 tool 名稱（`v2.0.2` 為 12 個，開發中主分支為 20 個）、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
+`doctor` 必須顯示 `bundled-local-r0`、停用 telemetry，以及每個 tool 的 readiness matrix。解壓縮後的 smoke test 會驗證 manifest、canonical SKILL、套件版本對應的 tool 名稱（`v2.0.2` 為 12 個，`v2.1.0` 與開發中主分支為 20 個）、外部 state 邊界，以及真實 MCP initialize/tools-list 交換。
 
 ## 本機可用範圍
 
-`v2.0.2` 的 bundled local R0 支援 Personal Routing Profile 的 validate、install、list 與 preview。Contributor checkout 可直接安裝套件內的 personal 範例並執行 preview：
+`v2.1.0` 的 bundled local R0 支援 Personal Routing Profile 的 validate、install、list 與 preview。Contributor checkout 可直接安裝套件內的 personal 範例並執行 preview：
 
 ```powershell
 Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json
@@ -62,6 +62,8 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz profile p
 Profile 放在 Plugin cache 外；輸出是 `intended-unverified`，直到 Runtime Capability Discovery 驗證每個 selected SKILL。
 
 `plan_work`、`propose_support_consent`、`transition_support_consent` 與 `get_router_status` 是 local-ready。`get_next_work`、`record_work_event` 與 `evaluate_gate` 在 Router 自有工作圖可條件式本機執行；Native Goal、`sync_runtime_context` 與 `validate_route` 仍需要已驗證的 Host 能力。模型評測工具需要已設定 adapter。不可用的呼叫會回傳 `capability-unavailable`，並列出需求與 fallback。
+
+`v2.1.0` 另增八個 Workflow Memory 工具。Memory 預設關閉；各工具的 readiness 請見 [MCP 工具參考](/Workflow-skill-router/zh-tw/reference/mcp-tools/)。
 
 ## 移除
 

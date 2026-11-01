@@ -474,13 +474,35 @@ jobs:
                   f"PASS: target-governance-read-bypass-actors-{target}="
                   f"{bypass_shape}"
               )
+              caller_bypass = (
+                  details.get("current_user_can_bypass")
+                  if isinstance(details, dict) else None
+              )
+              if caller_bypass not in {"always", "pull_requests_only", "exempt", "never"}:
+                  caller_bypass = "unavailable"
+              print(
+                  f"PASS: target-governance-read-current-user-can-bypass-{target}="
+                  f"{caller_bypass}"
+              )
       - name: Verify target governance before generated publication
         shell: bash
         env:
           GH_TOKEN: ${{ steps.target-app-token.outputs.token }}
-        run: >-
-          python -I -S -B scripts/verify-plugin-distribution-governance.py
-          --repo "$TARGET_REPOSITORY"
+          TRUSTED_GOVERNANCE_REVISION: ${{ github.sha }}
+        run: |
+          # Target governance is current policy, so read the verifier and its
+          # contract from the trusted dispatch revision, not the frozen source.
+          TRUSTED_GOVERNANCE="$RUNNER_TEMP/trusted-governance"
+          mkdir -p "$TRUSTED_GOVERNANCE"
+          git cat-file -e "$TRUSTED_GOVERNANCE_REVISION^{commit}"
+          git show "$TRUSTED_GOVERNANCE_REVISION:scripts/verify-plugin-distribution-governance.py" \
+            > "$TRUSTED_GOVERNANCE/verify-plugin-distribution-governance.py"
+          git show "$TRUSTED_GOVERNANCE_REVISION:.github/plugin-distribution-governance.json" \
+            > "$TRUSTED_GOVERNANCE/plugin-distribution-governance.json"
+          python -I -S -B "$TRUSTED_GOVERNANCE/verify-plugin-distribution-governance.py" \
+            --contract "$TRUSTED_GOVERNANCE/plugin-distribution-governance.json" \
+            --repo "$TARGET_REPOSITORY" \
+            --as-release-app
       - name: Build standalone Plugin distribution
         shell: bash
         run: |

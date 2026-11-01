@@ -510,8 +510,10 @@ class Beta5PilotProtocolTests(unittest.TestCase):
             "profile preview --explain",
             "server-configured advisory-only adapter",
             "No Pilot data means the gate is unmet",
-            "The published release is `v2.0.2`",
-            "does not establish a new model qualification",
+            "The published release is `v2.1.0`",
+            "not a full-contract qualification pass",
+            "Codex models were not re-qualified",
+            "it is not `v2.1.0` evidence",
             "gpt-5.6-sol",
         ):
             self.assertIn(phrase, combined)

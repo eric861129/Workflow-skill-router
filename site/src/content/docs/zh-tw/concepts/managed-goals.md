@@ -15,7 +15,7 @@ Managed Goal planning 建立 dependency Work Graph。每個 Work Item 有自己�
 
 Router 可以產生 `complete` 或 `blocked` status candidate；實際 Goal state transition 由 Codex 控制。Blocked candidate 需要三個相同 blocker 的 countable turns，而且沒有 runnable required item。
 
-已發布的 `v2.0.2` 工作迴圈提供 **4 always local-ready + 3 Router-owned conditional-local** tools。當 work graph 由 Router 擁有、已驗證，且沒有 Native Goal authority 時，`get_next_work`、回報式進度與 advisory local gate 可以完成 Router-local 閉環。這不等於 `7/12 local-ready`：Explicit Skill Lock 與 consent 維持不變，local gate 通過也不代表 Skill activation、Host evidence、deployment 或 production approval。
+`v2.0.2` 與 `v2.1.0` 的工作迴圈都提供 **4 always local-ready + 3 Router-owned conditional-local** tools。`v2.1.0` 另增八個須主動啟用的 Memory tools，不屬於這個迴圈；Memory 預設關閉。當 work graph 由 Router 擁有、已驗證，且沒有 Native Goal authority 時，`get_next_work`、回報式進度與 advisory local gate 可以完成 Router-local 閉環。這不等於 `7/12 local-ready`：Explicit Skill Lock 與 consent 維持不變，local gate 通過也不代表 Skill activation、Host evidence、deployment 或 production approval。
 
 Native Goal scheduling 需要 `verified-host-scheduler`；formal progress path 需要 `verified-event-store` 與 `activation-receipt-verifier`；gate path 需要 `verified-evidence-store` 與 `gate-authority`。缺少 graph 時透過 `router-owned-work-graph` 要求在本機建立或 replay；graph 損毀時回傳已清理的 `internal-error`，不會捏造 Host fallback。所有不可用或不安全分支都必須 **fail closed**。
 
