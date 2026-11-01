@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workflow-skill-router.dev/schemas/v2/host-fault-output.schema.json",
+  "title": "In-client fault-handling report",
+  "description": "The final answer a Host session gives after the Router SKILL has planned a task while the Router MCP server was unavailable, denied, or failing. Route fields follow the Behavior contract; the two runtime fields report what the session observed, not what it intended.",
+  "type": "object",
+  "required": [
+    "envelope",
+    "selection_mode",
+    "primary_skill",
+    "support_skills",
+    "consent_action",
+    "goal_relation",
+    "runtime_binding",
+    "mcp_outcome",
+    "rationale"
+  ],
+  "properties": {
+    "envelope": { "enum": ["single", "phased", "managed-goal"] },
+    "selection_mode": { "enum": ["auto", "explicit-locked"] },
+    "primary_skill": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "support_skills": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+    },
+    "consent_action": {
+      "enum": ["not-required", "proposal-required", "approved", "rejected"]
+    },
+    "goal_relation": {
+      "enum": ["none", "progress", "status", "steer", "side-question"]
+    },
+    "runtime_binding": {
+      "description": "bundled-local-r0 only when the Router MCP server answered plan_work in this session; skill-only-fallback when the route came from the SKILL instructions alone.",
+      "enum": ["bundled-local-r0", "skill-only-fallback"]
+    },
+    "mcp_outcome": {
+      "description": "What happened to the Router's plan_work call in this session. unavailable: the Router MCP server never connected, so no Router tool could be called at all. denied: the Host refused the call before it ran. failed: the call ran and returned an error. succeeded: the call returned a plan.",
+      "enum": ["succeeded", "unavailable", "denied", "failed"]
+    },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
+  },
+  "additionalProperties": false
+}

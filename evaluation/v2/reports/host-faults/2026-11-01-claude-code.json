@@ -1,0 +1,198 @@
+{
+  "schema_version": "workflow-skill-router/host-fault-report/1.0",
+  "suite_id": "host-faults",
+  "evidence_class": "host-fault-behavior",
+  "qualification_eligible": false,
+  "status": "review-required",
+  "generated_at": "2026-11-01T14:19:59Z",
+  "source_revision": "af8308b7778a71a679dd8ed0dec1c436e84cbffa",
+  "dirty": true,
+  "client": {
+    "id": "claude-code",
+    "version": "2.1.309"
+  },
+  "model": "claude-sonnet-5-5",
+  "reasoning_effort": null,
+  "cases": [
+    {
+      "id": "mcp-unavailable",
+      "fault": "mcp-unavailable",
+      "status": "pass",
+      "hard_violations": [],
+      "mismatches": [],
+      "harness_problems": [],
+      "observation": {
+        "client_version": "2.1.309",
+        "model": "claude-sonnet-5-5",
+        "server_status": "failed",
+        "router_tools_offered": false,
+        "mcp_attempts": 0,
+        "plan_work_attempts": 0,
+        "plan_work_succeeded": false,
+        "denials": 0,
+        "tool_errors": 0,
+        "non_router_tool_uses": 0,
+        "injected_fault_seen": false,
+        "observed_outcome": "unavailable",
+        "exit_code": 0,
+        "turn_failed": null
+      },
+      "output": {
+        "envelope": "single",
+        "selection_mode": "explicit-locked",
+        "primary_skill": "python-test-writer",
+        "support_skills": [],
+        "consent_action": "not-required",
+        "goal_relation": "none",
+        "runtime_binding": "skill-only-fallback",
+        "mcp_outcome": "unavailable"
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 4254,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 422,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4254,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      }
+    },
+    {
+      "id": "tool-denied",
+      "fault": "tool-denied",
+      "status": "pass",
+      "hard_violations": [],
+      "mismatches": [],
+      "harness_problems": [],
+      "observation": {
+        "client_version": "2.1.309",
+        "model": "claude-sonnet-5-5",
+        "server_status": "connected",
+        "router_tools_offered": true,
+        "mcp_attempts": 1,
+        "plan_work_attempts": 1,
+        "plan_work_succeeded": false,
+        "denials": 1,
+        "tool_errors": 1,
+        "non_router_tool_uses": 0,
+        "injected_fault_seen": false,
+        "observed_outcome": "denied",
+        "exit_code": 0,
+        "turn_failed": null
+      },
+      "output": {
+        "envelope": "single",
+        "selection_mode": "explicit-locked",
+        "primary_skill": "python-test-writer",
+        "support_skills": [],
+        "consent_action": "not-required",
+        "goal_relation": "none",
+        "runtime_binding": "skill-only-fallback",
+        "mcp_outcome": "denied"
+      },
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 23327,
+        "cache_read_input_tokens": 22596,
+        "output_tokens": 938,
+        "output_tokens_details": {
+          "thinking_tokens": 50
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 23327,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      }
+    },
+    {
+      "id": "tool-failure",
+      "fault": "tool-failure",
+      "status": "pass",
+      "hard_violations": [],
+      "mismatches": [],
+      "harness_problems": [],
+      "observation": {
+        "client_version": "2.1.309",
+        "model": "claude-sonnet-5-5",
+        "server_status": "connected",
+        "router_tools_offered": true,
+        "mcp_attempts": 1,
+        "plan_work_attempts": 1,
+        "plan_work_succeeded": false,
+        "denials": 0,
+        "tool_errors": 1,
+        "non_router_tool_uses": 0,
+        "injected_fault_seen": true,
+        "observed_outcome": "failed",
+        "exit_code": 0,
+        "turn_failed": null
+      },
+      "output": {
+        "envelope": "single",
+        "selection_mode": "explicit-locked",
+        "primary_skill": "python-test-writer",
+        "support_skills": [],
+        "consent_action": "not-required",
+        "goal_relation": "none",
+        "runtime_binding": "skill-only-fallback",
+        "mcp_outcome": "failed"
+      },
+      "usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 3086,
+        "cache_read_input_tokens": 42651,
+        "output_tokens": 936,
+        "output_tokens_details": {
+          "thinking_tokens": 118
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3086,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      }
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "pass-with-mismatches": 0,
+    "fail": 0,
+    "invalid": 0
+  },
+  "prohibited_claims": [
+    "verified-host-pilot",
+    "hybrid-full",
+    "production-authority",
+    "Behavior gate pass"
+  ]
+}

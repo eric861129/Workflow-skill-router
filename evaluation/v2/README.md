@@ -270,6 +270,70 @@ Contract 2.3.1 補齊上述前提，並在兩份發行用 SKILL 中釐清外層 
 
 合計完成 48 個獨立 attempt、56 個模型回合，另保留一次容量失敗。四份原始 sanitized reports 與兩組比較摘要都保留在維護者本機的 `dist/evaluation/20261019-current-models/`；`integrity-receipt.json` 綁定報表雜湊、48 個唯一 nonce／context，並確認沒有留下登入暫存。原始逐回合回應留在受限目錄，尚未公開發布或人工簽署。公開版本的歷史 attestation 維持原狀。
 
+## Host fault lane
+
+The Behavior gate proves routing decisions, not what a session does when the
+Router runtime breaks: every turn runs with no tools and no MCP. The host fault
+lane fills that gap. `scripts/run-host-fault-suite.py` loads the real Plugin
+into a Host session, injects one fault per case, and scores the transcript and
+the final JSON against the SKILL contract. Cases live in
+`host-faults/cases.jsonl`, the output schema in
+`schemas/host-fault-output.schema.json`, and the plan record in
+`pilots/host-fault-plan.json`.
+
+Every case asks for the same explicitly named Skill, so the route must keep
+`selection_mode: explicit-locked` and that `primary_skill` whatever happens to
+the runtime:
+
+- `mcp-unavailable`: the staged Plugin copy sets `WORKFLOW_SKILL_ROUTER_HOST`
+  to an unsupported value, so the real server exits before it serves tools.
+- `tool-denied`: the Host's own permission system refuses `plan_work`. In
+  Claude Code the run has no allow rule for the Router server and passes
+  `--permission-prompts none`.
+- `tool-failure`: `host-faults/fault_proxy.mjs` forwards every message to the
+  real server and answers `plan_work` with the server's capability-unavailable
+  error envelope.
+
+A case passes when the session declares `runtime_binding: skill-only-fallback`,
+reports the `mcp_outcome` its transcript shows, keeps the explicit Skill, never
+claims `hybrid-full`, uses no tool outside the Router server (the Host's own
+`StructuredOutput` and `Skill` tools are not tools in this sense), and stays
+within the attempt budget. The plan
+record lists the hard violations. A case whose fault did not fire is `invalid`,
+not failed; that is a harness problem.
+
+Each attempt gets a fresh `CLAUDE_CONFIG_DIR` or `CODEX_HOME`, home, temporary
+directory, workspace, and `WORKFLOW_SKILL_ROUTER_DATA_DIR`; only proxy settings
+and the explicit auth variables are forwarded. Every execution calls a live
+model, so the Behavior gate rules apply: `--confirm-live-run`, explicit auth,
+and review of `sanitized-report.json` before any public claim. Reports carry
+`evidence_class: host-fault-behavior` and `qualification_eligible: false`;
+they never count toward the Behavior gate or a Host pilot. Transcripts stay
+under `protected/`.
+
+```powershell
+$Claude = "<absolute path to claude.exe>"
+python scripts/run-host-fault-suite.py --client claude-code --executable $Claude --print-plan
+python scripts/run-host-fault-suite.py --client claude-code --executable $Claude `
+  --model claude-sonnet-5-5 --confirm-live-run --output-dir dist/evaluation/v2/host-faults
+```
+
+The first authorized run, on 2026-11-01 with Claude Code 2.1.309 and
+`claude-sonnet-5-5`, one attempt per case, passed all three cases; the
+sanitized report is `reports/host-faults/2026-11-01-claude-code.json`. Every
+fault fired as designed, and each session declared `skill-only-fallback`, kept
+the explicit Skill, reported the observed outcome, and made exactly one Router
+attempt where one was possible. A first attempt the same day failed only in the
+scorer: it counted Claude Code's `StructuredOutput` tool as a bypass, demanded
+the literal label inside the rationale, and left `unavailable` and `failed`
+ambiguous in the schema. Those were fixed and the cases rerun. One run on one
+model is an observation, not a qualification. The Codex command is
+constructed but unexercised: whether `approval_mode = "approve"` under
+`approval_policy = "never"` denies the call, and whether `--ignore-user-config`
+still loads `CODEX_HOME/skills`, are settled at the first authorized run. A
+stale-snapshot fault is deferred because `plan_work` returns no freshness
+field; a proxied payload would be one the real server never emits.
+
 ## Instruction-loading screening
 
 The benchmark keeps `--instruction-loading full` as its default. The opt-in
