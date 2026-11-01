@@ -26,6 +26,14 @@ class SiteDependencySecurityTests(unittest.TestCase):
                     # GHSA-rj75-hqrm-r3gf：所有層級的相依套件都必須包含修補。
                     self.assertGreaterEqual(version_tuple(package["version"]), (7, 1, 6))
 
+    def test_locked_uri_parsers_include_scheme_and_host_fixes(self) -> None:
+        lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
+        for path, package in lock["packages"].items():
+            if path.endswith("node_modules/fast-uri"):
+                with self.subTest(path=path):
+                    # GHSA-w74x-v6f9-j3xg、GHSA-wjr9-j795-jxcr 等四項：3.1.9 起修補。
+                    self.assertGreaterEqual(version_tuple(package["version"]), (3, 1, 9))
+
     def test_locked_image_pipeline_includes_reviewed_security_fixes(self) -> None:
         lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
         for name, minimum in (("astro", (7, 2, 8)), ("sharp", (0, 35, 5))):

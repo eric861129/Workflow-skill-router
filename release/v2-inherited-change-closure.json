@@ -30,10 +30,10 @@
     {"path":"packages/router-core/tests/routing/test_profiler.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"324671c3e03ab906767d6368387b4af1740055dfcacf5aa21828dc44b4fa20f5"}},
     {"path":"packages/router-core/tests/routing/test_route_validator.py","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"96bb72ea5c3e436dfdce297a094c4ea7e2715464dd104851186651ce6f4211ab"}},
     {"path":"plugins/workflow-skill-router/.codex-plugin/plugin.json","owner_task":4,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"e23b0676ce4b0429e12a2eb763aa0783c43316b9b87b67ff46ce49fdf72bd24a"}},
-    {"path":"plugins/workflow-skill-router/mcp/server.bundle.mjs","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"5b5a837ae24cd312d40ad828e7daeec5c548a80f03ef220ca037987855ffcb24"}},
+    {"path":"plugins/workflow-skill-router/mcp/server.bundle.mjs","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"5d80ae4a589af502119a246e0ba1274be119754dd01eb12c5fe482df3d0abff4"}},
     {"path":"plugins/workflow-skill-router/mcp/src/core-client.ts","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"0c87708589a1cd1dc536b8a1bff14cc030248581af794f0bc7ee5355c46be02d"}},
     {"path":"plugins/workflow-skill-router/mcp/test/bundled-runtime.test.ts","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"0ef8bf9c66bc9c67778b447c260cf4a97878a31ed7a575a4966f0a5fa895e327"}},
-    {"path":"plugins/workflow-skill-router/package.json","owner_task":4,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"6ba0412cca59123c6c956bce9286e79cc60f4ef07a2a9bba4863fc3c416cd575"}},
+    {"path":"plugins/workflow-skill-router/package.json","owner_task":4,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"fc3e043d063689f9afca62603ea65206c9f7ce801967027ac651487d79d8df93"}},
     {"path":"plugins/workflow-skill-router/runtime/workflow_skill_router.pyz","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"a4625df761dd59708999e1fc8e3f2b6af09ed5eb4f303876017efe2fc45ee974"}},
     {"path":"plugins/workflow-skill-router/scripts/build-mcp.mjs","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"59b4256f61850e431f865131520b8179888a31ad806e05f32bdd1855afabe6bf"}},
     {"path":"plugins/workflow-skill-router/scripts/build-runtime.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"10e07f9c146313ba25a6773c9ab85afff42d99828b33cb556fb5fae7d0ae0b71"}},
@@ -51,7 +51,7 @@
     {"path":"starter/v2/workflow-skill-router/references/routing-protocol.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"605e0d5aa3676e13e6a168b270495fd62945e07fcbe2276deba93dd71764a2b8"}},
     {"path":"starter/v2/workflow-skill-router/SKILL.md","owner_task":5,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"8f52cbc0187e0cd09739b879aaba8a814ce5a8bc36f796aea6cbe3499af8bfb9"}},
     {"path":"tests/test_build_runtime.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"74b969268bbcb8a261f9094484ab6c717ecda1a5ee2d7f71eb59a9b7a32cd384"}},
-    {"path":"tests/test_release_artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"4b98bb22609e300f159bee4f0b11cae1e32ee6fdcc84b435f8e1f2f636718783"}},
+    {"path":"tests/test_release_artifacts.py","owner_task":3,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"679d93767dc07fdaf4ddf08f223629f8513f6bf7ac35de27255fa097ebd9c5a7"}},
     {"path":"tests/test_v2_demo_data.py","owner_task":9,"disposition":"incorporated","evidence":{"kind":"current-content-digest","sha256":"c3d8b8d7995fb34e7a6fde2d119d1c3ab98e161b7258aa7773941a93ed9b8193"}}
   ]
 }
