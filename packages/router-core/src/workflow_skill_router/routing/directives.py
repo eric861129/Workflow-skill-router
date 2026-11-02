@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from workflow_skill_router.profiles.contract import is_canonical_skill_id
+
 from .models import (
     DirectiveInput,
     ExplicitSemantics,
@@ -10,7 +12,33 @@ from .models import (
 
 
 class DirectiveAmbiguityError(ValueError):
-    pass
+    """使用者指令無法在不猜測的情況下解析；`reason` 是可公開的原因碼。"""
+
+    reason = "directive-ambiguous"
+
+    def __init__(self, message: str, *, reason: str | None = None) -> None:
+        super().__init__(message)
+        if reason is not None:
+            self.reason = reason
+
+
+def canonical_explicit_skill_id(value: str) -> str:
+    """把使用者指定的 SKILL 識別碼正規化為 `skill:<name>`。
+
+    Host 裡的使用者會直接寫 Skill 名稱（例如 `python-test-writer`），而 Router
+    內部、Profile 與持久化欄位只接受 canonical 形式。沒有前綴的名稱在這裡補上
+    `skill:`；其他形式一律在邊界拒絕，不能等到讀回時才當成資料損毀。
+    """
+
+    if is_canonical_skill_id(value):
+        return value
+    # A value that already claims the skill: namespace but fails the contract is wrong, not bare.
+    if not value.startswith("skill:") and is_canonical_skill_id(f"skill:{value}"):
+        return f"skill:{value}"
+    raise DirectiveAmbiguityError(
+        "explicit SKILL 識別碼必須是 skill:<name> 或可補上前綴的 Skill 名稱",
+        reason="explicit-skill-id-not-canonical",
+    )
 
 
 _WORK_MODE_ALIASES = {
@@ -45,7 +73,9 @@ def _work_mode(value: DirectiveInput) -> RoutingEnvelope | None:
 
 
 def resolve_directive(value: DirectiveInput) -> UserDirective:
-    skills = tuple(dict.fromkeys(item.strip() for item in value.explicit_skill_ids if item.strip()))
+    skills = tuple(dict.fromkeys(
+        canonical_explicit_skill_id(item.strip()) for item in value.explicit_skill_ids if item.strip()
+    ))
     if not skills:
         return UserDirective(_work_mode(value), (), None, SupportPolicy.AUTO, value.text)
 

@@ -74,7 +74,8 @@ for (const definition of TOOL_DEFINITIONS) {
           structuredContent: result as Record<string, unknown>,
         };
       } catch (error) {
-        if (error instanceof CoreBridgeError && error.code === "capability-unavailable") {
+        if (error instanceof CoreBridgeError && (error.code === "capability-unavailable" || error.code === "invalid-arguments")) {
+          // Both carry a public-safe payload: a code and a reason, never the rejected input.
           return {
             isError: true,
             content: [{ type: "text" as const, text: JSON.stringify(error.details) }],

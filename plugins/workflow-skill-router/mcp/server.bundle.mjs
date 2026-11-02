@@ -31382,7 +31382,7 @@ var PLAN_WORK_INPUT_SCHEMA = external_exports.object({
   objective: external_exports.string().min(1).describe("The user-visible outcome inspected by the structural deterministic classifier; it is not a semantic-model or authority input."),
   goal_binding_id: external_exports.string().nullable().describe("Native Goal identifier when this request progresses or steers an existing Goal."),
   requested_work_mode: external_exports.enum(["single", "phased", "managed-goal"]).nullable().describe("Explicit envelope hint; null allows deterministic automatic classification."),
-  explicit_skill_ids: external_exports.array(external_exports.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation."),
+  explicit_skill_ids: external_exports.array(external_exports.string()).describe("Skill IDs explicitly selected by the user and protected by Explicit Skill Lock; an empty array allows automatic planning without proving activation. Canonical form is skill:<name>; a bare Skill name is canonicalized, and any other form is rejected as invalid-arguments."),
   explicit_semantics: external_exports.enum(["use", "only", "all"]).nullable().describe("How explicit Skill IDs constrain routing; null when no explicit lock exists."),
   routing_context: routingContext.optional().describe(
     "Context for an optional deterministic Profile match. Omission preserves the V2 beta.1 request contract; these values grant no runtime or deployment authority."
@@ -32003,7 +32003,7 @@ for (const definition of TOOL_DEFINITIONS) {
           structuredContent: result
         };
       } catch (error62) {
-        if (error62 instanceof CoreBridgeError && error62.code === "capability-unavailable") {
+        if (error62 instanceof CoreBridgeError && (error62.code === "capability-unavailable" || error62.code === "invalid-arguments")) {
           return {
             isError: true,
             content: [{ type: "text", text: JSON.stringify(error62.details) }]

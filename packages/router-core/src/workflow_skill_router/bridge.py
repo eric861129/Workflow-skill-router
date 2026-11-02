@@ -6,6 +6,7 @@ import sys
 import traceback
 from typing import TextIO
 
+from workflow_skill_router.routing.directives import DirectiveAmbiguityError
 from workflow_skill_router.service_codecs import ServiceCodecError
 from workflow_skill_router.runtime_readiness import CapabilityUnavailable
 from workflow_skill_router.tool_dispatch import PUBLIC_TOOLS
@@ -37,6 +38,10 @@ def serve(source: TextIO, output: TextIO, dispatcher, diagnostics: TextIO | None
         except ServiceCodecError:
             response = {"request_id": request_id, "ok": False,
                         "error": {"code": "invalid-arguments", "message": "Invalid request arguments"}}
+        except DirectiveAmbiguityError as error:
+            # A directive the user wrote cannot be resolved; the reason code names why, never the input.
+            response = {"request_id": request_id, "ok": False,
+                        "error": {"code": "invalid-arguments", "message": error.reason}}
         except CapabilityUnavailable as error:
             response = {
                 "request_id": request_id,
