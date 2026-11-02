@@ -51,7 +51,7 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
 
 ### v2.1.x 與開發中主分支（`development-main`）
 
-`v2.1.0` 增加 8 個 Memory 工具，合計 20 個；Memory 預設關閉。下表描述 `v2.1.1` 與目前原始碼。
+`v2.1.0` 增加 8 個 Memory 工具，合計 20 個；Memory 預設關閉。下表描述 `v2.1.2` 與目前原始碼。
 
 | Availability | Tools | 條件 |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ Managed Goal 的 Work Item 可以用 `single` 或 `phased` 作為內層 envelope
 - 大型需求被迫塞進 `single` 時，會遺失 phase-specific capability 與 evidence checks。
 - 小型 copy edit 被塞進 `managed-goal` 時，會產生不必要的 state 與 consent overhead。
 - 跨 Phase 重用單一路由，會在工作改變後保留 stale capabilities。
-- 在 `v2.0.2`、`v2.1.0`、`v2.1.1` 與開發中主分支中，Native Goal work 依各工具的 verified Host capability fail closed，且不修改原生 Codex Goal。
+- 在 `v2.0.2`、`v2.1.0`、`v2.1.1`、`v2.1.2` 與開發中主分支中，Native Goal work 依各工具的 verified Host capability fail closed，且不修改原生 Codex Goal。
 - 缺少 Router-owned graph 時要求在本機建立或 replay，不會捏造 Host 路徑。
 - Graph 損毀時只回傳已清理的 `internal-error`，損毀細節留在內部 diagnostics。
 - Router-local gate 通過只代表 advisory gate，不會啟用 Skill、不會授權原生 Goal transition，也不會授予部署或正式環境權限。

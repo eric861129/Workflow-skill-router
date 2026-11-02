@@ -59,7 +59,7 @@ Managed Goal orchestration maintains a dependency graph but never mutates the na
 
 ### v2.1.x and development branch (`development-main`)
 
-`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.1` and the current checkout.
+`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.2` and the current checkout.
 
 | Availability | Tools | Conditions |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ Managed Goal orchestration maintains a dependency graph but never mutates the na
 
 Fail-closed examples:
 
-- In `v2.0.2`, `v2.1.0`, `v2.1.1`, and development main, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
+- In `v2.0.2`, `v2.1.0`, `v2.1.1`, `v2.1.2`, and development main, Native Goal work returns each tool's verified-Host requirement and leaves Goal state unchanged.
 - Missing graphs request local creation or replay; corrupt graphs return only a sanitized `internal-error` correlation.
 - A missing activation receipt prevents a Host transition even if a Router-local advisory gate passed.
 - A semantic route candidate remains advisory and cannot replace the persisted deterministic route.

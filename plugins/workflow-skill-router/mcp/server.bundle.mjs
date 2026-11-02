@@ -31954,7 +31954,7 @@ function bindMemoryWorkspaceRoot(name, arguments_, trustedRoots) {
 }
 
 // mcp/src/server.ts
-var MCP_SERVER_VERSION = "2.1.1";
+var MCP_SERVER_VERSION = "2.1.2";
 var core = new CoreClient();
 try {
   resolveHost();

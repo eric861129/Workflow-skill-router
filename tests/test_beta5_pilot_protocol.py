@@ -524,12 +524,12 @@ class Beta5PilotProtocolTests(unittest.TestCase):
 
         release = self.read_json(ROOT / "release/version.json")
         expected_published_version = (
-            "2.1.1"
+            "2.1.2"
             if release["release_lifecycle"] == "reviewed-attested-publishable"
-            else "2.1.0"
+            else "2.1.1"
         )
         self.assertEqual(expected_published_version, release["published_v2_version"])
-        self.assertEqual("2.1.1", release["v2_version"])
+        self.assertEqual("2.1.2", release["v2_version"])
         self.assertNotIn("target_prerelease", release)
 
     def test_traditional_chinese_evaluation_page_is_clear_utf8_without_mojibake(self) -> None:

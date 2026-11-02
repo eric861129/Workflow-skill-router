@@ -13,10 +13,10 @@ The released archive includes the MCP bundle and Python runtime. npm is required
 
 ## Tagged marketplace snapshot
 
-Use the immutable `v2.1.1` snapshot for normal installations:
+Use the immutable `v2.1.2` snapshot for normal installations:
 
 ```powershell
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
@@ -44,11 +44,11 @@ python plugins/workflow-skill-router/runtime/workflow_skill_router.pyz doctor
 node plugins/workflow-skill-router/scripts/smoke-plugin.mjs path/to/extracted/workflow-skill-router
 ```
 
-`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, version-specific tool names (12 in `v2.0.2`, 20 in `v2.1.0`, `v2.1.1`, and development main), external state boundary, and a real MCP initialize/tools-list exchange.
+`doctor` must report `bundled-local-r0`, telemetry disabled, and a per-tool readiness matrix. The extracted-package smoke verifies the manifest, canonical SKILL, version-specific tool names (12 in `v2.0.2`, 20 in `v2.1.0`, `v2.1.1`, `v2.1.2`, and development main), external state boundary, and a real MCP initialize/tools-list exchange.
 
 ## What works locally
 
-The bundled local R0 runtime in `v2.1.1` supports Personal Routing Profile validation, installation, listing, and preview. From a contributor checkout, install the packaged personal example and preview it:
+The bundled local R0 runtime in `v2.1.2` supports Personal Routing Profile validation, installation, listing, and preview. From a contributor checkout, install the packaged personal example and preview it:
 
 ```powershell
 Copy-Item starter/v2/workflow-skill-router/assets/personal-routing-profile.example.json ./my-profile.json

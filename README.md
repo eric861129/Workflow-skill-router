@@ -38,19 +38,19 @@ Claude Code reads the workspace Profile from `.claude/workflow-skill-router.json
 
 ### Codex Plugin + MCP
 
-The published release is **v2.1.1**. Use this pinned release for a normal Codex installation. It is a dependency security patch for `v2.1.0`, which added the Claude Code Plugin and opt-in Workflow Memory; Memory keeps persistent local plans and consent records alongside the routing instructions.
+Current published V2 release: `2.1.1`. Version 2.1.2, a `plan_work` bug-fix patch, is a prepared candidate that has not been published. Use the pinned release for a normal Codex installation; `v2.1.0` added the Claude Code Plugin and opt-in Workflow Memory; Memory keeps persistent local plans and consent records alongside the routing instructions.
 
 ```sh
-codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1
+codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.2
 codex plugin add workflow-skill-router@workflow-skill-router
 codex plugin list
 ```
 
-Development main may contain later work that is not in `v2.1.1`. The [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) explains how to verify the result.
+Development main may contain later work that is not in `v2.1.2`. The [Plugin installation guide](site/src/content/docs/guides/install-plugin.md) explains how to verify the result.
 
 ### Standalone Skill
 
-Choose this mode for routing instructions without the local MCP runtime. Download [the v2.1.1 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.1/workflow-skill-router-skill-v2.1.1.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
+Choose this mode for routing instructions without the local MCP runtime. Download [the v2.1.2 Skill package](https://github.com/eric861129/Workflow-skill-router/releases/download/v2.1.2/workflow-skill-router-skill-v2.1.2.zip) and extract its inner `workflow-skill-router/` folder into your Codex Skills directory.
 
 The [Skill-only installation guide](site/src/content/docs/guides/install-skill.md) covers the paths and setup. This mode guides model behavior; it cannot persist or enforce the Plugin's consent state machine. No installation includes every specialist Skill your workflow may reference.
 
@@ -199,7 +199,7 @@ Tool schemas, risk, required capabilities, and fallback actions are generated fr
 
 ### v2.1.x and development branch (`development-main`)
 
-`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.1` and the current checkout.
+`v2.1.0` adds 8 Memory tools, for 20 total; Memory is default-off. This table describes `v2.1.2` and the current checkout.
 
 | Availability | Tools | Conditions |
 | --- | --- | --- |
