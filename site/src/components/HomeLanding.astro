@@ -7,7 +7,7 @@ const locale = (Astro.props.locale ?? 'en') as Locale;
 const repoUrl = 'https://github.com/eric861129/Workflow-skill-router';
 const discussionsUrl = `${repoUrl}/discussions`;
 const changelogUrl = `${repoUrl}/blob/main/CHANGELOG.md`;
-const skillZipUrl = `${repoUrl}/releases/download/v2.1.1/workflow-skill-router-skill-v2.1.1.zip`;
+const skillZipUrl = `${repoUrl}/releases/download/v2.1.2/workflow-skill-router-skill-v2.1.2.zip`;
 const rootPath = locale === 'zh-tw' ? '/Workflow-skill-router/zh-tw' : '/Workflow-skill-router';
 const assetPath = '/Workflow-skill-router/assets';
 const isZh = locale === 'zh-tw';
@@ -36,7 +36,7 @@ const text = {
     "facts": ["Routes each phase on its own", "Keeps the Skill you name in charge", "Asks before adding support", "One Profile for both hosts", "Local state, no telemetry"],
     "terminalLabel": "A route as plan_work returns it",
     "terminalRequest": "Deliver the api contract, implementation, and tests.",
-    "rail": ["Claude Code and Codex", "v2.1.1 published"],
+    "rail": ["Claude Code and Codex", "v2.1.2 published"],
     "railRepo": "MIT licence on GitHub",
     "railSkill": "Instructions only? Use Skill only",
     "action": "Install the Plugin",
@@ -88,11 +88,11 @@ const text = {
       {
         "id": "codex",
         "label": "Codex",
-        "note": "Release v2.1.1",
+        "note": "Release v2.1.2",
         "guide": "guides/install-plugin",
         "guideLabel": "Codex guide",
         "rows": [
-          ["Add", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1", "code", "Pins the v2.1.1 release."],
+          ["Add", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.2", "code", "Pins the v2.1.2 release."],
           ["Install", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "Then run codex plugin list to confirm it."],
           ["Check", "Show the Workflow Skill Router status and explain which capabilities are available in this environment.", "prompt", "Ask in a new Codex task."],
           ["Needs", "Node.js 24+ and Python 3.11+", "text", "The release already includes the MCP bundle and runtime."]
@@ -105,7 +105,7 @@ const text = {
         "guide": "guides/install-skill",
         "guideLabel": "Skill-only guide",
         "rows": [
-          ["Download", "workflow-skill-router-skill-v2.1.1.zip", "download", "From the v2.1.1 GitHub Release."],
+          ["Download", "workflow-skill-router-skill-v2.1.2.zip", "download", "From the v2.1.2 GitHub Release."],
           ["Extract", "The inner workflow-skill-router/ folder", "text", "Into your Codex Skills directory."],
           ["Limits", "Instructions only", "text", "No durable state, no consent records, no MCP tools."]
         ]
@@ -118,7 +118,7 @@ const text = {
     "validatorCopy": "On 2026-10-19, we compared routing with and without the Router using GPT-6.1 Sol, GPT-6 Astra, and GPT-6 Luna at medium reasoning. The six-case exploration showed some more consistent workflow decisions. It did not execute development tasks or measure code quality.",
     "validatorEvidenceNote": "After clarifying ambiguous case assumptions and updating the instructions, only Sol was retested. These single-run observations do not establish repeatability, formal model qualification, or full Plugin/host integration. The complete instruction package increased input tokens; lower cost and faster delivery have not been demonstrated.",
     "releaseTitle": "Start with the published release",
-    "releaseCopy": "v2.1.1 contains the routing instructions, the local MCP runtime, the Claude Code Plugin, and opt-in Workflow Memory, which is off by default. It is a dependency security patch for v2.1.0 with unchanged routing. The current exploration does not qualify v2.1.1. The release gate was a separate paired run with a Claude model on v2.1.0.",
+    "releaseCopy": "v2.1.2 contains the routing instructions, the local MCP runtime, the Claude Code Plugin, and opt-in Workflow Memory, which is off by default. It fixes plan_work for Skills named without the skill: prefix; the routing instructions are unchanged from v2.1.0. The current exploration does not qualify v2.1.2. The release gate was a separate paired run with a Claude model on v2.1.0.",
     "evidenceLink": "Read the evaluation method and limits",
     "faqTitle": "Questions",
     "faq": [
@@ -127,14 +127,14 @@ const text = {
       ["Does it send data anywhere?", "No. Plans, consent records, and Profiles live in a local data directory outside the Plugin cache, and telemetry is off."],
       ["What if Python is missing?", "The MCP server cannot start, so the Skill runs as skill-only-fallback: routing instructions without durable state. It says so instead of claiming the full mode."],
       ["Can Claude Code and Codex share my setup?", "Yes. Both read the same personal Profiles and local state. A repository can keep one .codex/workflow-skill-router.json, or add .claude/workflow-skill-router.json when Claude Code needs a different Skill Tree."],
-      ["Is it ready for my team?", "v2.1.1 is published for Claude Code and Codex. The evaluation so far covers routing decisions only, so try it on your own workflow first."]
+      ["Is it ready for my team?", "v2.1.2 is published for Claude Code and Codex. The evaluation so far covers routing decisions only, so try it on your own workflow first."]
     ],
     "marquee": "One lead Skill per phase. Your workflow as config. Claude Code and Codex.",
     "finalTitle": "Bring your workflow. Inspect the route.",
     "finalCopy": "Start with the published package, check the available capabilities, and decide whether the routing fits your work. The code and routing rules are open source under the MIT License.",
     "footerNavTitle": "Read on",
     "footerNav": [["Quickstart", "guides/quickstart"], ["Claude Code install", "guides/install-claude-code"], ["Personal Routing Profiles", "concepts/personal-routing-profiles"], ["MCP tools", "reference/mcp-tools"], ["Security boundaries", "reference/security-boundaries"]],
-    "status": ["v2.1.1 is the published release.", "Claude Code support starts with v2.1.0."],
+    "status": ["v2.1.2 is the published release.", "Claude Code support starts with v2.1.0."],
     "changelog": "Read the changelog",
     "contactTitle": "Questions and ideas",
     "contact": "GitHub Discussions",
@@ -157,7 +157,7 @@ const text = {
     "facts": ["每個階段各自路由", "你指定的 Skill 優先", "加入輔助前先問你", "兩個 host 共用 Profile", "狀態存在本機，不送遙測"],
     "terminalLabel": "plan_work 回傳的一條路由",
     "terminalRequest": "交付 api 合約、實作與測試。",
-    "rail": ["Claude Code 與 Codex", "v2.1.1 已發布"],
+    "rail": ["Claude Code 與 Codex", "v2.1.2 已發布"],
     "railRepo": "MIT 授權，原始碼在 GitHub",
     "railSkill": "只要路由指引？只使用 Skill",
     "action": "安裝 Plugin",
@@ -209,11 +209,11 @@ const text = {
       {
         "id": "codex",
         "label": "Codex",
-        "note": "v2.1.1 發布版本",
+        "note": "v2.1.2 發布版本",
         "guide": "guides/install-plugin",
         "guideLabel": "Codex 安裝指南",
         "rows": [
-          ["加入", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.1", "code", "固定使用 v2.1.1 發布版本。"],
+          ["加入", "codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.2", "code", "固定使用 v2.1.2 發布版本。"],
           ["安裝", "codex plugin add workflow-skill-router@workflow-skill-router", "code", "再執行 codex plugin list 確認。"],
           ["確認", "顯示 Workflow Skill Router 的狀態，並說明目前環境可以使用哪些能力。", "prompt", "請在新的 Codex 任務中詢問。"],
           ["需要", "Node.js 24+ 與 Python 3.11+", "text", "發布套件已包含 MCP bundle 與 runtime。"]
@@ -226,7 +226,7 @@ const text = {
         "guide": "guides/install-skill",
         "guideLabel": "純 Skill 安裝指南",
         "rows": [
-          ["下載", "workflow-skill-router-skill-v2.1.1.zip", "download", "來自 v2.1.1 的 GitHub Release。"],
+          ["下載", "workflow-skill-router-skill-v2.1.2.zip", "download", "來自 v2.1.2 的 GitHub Release。"],
           ["解壓縮", "內層的 workflow-skill-router/ 資料夾", "text", "放進 Codex Skills 目錄。"],
           ["限制", "只有指引", "text", "沒有持久狀態、同意紀錄或 MCP 工具。"]
         ]
@@ -239,7 +239,7 @@ const text = {
     "validatorCopy": "2026-10-19 使用 GPT-6.1 Sol、GPT-6 Astra、GPT-6 Luna，在 medium 推理設定下比較有無 Router 的路由決策。六個案例的探索性測試觀察到部分流程決策更一致，但沒有執行開發任務或量測程式品質。",
     "validatorEvidenceNote": "釐清案例前提的歧義並更新指引後，僅對 Sol 重新測試。這些單次觀測尚未證明穩定性、正式模型資格或完整 Plugin／執行環境整合。完整載入指令套件會增加輸入 Token；尚未證明能降低成本或加快交付。",
     "releaseTitle": "從已發布的版本開始",
-    "releaseCopy": "v2.1.1 包含路由指引、本機 MCP 執行程式、Claude Code Plugin，以及需自行啟用的 Workflow Memory（預設關閉）。它是 v2.1.0 的相依套件安全修補版，路由沒有改變。目前的探索性測試不能作為 v2.1.1 的資格證明。發布評測是另外在 v2.1.0 上以 Claude 模型執行的成對測試。",
+    "releaseCopy": "v2.1.2 包含路由指引、本機 MCP 執行程式、Claude Code Plugin，以及需自行啟用的 Workflow Memory（預設關閉）。它修正指名 Skill 時沒加 skill: 前綴會讓 plan_work 失敗的問題，路由指引與 v2.1.0 相同。目前的探索性測試不能作為 v2.1.2 的資格證明。發布評測是另外在 v2.1.0 上以 Claude 模型執行的成對測試。",
     "evidenceLink": "閱讀評測方法與限制",
     "faqTitle": "常見問題",
     "faq": [
@@ -248,14 +248,14 @@ const text = {
       ["它會把資料送到別處嗎？", "不會。計畫、同意紀錄與 Profile 都存在 Plugin cache 之外的本機資料目錄，也不送遙測。"],
       ["沒有安裝 Python 會怎樣？", "MCP server 無法啟動，Skill 會以 skill-only-fallback 運作：只有路由指引，沒有持久狀態。它會如實說明，不會宣稱完整模式。"],
       ["Claude Code 和 Codex 能共用設定嗎？", "可以。兩者讀同一份個人 Profile 與本機狀態。repository 可以只放一份 .codex/workflow-skill-router.json；只有 Claude Code 需要不同的 Skill Tree 時，才另外加 .claude/workflow-skill-router.json。"],
-      ["團隊可以直接用嗎？", "v2.1.1 已發布，Claude Code 與 Codex 都能使用。目前的評測只涵蓋路由決策，建議先拿自己的工作流程試試看。"]
+      ["團隊可以直接用嗎？", "v2.1.2 已發布，Claude Code 與 Codex 都能使用。目前的評測只涵蓋路由決策，建議先拿自己的工作流程試試看。"]
     ],
     "marquee": "每個階段一個主導 Skill。工作流程就是設定檔。Claude Code 與 Codex 都能用。",
     "finalTitle": "帶入你的流程，檢查每次路由",
     "finalCopy": "從發布套件開始，確認可用能力，再判斷路由是否符合你的工作方式。程式碼與路由規則以 MIT 授權開放使用。",
     "footerNavTitle": "延伸閱讀",
     "footerNav": [["快速開始", "guides/quickstart"], ["Claude Code 安裝", "guides/install-claude-code"], ["Personal Routing Profiles", "concepts/personal-routing-profiles"], ["MCP 工具", "reference/mcp-tools"], ["安全邊界", "reference/security-boundaries"]],
-    "status": ["v2.1.1 是已發布的版本。", "Claude Code 支援從 v2.1.0 開始提供。"],
+    "status": ["v2.1.2 是已發布的版本。", "Claude Code 支援從 v2.1.0 開始提供。"],
     "changelog": "查看變更紀錄",
     "contactTitle": "問題與想法",
     "contact": "GitHub Discussions",

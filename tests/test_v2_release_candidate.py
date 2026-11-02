@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GA_VERSION = "2.1.1"
-PREVIOUS_PUBLISHED_VERSION = "2.1.0"
+GA_VERSION = "2.1.2"
+PREVIOUS_PUBLISHED_VERSION = "2.1.1"
 
 
 class V2ReleaseCandidateTests(unittest.TestCase):

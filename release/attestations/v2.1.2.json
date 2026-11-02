@@ -1,0 +1,85 @@
+{
+  "schema_version": "workflow-skill-router/release-evidence-attestation/1.0",
+  "record_type": "maintainer-release-evidence-review",
+  "attestation_status": "reviewed",
+  "reviewed_at": "2026-11-02T02:49:49Z",
+  "reviewer": "claude-under-maintainer-authorization",
+  "release_version": "2.1.2",
+  "release_source_revision": "7c22f70c346cd8cef4d689ea9391c164c4c8b95f",
+  "deterministic_evidence": {
+    "status": "passed",
+    "scope": "plan_work explicit Skill id patch: Router Core directive canonicalization and bridge error mapping, MCP server tool-error handling, rebuilt MCP bundle and runtime for the Claude Code and Codex Plugins, release artifacts, generated Plugin distribution, documentation, site visual, Windows, macOS, and Linux contracts",
+    "source_ci": {
+      "validate_v2_contracts_run": "41378407062",
+      "codeql_run": "41378407050"
+    },
+    "local_test_counts": {
+      "router_core": 592,
+      "repository": 421,
+      "plugin_mcp": 72
+    },
+    "fix_coverage": {
+      "router_core_tests": [
+        "packages/router-core/tests/routing/test_directives.py",
+        "packages/router-core/tests/integration/test_plan_work_explicit_ids.py",
+        "packages/router-core/tests/bridge/test_directive_rejection.py"
+      ],
+      "bundled_mcp_server_test": "tests/test_plan_work_explicit_skill_ids.py",
+      "live_host_check": {
+        "client": "claude-code 2.1.309",
+        "model_identifier": "claude-sonnet-5-5",
+        "sessions": 1,
+        "request_named_skill_without_prefix": true,
+        "plan_work_explicit_skill_ids": ["skill:python-test-writer"],
+        "outcome": "planned single explicit-locked skill:python-test-writer, no tool error, no workspace change",
+        "limitation": "The model passed the canonical id itself, so the session did not exercise the server-side canonicalization; it is a check, not Behavior evidence."
+      }
+    },
+    "source_governance": {
+      "repository": "eric861129/Workflow-skill-router",
+      "status": "passed",
+      "verified_before_attestation": true
+    },
+    "target_governance": {
+      "repository": "eric861129/workflow-skill-router-plugin",
+      "status": "passed",
+      "verified_before_attestation": true
+    }
+  },
+  "behavior_evidence": {
+    "evidence_class": "unchanged-routing-behavior",
+    "evaluation_contract": "workflow-skill-router.behavior-routing@2.3.1",
+    "basis": "The inherited v2.1.0 Behavior run measured routing decisions made from the Router SKILL alone: claude_code_driver.py runs every turn with --tools \"\" and --strict-mcp-config and no MCP server, so the model never saw or called plan_work. Between v2.1.1's frozen source and this one, both Router SKILLs, starter/, the Behavior cases, the evaluation contract, and scoring are byte-identical. Router Core changes only routing/directives.py (explicit Skill id canonicalization), bridge.py (DirectiveAmbiguityError maps to invalid-arguments), and its version string; the MCP server changes only its invalid-arguments tool-error handling, one added sentence in the plan_work explicit_skill_ids description, and its version string. The 20 MCP tool names and readiness classes and the persisted schemas are unchanged, and a canonical skill:<name> id routes exactly as before. The reviewed v2.1.0 Behavior evidence therefore remains the bounded reference rather than being relabeled as a new run; it does not cover the fix itself, which deterministic tests cover.",
+    "inherited_evidence": {
+      "release_version": "2.1.0",
+      "release_source_revision": "a347482b3b53011b79eaf8b71071b79f9ea564a6",
+      "model_identifier": "claude-sonnet-5-5",
+      "adapter": "claude_code_driver.py",
+      "attempt_count": 36,
+      "turn_count": 42,
+      "hard_violation_count": 0,
+      "sanitized_report_sha256": "sha256:a00f8afc29f0116640031ef97e76407684edeb27f9e474904c5a3114b713834f"
+    }
+  },
+  "known_limitations": [
+    "No new Behavior run was made on this source. The inherited v2.1.0 run passed no attempt on the full turn contract, and its other limits carry over unchanged.",
+    "The inherited run never called plan_work, so it is not evidence for the fix. The bare-name path is covered by deterministic tests through the bundled MCP server; the one live Claude Code check passed a canonical id and did not exercise it.",
+    "Only claude-sonnet-5-5 at the Claude Code default reasoning effort qualified v2.1.0; Codex models were not re-qualified.",
+    "CodeQL reports four existing js/redos alerts in the bundled @cfworker/json-schema URL format regex and two js/bad-code-sanitization alerts in zod's validator code generation. The generated code is derived from the static tool schemas, not from tool input. The alerts remain open.",
+    "Real Skill activation, token reduction, and task outcome remain not observable."
+  ],
+  "release_decision": {
+    "status": "publishable-bug-fix-patch",
+    "basis": "The frozen source passed deterministic local and GitHub Windows, macOS, and Linux gates, both live governance contracts were verified, the fix has focused regression tests through Router Core, the bridge, and the bundled MCP server, and the patch does not change the SKILLs, cases, or scoring the inherited Behavior evidence measured.",
+    "forbidden_claims": [
+      "a new real-model qualification",
+      "full-contract qualification pass",
+      "hybrid-full conformance",
+      "verified Skill activation",
+      "measured token reduction",
+      "measured task outcome improvement",
+      "Codex model re-qualification",
+      "live-model evidence for bare Skill id canonicalization"
+    ]
+  }
+}

@@ -9,7 +9,7 @@ Workflow Skill Router 將「確定性合約測試」、「真實模型行為評�
 
 ## GA candidate Pilot 目前狀態
 
-目前已發布版本是 `v2.1.1`。它是相依套件安全修補版，路由沒有改變，因此沿用 `v2.1.0` 的 Behavior gate：在 `v2.1.0` 凍結來源上重新執行的成對 beta smoke，36 個 attempts、42 個模型回合，透過 Claude Code driver 以 Claude 模型執行。模型與結果記錄在 `v2.1.0` 的 maintainer attestation。這次執行沒有 hard violation，但沒有任何 attempt 通過完整 turn contract，因此只是有限的發布證據，不代表通過完整合約資格驗證。本版沒有重新驗證 Codex 模型的資格。有限的 `gpt-5.6-sol` 證據屬於 `v2.0.0`，`v2.0.2` 沿用了它；它不是 `v2.1.0` 的證據。後續本機工作迴圈與 Host Pilot 仍為 `protocol-frozen-awaiting-real-pilot`，尚未計入真實 Pilot 任務。Memory 的確定性案例不是真實模型成效證據。
+目前已發布版本是 `v2.1.2`。它修正 `plan_work` 的錯誤；`v2.1.0` 的 Behavior gate 執行時沒有任何工具或 MCP server，使用的 SKILL 與案例都沒有改變，因此沿用這份證據：在 `v2.1.0` 凍結來源上重新執行的成對 beta smoke，36 個 attempts、42 個模型回合，透過 Claude Code driver 以 Claude 模型執行。模型與結果記錄在 `v2.1.0` 的 maintainer attestation。這次執行沒有 hard violation，但沒有任何 attempt 通過完整 turn contract，因此只是有限的發布證據，不代表通過完整合約資格驗證。本版沒有重新驗證 Codex 模型的資格。有限的 `gpt-5.6-sol` 證據屬於 `v2.0.0`，`v2.0.2` 沿用了它；它不是 `v2.1.0` 的證據。後續本機工作迴圈與 Host Pilot 仍為 `protocol-frozen-awaiting-real-pilot`，尚未計入真實 Pilot 任務。Memory 的確定性案例不是真實模型成效證據。
 
 協定、範本與 dry-run 不會自動授權模型額度、Host 存取或版本發布。
 
