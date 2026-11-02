@@ -3,7 +3,7 @@ title: 安裝到 Claude Code
 description: 在 Claude Code 安裝、驗證與移除 Workflow Skill Router Plugin，並與 Codex 共用 Profile。
 ---
 
-Claude Code 支援從 `v2.1.0` 開始提供，目前已發布的版本是 `v2.1.1`。下列 marketplace 指令會從 repository 的預設分支安裝 Plugin。
+Claude Code 支援從 `v2.1.0` 開始提供，目前已發布的版本是 `v2.1.2`。下列 marketplace 指令會從 repository 的預設分支安裝 Plugin。
 
 ## 系統需求
 

@@ -57,7 +57,7 @@ Reference-driver 只驗證離線合約；它無法證明真實模型的行為。
 - [ ] 在執行新的 36 attempts／42 model turns behavior-model run 前取得明確授權
 - [ ] 審查 sanitized evidence、attest exact frozen candidate SHA，並完成 immutable GA release qualification
 
-上列清單記錄當時的 GA 準備工作。`v2.0.2` 已依發布 attestation 中的有限證據完成發布。`v2.1.0` 後續也已發布，新增 Claude Code Plugin 與需自行啟用的 Workflow Memory。它的發布評測是透過 Claude Code、以 Claude 模型重新執行的六個案例成對測試，不是下方的 13-case suite，也沒有重新驗證 Codex 模型。`v2.1.1` 是相依套件安全修補版，路由沒有改變，因此沿用這份證據。真實本機／Host Pilot 與新版模型資格驗證仍是獨立待辦。未來發布仍須經審查並綁定來源。
+上列清單記錄當時的 GA 準備工作。`v2.0.2` 已依發布 attestation 中的有限證據完成發布。`v2.1.0` 後續也已發布，新增 Claude Code Plugin 與需自行啟用的 Workflow Memory。它的發布評測是透過 Claude Code、以 Claude 模型重新執行的六個案例成對測試，不是下方的 13-case suite，也沒有重新驗證 Codex 模型。`v2.1.1`（相依套件安全修補）與 `v2.1.2`（`plan_work` 修正）都沿用這份證據；兩者都沒有改變它所量測的 SKILL 與案例。真實本機／Host Pilot 與新版模型資格驗證仍是獨立待辦。未來發布仍須經審查並綁定來源。
 
 ## 剩餘正式 qualification
 

@@ -38,7 +38,7 @@ Claude Code 會先讀 `.claude/workflow-skill-router.json`，沒有時才讀 `.c
 
 ### Codex Plugin + MCP
 
-目前已發布的 V2 正式版：`2.1.1`。修正 `plan_work` 錯誤的 2.1.2 是已準備好的候選版本，尚未發布。一般的 Codex 安裝請固定使用發布版本；`v2.1.0` 新增 Claude Code Plugin 與需自行啟用的 Workflow Memory，除了路由指引，也會在本機保存計畫與同意紀錄。
+已發布版本為 **v2.1.2**。一般的 Codex 安裝請固定使用這個版本。它修正了指名 Skill 但沒加 `skill:` 前綴時 `plan_work` 失敗的問題；`v2.1.0` 新增 Claude Code Plugin 與需自行啟用的 Workflow Memory，除了路由指引，也會在本機保存計畫與同意紀錄。
 
 ```sh
 codex plugin marketplace add eric861129/Workflow-skill-router --ref v2.1.2

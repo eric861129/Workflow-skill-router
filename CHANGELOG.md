@@ -4,7 +4,7 @@ All notable changes to Workflow Skill Router are documented here.
 
 ## Unreleased
 
-## 2.1.2 (prepared candidate)
+## 2.1.2
 
 ### Fixed
 
@@ -30,6 +30,12 @@ All notable changes to Workflow Skill Router are documented here.
   `host-fault-behavior` evidence and never qualify a release. Two authorized
   runs are recorded (2026-11-01, Claude Code 2.1.309, `claude-sonnet-5-5`, one
   attempt per case, all four cases passed); the Codex command is unexercised.
+
+### Changed
+
+- Promoted reviewed, source-bound `2.1.2` metadata for trusted workflow
+  publication. The maintainer attestation records the inherited `v2.1.0`
+  Behavior evidence and the deterministic gates for this revision.
 
 An explicit Skill id given as `skill:<name>` passes through unchanged and
 routes exactly as in `v2.1.1`; only ids that used to fail with
