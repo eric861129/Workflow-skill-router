@@ -17,8 +17,8 @@
     "test:site:update-snapshots": "playwright test --project=chromium-visual --update-snapshots"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.42.7",
-    "astro": "^7.4.4"
+    "@astrojs/starlight": "^0.42.9",
+    "astro": "^7.4.7"
   },
   "overrides": {
     "esbuild": "^0.28.1",
@@ -30,8 +30,8 @@
     }
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
-    "chrome-launcher": "^1.2.1",
+    "@playwright/test": "^1.65.0",
+    "chrome-launcher": "^1.2.3",
     "ffmpeg-static": "^5.2.0",
     "lighthouse": "^13.6.0"
   }
